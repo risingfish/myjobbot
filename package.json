@@ -8,12 +8,23 @@
     "node": ">=24 <25"
   },
   "devDependencies": {
+    "@types/node": "26.6.4",
     "@typescript-eslint/eslint-plugin": "8.71.0",
     "@typescript-eslint/parser": "8.71.0",
     "eslint": "10.12.0",
     "jscpd": "5.4.0",
     "knip": "6.39.0",
     "ts-morph": "28.0.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  },
+  "dependencies": {
+    "tsx": "4.23.15"
+  },
+  "scripts": {
+    "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test && habit-hooks"
   }
 }
