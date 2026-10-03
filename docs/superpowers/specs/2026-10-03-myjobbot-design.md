@@ -72,8 +72,10 @@ src/
     getCompanyRating.ts
     sendDigest.ts
     finish.ts
+  http/
+    limiter.ts           # per-host rate limiter + retry/backoff for all outbound API calls
   sources/
-    greenhouse.ts  lever.ts  ashby.ts   # → normalized Job
+    greenhouse.ts  lever.ts  ashby.ts   # → normalized Job (all HTTP via http/limiter)
   glassdoor/
     browser.ts           # Playwright persistent-context management
     lookup.ts            # search + resolve company page
@@ -98,6 +100,7 @@ test/
   - `job_retention_days`: days after `last_seen` before a job row is pruned. Default 90.
   - `glassdoor`: `{max_lookups_per_run: 10, cache_ttl_days: 30, min_delay_s: 5, max_delay_s: 15}`.
   - `agent`: `{max_steps: 200, max_wall_clock_min: 60, max_consecutive_tool_errors: 3}`.
+  - `http`: `{min_interval_ms: 1000, max_concurrency_per_host: 1, max_requests_per_host_per_run: 300, max_retries: 2, max_retry_after_s: 60, timeout_s: 30}`.
 - **Environment**: `LLM_BASE_URL` (currently `http://llm.home.arpa:8081/v1`), `LLM_MODEL` (currently `qwen3-coder-30b`), `LLM_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
   `SMTP_PASS`, `DIGEST_TO`, `DIGEST_FROM`.
 
@@ -109,8 +112,8 @@ as a tool result `{error: "..."}` so it can correct itself; they never throw out
 | Tool | Args | Returns | Notes |
 |---|---|---|---|
 | `list_companies` | — | `[{name, ats}]` | From config |
-| `fetch_jobs` | `company` | `[{job_id, title, location, department, team, posted_at, days_open, possible_ghost}]` | Calls the ATS list endpoint (no description bodies). Upserts all jobs into SQLite and updates `last_seen`. Returns **only jobs not yet scored**. Per-company timeout + 2 retries; on failure returns `{error}` |
-| `get_job_details` | `job_id` | Stored metadata + `full_description: "not_available_in_v1"` | **Stub.** v2 fetches and returns the full posting body |
+| `fetch_jobs` | `company` | `[{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]` | Calls the ATS list endpoint through the rate limiter. Upserts all jobs into SQLite and updates `last_seen`. Returns **only jobs not yet scored**, never description text. **Memoized per run**: a repeat call for the same company returns the cached result without an HTTP request. On failure returns `{error}` |
+| `get_job_details` | `job_id` | Stored metadata + `full_description: "not_available_in_v1"` | **Stub.** v2 returns the stored description (already captured for Lever/Ashby; Greenhouse needs `?content=true`) |
 | `record_match` | `job_id, score (0–100), reasons[], gaps[]` | `{ok}` | Persists the agent's verdict; marks job as scored. Required for every job the agent evaluates |
 | `get_company_rating` | `company` | `{status: ok\|not_found\|blocked\|error\|skipped, rating?, review_count?, recommend_pct?, ceo_approval_pct?, url}` | See Glassdoor section. Never throws |
 | `send_digest` | — | `{ok, sent_count}` or `{error}` | Builds the email **from SQLite** (scored ≥ threshold, not yet emailed). Idempotent: refuses a second send in the same run. Marks jobs emailed |
@@ -151,8 +154,11 @@ The system prompt states that v1 scoring is metadata/title-based only.
 ## Data Model (SQLite)
 
 - **`jobs`**: `job_id` (ATS id, PK with `ats`), `ats`, `company`, `title`,
-  `normalized_title`, `location`, `department`, `team`, `url`, `posted_at`,
-  `first_seen`, `last_seen`, `scored_at`, `score`, `reasons` (JSON), `gaps` (JSON),
+  `normalized_title`, `location`, `department`, `team`, `workplace_type`, `is_remote`,
+  `compensation` (text, nullable), `url`, `posted_at` (from the ATS: Greenhouse
+  `first_published`, Lever `createdAt`, Ashby `publishedAt`), `description`
+  (plain text, nullable, capped at 20k chars; stored when the list response already
+  includes it, never sent to the model in v1), `first_seen`, `last_seen`, `scored_at`, `score`, `reasons` (JSON), `gaps` (JSON),
   `emailed_at`.
 - **`ratings`**: `company` (PK), `status`, `rating`, `review_count`, `recommend_pct`,
   `ceo_approval_pct`, `glassdoor_url`, `fetched_at`.
@@ -162,8 +168,9 @@ The system prompt states that v1 scoring is metadata/title-based only.
 
 - Every successful `fetch_jobs` updates `last_seen` for all live postings, including
   already-scored and already-emailed ones.
-- `days_open` = now − earliest `first_seen` among rows with the same
-  `(company, normalized_title)`. This catches reposts under new ATS ids.
+- `days_open` = now − the earliest of `posted_at` and `first_seen` across all rows with
+  the same `(company, normalized_title)`. The ATS date gives a true age from the first
+  run; `first_seen` catches reposts under new ATS ids with fresh posting dates.
   `normalized_title` = lowercased, punctuation stripped, whitespace collapsed.
 - `possible_ghost` = `days_open > ghost_threshold_days`.
 - Job rows are pruned when `last_seen` is older than `job_retention_days` (90).
@@ -204,6 +211,25 @@ The system prompt states that v1 scoring is metadata/title-based only.
   errors, timing.
 - Run row in SQLite with final status and summary.
 
+## Outbound API Rate Limiting
+
+All outbound HTTP to job boards goes through `src/http/limiter.ts`; source adapters
+never call `fetch` directly.
+
+- **Per-host limiter:** at most `max_concurrency_per_host` (1) request in flight per host,
+  and at least `min_interval_ms` (1000 ms) between request starts to the same host.
+- **Per-run cap:** `max_requests_per_host_per_run` (300). Past the cap, requests fail fast
+  with a `rate_limit_cap` error that the agent sees, so a looping agent cannot hammer an API.
+- **429 / 503:** honor `Retry-After` (capped at `max_retry_after_s`), otherwise exponential
+  backoff with jitter; up to `max_retries` (2), then return an error.
+- **Timeouts:** `timeout_s` (30) per request.
+- **Per-run memoization** in `fetch_jobs` (see Tools) means the same board is fetched at
+  most once per run, whatever the agent does.
+- **Response size:** responses are parsed and reduced to normalized `Job` fields at once;
+  raw bodies (up to ~15 MB for large Ashby boards) are not stored or logged in the trace.
+- **LLM calls** are sequential by construction (one request per loop step), bounded by
+  `max_steps`. Glassdoor has its own politeness limits (see Glassdoor section).
+
 ## Error Handling
 
 - ATS fetch failures are per company; the agent sees `{error}` and can move on.
@@ -224,7 +250,8 @@ The system prompt states that v1 scoring is metadata/title-based only.
 
 ## Testing
 
-- **Unit (vitest):** each source adapter against recorded ATS JSON fixtures; Glassdoor
+- **Unit (vitest):** rate limiter with fake timers (interval, concurrency, per-run cap,
+  `Retry-After` handling, backoff); `fetch_jobs` memoization; each source adapter against recorded ATS JSON fixtures; Glassdoor
   parser against saved HTML; DB queries (including ghost detection and pruning) on
   in-memory SQLite; digest rendering snapshot.
 - **Agent loop:** a scripted fake LLM returning canned tool calls, covering dispatch,
