@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { JsonGetter } from "../http/client.js";
 import { makeJob, type Job } from "../jobs/job.js";
+import { defineBoard } from "./board.js";
 import { optionalDate, optionalFlag, optionalText } from "./fields.js";
-import type { BoardRef } from "./types.js";
 
 const posting = z.object({
   id: z.string(),
@@ -18,13 +17,14 @@ const posting = z.object({
   isListed: optionalFlag,
   compensation: z.object({ compensationTierSummary: optionalText }).nullish(),
 });
-const board = z.object({ jobs: z.array(posting) });
+const postings = z.object({ jobs: z.array(posting) }).transform((board) => board.jobs);
 
-export async function fetchAshby(ref: BoardRef, http: JsonGetter): Promise<Job[]> {
-  const url = `https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(ref.slug)}?includeCompensation=true`;
-  const { jobs } = board.parse(await http.getJson(url));
-  return jobs.filter((post) => post.isListed !== false).map((post) => toJob(ref.name, post));
-}
+export const fetchAshby = defineBoard({
+  url: (slug) => `https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(slug)}?includeCompensation=true`,
+  postings,
+  toJob,
+  keep: (post) => post.isListed !== false,
+});
 
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   const { department, team, location, isRemote, workplaceType } = post;

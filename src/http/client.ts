@@ -28,35 +28,27 @@ export class HttpClient implements JsonGetter {
 
   async getJson(url: string): Promise<unknown> {
     for (let attempt = 0; ; attempt += 1) {
-      const response = await this.sendOrThrow(url);
-      if (response.ok) return this.parseJson(url, response);
+      const response = await this.withUrl(url, () => this.send(url));
+      if (response.ok) return this.withUrl(url, () => response.json());
       await response.body?.cancel();
       if (!this.shouldRetry(response.status, attempt)) throw new Error(`GET ${url} failed with HTTP ${response.status}`);
       await this.deps.clock.sleep(this.backoffMs(response, attempt));
     }
   }
 
-  private async sendOrThrow(url: string): Promise<Response> {
+  private async withUrl<T>(url: string, operation: () => Promise<T>): Promise<T> {
     try {
-      return await this.send(url);
+      return await operation();
     } catch (error) {
-      throw new Error(`GET ${url} failed: ${describeError(error)}`);
-    }
-  }
-
-  private async parseJson(url: string, response: Response): Promise<unknown> {
-    try {
-      return await response.json();
-    } catch (error) {
-      throw new Error(`GET ${url} failed: ${describeError(error)}`);
+      throw new Error(`GET ${url} failed: ${describeError(error)}`, { cause: error });
     }
   }
 
   private send(url: string): Promise<Response> {
-    return this.limiter.schedule(new URL(url).host, () => this.fetch(url));
+    return this.limiter.schedule(new URL(url).host, () => this.fetchWithTimeout(url));
   }
 
-  private fetch(url: string): Promise<Response> {
+  private fetchWithTimeout(url: string): Promise<Response> {
     const signal = AbortSignal.timeout(this.deps.config.timeout_s * MS_PER_SECOND);
     return this.deps.fetchFn(url, { signal });
   }

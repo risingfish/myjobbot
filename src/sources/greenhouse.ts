@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { JsonGetter } from "../http/client.js";
 import { makeJob, type Job } from "../jobs/job.js";
+import { defineBoard } from "./board.js";
 import { optionalDate, optionalText } from "./fields.js";
-import type { BoardRef } from "./types.js";
 
 const posting = z.object({
   id: z.number(),
@@ -11,13 +10,13 @@ const posting = z.object({
   location: z.object({ name: optionalText }).nullish(),
   first_published: optionalDate,
 });
-const board = z.object({ jobs: z.array(posting) });
+const postings = z.object({ jobs: z.array(posting) }).transform((board) => board.jobs);
 
-export async function fetchGreenhouse(ref: BoardRef, http: JsonGetter): Promise<Job[]> {
-  const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(ref.slug)}/jobs`;
-  const { jobs } = board.parse(await http.getJson(url));
-  return jobs.map((post) => toJob(ref.name, post));
-}
+export const fetchGreenhouse = defineBoard({
+  url: (slug) => `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(slug)}/jobs`,
+  postings,
+  toJob,
+});
 
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   return makeJob(

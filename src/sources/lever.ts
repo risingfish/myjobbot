@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { JsonGetter } from "../http/client.js";
 import { makeJob, type Job } from "../jobs/job.js";
+import { defineBoard } from "./board.js";
 import { optionalDate, optionalText } from "./fields.js";
-import type { BoardRef } from "./types.js";
 
 const categories = z.object({ location: optionalText, team: optionalText, department: optionalText }).nullish();
 
@@ -15,12 +14,13 @@ const posting = z.object({
   descriptionPlain: optionalText,
   categories,
 });
+const postings = z.array(posting);
 
-export async function fetchLever(ref: BoardRef, http: JsonGetter): Promise<Job[]> {
-  const url = `https://api.lever.co/v0/postings/${encodeURIComponent(ref.slug)}?mode=json`;
-  const postings = z.array(posting).parse(await http.getJson(url));
-  return postings.map((post) => toJob(ref.name, post));
-}
+export const fetchLever = defineBoard({
+  url: (slug) => `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}?mode=json`,
+  postings,
+  toJob,
+});
 
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   return makeJob(

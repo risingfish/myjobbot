@@ -1,8 +1,8 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { HttpClient } from "../src/http/client.js";
 import { fakeClock } from "./helpers/clock.js";
 import { testFileConfig } from "./helpers/config.js";
-import { jsonResponse, scriptedFetch, scriptedFetchWithInit } from "./helpers/http.js";
+import { jsonResponse, scriptedFetch } from "./helpers/http.js";
 
 const URL_A = "https://a.example/board";
 
@@ -11,6 +11,23 @@ function client(responses: Response[]) {
   const { fetchFn, urls } = scriptedFetch(responses);
   const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
   return { http, clock, urls };
+}
+
+function trackedClock(events: string[]) {
+  const clock = fakeClock();
+  const sleep = (ms: number) => {
+    events.push("sleep");
+    return clock.sleep(ms);
+  };
+  return { ...clock, sleep };
+}
+
+function spyOnTimeout(events: string[]) {
+  const original = AbortSignal.timeout.bind(AbortSignal);
+  return vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+    events.push("timeout");
+    return original(ms);
+  });
 }
 
 test("HttpClient returns parsed JSON", async () => {
@@ -60,12 +77,13 @@ test("HttpClient names the URL when the body is not JSON", async () => {
 });
 
 test("HttpClient starts the timeout after the rate-limit wait", async () => {
-  const clock = fakeClock();
+  const events: string[] = [];
+  const timeoutSpy = spyOnTimeout(events);
   const config = { ...testFileConfig().http, min_interval_ms: 60_000, timeout_s: 1 };
-  const { fetchFn, calls } = scriptedFetchWithInit([jsonResponse({}), jsonResponse({})]);
-  const http = new HttpClient({ config, clock, fetchFn, random: () => 0 });
+  const { fetchFn } = scriptedFetch([jsonResponse({}), jsonResponse({})]);
+  const http = new HttpClient({ config, clock: trackedClock(events), fetchFn, random: () => 0 });
   await http.getJson(URL_A);
   await http.getJson(URL_A);
-  const [, second] = calls;
-  expect(second?.init.signal?.aborted).toBe(false);
+  timeoutSpy.mockRestore();
+  expect(events).toEqual(["timeout", "sleep", "timeout"]);
 });
