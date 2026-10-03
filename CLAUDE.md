@@ -31,3 +31,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
 - New dependencies: exact or `~` pins, installed via the lockfile.
+
+## Commands
+
+- `npm run check`: typecheck, tests, habit-hooks (run before claiming any task done)
+- `npm start -- run`: one agent run using `.env` and `data/`
+- Traces: `data/runs/*.jsonl`
