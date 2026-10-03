@@ -98,7 +98,7 @@ test/
   - `job_retention_days`: days after `last_seen` before a job row is pruned. Default 90.
   - `glassdoor`: `{max_lookups_per_run: 10, cache_ttl_days: 30, min_delay_s: 5, max_delay_s: 15}`.
   - `agent`: `{max_steps: 200, max_wall_clock_min: 60, max_consecutive_tool_errors: 3}`.
-- **Environment**: `LLM_BASE_URL`, `LLM_MODEL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+- **Environment**: `LLM_BASE_URL` (currently `http://llm.home.arpa:8081/v1`), `LLM_MODEL` (currently `qwen3-coder-30b`), `LLM_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
   `SMTP_PASS`, `DIGEST_TO`, `DIGEST_FROM`.
 
 ## Tools
@@ -130,7 +130,8 @@ The system prompt states that v1 scoring is metadata/title-based only.
 - Hand-rolled using the `openai` npm SDK against llama.cpp's `/v1/chat/completions`
   with `tools`. No agent framework in v1, so the loop's mechanics stay visible.
 - **Server requirement:** `llama-server` started with `--jinja` and a model whose chat
-  template supports tool calls (e.g. Qwen 2.5/3, Llama 3.x, Mistral). 14B+ recommended.
+  template supports tool calls. Current server: `qwen3-coder-30b` (30.5B MoE, Q8_0,
+  131k ctx loaded), API-key protected. Tool-call support still to be verified.
 - **Context management:** tool results are compact (no description bodies in v1).
   If message history exceeds a configured token estimate, older `fetch_jobs` results
   for companies already fully scored are replaced with a one-line summary.
