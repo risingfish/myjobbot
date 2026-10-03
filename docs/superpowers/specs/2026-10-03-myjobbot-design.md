@@ -131,7 +131,8 @@ The system prompt states that v1 scoring is metadata/title-based only.
   with `tools`. No agent framework in v1, so the loop's mechanics stay visible.
 - **Server requirement:** `llama-server` started with `--jinja` and a model whose chat
   template supports tool calls. Current server: `qwen3-coder-30b` (30.5B MoE, Q8_0,
-  131k ctx loaded), API-key protected. Tool-call support still to be verified.
+  131k ctx loaded), API-key protected (Bearer). Native tool calling verified 2026-10-03
+  (build b10362; ~520 tok/s prompt, ~54 tok/s generation).
 - **Context management:** tool results are compact (no description bodies in v1).
   If message history exceeds a configured token estimate, older `fetch_jobs` results
   for companies already fully scored are replaced with a one-line summary.
