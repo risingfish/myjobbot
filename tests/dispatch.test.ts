@@ -10,6 +10,17 @@ const echo = defineTool({
   run: ({ text }) => ({ text }),
 });
 
+function explodeWith(message: string): unknown {
+  throw new Error(message);
+}
+
+const explode = defineTool({
+  name: "explode",
+  description: "Throw a huge error",
+  schema: z.object({}),
+  run: () => explodeWith("x".repeat(10_000)),
+});
+
 test("defineTool exposes the input JSON Schema without $schema", () => {
   expect(echo.parameters).toEqual({
     type: "object",
@@ -44,4 +55,11 @@ test("dispatch reports an unknown tool and lists the real ones", async () => {
 test("dispatch treats empty arguments as an empty object", async () => {
   const ping = defineTool({ name: "ping", description: "Ping", schema: z.object({}), run: () => "pong" });
   expect(await dispatch([ping], { name: "ping", arguments: "" })).toEqual({ ok: true, content: '"pong"' });
+});
+
+test("dispatch truncates an oversized error message", async () => {
+  const outcome = await dispatch([explode], { name: "explode", arguments: "{}" });
+  expect(outcome.ok).toBe(false);
+  expect(outcome.content.length).toBeLessThan(2200);
+  expect(outcome.content).toContain("truncated");
 });

@@ -11,6 +11,9 @@ interface ToolOutcome {
   content: string;
 }
 
+const MAX_ERROR_CHARS = 2000;
+const TRUNCATION_MARKER = "… (truncated)";
+
 export async function dispatch(tools: Tool[], call: ToolCallRequest): Promise<ToolOutcome> {
   const tool = tools.find((candidate) => candidate.name === call.name);
   if (!tool) return failure(`unknown tool "${call.name}"; available: ${tools.map((t) => t.name).join(", ")}`);
@@ -27,5 +30,10 @@ function parseArguments(raw: string): unknown {
 }
 
 function failure(message: string): ToolOutcome {
-  return { ok: false, content: JSON.stringify({ error: message }) };
+  return { ok: false, content: JSON.stringify({ error: truncate(message) }) };
+}
+
+function truncate(message: string): string {
+  if (message.length <= MAX_ERROR_CHARS) return message;
+  return message.slice(0, MAX_ERROR_CHARS - TRUNCATION_MARKER.length) + TRUNCATION_MARKER;
 }

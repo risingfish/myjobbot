@@ -21,6 +21,15 @@ export function textReply(content: string): AssistantMessage {
   return { role: "assistant", content, refusal: null };
 }
 
+export function chatThenCrash(replies: AssistantMessage[], crash: Error): ChatFn {
+  const queue = [...replies];
+  return async () => {
+    const reply = queue.shift();
+    if (reply) return reply;
+    throw crash;
+  };
+}
+
 export function scriptedChat(replies: AssistantMessage[]): { chat: ChatFn; requests: Message[][] } {
   const requests: Message[][] = [];
   const queue = [...replies];
