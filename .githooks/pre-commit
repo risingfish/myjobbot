@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Block commits while habit-hooks reports an enforced finding.
+exec habit-hooks

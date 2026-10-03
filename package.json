@@ -1,0 +1,19 @@
+{
+  "name": "myjobbot",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Autonomous agent that finds matching software engineering jobs and emails a digest",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.71.0",
+    "@typescript-eslint/parser": "8.71.0",
+    "eslint": "10.12.0",
+    "jscpd": "5.4.0",
+    "knip": "6.39.0",
+    "ts-morph": "28.0.0",
+    "typescript": "6.0.3"
+  }
+}

@@ -83,8 +83,8 @@ src/
   digest/
     render.ts            # HTML email from DB rows
     send.ts              # nodemailer SMTP
-test/
-  fixtures/              # recorded ATS JSON, saved Glassdoor HTML
+tests/
+  fixtures/              # recorded ATS JSON, saved Glassdoor HTML (eslint-ignored)
 ```
 
 ## Inputs
