@@ -5,11 +5,15 @@ import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig } from "../config/load.js";
+import { JobStore } from "../db/jobStore.js";
+import { openDatabase } from "../db/open.js";
+import { HttpClient, type JsonGetter } from "../http/client.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { buildTools } from "../tools/registry.js";
 
 interface RunSeams {
   chat?: ChatFn;
+  http?: JsonGetter;
 }
 
 interface RunReport extends AgentResult {
@@ -18,13 +22,19 @@ interface RunReport extends AgentResult {
 
 export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
-  const context = buildContext(config);
+  const context = buildContext(config, seams);
   const result = await runAgent(agentDeps(config, context, seams), initialMessages(config));
   return { ...result, summary: context.run.summary };
 }
 
-function buildContext(config: AppConfig): ToolContext {
-  return { config: config.file, run: newRunState() };
+function buildContext(config: AppConfig, seams: RunSeams): ToolContext {
+  return {
+    config: config.file,
+    run: newRunState(),
+    store: new JobStore(openDatabase(join(config.dataDir, "myjobbot.db"))),
+    http: seams.http ?? new HttpClient(config.file.http, globalThis.fetch),
+    now: () => new Date(),
+  };
 }
 
 function agentDeps(config: AppConfig, context: ToolContext, seams: RunSeams): AgentDeps {

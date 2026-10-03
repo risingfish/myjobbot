@@ -1,0 +1,22 @@
+{
+  "jobs": [
+    {
+      "id": 8172503,
+      "title": "Backend Engineer, Payments",
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8172503",
+      "location": { "name": "Remote from the US" },
+      "first_published": "2026-09-09T10:52:09-04:00",
+      "updated_at": "2026-09-25T16:45:00-04:00",
+      "company_name": "Stripe"
+    },
+    {
+      "id": 8172504,
+      "title": "Account Executive",
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8172504",
+      "location": null,
+      "first_published": null,
+      "company_name": "Stripe"
+    }
+  ],
+  "meta": { "total": 2 }
+}
