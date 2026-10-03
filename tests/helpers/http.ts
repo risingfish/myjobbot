@@ -39,3 +39,15 @@ export function scriptedFetch(responses: Response[]) {
   };
   return { fetchFn, urls };
 }
+
+export function scriptedFetchWithInit(responses: Response[]) {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  const queue = [...responses];
+  const fetchFn = async (url: string, init: RequestInit): Promise<Response> => {
+    calls.push({ url, init });
+    const response = queue.shift();
+    if (!response) throw new Error("scripted fetch ran out of responses");
+    return response;
+  };
+  return { fetchFn, calls };
+}

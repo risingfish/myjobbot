@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { HttpClient } from "../src/http/client.js";
 import { fakeClock } from "./helpers/clock.js";
 import { testFileConfig } from "./helpers/config.js";
-import { jsonResponse, scriptedFetch } from "./helpers/http.js";
+import { jsonResponse, scriptedFetch, scriptedFetchWithInit } from "./helpers/http.js";
 
 const URL_A = "https://a.example/board";
 
@@ -45,4 +45,27 @@ test("HttpClient does not retry a 404", async () => {
   const { http, urls } = client([jsonResponse({}, 404)]);
   await expect(http.getJson(URL_A)).rejects.toThrow("HTTP 404");
   expect(urls).toHaveLength(1);
+});
+
+test("HttpClient names the URL when fetch itself fails", async () => {
+  const clock = fakeClock();
+  const fetchFn = () => Promise.reject(new TypeError("fetch failed"));
+  const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
+  await expect(http.getJson(URL_A)).rejects.toThrow(/https:\/\/a\.example\/board.*fetch failed/);
+});
+
+test("HttpClient names the URL when the body is not JSON", async () => {
+  const { http } = client([new Response("not json", { status: 200 })]);
+  await expect(http.getJson(URL_A)).rejects.toThrow(URL_A);
+});
+
+test("HttpClient starts the timeout after the rate-limit wait", async () => {
+  const clock = fakeClock();
+  const config = { ...testFileConfig().http, min_interval_ms: 60_000, timeout_s: 1 };
+  const { fetchFn, calls } = scriptedFetchWithInit([jsonResponse({}), jsonResponse({})]);
+  const http = new HttpClient({ config, clock, fetchFn, random: () => 0 });
+  await http.getJson(URL_A);
+  await http.getJson(URL_A);
+  const [, second] = calls;
+  expect(second?.init.signal?.aborted).toBe(false);
 });

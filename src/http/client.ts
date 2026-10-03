@@ -1,4 +1,5 @@
 import type { FileConfig } from "../config/schema.js";
+import { describeError } from "../errors.js";
 import type { Clock } from "./clock.js";
 import { HostLimiter } from "./limiter.js";
 
@@ -27,17 +28,37 @@ export class HttpClient implements JsonGetter {
 
   async getJson(url: string): Promise<unknown> {
     for (let attempt = 0; ; attempt += 1) {
-      const response = await this.send(url);
-      if (response.ok) return response.json();
+      const response = await this.sendOrThrow(url);
+      if (response.ok) return this.parseJson(url, response);
       await response.body?.cancel();
       if (!this.shouldRetry(response.status, attempt)) throw new Error(`GET ${url} failed with HTTP ${response.status}`);
       await this.deps.clock.sleep(this.backoffMs(response, attempt));
     }
   }
 
+  private async sendOrThrow(url: string): Promise<Response> {
+    try {
+      return await this.send(url);
+    } catch (error) {
+      throw new Error(`GET ${url} failed: ${describeError(error)}`);
+    }
+  }
+
+  private async parseJson(url: string, response: Response): Promise<unknown> {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(`GET ${url} failed: ${describeError(error)}`);
+    }
+  }
+
   private send(url: string): Promise<Response> {
+    return this.limiter.schedule(new URL(url).host, () => this.fetch(url));
+  }
+
+  private fetch(url: string): Promise<Response> {
     const signal = AbortSignal.timeout(this.deps.config.timeout_s * MS_PER_SECOND);
-    return this.limiter.schedule(new URL(url).host, () => this.deps.fetchFn(url, { signal }));
+    return this.deps.fetchFn(url, { signal });
   }
 
   private shouldRetry(status: number, attempt: number): boolean {
