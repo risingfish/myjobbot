@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { HttpClient } from "../src/http/client.js";
 import { fakeClock } from "./helpers/clock.js";
 import { testFileConfig } from "./helpers/config.js";
@@ -69,6 +69,8 @@ test("HttpClient names the URL when fetch itself fails", async () => {
   const fetchFn = () => Promise.reject(new TypeError("fetch failed"));
   const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
   await expect(http.getJson(URL_A)).rejects.toThrow(/https:\/\/a\.example\/board.*fetch failed/);
+  const error = await http.getJson(URL_A).catch((caught: unknown) => caught);
+  expect(error).toMatchObject({ cause: expect.any(TypeError) });
 });
 
 test("HttpClient names the URL when the body is not JSON", async () => {
@@ -82,8 +84,8 @@ test("HttpClient starts the timeout after the rate-limit wait", async () => {
   const config = { ...testFileConfig().http, min_interval_ms: 60_000, timeout_s: 1 };
   const { fetchFn } = scriptedFetch([jsonResponse({}), jsonResponse({})]);
   const http = new HttpClient({ config, clock: trackedClock(events), fetchFn, random: () => 0 });
+  onTestFinished(() => timeoutSpy.mockRestore());
   await http.getJson(URL_A);
   await http.getJson(URL_A);
-  timeoutSpy.mockRestore();
   expect(events).toEqual(["timeout", "sleep", "timeout"]);
 });
