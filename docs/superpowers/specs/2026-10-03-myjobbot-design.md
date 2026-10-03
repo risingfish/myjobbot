@@ -41,7 +41,7 @@ pipeline) and invests in observability (run traces) so agent behavior can be stu
    ├─ list_companies
    ├─ fetch_jobs
    ├─ get_job_details        (stub in v1)
-   ├─ record_match
+   ├─ record_matches
    ├─ get_company_rating
    ├─ send_digest
    └─ finish
@@ -51,41 +51,16 @@ Each tool is an independent, unit-tested module. The agent loop knows nothing ab
 jobs; it only knows how to call tools. This keeps Approach A cheap: a fallback script
 can call the same tools in a fixed order.
 
-### Proposed layout
+### Layout
 
-```
-src/
-  cli.ts                 # `myjobbot run [--dry-run] [--glassdoor]`, `myjobbot trace <file>`
-  config.ts              # loads + validates config.yaml and env (zod)
-  db.ts                  # SQLite schema, migrations, queries (better-sqlite3)
-  agent/
-    loop.ts              # message/tool-call loop, guardrails
-    llm.ts               # openai SDK client pointed at LLM_BASE_URL
-    prompt.ts            # system prompt construction
-    trace.ts             # JSONL trace writer/reader
-  tools/
-    index.ts             # registry: name → {schema, handler}
-    listCompanies.ts
-    fetchJobs.ts
-    getJobDetails.ts
-    recordMatch.ts
-    getCompanyRating.ts
-    sendDigest.ts
-    finish.ts
-  http/
-    limiter.ts           # per-host rate limiter + retry/backoff for all outbound API calls
-  sources/
-    greenhouse.ts  lever.ts  ashby.ts   # → normalized Job (all HTTP via http/limiter)
-  glassdoor/
-    browser.ts           # Playwright persistent-context management
-    lookup.ts            # search + resolve company page
-    parse.ts             # extract rating fields from page HTML
-  digest/
-    render.ts            # HTML email from DB rows
-    send.ts              # nodemailer SMTP
-tests/
-  fixtures/              # recorded ATS JSON, saved Glassdoor HTML (eslint-ignored)
-```
+The agent-core plan (`docs/superpowers/plans/2026-10-03-agent-core.md`) holds the
+authoritative file map. In summary: `src/cli.ts` → `src/app/run.ts` wires
+`config/` → `tools/` (one file per tool, plus `tool.ts`, `dispatch.ts`, `registry.ts`,
+`context.ts`) → `agent/` (`loop.ts`, `budget.ts`, `llm.ts`, `compact.ts`, `prompt.ts`,
+`trace.ts`). Tools use `db/` (SQLite via built-in `node:sqlite`), `http/` (client,
+limiter, clock), `sources/` (one adapter per ATS) and `jobs/` (model, title filter,
+age). Later plans add `digest/` and `glassdoor/`. Tests live in `tests/` with
+fixtures in `tests/fixtures/`.
 
 ## Inputs
 
@@ -99,8 +74,12 @@ tests/
   - `ghost_threshold_days`: default 60.
   - `job_retention_days`: days after `last_seen` before a job row is pruned. Default 90.
   - `glassdoor`: `{max_lookups_per_run: 10, cache_ttl_days: 30, min_delay_s: 5, max_delay_s: 15}`.
-  - `agent`: `{max_steps: 200, max_wall_clock_min: 60, max_consecutive_tool_errors: 3}`.
-  - `http`: `{min_interval_ms: 1000, max_concurrency_per_host: 1, max_requests_per_host_per_run: 300, max_retries: 2, max_retry_after_s: 60, timeout_s: 30}`.
+  - `title_filter`: `{include: [...], exclude: [...]}`: case-insensitive substrings matched
+    against the normalized title. A job is offered to the agent only if it contains at least
+    one `include` term and no `exclude` term. Filtered jobs are still stored (ghost tracking).
+    Defaults include engineer/developer/software/sre/devops; exclude intern/manager/director/sales/recruit.
+  - `agent`: `{max_steps: 600, max_wall_clock_min: 120, max_consecutive_tool_errors: 3, context_chars: 160000}`.
+  - `http`: `{min_interval_ms: 1000, max_requests_per_host_per_run: 300, max_retries: 2, max_retry_after_s: 60, timeout_s: 30}`.
 - **Environment**: `LLM_BASE_URL` (currently `http://llm.home.arpa:8081/v1`), `LLM_MODEL` (currently `qwen3-coder-30b`), `LLM_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
   `SMTP_PASS`, `DIGEST_TO`, `DIGEST_FROM`.
 
@@ -112,9 +91,9 @@ as a tool result `{error: "..."}` so it can correct itself; they never throw out
 | Tool | Args | Returns | Notes |
 |---|---|---|---|
 | `list_companies` | — | `[{name, ats}]` | From config |
-| `fetch_jobs` | `company` | `[{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]` | Calls the ATS list endpoint through the rate limiter. Upserts all jobs into SQLite and updates `last_seen`. Returns **only jobs not yet scored**, never description text. **Memoized per run**: a repeat call for the same company returns the cached result without an HTTP request. On failure returns `{error}` |
+| `fetch_jobs` | `company` | `{company, total_unscored, jobs: [{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]}` | First call per run hits the ATS list endpoint through the rate limiter, upserts all jobs and updates `last_seen`; later calls in the run reuse that fetch (no HTTP). Every call returns **at most 25** title-filtered, not-yet-scored jobs plus the remaining count, never description text. The agent pages by scoring and calling again until `total_unscored` is 0. Errors surface as a failed tool call |
 | `get_job_details` | `job_id` | Stored metadata + `full_description: "not_available_in_v1"` | **Stub.** v2 returns the stored description (already captured for Lever/Ashby; Greenhouse needs `?content=true`) |
-| `record_match` | `job_id, score (0–100), reasons[], gaps[]` | `{ok}` | Persists the agent's verdict; marks job as scored. Required for every job the agent evaluates |
+| `record_matches` | `verdicts: [{job_id, score (0–100), reasons[], gaps[]}]` (1–25) | `{recorded, unknown_job_ids}` | Persists verdicts in one call; marks jobs scored. Batching keeps step count and context proportional to pages, not jobs (a large board has 700+ postings) |
 | `get_company_rating` | `company` | `{status: ok\|not_found\|blocked\|error\|skipped, rating?, review_count?, recommend_pct?, ceo_approval_pct?, url}` | See Glassdoor section. Never throws |
 | `send_digest` | — | `{ok, sent_count}` or `{error}` | Builds the email **from SQLite** (scored ≥ threshold, not yet emailed). Idempotent: refuses a second send in the same run. Marks jobs emailed |
 | `finish` | `summary` | — | Ends the run; summary goes to the trace |
@@ -122,7 +101,8 @@ as a tool result `{error: "..."}` so it can correct itself; they never throw out
 ### Expected agent behavior (encoded in system prompt, not enforced)
 
 1. List companies; fetch jobs per company.
-2. Score each returned job against resume + preferences using metadata only; call `record_match`.
+2. Score each returned job against resume + preferences using metadata only; call `record_matches`
+   with the whole page, then call `fetch_jobs` again until `total_unscored` is 0.
 3. For companies with at least one job ≥ threshold, call `get_company_rating`.
 4. Call `send_digest`, then `finish`.
 
@@ -136,9 +116,12 @@ The system prompt states that v1 scoring is metadata/title-based only.
   template supports tool calls. Current server: `qwen3-coder-30b` (30.5B MoE, Q8_0,
   131k ctx loaded), API-key protected (Bearer). Native tool calling verified 2026-10-03
   (build b10362; ~520 tok/s prompt, ~54 tok/s generation).
-- **Context management:** tool results are compact (no description bodies in v1).
-  If message history exceeds a configured token estimate, older `fetch_jobs` results
-  for companies already fully scored are replaced with a one-line summary.
+- **Context management:** the database, not the conversation, is the agent's memory:
+  `fetch_jobs` always returns current state. When the serialized history exceeds
+  `context_chars`, every message except the first two (system, user) and the most recent 8
+  is elided in place: tool results become a short stub and old tool-call arguments become
+  `{}`. Eliding in place, in chunks, keeps the prompt prefix stable between overflows so
+  llama.cpp's prompt cache stays effective.
 - **Guardrails (enforced in code):**
   - `max_steps` and `max_wall_clock_min` caps → abort.
   - `max_consecutive_tool_errors` (default 3) invalid/failed tool calls in a row → abort.
@@ -216,8 +199,8 @@ The system prompt states that v1 scoring is metadata/title-based only.
 All outbound HTTP to job boards goes through `src/http/limiter.ts`; source adapters
 never call `fetch` directly.
 
-- **Per-host limiter:** at most `max_concurrency_per_host` (1) request in flight per host,
-  and at least `min_interval_ms` (1000 ms) between request starts to the same host.
+- **Per-host limiter:** requests are issued sequentially by construction (one tool call at a
+  time, retries awaited), and the limiter enforces at least `min_interval_ms` (1000 ms) between request starts to the same host.
 - **Per-run cap:** `max_requests_per_host_per_run` (300). Past the cap, requests fail fast
   with a `rate_limit_cap` error that the agent sees, so a looping agent cannot hammer an API.
 - **429 / 503:** honor `Retry-After` (capped at `max_retry_after_s`), otherwise exponential
@@ -234,7 +217,7 @@ never call `fetch` directly.
 
 - ATS fetch failures are per company; the agent sees `{error}` and can move on.
 - LLM unreachable → abort with failure email.
-- Jobs are marked scored only via `record_match`, so jobs from a crashed run are
+- Jobs are marked scored only via `record_matches`, so jobs from a crashed run are
   re-offered next run.
 - Glassdoor failures never fail the run.
 
