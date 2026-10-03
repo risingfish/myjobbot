@@ -1,0 +1,23 @@
+[
+  {
+    "id": "10dfc8bc-99ad-4ca2-ab76-853cb90a92c2",
+    "text": "Backend Software Engineer - Application Development",
+    "hostedUrl": "https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2",
+    "applyUrl": "https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2/apply",
+    "createdAt": 1710188707256,
+    "workplaceType": "hybrid",
+    "country": "GB",
+    "descriptionPlain": "Backend Software Engineers at Palantir build software at scale.",
+    "categories": {
+      "commitment": "Full-time",
+      "location": "London, United Kingdom",
+      "team": "Dev",
+      "allLocations": ["London, United Kingdom"]
+    }
+  },
+  {
+    "id": "5b1e0a52-0000-4000-8000-000000000002",
+    "text": "Forward Deployed Engineer",
+    "hostedUrl": "https://jobs.lever.co/palantir/5b1e0a52-0000-4000-8000-000000000002"
+  }
+]
