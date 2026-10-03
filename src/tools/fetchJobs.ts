@@ -37,8 +37,17 @@ function fetchOnce(context: ToolContext, company: Company): Promise<string> {
   if (cached) return cached;
   const pending = fetchAndStore(context, company);
   context.run.fetches.set(company.name, pending);
-  pending.catch(() => context.run.fetches.delete(company.name));
+  pending.then(() => onFetchSuccess(context, company), () => onFetchFailure(context, company));
   return pending;
+}
+
+function onFetchSuccess(context: ToolContext, company: Company): void {
+  context.run.failedFetches.delete(company.name);
+}
+
+function onFetchFailure(context: ToolContext, company: Company): void {
+  context.run.fetches.delete(company.name);
+  context.run.failedFetches.add(company.name);
 }
 
 async function fetchAndStore(context: ToolContext, company: Company): Promise<string> {

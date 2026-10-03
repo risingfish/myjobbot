@@ -6,6 +6,7 @@ interface RunState {
   finished: boolean;
   summary: string | null;
   fetches: Map<string, Promise<string>>;
+  failedFetches: Set<string>;
 }
 
 export interface ToolContext {
@@ -17,5 +18,5 @@ export interface ToolContext {
 }
 
 export function newRunState(): RunState {
-  return { finished: false, summary: null, fetches: new Map() };
+  return { finished: false, summary: null, fetches: new Map(), failedFetches: new Set() };
 }

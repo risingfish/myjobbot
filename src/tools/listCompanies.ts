@@ -12,13 +12,16 @@ export function listCompaniesTool(context: ToolContext): Tool {
   });
 }
 
-function notFetched(company: Company) {
+function notFetched(context: ToolContext, company: Company) {
+  if (context.run.failedFetches.has(company.name)) {
+    return { name: company.name, ats: company.ats, fetched: false, fetch_failed: true };
+  }
   return { name: company.name, ats: company.ats, fetched: false };
 }
 
 async function companyStatus(context: ToolContext, company: Company) {
   const cached = context.run.fetches.get(company.name);
-  return cached ? fetchedStatus(context, company, cached) : notFetched(company);
+  return cached ? fetchedStatus(context, company, cached) : notFetched(context, company);
 }
 
 async function fetchedStatus(context: ToolContext, company: Company, cached: Promise<string>) {
@@ -26,6 +29,6 @@ async function fetchedStatus(context: ToolContext, company: Company, cached: Pro
     const seen = await cached;
     return { name: company.name, ats: company.ats, fetched: true, total_unscored: unscoredJobs(context, company, seen).length };
   } catch {
-    return notFetched(company);
+    return notFetched(context, company);
   }
 }

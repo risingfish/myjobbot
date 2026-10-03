@@ -73,6 +73,21 @@ test("compactInPlace is a no-op on a second call with nothing new to elide", () 
   expect(compactInPlace(messages, 100, NOTICE)).toBe(0);
 });
 
+function walkBackHistory(): Message[] {
+  const messages: Message[] = [{ role: "system", content: "sys" }, { role: "user", content: "resume" }];
+  messages.push(...round("call_0"), ...round("call_1"), ...wideRound(2));
+  messages.push(...round("call_2"), ...round("call_3"), ...round("call_4"));
+  return messages;
+}
+
+test("compactInPlace walks back to an assistant when length - 8 lands on a tool message", () => {
+  const messages = walkBackHistory();
+  const removed = compactInPlace(messages, 100, NOTICE);
+  expect(removed).toBeGreaterThan(0);
+  expect(messages[3]?.role).toBe("assistant");
+  assertToolMessagesResolved(messages);
+});
+
 test("compactInPlace keeps a single notice at index 2 across repeated overflows", () => {
   const messages = history(6);
   compactInPlace(messages, 100, NOTICE);
