@@ -117,12 +117,15 @@ The system prompt states that v1 scoring is metadata/title-based only.
   template supports tool calls. Current server: `qwen3-coder-30b` (30.5B MoE, Q8_0,
   131k ctx loaded), API-key protected (Bearer). Native tool calling verified 2026-10-03
   (build b10362; ~520 tok/s prompt, ~54 tok/s generation).
-- **Context management:** the database, not the conversation, is the agent's memory:
-  `fetch_jobs` always returns current state. When the serialized history exceeds
-  `context_chars`, every message except the first two (system, user) and the most recent 8
-  is elided in place: tool results become a short stub and old tool-call arguments become
-  `{}`. Eliding in place, in chunks, keeps the prompt prefix stable between overflows so
-  llama.cpp's prompt cache stays effective.
+- **Context management:** the database, not the conversation, is the agent's memory.
+  When the serialized history exceeds `context_chars`, everything between the first two
+  messages (system, resume) and a cutoff is replaced by one notice message telling the model
+  to call `list_companies` for progress. The cutoff keeps at least the last 8 messages and always
+  the latest full turn (assistant message plus all its tool results), and never starts on an
+  orphan tool result. Repeated overflows fold the previous notice in, so the prefix
+  [system, resume, notice] stays byte-identical (llama.cpp prompt cache stays warm) and history
+  stays bounded. `list_companies` reports per-company progress for the run
+  (`fetched`, `total_unscored`), which is how the agent recovers after compaction.
 - **Guardrails (enforced in code):**
   - `max_steps` and `max_wall_clock_min` caps → abort.
   - `max_consecutive_tool_errors` (default 3) invalid/failed tool calls in a row → abort.
