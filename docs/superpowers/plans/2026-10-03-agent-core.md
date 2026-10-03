@@ -76,7 +76,7 @@ src/
   agent/llm.ts            createChat() over the openai SDK, message types
   agent/loop.ts           runAgent(): the loop, guardrails, trace events
   agent/budget.ts         Budget: steps, wall clock, consecutive errors
-  agent/compact.ts        compactInPlace(): elide old context in chunks
+  agent/compact.ts        compactInPlace(): collapse old turns into one notice (see spec)
   agent/prompt.ts         initialMessages(): system prompt + resume
   agent/trace.ts          fileTrace(): JSONL trace writer
 tests/

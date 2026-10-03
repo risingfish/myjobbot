@@ -1,7 +1,7 @@
 # myjobbot — Design Spec
 
 **Date:** 2026-10-03
-**Status:** Draft for review
+**Status:** Approved; agent-core implemented (plan 1 of 4)
 
 ## Purpose
 
@@ -78,7 +78,9 @@ fixtures in `tests/fixtures/`.
     Include terms match word prefixes ("engineer" matches "Engineering"); exclude terms match
     whole words with an optional plural ("intern" rejects "Interns" but not "Internal"). A job is
     offered to the agent only if it matches at least one `include` term and no `exclude` term. Filtered jobs are still stored (ghost tracking).
-    Defaults include engineer/developer/software/sre/devops; exclude intern/manager/director/sales/recruit.
+    Defaults include engineer/developer/software/sre/devops/platform/backend/frontend/full stack/
+    fullstack/programmer; exclude intern/internship/manager/director/sales/recruiter/recruiting/recruitment.
+    Every term must contain at least one letter or digit; company names must be unique.
   - `agent`: `{max_steps: 600, max_wall_clock_min: 120, max_consecutive_tool_errors: 3, context_chars: 160000}`.
   - `http`: `{min_interval_ms: 1000, max_requests_per_host_per_run: 300, max_retries: 2, max_retry_after_s: 60, timeout_s: 30}`.
 - **Environment**: `LLM_BASE_URL` (currently `http://llm.home.arpa:8081/v1`), `LLM_MODEL` (currently `qwen3-coder-30b`), `LLM_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
@@ -91,7 +93,7 @@ as a tool result `{error: "..."}` so it can correct itself; they never throw out
 
 | Tool | Args | Returns | Notes |
 |---|---|---|---|
-| `list_companies` | — | `[{name, ats}]` | From config |
+| `list_companies` | — | `[{name, ats, fetched, total_unscored?, fetch_failed?}]` | From config plus this run's progress: `fetched` once the board was fetched this run, `total_unscored` when fetched, `fetch_failed: true` if the last fetch attempt failed. How the agent recovers after compaction |
 | `fetch_jobs` | `company` | `{company, total_unscored, jobs: [{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]}` | First call per run hits the ATS list endpoint through the rate limiter, upserts all jobs and updates `last_seen`; later calls in the run reuse that fetch (no HTTP). Every call returns **at most 25** title-filtered, not-yet-scored jobs plus the remaining count, never description text. The agent pages by scoring and calling again until `total_unscored` is 0. Errors surface as a failed tool call |
 | `get_job_details` | `job_id` | Stored metadata + `full_description: "not_available_in_v1"` | **Stub.** v2 returns the stored description (already captured for Lever/Ashby; Greenhouse needs `?content=true`) |
 | `record_matches` | `verdicts: [{job_id, score (0–100), reasons[], gaps[]}]` (1–25) | `{recorded, unknown_job_ids}` | Persists verdicts in one call; marks jobs scored. Batching keeps step count and context proportional to pages, not jobs (a large board has 700+ postings) |
@@ -130,7 +132,9 @@ The system prompt states that v1 scoring is metadata/title-based only.
   - `max_steps` and `max_wall_clock_min` caps → abort.
   - `max_consecutive_tool_errors` (default 3) invalid/failed tool calls in a row → abort.
   - A text-only response with no tool call is answered with a nudge
-    ("Call a tool or call finish"), counted as an error.
+    (injected text; currently "Respond only with tool calls. Call finish when every company has
+    total_unscored 0."), counted as an error. The loop itself stays domain-agnostic.
+  - Tool error messages returned to the model are capped at 2000 characters.
   - `send_digest` single-send per run.
   - Email content comes only from DB rows, never from model free text.
 - **Abort handling (code, not agent):** on any abort, code sends a short
@@ -211,11 +215,12 @@ never call `fetch` directly.
   time, retries awaited), and the limiter enforces at least `min_interval_ms` (1000 ms) between request starts to the same host.
 - **Per-run cap:** `max_requests_per_host_per_run` (300). Past the cap, requests fail fast
   with a `rate_limit_cap` error that the agent sees, so a looping agent cannot hammer an API.
-- **429 / 503:** honor `Retry-After` (capped at `max_retry_after_s`), otherwise exponential
+- **429 / 502 / 503 / 504:** honor `Retry-After` (capped at `max_retry_after_s`), otherwise exponential
   backoff with jitter; up to `max_retries` (2), then return an error.
 - **Timeouts:** `timeout_s` (30) per request.
-- **Per-run memoization** in `fetch_jobs` (see Tools) means the same board is fetched at
-  most once per run, whatever the agent does.
+- **Per-run memoization** in `fetch_jobs` (see Tools) means a board is fetched successfully
+  at most once per run, whatever the agent does. A failed fetch is not cached, so a later call
+  retries it (still bounded by the per-host cap).
 - **Response size:** responses are parsed and reduced to normalized `Job` fields at once;
   raw bodies (up to ~15 MB for large Ashby boards) are not stored or logged in the trace.
 - **LLM calls** are sequential by construction (one request per loop step), bounded by
