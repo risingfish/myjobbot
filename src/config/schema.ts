@@ -43,16 +43,20 @@ const http = z.object({
   timeout_s: z.number().min(1).default(30),
 });
 
-export const fileConfigSchema = z.object({
-  companies,
-  preferences: z.string().default(""),
-  match_threshold: z.number().int().min(0).max(100).default(70),
-  ghost_threshold_days: z.number().int().min(1).default(60),
-  job_retention_days: z.number().int().min(1).default(90),
-  title_filter: titleFilter.prefault({}),
-  agent: agent.prefault({}),
-  http: http.prefault({}),
-});
+export const fileConfigSchema = z
+  .object({
+    companies,
+    preferences: z.string().default(""),
+    match_threshold: z.number().int().min(0).max(100).default(70),
+    ghost_threshold_days: z.number().int().min(1).default(60),
+    job_retention_days: z.number().int().min(1).default(90),
+    title_filter: titleFilter.prefault({}),
+    agent: agent.prefault({}),
+    http: http.prefault({}),
+  })
+  .refine(hasLongerRetentionThanGhostThreshold, {
+    message: "job_retention_days must be greater than ghost_threshold_days so repost history survives long enough to flag ghosts",
+  });
 
 export const envSchema = z.object({
   LLM_BASE_URL: z.url(),
@@ -64,6 +68,10 @@ export const envSchema = z.object({
 function hasUniqueNames(list: Array<{ name: string }>): boolean {
   const names = list.map((entry) => entry.name.toLowerCase());
   return new Set(names).size === names.length;
+}
+
+function hasLongerRetentionThanGhostThreshold(config: { ghost_threshold_days: number; job_retention_days: number }): boolean {
+  return config.job_retention_days > config.ghost_threshold_days;
 }
 
 export type FileConfig = z.infer<typeof fileConfigSchema>;

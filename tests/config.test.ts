@@ -32,3 +32,8 @@ test("config rejects duplicate company names ignoring case", () => {
 test("loadConfig requires LLM settings", () => {
   expect(() => loadConfig({ MYJOBBOT_DATA_DIR: makeDataDir() })).toThrow(/LLM_BASE_URL/);
 });
+
+test("config rejects retention not longer than ghost threshold", () => {
+  const overrides = { ghost_threshold_days: 90, job_retention_days: 60 };
+  expect(() => testFileConfig(overrides)).toThrow(/job_retention_days/);
+});

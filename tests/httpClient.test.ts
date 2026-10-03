@@ -81,10 +81,10 @@ test("HttpClient names the URL when the body is not JSON", async () => {
 test("HttpClient starts the timeout after the rate-limit wait", async () => {
   const events: string[] = [];
   const timeoutSpy = spyOnTimeout(events);
+  onTestFinished(() => timeoutSpy.mockRestore());
   const config = { ...testFileConfig().http, min_interval_ms: 60_000, timeout_s: 1 };
   const { fetchFn } = scriptedFetch([jsonResponse({}), jsonResponse({})]);
   const http = new HttpClient({ config, clock: trackedClock(events), fetchFn, random: () => 0 });
-  onTestFinished(() => timeoutSpy.mockRestore());
   await http.getJson(URL_A);
   await http.getJson(URL_A);
   expect(events).toEqual(["timeout", "sleep", "timeout"]);
