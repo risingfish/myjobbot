@@ -1,4 +1,7 @@
+import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { runOnce } from "./app/run.js";
+import { describeError } from "./errors.js";
 
 const USAGE = "usage: myjobbot run";
 
@@ -8,6 +11,8 @@ async function main(argv: string[]): Promise<number> {
     console.error(USAGE);
     return 2;
   }
+  if (existsSync(".env")) process.loadEnvFile(".env");
+  console.log(await runOnce(process.env));
   return 0;
 }
 
@@ -16,7 +21,7 @@ main(process.argv.slice(2)).then(
     process.exitCode = code;
   },
   (error: unknown) => {
-    console.error(error);
+    console.error(`myjobbot: ${describeError(error)}`);
     process.exitCode = 1;
   },
 );
