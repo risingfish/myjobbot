@@ -65,6 +65,8 @@ test("agent compacts history when it exceeds the context budget", async () => {
   const list = toolCallReply("list_companies", {});
   const replies = [list, list, list, list, list, list, FINISH];
   const { events, requests } = await runScripted(replies, { limits: { ...TEST_LIMITS, context_chars: 50 } });
-  expect(events.some((event) => event.type === "compacted")).toBe(true);
-  expect(JSON.stringify(requests[6]?.[3])).toContain("elided");
+  const compacted = events.find((event) => event.type === "compacted");
+  expect(compacted).toMatchObject({ type: "compacted" });
+  expect((compacted as { removed: number }).removed).toBeGreaterThan(0);
+  expect(JSON.stringify(requests.at(-1))).toContain("Earlier messages were removed.");
 });

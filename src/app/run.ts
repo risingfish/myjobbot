@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
 import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
-import { initialMessages, NUDGE } from "../agent/prompt.js";
+import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig } from "../config/load.js";
 import { JobStore } from "../db/jobStore.js";
@@ -54,6 +54,7 @@ function agentDeps(config: AppConfig, context: ToolContext, seams: RunSeams): Ag
     clock: Date.now,
     isFinished: () => context.run.finished,
     nudge: NUDGE,
+    compactionNotice: COMPACTION_NOTICE,
   };
 }
 

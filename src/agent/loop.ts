@@ -15,6 +15,7 @@ export interface AgentDeps {
   clock: () => number;
   isFinished: () => boolean;
   nudge: string;
+  compactionNotice: string;
 }
 
 export interface AgentResult {
@@ -68,8 +69,8 @@ class AgentSession {
   }
 
   private compact(): void {
-    const elided = compactInPlace(this.messages, this.deps.limits.context_chars);
-    if (elided > 0) this.deps.trace.write({ type: "compacted", elided });
+    const removed = compactInPlace(this.messages, this.deps.limits.context_chars, this.deps.compactionNotice);
+    if (removed > 0) this.deps.trace.write({ type: "compacted", removed });
   }
 
   private async execute(call: FunctionCall): Promise<void> {

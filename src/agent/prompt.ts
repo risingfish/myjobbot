@@ -2,6 +2,8 @@ import type { AppConfig } from "../config/load.js";
 import type { Message } from "./llm.js";
 
 export const NUDGE = "Respond only with tool calls. Call finish when every company has total_unscored 0.";
+export const COMPACTION_NOTICE =
+  "Earlier tool calls and results were removed to save context. Call list_companies to see each company's progress, then continue.";
 
 const SYSTEM_PROMPT =`You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
 

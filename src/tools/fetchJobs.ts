@@ -6,7 +6,7 @@ import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
 import { defineTool, type Tool } from "./tool.js";
 
-type Company = FileConfig["companies"][number];
+export type Company = FileConfig["companies"][number];
 
 const PAGE_SIZE = 25;
 const schema = z.object({ company: z.string().describe("Company name exactly as returned by list_companies") });
@@ -20,10 +20,14 @@ export function fetchJobsTool(context: ToolContext): Tool {
   });
 }
 
+export function unscoredJobs(context: ToolContext, company: Company, seen: string) {
+  const filter = context.config.title_filter;
+  return context.store.unscoredSince(company.name, seen).filter((row) => passesTitleFilter(row.title, filter));
+}
+
 async function jobPage(context: ToolContext, company: Company) {
   const seen = await fetchOnce(context, company);
-  const filter = context.config.title_filter;
-  const unscored = context.store.unscoredSince(company.name, seen).filter((row) => passesTitleFilter(row.title, filter));
+  const unscored = unscoredJobs(context, company, seen);
   const jobs = unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row));
   return { company: company.name, total_unscored: unscored.length, jobs };
 }

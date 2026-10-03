@@ -34,6 +34,7 @@ function baseDeps(context: ToolContext): Omit<AgentDeps, "chat" | "trace"> {
     clock: () => 0,
     isFinished: () => context.run.finished,
     nudge: "Respond only with tool calls.",
+    compactionNotice: "Earlier messages were removed.",
   };
 }
 
