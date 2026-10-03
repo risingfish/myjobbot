@@ -3,6 +3,7 @@ import { describeError } from "../errors.js";
 import { dispatch } from "../tools/dispatch.js";
 import type { Tool } from "../tools/tool.js";
 import { Budget } from "./budget.js";
+import { compactInPlace } from "./compact.js";
 import { functionCalls, toHistory, type ChatFn, type FunctionCall, type Message } from "./llm.js";
 import type { Trace, TraceEvent } from "./trace.js";
 
@@ -58,11 +59,17 @@ class AgentSession {
 
   private async step(): Promise<void> {
     this.budget.countStep();
+    this.compact();
     const reply = await this.deps.chat(this.messages, this.deps.tools);
     this.record({ type: "assistant", content: reply.content, tool_calls: reply.tool_calls }, toHistory(reply));
     const calls = functionCalls(reply);
     if (calls.length === 0) return this.nudge();
     for (const call of calls) await this.execute(call);
+  }
+
+  private compact(): void {
+    const elided = compactInPlace(this.messages, this.deps.limits.context_chars);
+    if (elided > 0) this.deps.trace.write({ type: "compacted", elided });
   }
 
   private async execute(call: FunctionCall): Promise<void> {
