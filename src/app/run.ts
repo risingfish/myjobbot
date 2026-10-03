@@ -7,6 +7,7 @@ import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig } from "../config/load.js";
 import { JobStore } from "../db/jobStore.js";
 import { openDatabase } from "../db/open.js";
+import { systemClock } from "../http/clock.js";
 import { HttpClient, type JsonGetter } from "../http/client.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { buildTools } from "../tools/registry.js";
@@ -32,7 +33,7 @@ function buildContext(config: AppConfig, seams: RunSeams): ToolContext {
     config: config.file,
     run: newRunState(),
     store: new JobStore(openDatabase(join(config.dataDir, "myjobbot.db"))),
-    http: seams.http ?? new HttpClient(config.file.http, globalThis.fetch),
+    http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
     now: () => new Date(),
   };
 }
