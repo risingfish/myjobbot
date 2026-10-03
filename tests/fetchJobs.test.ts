@@ -9,8 +9,13 @@ test("fetch_jobs returns title-filtered unscored jobs without null fields", asyn
   expect(await fetchPage(context, "stripe")).toEqual({
     company: "Stripe",
     total_unscored: 1,
-    jobs: [{ job_id: "1000", title: "Backend Engineer", location: "Remote", posted_at: "2026-09-01T00:00:00.000Z" }],
+    jobs: [{ job_id: "1000", title: "Backend Engineer", location: "Remote", posted_at: "2026-09-01T00:00:00.000Z", days_open: 32, possible_ghost: false }],
   });
+});
+
+test("fetch_jobs flags postings open longer than the ghost threshold", async () => {
+  const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer"], "2026-07-01T00:00:00Z")) });
+  expect((await fetchPage(context, "Stripe")).jobs[0]).toMatchObject({ days_open: 94, possible_ghost: true });
 });
 
 test("fetch_jobs pages 25 jobs at a time", async () => {

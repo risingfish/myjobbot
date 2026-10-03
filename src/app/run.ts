@@ -7,6 +7,7 @@ import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig } from "../config/load.js";
 import { JobStore } from "../db/jobStore.js";
 import { openDatabase } from "../db/open.js";
+import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
 import { HttpClient, type JsonGetter } from "../http/client.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
@@ -25,7 +26,13 @@ export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = 
   const config = loadConfig(environment);
   const context = buildContext(config, seams);
   const result = await runAgent(agentDeps(config, context, seams), initialMessages(config));
+  pruneOldJobs(context);
   return { ...result, summary: context.run.summary };
+}
+
+function pruneOldJobs(context: ToolContext): void {
+  const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY);
+  context.store.pruneLastSeenBefore(cutoff.toISOString());
 }
 
 function buildContext(config: AppConfig, seams: RunSeams): ToolContext {

@@ -24,7 +24,7 @@ async function jobPage(context: ToolContext, company: Company) {
   const seen = await fetchOnce(context, company);
   const filter = context.config.title_filter;
   const unscored = context.store.unscoredSince(company.name, seen).filter((row) => passesTitleFilter(row.title, filter));
-  const jobs = unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(row));
+  const jobs = unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row));
   return { company: company.name, total_unscored: unscored.length, jobs };
 }
 

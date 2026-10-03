@@ -38,6 +38,10 @@ ON CONFLICT (ats, job_id) DO UPDATE SET
   description = excluded.description, last_seen = excluded.last_seen`;
 const UNSCORED = "SELECT * FROM jobs WHERE company = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
 const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ?";
+const EARLIEST_SEEN = `
+SELECT MIN(MIN(first_seen), COALESCE(MIN(posted_at), MIN(first_seen))) AS earliest
+FROM jobs WHERE company = ? AND normalized_title = ?`;
+const PRUNE = "DELETE FROM jobs WHERE last_seen < ?";
 
 interface Verdict {
   job_id: string;
@@ -64,6 +68,15 @@ export class JobStore {
     const { job_id, score, reasons, gaps } = verdict;
     const result = this.db.prepare(RECORD_VERDICT).run(score, JSON.stringify(reasons), JSON.stringify(gaps), scoredAt, job_id);
     return Number(result.changes) > 0;
+  }
+
+  earliestSeen(company: string, normalizedTitle: string): string {
+    const row = this.db.prepare(EARLIEST_SEEN).get(company, normalizedTitle);
+    return z.object({ earliest: z.string() }).parse(row).earliest;
+  }
+
+  pruneLastSeenBefore(cutoff: string): number {
+    return Number(this.db.prepare(PRUNE).run(cutoff).changes);
   }
 
   private transaction(work: () => void): void {
