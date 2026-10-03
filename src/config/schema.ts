@@ -6,7 +6,7 @@ const DEFAULT_INCLUDE = [
   "engineer", "developer", "software", "sre", "devops", "platform",
   "backend", "frontend", "full stack", "fullstack", "programmer",
 ];
-const DEFAULT_EXCLUDE = ["intern", "internship", "manager", "director", "sales", "recruiter", "recruiting"];
+const DEFAULT_EXCLUDE = ["intern", "internship", "manager", "director", "sales", "recruiter", "recruiting", "recruitment"];
 
 const company = z.object({
   name: z.string().min(1),

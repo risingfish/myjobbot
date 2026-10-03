@@ -37,6 +37,14 @@ ON CONFLICT (ats, job_id) DO UPDATE SET
   compensation = excluded.compensation, url = excluded.url, posted_at = excluded.posted_at,
   description = excluded.description, last_seen = excluded.last_seen`;
 const UNSCORED = "SELECT * FROM jobs WHERE company = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
+const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ?";
+
+interface Verdict {
+  job_id: string;
+  score: number;
+  reasons: string[];
+  gaps: string[];
+}
 
 export class JobStore {
   constructor(private readonly db: DatabaseSync) {}
@@ -50,6 +58,12 @@ export class JobStore {
 
   unscoredSince(company: string, seen: string): JobRow[] {
     return z.array(jobRow).parse(this.db.prepare(UNSCORED).all(company, seen));
+  }
+
+  recordVerdict(verdict: Verdict, scoredAt: string): boolean {
+    const { job_id, score, reasons, gaps } = verdict;
+    const result = this.db.prepare(RECORD_VERDICT).run(score, JSON.stringify(reasons), JSON.stringify(gaps), scoredAt, job_id);
+    return Number(result.changes) > 0;
   }
 
   private transaction(work: () => void): void {
