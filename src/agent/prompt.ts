@@ -1,7 +1,9 @@
 import type { AppConfig } from "../config/load.js";
 import type { Message } from "./llm.js";
 
-const SYSTEM_PROMPT = `You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
+export const NUDGE = "Respond only with tool calls. Call finish when every company has total_unscored 0.";
+
+const SYSTEM_PROMPT =`You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
 
 Work only through tool calls:
 1. Call list_companies.

@@ -28,7 +28,13 @@ export async function runScripted(
 }
 
 function baseDeps(context: ToolContext): Omit<AgentDeps, "chat" | "trace"> {
-  return { tools: buildTools(context), limits: TEST_LIMITS, clock: () => 0, isFinished: () => context.run.finished };
+  return {
+    tools: buildTools(context),
+    limits: TEST_LIMITS,
+    clock: () => 0,
+    isFinished: () => context.run.finished,
+    nudge: "Respond only with tool calls.",
+  };
 }
 
 function memoryTrace(): Trace & { events: TraceEvent[] } {

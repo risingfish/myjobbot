@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
+import { toHistory } from "../src/agent/llm.js";
 import { runScripted, TEST_LIMITS } from "./helpers/agent.js";
-import { textReply, toolCallReply } from "./helpers/chat.js";
+import { textReply, toolCallReply, toolCallsReply } from "./helpers/chat.js";
 
 const FINISH = toolCallReply("finish", { summary: "all done" });
 
@@ -39,4 +40,23 @@ test("agent traces the start and end of a run", async () => {
   const { events } = await runScripted([FINISH]);
   expect(events[0]).toMatchObject({ type: "start" });
   expect(events.at(-1)).toEqual({ type: "end", status: "finished", reason: "finish called", steps: 1 });
+});
+
+test("agent aborts with an end event when the LLM call fails", async () => {
+  const chat = () => Promise.reject(new Error("connect ECONNREFUSED"));
+  const { result, events } = await runScripted([], { chat });
+  expect(result).toEqual({ status: "aborted", reason: expect.stringContaining("ECONNREFUSED"), steps: 1 });
+  expect(events.at(-1)).toMatchObject({ type: "end" });
+});
+
+test("agent runs every call of a multi-call reply in order", async () => {
+  const reply = toolCallsReply(["finish", {}], ["finish", { summary: "done" }]);
+  const { result, events } = await runScripted([reply]);
+  expect(result).toEqual({ status: "finished", reason: "finish called", steps: 1 });
+  const toolEvents = events.filter((event) => event.type === "tool");
+  expect(toolEvents.map((event) => event.tool_call_id)).toEqual(["call_0", "call_1"]);
+});
+
+test("toHistory omits tool_calls when the reply has no function calls", () => {
+  expect(toHistory(textReply("hello"))).toEqual({ role: "assistant", content: "hello" });
 });

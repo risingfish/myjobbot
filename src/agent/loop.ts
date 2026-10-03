@@ -1,8 +1,9 @@
 import type { FileConfig } from "../config/schema.js";
+import { describeError } from "../errors.js";
 import { dispatch } from "../tools/dispatch.js";
 import type { Tool } from "../tools/tool.js";
 import { Budget } from "./budget.js";
-import { toHistory, type AssistantMessage, type ChatFn, type Message } from "./llm.js";
+import { functionCalls, toHistory, type ChatFn, type FunctionCall, type Message } from "./llm.js";
 import type { Trace, TraceEvent } from "./trace.js";
 
 export interface AgentDeps {
@@ -12,6 +13,7 @@ export interface AgentDeps {
   trace: Trace;
   clock: () => number;
   isFinished: () => boolean;
+  nudge: string;
 }
 
 export interface AgentResult {
@@ -19,10 +21,6 @@ export interface AgentResult {
   reason: string;
   steps: number;
 }
-
-type FunctionCall = Extract<NonNullable<AssistantMessage["tool_calls"]>[number], { type: "function" }>;
-
-const NUDGE = "Respond only with tool calls. Call finish when every company has total_unscored 0.";
 
 export async function runAgent(deps: AgentDeps, messages: Message[]): Promise<AgentResult> {
   return new AgentSession(deps, messages).run();
@@ -43,9 +41,19 @@ class AgentSession {
     while (!this.deps.isFinished()) {
       const exhausted = this.budget.exhaustedReason();
       if (exhausted) return this.end("aborted", exhausted);
-      await this.step();
+      const failure = await this.safeStep();
+      if (failure) return this.end("aborted", failure);
     }
     return this.end("finished", "finish called");
+  }
+
+  private async safeStep(): Promise<string | null> {
+    try {
+      await this.step();
+      return null;
+    } catch (error) {
+      return `LLM error: ${describeError(error)}`;
+    }
   }
 
   private async step(): Promise<void> {
@@ -61,14 +69,14 @@ class AgentSession {
     const outcome = await dispatch(this.deps.tools, call.function);
     this.budget.recordOutcome(outcome.ok);
     this.record(
-      { type: "tool", name: call.function.name, ok: outcome.ok, content: outcome.content },
+      { type: "tool", tool_call_id: call.id, name: call.function.name, ok: outcome.ok, content: outcome.content },
       { role: "tool", tool_call_id: call.id, content: outcome.content },
     );
   }
 
   private nudge(): void {
     this.budget.recordOutcome(false);
-    this.record({ type: "nudge" }, { role: "user", content: NUDGE });
+    this.record({ type: "nudge" }, { role: "user", content: this.deps.nudge });
   }
 
   private record(event: TraceEvent, message: Message): void {
@@ -81,8 +89,4 @@ class AgentSession {
     this.deps.trace.write({ type: "end", ...result });
     return result;
   }
-}
-
-function functionCalls(reply: AssistantMessage): FunctionCall[] {
-  return (reply.tool_calls ?? []).filter((call): call is FunctionCall => call.type === "function");
 }
