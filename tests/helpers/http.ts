@@ -11,6 +11,19 @@ export function fakeBoard(body: unknown): JsonGetter & { urls: string[] } {
   };
 }
 
+export function flakyBoard(body: unknown): JsonGetter & { urls: string[] } {
+  const board = fakeBoard(body);
+  return {
+    urls: board.urls,
+    getJson: async (url) => {
+      const isFirstRequest = board.urls.length === 0;
+      const result = await board.getJson(url);
+      if (isFirstRequest) throw new Error("board temporarily unavailable");
+      return result;
+    },
+  };
+}
+
 export function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 }

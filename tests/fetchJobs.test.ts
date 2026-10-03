@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
-import { fakeBoard } from "./helpers/http.js";
+import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
 
 test("fetch_jobs returns title-filtered unscored jobs without null fields", async () => {
@@ -26,6 +26,14 @@ test("fetch_jobs hits the board only once per run", async () => {
   await fetchPage(context, "Stripe");
   await fetchPage(context, "Stripe");
   expect(http.urls).toHaveLength(1);
+});
+
+test("fetch_jobs retries a board fetch that failed earlier in the run", async () => {
+  const http = flakyBoard(greenhouseBoard(["Backend Engineer"]));
+  const context = testContext({ http });
+  await expect(fetchPage(context, "Stripe")).rejects.toThrow("temporarily unavailable");
+  expect((await fetchPage(context, "Stripe")).total_unscored).toBe(1);
+  expect(http.urls).toHaveLength(2);
 });
 
 test("fetch_jobs rejects an unknown company", async () => {

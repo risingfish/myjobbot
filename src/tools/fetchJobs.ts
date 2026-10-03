@@ -33,6 +33,7 @@ function fetchOnce(context: ToolContext, company: Company): Promise<string> {
   if (cached) return cached;
   const pending = fetchAndStore(context, company);
   context.run.fetches.set(company.name, pending);
+  pending.catch(() => context.run.fetches.delete(company.name));
   return pending;
 }
 
