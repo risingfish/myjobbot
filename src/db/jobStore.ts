@@ -42,6 +42,7 @@ const EARLIEST_SEEN = `
 SELECT MIN(MIN(first_seen), COALESCE(MIN(posted_at), MIN(first_seen))) AS earliest
 FROM jobs WHERE company = ? AND normalized_title = ?`;
 const PRUNE = "DELETE FROM jobs WHERE last_seen < ?";
+const FIND_JOB = "SELECT * FROM jobs WHERE job_id = ? LIMIT 1";
 
 interface Verdict {
   job_id: string;
@@ -77,6 +78,11 @@ export class JobStore {
 
   pruneLastSeenBefore(cutoff: string): number {
     return Number(this.db.prepare(PRUNE).run(cutoff).changes);
+  }
+
+  findJob(jobId: string): JobRow | null {
+    const row = this.db.prepare(FIND_JOB).get(jobId);
+    return row === undefined ? null : jobRow.parse(row);
   }
 
   private transaction(work: () => void): void {
