@@ -74,9 +74,10 @@ fixtures in `tests/fixtures/`.
   - `ghost_threshold_days`: default 60.
   - `job_retention_days`: days after `last_seen` before a job row is pruned. Default 90.
   - `glassdoor`: `{max_lookups_per_run: 10, cache_ttl_days: 30, min_delay_s: 5, max_delay_s: 15}`.
-  - `title_filter`: `{include: [...], exclude: [...]}`: case-insensitive substrings matched
-    against the normalized title. A job is offered to the agent only if it contains at least
-    one `include` term and no `exclude` term. Filtered jobs are still stored (ghost tracking).
+  - `title_filter`: `{include: [...], exclude: [...]}`, matched against the normalized title.
+    Include terms match word prefixes ("engineer" matches "Engineering"); exclude terms match
+    whole words with an optional plural ("intern" rejects "Interns" but not "Internal"). A job is
+    offered to the agent only if it matches at least one `include` term and no `exclude` term. Filtered jobs are still stored (ghost tracking).
     Defaults include engineer/developer/software/sre/devops; exclude intern/manager/director/sales/recruit.
   - `agent`: `{max_steps: 600, max_wall_clock_min: 120, max_consecutive_tool_errors: 3, context_chars: 160000}`.
   - `http`: `{min_interval_ms: 1000, max_requests_per_host_per_run: 300, max_retries: 2, max_retry_after_s: 60, timeout_s: 30}`.
@@ -135,6 +136,10 @@ The system prompt states that v1 scoring is metadata/title-based only.
   auto-send (keeps agent behavior observable); the run summary flags it.
 
 ## Data Model (SQLite)
+
+`job_id` is treated as globally unique for tool lookups (`record_matches`, `get_job_details`):
+Greenhouse IDs are numeric and Lever/Ashby IDs are UUIDs, so collisions are not expected even
+though the primary key is `(ats, job_id)`.
 
 - **`jobs`**: `job_id` (ATS id, PK with `ats`), `ats`, `company`, `title`,
   `normalized_title`, `location`, `department`, `team`, `workplace_type`, `is_remote`,
