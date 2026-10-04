@@ -38,7 +38,7 @@ pipeline) and invests in observability (run traces) so agent behavior can be stu
                 └──────────────────────────┬───────────────────────────────┘
                                            │
    src/tools/  (plain TS functions + zod schemas → JSON Schema for the LLM)
-   ├─ list_companies
+   ├─ list_sources
    ├─ fetch_jobs
    ├─ get_job_details        (stub in v1)
    ├─ record_matches
@@ -93,8 +93,8 @@ as a tool result `{error: "..."}` so it can correct itself; they never throw out
 
 | Tool | Args | Returns | Notes |
 |---|---|---|---|
-| `list_companies` | — | `[{name, ats, fetched, total_unscored?, fetch_failed?}]` | From config plus this run's progress: `fetched` once the board was fetched this run, `total_unscored` when fetched, `fetch_failed: true` if the last fetch attempt failed. How the agent recovers after compaction |
-| `fetch_jobs` | `company` | `{company, total_unscored, jobs: [{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]}` | First call per run hits the ATS list endpoint through the rate limiter, upserts all jobs and updates `last_seen`; later calls in the run reuse that fetch (no HTTP). Every call returns **at most 25** title-filtered, not-yet-scored jobs plus the remaining count, never description text. The agent pages by scoring and calling again until `total_unscored` is 0. Errors surface as a failed tool call |
+| `list_sources` | — | boards and saved searches with run progress | See the JSearch spec (`2026-10-04-jsearch-source-design.md`) |
+| `fetch_jobs` | `source` | `{source, total_unscored, jobs: [{job_id, title, location, department, team, workplace_type, is_remote, compensation, posted_at, days_open, possible_ghost}]}` | First call per run hits the ATS list endpoint through the rate limiter, upserts all jobs and updates `last_seen`; later calls in the run reuse that fetch (no HTTP). Every call returns **at most 25** title-filtered, not-yet-scored jobs plus the remaining count, never description text. The agent pages by scoring and calling again until `total_unscored` is 0. Errors surface as a failed tool call |
 | `get_job_details` | `job_id` | Stored metadata + `full_description: "not_available_in_v1"` | **Stub.** v2 returns the stored description (already captured for Lever/Ashby; Greenhouse needs `?content=true`) |
 | `record_matches` | `verdicts: [{job_id, score (0–100), reasons[], gaps[]}]` (1–25) | `{recorded, unknown_job_ids}` | Persists verdicts in one call; marks jobs scored. Batching keeps step count and context proportional to pages, not jobs (a large board has 700+ postings) |
 | `get_company_rating` | `company` | `{status: ok\|not_found\|blocked\|error\|skipped, rating?, review_count?, recommend_pct?, ceo_approval_pct?, url}` | See Glassdoor section. Never throws |
@@ -122,11 +122,11 @@ The system prompt states that v1 scoring is metadata/title-based only.
 - **Context management:** the database, not the conversation, is the agent's memory.
   When the serialized history exceeds `context_chars`, everything between the first two
   messages (system, resume) and a cutoff is replaced by one notice message telling the model
-  to call `list_companies` for progress. The cutoff keeps at least the last 8 messages and always
+  to call `list_sources` for progress. The cutoff keeps at least the last 8 messages and always
   the latest full turn (assistant message plus all its tool results), and never starts on an
   orphan tool result. Repeated overflows fold the previous notice in, so the prefix
   [system, resume, notice] stays byte-identical (llama.cpp prompt cache stays warm) and history
-  stays bounded. `list_companies` reports per-company progress for the run
+  stays bounded. `list_sources` reports per-source progress for the run
   (`fetched`, `total_unscored`), which is how the agent recovers after compaction.
 - **Guardrails (enforced in code):**
   - `max_steps` and `max_wall_clock_min` caps → abort.

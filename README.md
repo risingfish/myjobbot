@@ -1,7 +1,8 @@
 # myjobbot
 
 An autonomous agent that pulls software-engineering postings from company job boards
-(Greenhouse, Lever, Ashby), scores them against your resume with a local LLM, and keeps
+(Greenhouse, Lever, Ashby) and saved JSearch searches (Google for Jobs: LinkedIn, Indeed and
+more), scores them against your resume with a local LLM, and keeps
 history in SQLite to spot long-open "ghost" postings.
 
 Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
@@ -124,7 +125,7 @@ flowchart TD
 A typical run makes this sequence of calls:
 
 ```
-list_companies → fetch_jobs → record_matches → fetch_jobs → record_matches → … → fetch_jobs → finish
+list_sources → fetch_jobs → record_matches → fetch_jobs → record_matches → … → fetch_jobs → finish
 ```
 
 ### A tool call, up close
@@ -142,13 +143,13 @@ sequenceDiagram
     participant DB as SQLite
 
     L->>M: messages + tool schemas
-    M-->>L: tool_calls: fetch_jobs({"company":"Palantir"})
+    M-->>L: tool_calls: fetch_jobs({"source":"Palantir"})
     L->>D: name + JSON arguments
     D->>D: parse JSON, validate with zod
-    D->>T: run({company: "Palantir"})
+    D->>T: run({source: "Palantir"})
     T->>DB: unscored jobs for Palantir
     DB-->>T: rows
-    T-->>D: {company, total_unscored: 34, jobs: [25 jobs]}
+    T-->>D: {source, total_unscored: 34, jobs: [25 jobs]}
     D-->>L: {ok: true, content: "..."}
     L->>L: append role "tool" message with the same id
     L->>M: next request includes the result
@@ -163,8 +164,8 @@ work. Three failures in a row and the code ends the run.
 
 | Tool | What it does |
 |---|---|
-| `list_companies` | Companies from your config, plus this run's progress for each: `fetched`, `total_unscored`, and `fetch_failed` if the last fetch failed |
-| `fetch_jobs` | The first call per company downloads its board and saves every posting to SQLite. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored` |
+| `list_sources` | Each company board and saved search, with this run's progress: `fetched`, `total_unscored`, `fetch_failed` |
+| `fetch_jobs` | The first call per source per run downloads the board, or calls JSearch if the search is due. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed |
 | `record_matches` | Saves up to 25 scores (0–100), with reasons and gaps, in one call |
 | `get_job_details` | A placeholder in v1. Full descriptions are stored but not yet shown to the model |
 | `finish` | Records the model's summary and ends the loop |
@@ -265,7 +266,7 @@ flowchart LR
     subgraph After["After"]
         direction TB
         S2[system prompt] --> U2[resume]
-        U2 --> N2["one notice:<br/>call list_companies to see progress"]
+        U2 --> N2["one notice:<br/>call list_sources to see progress"]
         N2 --> K2[latest turns, unchanged]
     end
     Before --> After
@@ -275,7 +276,7 @@ flowchart LR
   the request that produced it.
 - Later overflows fold the old notice in, so the start of the conversation (system prompt,
   resume, notice) stays byte-identical and llama.cpp's prompt cache keeps working.
-- After compaction the model calls `list_companies` to see which companies are done.
+- After compaction the model calls `list_sources` to see which sources are done.
 
 ### Design lessons built into it
 
@@ -295,7 +296,11 @@ flowchart LR
 
 | Setting | Default | What it controls |
 |---|---|---|
-| `companies` | (required) | `{name, ats, slug}` per company board |
+| `companies` | `[]` | `{name, ats, slug}` per company board (at least one company or search) |
+| `searches` | `[]` | Saved JSearch searches: `{name, query, remote_only, country}`. Needs `JSEARCH_API_KEY` |
+| `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
+| `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours |
+| `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
@@ -306,6 +311,16 @@ flowchart LR
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
 | `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
+
+### Saved searches (JSearch)
+
+JSearch searches Google for Jobs, which includes LinkedIn, Indeed, Glassdoor and company sites,
+without scraping LinkedIn. Results are stored and scored like board jobs. A result is skipped when
+the same employer and title already came from a company board you list. Budget: every request
+is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours`, and
+never once the month's count reaches `monthly_request_cap`. When a search isn't due,
+`fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to
+the run's jobs log.
 
 ### First live run (2026-10-03)
 

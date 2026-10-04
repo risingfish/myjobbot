@@ -1,7 +1,7 @@
 # JSON Config and JSearch Source — Design Spec
 
 **Date:** 2026-10-04
-**Status:** Approved design, pending implementation plan
+**Status:** Implemented
 **Parent spec:** `2026-10-03-myjobbot-design.md`
 
 Two changes, shipped in this order:
