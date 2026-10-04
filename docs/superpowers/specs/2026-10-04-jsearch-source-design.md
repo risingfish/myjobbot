@@ -141,7 +141,7 @@ loop is unchanged.
 | `Job` field | JSearch field |
 |---|---|
 | `ats` | `"jsearch"` |
-| `jobId` | `job_id` |
+| `jobId` | `js_` + first 16 hex chars of SHA-256(`job_id`). The real `job_id` is about 400 characters, too long for the model to copy reliably in `record_matches`; the hash is stable, so the same posting keeps its ID |
 | `company` | `employer_name` |
 | `title` | `job_title` |
 | `url` | `job_apply_link` |
@@ -154,8 +154,11 @@ loop is unchanged.
 | `publisher` (new) | `job_publisher`, e.g. `"LinkedIn"` |
 
 One page per refresh: a single request with `query`, `country`, `date_posted`, and
-`work_from_home` when `remote_only` is set. The response is validated with zod (unknown fields
-ignored, the job array required). The real response shape is confirmed in the live smoke test.
+`work_from_home` when `remote_only` is set. It returns 10 jobs. The response is validated with zod
+(unknown fields ignored). The real shape, confirmed with a live request on 2026-10-04, is
+`{status, request_id, parameters, data: {jobs: [...], cursor}}`. In that sample,
+`work_arrangement` was absent and city, state and country were null for remote jobs, so all
+three are optional.
 
 ### Duplicates
 

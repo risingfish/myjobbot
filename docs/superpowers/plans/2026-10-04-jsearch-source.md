@@ -847,7 +847,7 @@ git commit -m "Let HTTP requests carry headers"
 **Files:**
 - Create: `src/jobs/company.ts`, `src/db/apiCalls.ts`, `src/sources/jsearch.ts`, `src/tools/boardFetch.ts`, `src/tools/searchFetch.ts`, `src/tools/searchBudget.ts`, `src/tools/jobLog.ts`
 - Modify: `src/jobs/job.ts`, `src/db/open.ts`, `src/db/jobStore.ts`, `src/tools/sources.ts`, `src/tools/fetchJobs.ts`, `src/tools/listSources.ts`, `src/tools/context.ts`, `src/app/run.ts`
-- Tests: `tests/fixtures/jsearch.json`, `tests/company.test.ts`, `tests/apiCalls.test.ts`, `tests/jsearch.test.ts`, `tests/searchSources.test.ts`, `tests/searchE2e.test.ts`; modify `tests/helpers/http.ts`, `tests/helpers/context.ts`, `tests/migration.test.ts`
+- Tests: `tests/fixtures/jsearch.json`, `tests/helpers/jsearch.ts`, `tests/company.test.ts`, `tests/apiCalls.test.ts`, `tests/jsearch.test.ts`, `tests/searchSources.test.ts`, `tests/searchE2e.test.ts`; modify `tests/helpers/http.ts`, `tests/helpers/context.ts`, `tests/migration.test.ts`
 
 - [ ] **Step 1: Fixture and test helpers**
 
@@ -857,7 +857,8 @@ git commit -m "Let HTTP requests carry headers"
 {
   "status": "OK",
   "request_id": "test-request",
-  "data": [
+  "parameters": { "query": "senior backend engineer", "num_pages": 1, "country": "us" },
+  "data": { "cursor": "next-page-token", "jobs": [
     {
       "job_id": "js-linkedin-1",
       "employer_name": "Acme Robotics, Inc.",
@@ -884,7 +885,7 @@ git commit -m "Let HTTP requests carry headers"
       "job_is_remote": false,
       "job_publisher": "Stripe Careers"
     }
-  ]
+  ] }
 }
 ```
 
@@ -907,6 +908,16 @@ export function routedHttp(routes: Record<string, unknown>): JsonGetter & { requ
       return structuredClone(body);
     },
   };
+}
+```
+
+`tests/helpers/jsearch.ts`. It mirrors the adapter's ID formula so tests can name expected IDs:
+
+```ts
+import { createHash } from "node:crypto";
+
+export function jsearchId(rawId: string): string {
+  return `js_${createHash("sha256").update(rawId).digest("hex").slice(0, 16)}`;
 }
 ```
 
@@ -990,6 +1001,7 @@ import { fetchJsearch } from "../src/sources/jsearch.js";
 import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
+import { jsearchId } from "./helpers/jsearch.js";
 
 const HOST = "api.openwebninja.com";
 
@@ -1018,17 +1030,21 @@ test("fetchJsearch omits work_from_home unless the search is remote-only", async
 test("fetchJsearch maps results to jobs", async () => {
   const jobs = await fetchJsearch(request(), routedHttp({ [HOST]: loadFixture("jsearch.json") }));
   expect(jobs[0]).toMatchObject({
-    ats: "jsearch", jobId: "js-linkedin-1", company: "Acme Robotics, Inc.", title: "Senior Backend Engineer",
+    ats: "jsearch", jobId: jsearchId("js-linkedin-1"), company: "Acme Robotics, Inc.", title: "Senior Backend Engineer",
     url: "https://www.linkedin.com/jobs/view/1", location: "Austin, TX, US", isRemote: true, workplaceType: "remote",
     compensation: "$170K-$210K a year", postedAt: "2026-10-02T15:00:00.000Z", publisher: "LinkedIn",
   });
   expect(jobs[1]).toMatchObject({ location: "US", isRemote: false, workplaceType: null, publisher: "Stripe Careers" });
 });
 
-test("fetchJsearch accepts results nested under data.jobs", async () => {
-  const job = { job_id: "n1", employer_name: "Nested Co", job_title: "Backend Engineer", job_apply_link: "https://example.com/n1" };
-  const jobs = await fetchJsearch(request(), routedHttp({ [HOST]: { data: { jobs: [job] } } }));
-  expect(jobs.map((entry) => entry.jobId)).toEqual(["n1"]);
+test("fetchJsearch shortens JSearch's long job ids to stable short ids", async () => {
+  const rawId = "x".repeat(402);
+  const job = { job_id: rawId, employer_name: "Long Id Co", job_title: "Backend Engineer", job_apply_link: "https://example.com/l" };
+  const body = { data: { jobs: [job] } };
+  const first = await fetchJsearch(request(), routedHttp({ [HOST]: body }));
+  const second = await fetchJsearch(request(), routedHttp({ [HOST]: body }));
+  expect(first[0]?.jobId).toMatch(/^js_[0-9a-f]{16}$/);
+  expect(second[0]?.jobId).toBe(first[0]?.jobId);
 });
 
 test("fetchJsearch explains a refused request", async () => {
@@ -1060,6 +1076,7 @@ import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 import { TEST_NOW, testContext } from "./helpers/context.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
+import { jsearchId } from "./helpers/jsearch.js";
 import { fetchPage, invokeTool } from "./helpers/tools.js";
 import { memoryTrace } from "./helpers/trace.js";
 
@@ -1099,7 +1116,7 @@ test("a search is not refreshed once the monthly budget is used", async () => {
 test("JSearch results that duplicate a company-board job are skipped", async () => {
   const { context } = searchContext();
   await fetchPage(context, "Stripe");
-  expect((await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id)).toEqual(["js-linkedin-1"]);
+  expect((await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id)).toEqual([jsearchId("js-linkedin-1")]);
 });
 
 test("each JSearch request is logged with its query and skipped duplicates", async () => {
@@ -1136,6 +1153,7 @@ import { TEST_SEARCH } from "./helpers/config.js";
 import { makeDataDir, TEST_ENV } from "./helpers/dataDir.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
+import { jsearchId } from "./helpers/jsearch.js";
 
 const CONFIG = { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], searches: [TEST_SEARCH] };
 
@@ -1144,7 +1162,7 @@ const FIRST_RUN = [
   toolCallReply("fetch_jobs", { source: "Stripe" }),
   toolCallReply("record_matches", { verdicts: [{ job_id: "1000", score: 80 }] }),
   toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }),
-  toolCallReply("record_matches", { verdicts: [{ job_id: "js-linkedin-1", score: 85 }] }),
+  toolCallReply("record_matches", { verdicts: [{ job_id: jsearchId("js-linkedin-1"), score: 85 }] }),
   toolCallReply("finish", { summary: "Scored a board and a search." }),
 ];
 const SECOND_RUN = [toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }), toolCallReply("finish", { summary: "Nothing new." })];
@@ -1161,7 +1179,7 @@ test("a run scores a board and a saved search, and the next run reuses the searc
   expect(await runOnce(env, { chat: scriptedChat(FIRST_RUN).chat, http })).toMatchObject({ status: "finished" });
   expect(await runOnce(env, { chat: scriptedChat(SECOND_RUN).chat, http })).toMatchObject({ status: "finished" });
   expect(http.requests.filter((sent) => sent.url.includes("openwebninja"))).toHaveLength(1);
-  expect(scoredRows(dataDir)).toEqual([{ job_id: "1000", source: "Stripe", score: 80 }, { job_id: "js-linkedin-1", source: TEST_SEARCH.name, score: 85 }]);
+  expect(scoredRows(dataDir)).toEqual([{ job_id: "1000", source: "Stripe", score: 80 }, { job_id: jsearchId("js-linkedin-1"), source: TEST_SEARCH.name, score: 85 }]);
 });
 ```
 
@@ -1259,6 +1277,7 @@ const BOARD_COMPANIES_WITH_TITLE = "SELECT DISTINCT company FROM jobs WHERE ats 
 `src/sources/jsearch.ts`:
 
 ```ts
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { FileConfig } from "../config/schema.js";
 import { describeError } from "../errors.js";
@@ -1286,8 +1305,8 @@ const result = z.object({
   job_description: optionalText,
   job_publisher: optionalText,
 });
-const results = z.array(result);
-const response = z.union([z.object({ data: results }), z.object({ data: z.object({ jobs: results }) })]);
+const response = z.object({ data: z.object({ jobs: z.array(result) }) });
+const SHORT_ID_HEX_CHARS = 16;
 
 interface SearchRequest {
   search: Search;
@@ -1304,11 +1323,11 @@ export function searchParams(search: Search, settings: JsearchSettings): Record<
 export async function fetchJsearch(request: SearchRequest, http: JsonGetter): Promise<Job[]> {
   const url = `${ENDPOINT}?${new URLSearchParams(searchParams(request.search, request.settings))}`;
   const body = await withKeyHint(() => http.getJson(url, { "x-api-key": request.apiKey }));
-  return jobsIn(response.parse(body)).map(toJob);
+  return response.parse(body).data.jobs.map(toJob);
 }
 
-function jobsIn(parsed: z.infer<typeof response>): Array<z.infer<typeof result>> {
-  return Array.isArray(parsed.data) ? parsed.data : parsed.data.jobs;
+function shortId(rawId: string): string {
+  return `js_${createHash("sha256").update(rawId).digest("hex").slice(0, SHORT_ID_HEX_CHARS)}`;
 }
 
 async function withKeyHint<T>(call: () => Promise<T>): Promise<T> {
@@ -1324,7 +1343,7 @@ async function withKeyHint<T>(call: () => Promise<T>): Promise<T> {
 function toJob(post: z.infer<typeof result>): Job {
   const location = [post.job_city, post.job_state, post.job_country].filter((part) => part !== null).join(", ") || null;
   return makeJob(
-    { ats: "jsearch", jobId: post.job_id, company: post.employer_name, title: post.job_title, url: post.job_apply_link },
+    { ats: "jsearch", jobId: shortId(post.job_id), company: post.employer_name, title: post.job_title, url: post.job_apply_link },
     {
       location, isRemote: post.job_is_remote, workplaceType: post.work_arrangement, compensation: post.job_salary_string,
       postedAt: post.job_posted_at_datetime_utc, description: post.job_description, publisher: post.job_publisher,
@@ -1333,7 +1352,7 @@ function toJob(post: z.infer<typeof result>): Job {
 }
 ```
 
-`searchParams` is exported because `searchFetch.ts` logs the parameters.
+`searchParams` is exported because `searchFetch.ts` logs the parameters. JSearch's own `job_id` is about 400 characters, and the model has to copy IDs back in `record_matches`. So the adapter stores a short stable ID (`js_` plus 16 hex chars of its SHA-256); the same posting always maps to the same ID.
 
 - [ ] **Step 7: Sources, budget, and the two fetch paths**
 
