@@ -48,9 +48,9 @@ export interface Page {
   limit: number;
 }
 
-export interface RecommendedFilter {
+export interface ScoreFilter {
   sources: string[];
-  threshold: number;
+  minScore: number;
 }
 
 const JOB_COLUMNS = `ats, job_id, source, company, title, url, location, workplace_type, is_remote, compensation,
@@ -66,14 +66,10 @@ const count = z.object({ count: z.number() });
 export class JobViews {
   constructor(private readonly db: DatabaseSync) {}
 
-  recommended(filter: RecommendedFilter, page: Page): JobView[] {
-    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE ${recommendedWhere(filter)} ${NEWEST_FIRST} LIMIT ? OFFSET ?`;
-    return z.array(jobView).parse(this.db.prepare(sql).all(filter.threshold, ...filter.sources, page.limit, page.offset));
-  }
-
-  countRecommended(filter: RecommendedFilter): number {
-    const sql = `SELECT COUNT(*) AS count FROM jobs WHERE ${recommendedWhere(filter)}`;
-    return count.parse(this.db.prepare(sql).get(filter.threshold, ...filter.sources)).count;
+  scoredFrom(filter: ScoreFilter): JobView[] {
+    const placeholders = filter.sources.map(() => "?").join(", ");
+    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE score >= ? AND source IN (${placeholders}) ${NEWEST_FIRST}`;
+    return z.array(jobView).parse(this.db.prepare(sql).all(filter.minScore, ...filter.sources));
   }
 
   allJobs(page: Page): JobView[] {
@@ -91,8 +87,4 @@ export class JobViews {
   countVerdicts(): number {
     return count.parse(this.db.prepare("SELECT COUNT(*) AS count FROM verdicts").get()).count;
   }
-}
-
-function recommendedWhere(filter: RecommendedFilter): string {
-  return `score >= ? AND source IN (${filter.sources.map(() => "?").join(", ")})`;
 }

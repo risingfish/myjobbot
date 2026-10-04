@@ -1,6 +1,7 @@
 import type { FileConfig } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
+import { boostedScore, titleBoost } from "../jobs/titleBoost.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { bulletList, cells, dateOnly, escapeHtml, linkTo } from "./html.js";
 
@@ -8,12 +9,13 @@ export interface RowContext {
   now: Date;
   ghostDays: number;
   titleFilter: FileConfig["title_filter"];
+  boosts: FileConfig["title_boosts"];
 }
 
 export function jobRow(job: JobView, context: RowContext): string {
   const title = `${linkTo(job.url, job.title)}${filterNote(job, context)}${reasoning(job)}`;
   return `<tr class="job">${cells([
-    scoreText(job.score), title, escapeHtml(job.company), escapeHtml(job.location),
+    jobScore(job, context), title, escapeHtml(job.company), escapeHtml(job.location),
     remoteText(job.is_remote), sourceText(job), postedText(job, context), escapeHtml(dateOnly(job.scored_at)),
   ])}</tr>`;
 }
@@ -28,6 +30,14 @@ export function verdictRow(verdict: VerdictView): string {
 
 function scoreText(score: number | null): string {
   return score === null ? "" : `<span class="score">${score}</span>`;
+}
+
+function jobScore(job: JobView, context: RowContext): string {
+  if (job.score === null) return "";
+  const boost = titleBoost(job.title, context.boosts);
+  if (boost.points === 0) return scoreText(job.score);
+  const note = `model ${job.score} · +${boost.points} ${boost.terms.join(", ")}`;
+  return `${scoreText(boostedScore(job.score, boost))}<br><small>${escapeHtml(note)}</small>`;
 }
 
 function remoteText(isRemote: number | null): string {

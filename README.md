@@ -47,9 +47,14 @@ A read-only view of the database with three tabs:
 
 | Tab | Shows |
 |---|---|
-| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold`, most recently posted first, with the model's reasons and gaps |
+| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after title boosts), most recently posted first, with the model's reasons and gaps |
 | **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
+
+Title boosts (`title_boosts`) add fixed points to the model's score for whole words in the
+title, capped at 100, e.g. `{ "typescript": 10, "node": 5 }`. They are applied when the page
+is shown, not stored, so changing them re-weights every job at once. A boosted score shows
+the breakdown ("model 65 · +10 typescript"); the Reasoning tab keeps the model's own score.
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
 `data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` / `MYJOBBOT_HOST` to
@@ -327,6 +332,7 @@ flowchart LR
 | `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold) |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
+| `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title |
 | `agent.max_steps` | 600 | Step cap per run |
 | `agent.max_wall_clock_min` | 120 | Time cap per run |
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |

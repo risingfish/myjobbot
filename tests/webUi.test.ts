@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { verdictRow } from "../src/web/rows.js";
 import { countRows, pageText, startTestUi } from "./helpers/ui.js";
+import { testFileConfig } from "./helpers/config.js";
 import { seededViews } from "./helpers/views.js";
 
 test("the recommended tab lists jobs at or above the threshold with their reasoning", async () => {
@@ -10,6 +11,17 @@ test("the recommended tab lists jobs at or above the threshold with their reason
   expect(html).toContain("via LinkedIn");
   expect(html).toContain("reason a");
   expect(html).not.toContain("Software Engineer b");
+  expect(html).toContain("1 recommended · threshold 70");
+});
+
+test("title boosts lift a job over the threshold and show the model's own score", async () => {
+  const views = seededViews([{ id: "t", score: 65, title: "Senior TypeScript Engineer" }, { id: "j", score: 65, title: "Senior Java Engineer" }]);
+  const config = testFileConfig({ title_boosts: { typescript: 10 } });
+  const ui = await startTestUi(views, () => ({ config, views, dbPath: "test.db" }));
+  const html = await pageText(ui, "/recommended");
+  expect(html).toContain("Senior TypeScript Engineer");
+  expect(html).not.toContain("Senior Java Engineer");
+  expect(html).toContain("model 65 · +10 typescript");
   expect(html).toContain("1 recommended · threshold 70");
 });
 

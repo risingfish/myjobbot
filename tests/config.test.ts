@@ -24,6 +24,14 @@ test("config rejects filter terms without a letter or digit", () => {
   expect(() => testFileConfig({ title_filter: { extra_exclude: ["++"] } })).toThrow(/letter or digit/);
 });
 
+test("title boosts default to none and need 1-100 points per term", () => {
+  expect(testFileConfig().title_boosts).toEqual({});
+  expect(testFileConfig({ title_boosts: { typescript: 10 } }).title_boosts).toEqual({ typescript: 10 });
+  expect(() => testFileConfig({ title_boosts: { typescript: 0 } })).toThrow();
+  expect(() => testFileConfig({ title_boosts: { typescript: 101 } })).toThrow();
+  expect(() => testFileConfig({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
+});
+
 test("extra_exclude adds to the default exclude terms", () => {
   const exclude = testFileConfig({ title_filter: { extra_exclude: ["staff", "principal"] } }).title_filter.exclude;
   expect(exclude).toEqual(expect.arrayContaining(["intern", "manager", "staff", "principal"]));

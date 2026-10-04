@@ -9,15 +9,14 @@ const SEED = [
   { id: "e", source: "Board" },
 ];
 
-test("recommended keeps configured sources at or above the threshold, newest first", () => {
+test("scoredFrom keeps configured sources at or above the minimum score, newest first", () => {
   const views = seededViews(SEED);
-  const filter = { sources: ["Search", "Board"], threshold: 70 };
-  expect(views.recommended(filter, FIRST_PAGE).map((job) => job.job_id)).toEqual(["a", "c"]);
-  expect(views.countRecommended(filter)).toBe(2);
+  const jobs = views.scoredFrom({ sources: ["Search", "Board"], minScore: 70 });
+  expect(jobs.map((job) => job.job_id)).toEqual(["a", "c"]);
 });
 
-test("recommended with no configured sources is empty", () => {
-  expect(seededViews(SEED).recommended({ sources: [], threshold: 0 }, FIRST_PAGE)).toEqual([]);
+test("scoredFrom with no configured sources is empty", () => {
+  expect(seededViews(SEED).scoredFrom({ sources: [], minScore: 0 })).toEqual([]);
 });
 
 test("allJobs returns every job with parsed reasons and gaps", () => {
