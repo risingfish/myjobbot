@@ -2,7 +2,7 @@
 set -eu
 
 check_prerequisites() {
-  for file in config.yaml resume.md; do
+  for file in config.json resume.md; do
     if [ ! -f "$MYJOBBOT_DATA_DIR/$file" ]; then
       echo "myjobbot: missing $MYJOBBOT_DATA_DIR/$file (put it in the host data/ folder)" >&2
       exit 1

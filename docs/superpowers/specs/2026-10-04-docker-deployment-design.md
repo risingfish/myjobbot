@@ -34,7 +34,7 @@ bug can kill the schedule).
   The build fails if the checksum does not match. `curl` and `ca-certificates` are installed only
   for this step.
 - `WORKDIR /app`; copy `package.json` and `package-lock.json`; `npm ci --omit=dev` (runtime deps
-  only: `openai`, `tsx`, `yaml`, `zod`, all exact-pinned in the lockfile).
+  only: `openai`, `tsx`, `zod`, all exact-pinned in the lockfile).
 - Copy `src/` and `docker/`. No build step: `tsx` runs TypeScript directly, as in development.
 - Environment defaults: `MYJOBBOT_DATA_DIR=/data`, `MYJOBBOT_LOG_DIR=/data/log`,
   `SCHEDULE="30 * * * *"` (hourly at :30), `TZ=UTC`, `NODE_OPTIONS=--disable-warning=ExperimentalWarning`.
@@ -54,7 +54,7 @@ POSIX `sh`, `set -eu`. Behaviour by first argument:
 | `run` | Check prerequisites, then `exec /app/docker/run.sh` (one run now) |
 | anything else | `exec "$@"` (e.g. `sh` for debugging) |
 
-Prerequisite check: `"$MYJOBBOT_DATA_DIR/config.yaml"` and `"$MYJOBBOT_DATA_DIR/resume.md"` must
+Prerequisite check: `"$MYJOBBOT_DATA_DIR/config.json"` and `"$MYJOBBOT_DATA_DIR/resume.md"` must
 exist and the data dir must be writable; otherwise print which file is missing (or that the dir is
 not writable by uid 1000) and exit 1.
 
@@ -108,7 +108,7 @@ services:
   2. `docker run --rm myjobbot:test node_modules/.bin/tsx src/cli.ts` prints the usage line
      and exits 2.
   3. `docker run --rm myjobbot:test run` with an empty temp dir mounted at `/data` exits 1 and
-     names the missing `config.yaml`.
+     names the missing `config.json`.
   4. With a temp data dir holding the example config and resume and `LLM_BASE_URL=not-a-url`,
      `run` exits 1 with the readable `LLM_BASE_URL` config error.
   5. The image runs as uid 1000 (`docker run --rm myjobbot:test id -u` prints `1000`).

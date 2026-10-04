@@ -1,3 +1,5 @@
+import { rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test } from "vitest";
 import { loadConfig } from "../src/config/load.js";
 import { testFileConfig } from "./helpers/config.js";
@@ -13,7 +15,7 @@ test("loadConfig applies defaults", () => {
 });
 
 test("loadConfig rejects an unknown board type", () => {
-  const dir = makeDataDir("companies:\n  - { name: X, ats: workday, slug: x }\n");
+  const dir = makeDataDir({ companies: [{ name: "X", ats: "workday", slug: "x" }] });
   expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/ats/);
 });
 
@@ -36,4 +38,17 @@ test("loadConfig requires LLM settings", () => {
 test("config rejects retention not longer than ghost threshold", () => {
   const overrides = { ghost_threshold_days: 90, job_retention_days: 60 };
   expect(() => testFileConfig(overrides)).toThrow(/job_retention_days/);
+});
+
+test("loadConfig reports invalid JSON readably", () => {
+  const dir = makeDataDir();
+  writeFileSync(join(dir, "config.json"), "{ not json");
+  expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/config.json is not valid JSON/);
+});
+
+test("loadConfig asks to convert a leftover config.yaml", () => {
+  const dir = makeDataDir();
+  rmSync(join(dir, "config.json"));
+  writeFileSync(join(dir, "config.yaml"), "companies: []\n");
+  expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/config is now JSON: convert .*config.yaml to .*config.json/);
 });

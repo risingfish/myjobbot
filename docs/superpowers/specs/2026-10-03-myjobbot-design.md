@@ -65,7 +65,7 @@ fixtures in `tests/fixtures/`.
 ## Inputs
 
 - **`resume.md`**: the user's resume as Markdown or plain text, mounted into the container.
-- **`config.yaml`**:
+- **`config.json`** (JSON; see the JSearch spec for the format change):
   - `companies`: list of `{name, ats: greenhouse|lever|ashby, slug, glassdoor_url?}`.
     A starter list of well-known SWE employers per ATS is provided.
   - `preferences`: free-text notes for the agent (e.g. locations, remote, seniority,

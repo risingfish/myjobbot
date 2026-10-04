@@ -21,7 +21,6 @@
   "dependencies": {
     "openai": "7.27.0",
     "tsx": "4.23.15",
-    "yaml": "2.9.1",
     "zod": "4.6.5"
   },
   "scripts": {

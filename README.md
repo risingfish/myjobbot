@@ -12,7 +12,7 @@ Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
 npm ci
 cp .env.example .env            # set LLM_API_KEY
 mkdir -p data
-cp examples/config.yaml data/   # list your target companies
+cp examples/config.json data/   # list your target companies
 cp examples/resume.md data/     # replace with your resume
 ```
 
@@ -50,7 +50,7 @@ On the server:
 git clone <repo> myjobbot && cd myjobbot
 cp .env.example .env              # set LLM_API_KEY; optionally SCHEDULE and TZ
 mkdir -p data
-cp examples/config.yaml data/     # your companies
+cp examples/config.json data/     # your companies
 cp examples/resume.md data/       # your resume
 docker compose up -d --build
 ```
@@ -92,7 +92,7 @@ whether that's allowed, runs it, and hands the result back.
 ```mermaid
 flowchart TD
     CLI["src/cli.ts<br/>load .env, call runOnce()"] --> CFG
-    CFG["config/load.ts<br/>config.yaml + resume.md + env<br/>(validated with zod)"] --> CTX
+    CFG["config/load.ts<br/>config.json + resume.md + env<br/>(validated with zod)"] --> CTX
     CTX["app/run.ts<br/>tool context: SQLite store, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LOOP
     LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> PRUNE
     PRUNE["app/run.ts<br/>prune postings not seen in 90 days"] --> OUT
@@ -291,7 +291,7 @@ flowchart LR
 5. **Everything is traced.** Every model reply, tool call, nudge and compaction is appended
    to `data/runs/<timestamp>.jsonl`.
 
-### Configuration knobs (`data/config.yaml`)
+### Configuration knobs (`data/config.json`)
 
 | Setting | Default | What it controls |
 |---|---|---|

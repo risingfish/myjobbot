@@ -21,7 +21,7 @@ data_dir() {
   local dir; dir=$(mktemp -d)
   chmod 777 "$dir"
   if [ "${1:-}" = "with-config" ]; then
-    cp examples/config.yaml examples/resume.md "$dir/"
+    cp examples/config.json examples/resume.md "$dir/"
   fi
   echo "$dir"
 }
@@ -35,7 +35,7 @@ ok "runs as uid 1000"
 expect_exit 2 "usage: myjobbot run" "cli prints usage without a command" "$IMAGE" node_modules/.bin/tsx src/cli.ts
 
 empty=$(data_dir)
-expect_exit 1 "missing /data/config.yaml" "run reports a missing config" -v "$empty:/data" "$IMAGE" run
+expect_exit 1 "missing /data/config.json" "run reports a missing config" -v "$empty:/data" "$IMAGE" run
 
 configured=$(data_dir with-config)
 expect_exit 1 "LLM_BASE_URL" "run reports a bad LLM URL readably" -v "$configured:/data" "${BAD_LLM[@]}" "$IMAGE" run
