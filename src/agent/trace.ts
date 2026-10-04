@@ -6,8 +6,8 @@ export interface Trace {
   write(event: TraceEvent): void;
 }
 
-export function fileTrace(path: string): Trace {
+export function fileTrace(path: string, runId: string): Trace {
   return {
-    write: (event) => appendFileSync(path, `${JSON.stringify({ at: new Date().toISOString(), ...event })}\n`),
+    write: (event) => appendFileSync(path, `${JSON.stringify({ at: new Date().toISOString(), run_id: runId, ...event })}\n`),
   };
 }

@@ -1,11 +1,21 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { TraceEvent } from "../../src/agent/trace.js";
+import type { Trace, TraceEvent } from "../../src/agent/trace.js";
+
+export function memoryTrace(): Trace & { events: TraceEvent[] } {
+  const events: TraceEvent[] = [];
+  return {
+    events,
+    write: (event) => {
+      events.push(event);
+    },
+  };
+}
 
 export function readRunEvents(dataDir: string): TraceEvent[] {
   const runsDir = join(dataDir, "runs");
   const files = readdirSync(runsDir).sort();
-  return files.flatMap((file) => readEventsFile(join(runsDir, file)));
+  return files.flatMap((file) => readJsonl(join(runsDir, file)));
 }
 
 export function latestToolEvent(dataDir: string, name: string): TraceEvent {
@@ -16,7 +26,7 @@ export function latestToolEvent(dataDir: string, name: string): TraceEvent {
   return last;
 }
 
-function readEventsFile(path: string): TraceEvent[] {
+export function readJsonl(path: string): TraceEvent[] {
   return readFileSync(path, "utf8")
     .trim()
     .split("\n")

@@ -13,7 +13,7 @@ async function main(argv: string[]): Promise<number> {
   }
   if (existsSync(".env")) process.loadEnvFile(".env");
   const report = await runOnce(process.env);
-  console.log(`run ${report.status} after ${report.steps} steps: ${report.reason}`);
+  console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
   if (report.summary) console.log(report.summary);
   return report.status === "finished" ? 0 : 1;
 }

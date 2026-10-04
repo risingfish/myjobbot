@@ -12,6 +12,7 @@ export const TEST_ENV = {
   LLM_BASE_URL: "http://127.0.0.1:9/v1",
   LLM_MODEL: "test-model",
   LLM_API_KEY: "test-key",
+  MYJOBBOT_LOG_DIR: mkdtempSync(join(tmpdir(), "myjobbot-log-")),
 };
 
 export function makeDataDir(config = SAMPLE_CONFIG): string {

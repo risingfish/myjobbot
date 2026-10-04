@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
@@ -18,7 +19,15 @@ interface RunSeams {
   http?: JsonGetter;
 }
 
+interface RunLogs {
+  runId: string;
+  trace: Trace;
+  llm: Trace;
+  jobs: Trace;
+}
+
 interface RunReport extends AgentResult {
+  runId: string;
   summary: string | null;
 }
 
@@ -26,10 +35,12 @@ const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
 export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
-  const context = buildContext(config, seams);
-  const result = await runAgent(agentDeps(config, context, seams), initialMessages(config));
+  const logs = openRunLogs(config);
+  const context = buildContext(config, seams, logs.jobs);
+  const chat = seams.chat ?? createChat(config.env, logs.llm);
+  const result = await runAgent(agentDeps(config, context, { chat, trace: logs.trace }), initialMessages(config));
   pruneOldJobs(context);
-  return { ...result, summary: context.run.summary };
+  return { ...result, runId: logs.runId, summary: context.run.summary };
 }
 
 function pruneOldJobs(context: ToolContext): void {
@@ -37,30 +48,41 @@ function pruneOldJobs(context: ToolContext): void {
   context.store.pruneLastSeenBefore(cutoff.toISOString());
 }
 
-function buildContext(config: AppConfig, seams: RunSeams): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, jobLog: Trace): ToolContext {
   return {
     config: config.file,
     run: newRunState(),
     store: new JobStore(openDatabase(join(config.dataDir, "myjobbot.db"))),
     http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
     now: () => new Date(),
+    jobLog,
   };
 }
 
-function agentDeps(config: AppConfig, context: ToolContext, seams: RunSeams): AgentDeps {
-  const runId = new Date().toISOString().replace(/[:.]/g, "-");
+function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, "chat" | "trace">): AgentDeps {
   return {
-    chat: seams.chat ?? createChat(config.env, openJsonl(config.env.MYJOBBOT_LOG_DIR, runId)),
+    ...io,
     tools: buildTools(context),
     limits: config.file.agent,
-    trace: openJsonl(join(config.dataDir, "runs"), runId),
     clock: Date.now,
     isFinished: () => context.run.finished,
     ...PROMPT_TEXTS,
   };
 }
 
-function openJsonl(dir: string, runId: string): Trace {
+function openRunLogs(config: AppConfig): RunLogs {
+  const runId = randomUUID();
+  const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
+  const logDir = config.env.MYJOBBOT_LOG_DIR;
+  return {
+    runId,
+    trace: openJsonl(join(config.dataDir, "runs"), `${name}.jsonl`, runId),
+    llm: openJsonl(logDir, `${name}.llm.jsonl`, runId),
+    jobs: openJsonl(logDir, `${name}.jobs.jsonl`, runId),
+  };
+}
+
+function openJsonl(dir: string, file: string, runId: string): Trace {
   mkdirSync(dir, { recursive: true });
-  return fileTrace(join(dir, `${runId}.jsonl`));
+  return fileTrace(join(dir, file), runId);
 }

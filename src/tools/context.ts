@@ -1,3 +1,4 @@
+import type { Trace } from "../agent/trace.js";
 import type { FileConfig } from "../config/schema.js";
 import type { JobStore } from "../db/jobStore.js";
 import type { JsonGetter } from "../http/client.js";
@@ -15,6 +16,7 @@ export interface ToolContext {
   store: JobStore;
   http: JsonGetter;
   now: () => Date;
+  jobLog: Trace;
 }
 
 export function newRunState(): RunState {

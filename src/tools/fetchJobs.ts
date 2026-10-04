@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { FileConfig } from "../config/schema.js";
+import type { Job } from "../jobs/job.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { fetcherFor } from "../sources/index.js";
 import type { ToolContext } from "./context.js";
@@ -52,9 +53,16 @@ function onFetchFailure(context: ToolContext, company: Company): void {
 
 async function fetchAndStore(context: ToolContext, company: Company): Promise<string> {
   const jobs = await fetcherFor(company.ats)(company, context.http);
+  logBoardFetch(context, company, jobs);
   const seen = context.now().toISOString();
   context.store.upsertAll(jobs, seen);
   return seen;
+}
+
+function logBoardFetch(context: ToolContext, company: Company, jobs: Job[]): void {
+  const { name, ats, slug } = company;
+  const logged = jobs.map(({ description: _description, ...job }) => job);
+  context.jobLog.write({ type: "board_fetch", company: name, ats, slug, job_count: jobs.length, jobs: logged });
 }
 
 function findCompany(context: ToolContext, name: string): Company {

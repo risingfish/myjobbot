@@ -3,6 +3,7 @@ import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
+import { memoryTrace } from "./helpers/trace.js";
 
 test("fetch_jobs returns title-filtered unscored jobs without null fields", async () => {
   const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Account Executive"])) });
@@ -43,4 +44,15 @@ test("fetch_jobs retries a board fetch that failed earlier in the run", async ()
 
 test("fetch_jobs rejects an unknown company", async () => {
   await expect(fetchPage(testContext(), "Initech")).rejects.toThrow('unknown company "Initech"');
+});
+
+test("fetch_jobs logs the jobs each board download returned, without descriptions", async () => {
+  const jobLog = memoryTrace();
+  const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Account Executive"])), jobLog });
+  await fetchPage(context, "Stripe");
+  await fetchPage(context, "Stripe");
+  expect(jobLog.events).toHaveLength(1);
+  expect(jobLog.events[0]).toMatchObject({ type: "board_fetch", company: "Stripe", ats: "greenhouse", slug: "stripe", job_count: 2 });
+  expect(jobLog.events[0]?.jobs).toMatchObject([{ jobId: "1000", title: "Backend Engineer" }, { jobId: "1001", title: "Account Executive" }]);
+  expect(JSON.stringify(jobLog.events[0])).not.toContain("description");
 });

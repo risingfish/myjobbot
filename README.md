@@ -25,7 +25,16 @@ tool-calling model.
 npm start -- run
 ```
 
-Each run writes a JSONL trace of every model message and tool call to `data/runs/`.
+Each run gets a UUID (printed as `run <id> finished after …`). Every log line carries it as
+`run_id`, and every file name ends with it, so one run's files sort together:
+
+| File | One line per |
+|---|---|
+| `data/runs/<timestamp>-<run_id>.jsonl` | Trace event: starting messages, model replies, tool calls and results, nudges, compactions, end |
+| `log/<timestamp>-<run_id>.llm.jsonl` | Raw LLM response, including token usage and llama.cpp timings |
+| `log/<timestamp>-<run_id>.jobs.jsonl` | Board download: company, board, job count, and the normalized jobs (descriptions omitted) |
+
+Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 
 ## Develop
 
