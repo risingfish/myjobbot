@@ -2,8 +2,8 @@ import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import { loadConfig } from "../src/config/load.js";
-import { testFileConfig } from "./helpers/config.js";
-import { makeDataDir, TEST_ENV } from "./helpers/dataDir.js";
+import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
+import { makeDataDir, SAMPLE_CONFIG, TEST_ENV } from "./helpers/dataDir.js";
 
 test("loadConfig applies defaults", () => {
   const config = loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir() });
@@ -28,7 +28,7 @@ test("config rejects duplicate company names ignoring case", () => {
     { name: "Stripe", ats: "greenhouse", slug: "stripe" },
     { name: "stripe", ats: "greenhouse", slug: "stripe-two" },
   ];
-  expect(() => testFileConfig({ companies })).toThrow(/company names must be unique/);
+  expect(() => testFileConfig({ companies })).toThrow(/names must be unique/);
 });
 
 test("loadConfig requires LLM settings", () => {
@@ -51,4 +51,34 @@ test("loadConfig asks to convert a leftover config.yaml", () => {
   rmSync(join(dir, "config.json"));
   writeFileSync(join(dir, "config.yaml"), "companies: []\n");
   expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/config is now JSON: convert .*config.yaml to .*config.json/);
+});
+
+test("config applies search and JSearch defaults", () => {
+  const config = testFileConfig({ searches: [TEST_SEARCH] });
+  expect(config.searches[0]).toEqual({ ...TEST_SEARCH, country: "us" });
+  expect(config.jsearch).toEqual({ monthly_request_cap: 190, refresh_hours: 24, date_posted: "3days" });
+});
+
+test("config accepts searches without companies", () => {
+  expect(testFileConfig({ companies: [], searches: [TEST_SEARCH] }).companies).toEqual([]);
+});
+
+test("config needs at least one company or search", () => {
+  expect(() => testFileConfig({ companies: [] })).toThrow(/at least one company or search/);
+});
+
+test("config rejects a search named like a company", () => {
+  expect(() => testFileConfig({ searches: [{ ...TEST_SEARCH, name: "stripe" }] })).toThrow(/names must be unique/);
+});
+
+test("config rejects more searches than the JSearch budget allows", () => {
+  const searches = Array.from({ length: 7 }, (_, index) => ({ ...TEST_SEARCH, name: `Search ${index}` }));
+  expect(() => testFileConfig({ searches })).toThrow(/monthly_request_cap/);
+  expect(testFileConfig({ searches: searches.slice(0, 6) }).searches).toHaveLength(6);
+});
+
+test("loadConfig requires JSEARCH_API_KEY when searches are configured", () => {
+  const dir = makeDataDir({ ...SAMPLE_CONFIG, searches: [TEST_SEARCH] });
+  expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow("JSEARCH_API_KEY is required when searches are configured");
+  expect(loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir, JSEARCH_API_KEY: "k" }).file.searches).toHaveLength(1);
 });

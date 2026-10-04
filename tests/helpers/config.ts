@@ -6,3 +6,5 @@ export function testFileConfig(overrides: Record<string, unknown> = {}): FileCon
     ...overrides,
   });
 }
+
+export const TEST_SEARCH = { name: "Backend remote", query: "senior backend engineer", remote_only: true };

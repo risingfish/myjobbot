@@ -14,7 +14,14 @@ export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
   const env = envSchema.parse(environment);
   const dataDir = env.MYJOBBOT_DATA_DIR;
   const file = fileConfigSchema.parse(readConfigJson(dataDir));
+  requireSearchKey(env, file);
   return { env, file, resume: readText(dataDir, "resume.md"), dataDir };
+}
+
+function requireSearchKey(env: Env, file: FileConfig): void {
+  if (file.searches.length > 0 && !env.JSEARCH_API_KEY) {
+    throw new Error("JSEARCH_API_KEY is required when searches are configured");
+  }
 }
 
 function readConfigJson(dataDir: string): unknown {
