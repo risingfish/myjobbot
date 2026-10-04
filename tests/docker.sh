@@ -50,5 +50,15 @@ docker rm -f "$name" >/dev/null
 grep -q "scheduling runs at '\*/5 \* \* \* \*'" <<<"$logs" || fail "schedule mode announces its schedule. Logs: $logs"
 ok "schedule mode starts supercronic with SCHEDULE"
 
+web="myjobbot-web-test-$$"
+docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" -e MYJOBBOT_HOST=0.0.0.0 \
+  -e LLM_BASE_URL=http://127.0.0.1:9/v1 -e LLM_MODEL=m -e LLM_API_KEY=k "$IMAGE" serve >/dev/null
+page=""
+for _ in $(seq 1 20); do page=$(curl -s http://127.0.0.1:18082/recommended || true); [ -n "$page" ] && break; sleep 0.5; done
+web_logs=$(docker logs "$web" 2>&1)
+docker rm -f "$web" >/dev/null
+grep -q "<h1>myjobbot</h1>" <<<"$page" || fail "serve mode answers on its port. Logs: $web_logs"
+ok "serve mode answers on its port"
+
 rm -rf "$empty" "$configured"
 echo "all docker checks passed"

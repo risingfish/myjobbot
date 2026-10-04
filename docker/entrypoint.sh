@@ -25,6 +25,11 @@ case "${1:-schedule}" in
     check_prerequisites
     exec /app/docker/run.sh
     ;;
+  serve)
+    check_prerequisites
+    cd /app
+    exec node_modules/.bin/tsx src/cli.ts serve
+    ;;
   *)
     exec "$@"
     ;;

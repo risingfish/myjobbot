@@ -37,6 +37,24 @@ Each run gets a UUID (printed as `run <id> finished after …`). Every log line 
 
 Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 
+## Web UI
+
+```bash
+npm run serve        # http://localhost:8080
+```
+
+A read-only view of the database with three tabs:
+
+| Tab | Shows |
+|---|---|
+| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold`, best first, with the model's reasons and gaps |
+| **All jobs** | Every job retrieved, scored or not, including ones the title filter hid from the model |
+| **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
+
+Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
+`data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` / `MYJOBBOT_HOST` to
+change where it listens. There is no login: keep it on your LAN.
+
 ## Develop
 
 ```bash
@@ -64,6 +82,7 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 
 | Task | Command |
 |---|---|
+| Open the web UI | `http://<server>:8080` (the `web` service) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
 | Update after `git pull` | `docker compose up -d --build` |
