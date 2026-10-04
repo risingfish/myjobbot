@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ToolContext } from "./context.js";
 import { unscoredJobs } from "./fetchJobs.js";
-import { configuredSources, type Source } from "./sources.js";
+import { configuredSources, type FetchOutcome, type Source } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 
 export function listSourcesTool(context: ToolContext): Tool {
@@ -14,7 +14,8 @@ export function listSourcesTool(context: ToolContext): Tool {
 }
 
 function describeSource(source: Source) {
-  return { name: source.name, kind: source.kind, ats: source.company.ats };
+  if (source.kind === "board") return { name: source.name, kind: source.kind, ats: source.company.ats };
+  return { name: source.name, kind: source.kind };
 }
 
 function notFetched(context: ToolContext, source: Source) {
@@ -27,10 +28,10 @@ async function sourceStatus(context: ToolContext, source: Source) {
   return cached ? fetchedStatus(context, source, cached) : notFetched(context, source);
 }
 
-async function fetchedStatus(context: ToolContext, source: Source, cached: Promise<string>) {
+async function fetchedStatus(context: ToolContext, source: Source, cached: Promise<FetchOutcome>) {
   try {
-    const seen = await cached;
-    return { ...describeSource(source), fetched: true, total_unscored: unscoredJobs(context, source, seen).length };
+    const outcome = await cached;
+    return { ...describeSource(source), fetched: true, total_unscored: unscoredJobs(context, source.name, outcome).length };
   } catch {
     return notFetched(context, source);
   }

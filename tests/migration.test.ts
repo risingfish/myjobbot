@@ -33,3 +33,10 @@ test("openDatabase migrations are safe to run twice", () => {
   openDatabase(path).close();
   expect(() => openDatabase(path)).not.toThrow();
 });
+
+test("openDatabase adds the publisher column and the api_calls table", () => {
+  const db = openDatabase(preSourceDatabase());
+  const columns = db.prepare("PRAGMA table_info(jobs)").all().map((column) => column.name);
+  expect(columns).toContain("publisher");
+  expect({ ...db.prepare("SELECT COUNT(*) AS count FROM api_calls").get() }).toEqual({ count: 0 });
+});

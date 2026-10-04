@@ -48,3 +48,21 @@ function responder(responses: Response[]): () => Response {
     return response;
   };
 }
+
+export interface RecordedRequest {
+  url: string;
+  headers: Record<string, string>;
+}
+
+export function routedHttp(routes: Record<string, unknown>): JsonGetter & { requests: RecordedRequest[] } {
+  const requests: RecordedRequest[] = [];
+  return {
+    requests,
+    getJson: async (url, headers = {}) => {
+      requests.push({ url, headers });
+      const body = routes[new URL(url).host];
+      if (body === undefined) throw new Error(`no fake route for ${url}`);
+      return structuredClone(body);
+    },
+  };
+}

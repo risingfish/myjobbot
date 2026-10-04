@@ -1,11 +1,19 @@
 import type { FileConfig } from "../config/schema.js";
 import type { ToolContext } from "./context.js";
 
-type Company = FileConfig["companies"][number];
-export type Source = { kind: "board"; name: string; company: Company };
+export type Company = FileConfig["companies"][number];
+export type Search = FileConfig["searches"][number];
+export type Source = { kind: "board"; name: string; company: Company } | { kind: "search"; name: string; search: Search };
+
+export interface FetchOutcome {
+  seen: string | null;
+  note: string | null;
+}
 
 export function configuredSources(context: ToolContext): Source[] {
-  return context.config.companies.map((company) => ({ kind: "board" as const, name: company.name, company }));
+  const boards = context.config.companies.map((company) => ({ kind: "board" as const, name: company.name, company }));
+  const searches = context.config.searches.map((search) => ({ kind: "search" as const, name: search.name, search }));
+  return [...boards, ...searches];
 }
 
 export function findSource(context: ToolContext, name: string): Source {

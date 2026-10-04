@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   PRIMARY KEY (ats, job_id)
 );
 CREATE INDEX IF NOT EXISTS jobs_by_company_title ON jobs (company, normalized_title);
+CREATE TABLE IF NOT EXISTS api_calls (api TEXT NOT NULL, source TEXT NOT NULL, called_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS api_calls_by_api_time ON api_calls (api, called_at);
 `;
 
-const ADDED_COLUMNS = ["source TEXT"];
+const ADDED_COLUMNS = ["source TEXT", "publisher TEXT"];
 const AFTER_COLUMNS = `
 UPDATE jobs SET source = company WHERE source IS NULL;
 CREATE INDEX IF NOT EXISTS jobs_by_source ON jobs (source, scored_at);

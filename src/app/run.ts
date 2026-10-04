@@ -6,6 +6,7 @@ import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig } from "../config/load.js";
+import { ApiCallLog } from "../db/apiCalls.js";
 import { JobStore } from "../db/jobStore.js";
 import { openDatabase } from "../db/open.js";
 import { MS_PER_DAY } from "../jobs/age.js";
@@ -44,18 +45,21 @@ export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = 
 }
 
 function pruneOldJobs(context: ToolContext): void {
-  const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY);
-  context.store.pruneLastSeenBefore(cutoff.toISOString());
+  const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
+  context.store.pruneLastSeenBefore(cutoff);
+  context.apiCalls.pruneBefore(cutoff);
 }
 
 function buildContext(config: AppConfig, seams: RunSeams, jobLog: Trace): ToolContext {
+  const db = openDatabase(join(config.dataDir, "myjobbot.db"));
   return {
     config: config.file,
     run: newRunState(),
-    store: new JobStore(openDatabase(join(config.dataDir, "myjobbot.db"))),
+    store: new JobStore(db), apiCalls: new ApiCallLog(db),
     http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
     now: () => new Date(),
     jobLog,
+    jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
   };
 }
 
