@@ -236,13 +236,9 @@ never call `fetch` directly.
 
 ## Deployment
 
-- Docker image based on the official Playwright Node image (`mcr.microsoft.com/playwright`),
-  with the version pinned.
-- Mounted volume: `/data` holding `myjobbot.db`, `runs/`, `browser-profile/`,
-  `config.yaml`, `resume.md`.
-- Host cron runs `docker run --rm ... myjobbot run` daily.
-- All npm dependencies pinned with upper bounds (exact or `~`) and installed from the
-  lockfile (`npm ci`).
+See `2026-10-04-docker-deployment-design.md`: Docker Compose on the home server, supercronic
+scheduling inside the container, state and logs in a bind-mounted `data/` folder. Playwright is
+added to the image by the Glassdoor plan when it is needed.
 
 ## Testing
 
