@@ -9,7 +9,7 @@ const JITTER_MS = 500;
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
 export interface JsonGetter {
-  getJson(url: string): Promise<unknown>;
+  getJson(url: string, headers?: Record<string, string>): Promise<unknown>;
 }
 
 interface HttpDeps {
@@ -26,9 +26,9 @@ export class HttpClient implements JsonGetter {
     this.limiter = new HostLimiter(deps.config, deps.clock);
   }
 
-  async getJson(url: string): Promise<unknown> {
+  async getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
     for (let attempt = 0; ; attempt += 1) {
-      const response = await this.withUrl(url, () => this.send(url));
+      const response = await this.withUrl(url, () => this.send(url, headers));
       if (response.ok) return this.withUrl(url, () => response.json());
       await response.body?.cancel();
       if (!this.shouldRetry(response.status, attempt)) throw new Error(`GET ${url} failed with HTTP ${response.status}`);
@@ -44,13 +44,13 @@ export class HttpClient implements JsonGetter {
     }
   }
 
-  private send(url: string): Promise<Response> {
-    return this.limiter.schedule(new URL(url).host, () => this.fetchWithTimeout(url));
+  private send(url: string, headers: Record<string, string>): Promise<Response> {
+    return this.limiter.schedule(new URL(url).host, () => this.fetchWithTimeout(url, headers));
   }
 
-  private fetchWithTimeout(url: string): Promise<Response> {
+  private fetchWithTimeout(url: string, headers: Record<string, string>): Promise<Response> {
     const signal = AbortSignal.timeout(this.deps.config.timeout_s * MS_PER_SECOND);
-    return this.deps.fetchFn(url, { signal });
+    return this.deps.fetchFn(url, { signal, headers });
   }
 
   private shouldRetry(status: number, attempt: number): boolean {

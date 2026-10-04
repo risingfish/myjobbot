@@ -30,12 +30,21 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
 
 export function scriptedFetch(responses: Response[]) {
   const urls: string[] = [];
-  const queue = [...responses];
-  const fetchFn = async (url: string): Promise<Response> => {
+  const inits: RequestInit[] = [];
+  const nextResponse = responder(responses);
+  const fetchFn = async (url: string, init: RequestInit): Promise<Response> => {
     urls.push(url);
+    inits.push(init);
+    return nextResponse();
+  };
+  return { fetchFn, urls, inits };
+}
+
+function responder(responses: Response[]): () => Response {
+  const queue = [...responses];
+  return () => {
     const response = queue.shift();
     if (!response) throw new Error("scripted fetch ran out of responses");
     return response;
   };
-  return { fetchFn, urls };
 }

@@ -8,9 +8,9 @@ const URL_A = "https://a.example/board";
 
 function client(responses: Response[]) {
   const clock = fakeClock();
-  const { fetchFn, urls } = scriptedFetch(responses);
+  const { fetchFn, urls, inits } = scriptedFetch(responses);
   const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
-  return { http, clock, urls };
+  return { http, clock, urls, inits };
 }
 
 function trackedClock(events: string[]) {
@@ -88,4 +88,10 @@ test("HttpClient starts the timeout after the rate-limit wait", async () => {
   await http.getJson(URL_A);
   await http.getJson(URL_A);
   expect(events).toEqual(["timeout", "sleep", "timeout"]);
+});
+
+test("HttpClient sends request headers when given", async () => {
+  const { http, inits } = client([jsonResponse({ ok: true })]);
+  await http.getJson(URL_A, { "x-api-key": "secret" });
+  expect(inits[0]?.headers).toEqual({ "x-api-key": "secret" });
 });
