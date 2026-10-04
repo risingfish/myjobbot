@@ -28,8 +28,24 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE INDEX IF NOT EXISTS jobs_by_company_title ON jobs (company, normalized_title);
 `;
 
+const ADDED_COLUMNS = ["source TEXT"];
+const AFTER_COLUMNS = `
+UPDATE jobs SET source = company WHERE source IS NULL;
+CREATE INDEX IF NOT EXISTS jobs_by_source ON jobs (source, scored_at);
+`;
+
 export function openDatabase(path: string): DatabaseSync {
   const db = new DatabaseSync(path);
   db.exec(SCHEMA);
+  addMissingColumns(db);
+  db.exec(AFTER_COLUMNS);
   return db;
+}
+
+function addMissingColumns(db: DatabaseSync): void {
+  const existing = new Set(db.prepare("PRAGMA table_info(jobs)").all().map((column) => String(column.name)));
+  for (const definition of ADDED_COLUMNS) {
+    const [name = ""] = definition.split(" ");
+    if (!existing.has(name)) db.exec(`ALTER TABLE jobs ADD COLUMN ${definition}`);
+  }
 }

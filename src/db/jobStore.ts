@@ -26,17 +26,17 @@ const jobRow = z.object({
 export type JobRow = z.infer<typeof jobRow>;
 
 const UPSERT = `
-INSERT INTO jobs (ats, job_id, company, title, normalized_title, location, department, team,
+INSERT INTO jobs (ats, job_id, company, source, title, normalized_title, location, department, team,
   workplace_type, is_remote, compensation, url, posted_at, description, first_seen, last_seen)
-VALUES (:ats, :job_id, :company, :title, :normalized_title, :location, :department, :team,
+VALUES (:ats, :job_id, :company, :source, :title, :normalized_title, :location, :department, :team,
   :workplace_type, :is_remote, :compensation, :url, :posted_at, :description, :seen, :seen)
 ON CONFLICT (ats, job_id) DO UPDATE SET
-  company = excluded.company, title = excluded.title, normalized_title = excluded.normalized_title,
-  location = excluded.location, department = excluded.department, team = excluded.team,
-  workplace_type = excluded.workplace_type, is_remote = excluded.is_remote,
-  compensation = excluded.compensation, url = excluded.url, posted_at = excluded.posted_at,
-  description = excluded.description, last_seen = excluded.last_seen`;
-const UNSCORED = "SELECT * FROM jobs WHERE company = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
+  company = excluded.company, source = excluded.source, title = excluded.title,
+  normalized_title = excluded.normalized_title, location = excluded.location,
+  department = excluded.department, team = excluded.team, workplace_type = excluded.workplace_type,
+  is_remote = excluded.is_remote, compensation = excluded.compensation, url = excluded.url,
+  posted_at = excluded.posted_at, description = excluded.description, last_seen = excluded.last_seen`;
+const UNSCORED = "SELECT * FROM jobs WHERE source = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
 const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ?";
 const EARLIEST_SEEN = `
 SELECT MIN(MIN(first_seen), COALESCE(MIN(posted_at), MIN(first_seen))) AS earliest
@@ -54,15 +54,15 @@ interface Verdict {
 export class JobStore {
   constructor(private readonly db: DatabaseSync) {}
 
-  upsertAll(jobs: Job[], seen: string): void {
+  upsertAll(jobs: Job[], seen: string, source: string): void {
     const statement = this.db.prepare(UPSERT);
     this.transaction(() => {
-      for (const job of jobs) statement.run(toParams(job, seen));
+      for (const job of jobs) statement.run(toParams(job, seen, source));
     });
   }
 
-  unscoredSince(company: string, seen: string): JobRow[] {
-    return z.array(jobRow).parse(this.db.prepare(UNSCORED).all(company, seen));
+  unscoredSince(source: string, seen: string): JobRow[] {
+    return z.array(jobRow).parse(this.db.prepare(UNSCORED).all(source, seen));
   }
 
   recordVerdict(verdict: Verdict, scoredAt: string): boolean {
@@ -97,9 +97,9 @@ export class JobStore {
   }
 }
 
-function toParams(job: Job, seen: string): Record<string, string | number | null> {
+function toParams(job: Job, seen: string, source: string): Record<string, string | number | null> {
   return {
-    ats: job.ats, job_id: job.jobId, company: job.company, title: job.title,
+    ats: job.ats, job_id: job.jobId, company: job.company, source, title: job.title,
     normalized_title: normalizeTitle(job.title), location: job.location, department: job.department,
     team: job.team, workplace_type: job.workplaceType, is_remote: toFlag(job.isRemote),
     compensation: job.compensation, url: job.url, posted_at: job.postedAt, description: job.description, seen,

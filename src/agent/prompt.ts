@@ -1,18 +1,18 @@
 import type { AppConfig } from "../config/load.js";
 import type { Message } from "./llm.js";
 
-export const NUDGE = "Respond only with tool calls. Call finish when every company has total_unscored 0.";
+export const NUDGE = "Respond only with tool calls. Call finish when every source has total_unscored 0.";
 export const COMPACTION_NOTICE =
-  "Earlier tool calls and results were removed to save context. Call list_companies to see each company's progress, then continue.";
+  "Earlier tool calls and results were removed to save context. Call list_sources to see each source's progress, then continue.";
 
 const SYSTEM_PROMPT =`You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
 
 Work only through tool calls:
-1. Call list_companies.
-2. For each company call fetch_jobs. It returns up to 25 unscored jobs and total_unscored.
+1. Call list_sources. Sources are company job boards and saved job searches.
+2. For each source call fetch_jobs. It returns up to 25 unscored jobs and total_unscored.
 3. Score every returned job from 0 to 100 for fit, then save the whole page with one record_matches call.
-4. Call fetch_jobs again for the same company until total_unscored is 0, then move on to the next company.
-5. When every company is done, call finish with a one-paragraph summary.
+4. Call fetch_jobs again for the same source until total_unscored is 0, then move on to the next source.
+5. When every source is done, call finish with a one-paragraph summary.
 
 Scoring rules:
 - You only have job metadata (title, location, department, team, workplace type, remote flag, compensation, days open). Full descriptions are not available yet, so judge from metadata.

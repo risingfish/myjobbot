@@ -62,7 +62,7 @@ test("toHistory omits tool_calls when the reply has no function calls", () => {
 });
 
 test("agent compacts history when it exceeds the context budget", async () => {
-  const list = toolCallReply("list_companies", {});
+  const list = toolCallReply("list_sources", {});
   const replies = [list, list, list, list, list, list, FINISH];
   const { events, requests } = await runScripted(replies, { limits: { ...TEST_LIMITS, context_chars: 50 } });
   const compacted = events.find((event) => event.type === "compacted");

@@ -11,7 +11,7 @@ import { readJsonl } from "./helpers/trace.js";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 async function fetchAndFinishRun(dataDir: string) {
-  const replies = [toolCallsReply(["fetch_jobs", { company: "Stripe" }], ["finish", { summary: "done" }])];
+  const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])];
   const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
   return runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http });
 }

@@ -21,7 +21,7 @@ test("runOnce finishes when the model calls finish and writes a trace", async ()
 test("runOnce stores fetched jobs in the data directory database", async () => {
   const dataDir = makeDataDir();
   const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
-  const replies = [toolCallsReply(["fetch_jobs", { company: "Stripe" }], ["finish", { summary: "done" }])];
+  const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])];
   const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http });
   expect(report.status).toBe("finished");
   expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/stripe/jobs"]);
@@ -33,7 +33,7 @@ test("runOnce prunes jobs not seen within job_retention_days", async () => {
   const dataDir = makeDataDir();
   const db = openDatabase(join(dataDir, "myjobbot.db"));
   const stale = makeJob({ ats: "greenhouse", jobId: "stale", company: "Stripe", title: "Old Engineer", url: "u" }, {});
-  new JobStore(db).upsertAll([stale], "2020-01-01T00:00:00.000Z");
+  new JobStore(db).upsertAll([stale], "2020-01-01T00:00:00.000Z", "Stripe");
   const { chat } = scriptedChat([toolCallReply("finish", { summary: "done" })]);
   await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat });
   expect({ ...db.prepare("SELECT COUNT(*) AS count FROM jobs").get() }).toEqual({ count: 0 });

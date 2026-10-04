@@ -9,7 +9,7 @@ const schema = z.object({
 export function finishTool(context: ToolContext): Tool {
   return defineTool({
     name: "finish",
-    description: "End the run. Call only when every company has total_unscored 0.",
+    description: "End the run. Call only when every source has total_unscored 0.",
     schema,
     run: ({ summary }) => {
       context.run.finished = true;

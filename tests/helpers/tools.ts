@@ -8,12 +8,12 @@ export async function invokeTool(context: ToolContext, name: string, args: unkno
   return tool.invoke(args);
 }
 
-const pageSchema = z.object({
-  company: z.string(),
+const pageSchema = z.looseObject({
+  source: z.string(),
   total_unscored: z.number(),
   jobs: z.array(z.looseObject({ job_id: z.string() })),
 });
 
-export async function fetchPage(context: ToolContext, company: string) {
-  return pageSchema.parse(await invokeTool(context, "fetch_jobs", { company }));
+export async function fetchPage(context: ToolContext, source: string) {
+  return pageSchema.parse(await invokeTool(context, "fetch_jobs", { source }));
 }

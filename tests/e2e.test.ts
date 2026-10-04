@@ -13,10 +13,10 @@ const VERDICTS = [
 ];
 
 const SCRIPT = [
-  toolCallReply("list_companies", {}),
-  toolCallReply("fetch_jobs", { company: "Stripe" }),
+  toolCallReply("list_sources", {}),
+  toolCallReply("fetch_jobs", { source: "Stripe" }),
   toolCallReply("record_matches", { verdicts: VERDICTS }),
-  toolCallReply("fetch_jobs", { company: "Stripe" }),
+  toolCallReply("fetch_jobs", { source: "Stripe" }),
   toolCallReply("finish", { summary: "Scored 2 Stripe jobs." }),
 ];
 

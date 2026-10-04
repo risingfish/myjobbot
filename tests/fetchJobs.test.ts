@@ -8,7 +8,7 @@ import { memoryTrace } from "./helpers/trace.js";
 test("fetch_jobs returns title-filtered unscored jobs without null fields", async () => {
   const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Account Executive"])) });
   expect(await fetchPage(context, "stripe")).toEqual({
-    company: "Stripe",
+    source: "Stripe",
     total_unscored: 1,
     jobs: [{ job_id: "1000", title: "Backend Engineer", location: "Remote", posted_at: "2026-09-01T00:00:00.000Z", days_open: 32, possible_ghost: false }],
   });
@@ -42,8 +42,8 @@ test("fetch_jobs retries a board fetch that failed earlier in the run", async ()
   expect(http.urls).toHaveLength(2);
 });
 
-test("fetch_jobs rejects an unknown company", async () => {
-  await expect(fetchPage(testContext(), "Initech")).rejects.toThrow('unknown company "Initech"');
+test("fetch_jobs rejects an unknown source", async () => {
+  await expect(fetchPage(testContext(), "Initech")).rejects.toThrow('unknown source "Initech"');
 });
 
 test("fetch_jobs logs the jobs each board download returned, without descriptions", async () => {

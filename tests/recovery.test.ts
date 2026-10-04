@@ -15,12 +15,12 @@ function envFor(dataDir: string) {
 }
 
 function runAndCrash(dataDir: string, http: JsonGetter) {
-  const crash = chatThenCrash([toolCallReply("fetch_jobs", { company: "Stripe" })], new Error("LLM down"));
+  const crash = chatThenCrash([toolCallReply("fetch_jobs", { source: "Stripe" })], new Error("LLM down"));
   return runOnce(envFor(dataDir), { chat: crash, http });
 }
 
 function runToCompletion(dataDir: string, http: JsonGetter) {
-  const replies = [toolCallReply("fetch_jobs", { company: "Stripe" }), toolCallReply("finish", { summary: "done" })];
+  const replies = [toolCallReply("fetch_jobs", { source: "Stripe" }), toolCallReply("finish", { summary: "done" })];
   return runOnce(envFor(dataDir), { chat: scriptedChat(replies).chat, http });
 }
 
