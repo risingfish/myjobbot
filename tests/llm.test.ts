@@ -9,15 +9,23 @@ import { envSchema } from "../src/config/schema.js";
 import { makeDataDir, TEST_ENV } from "./helpers/dataDir.js";
 import { CANNED_COMPLETION, startFakeLlm } from "./helpers/llmServer.js";
 
-async function fakeLlmEnv() {
+async function fakeLlm() {
   const llm = await startFakeLlm();
   onTestFinished(llm.close);
-  return { ...TEST_ENV, LLM_BASE_URL: llm.baseUrl };
+  return { llm, env: { ...TEST_ENV, LLM_BASE_URL: llm.baseUrl } };
 }
+
+test("createChat sends the Qwen3-Coder sampling settings with every request", async () => {
+  const { llm, env } = await fakeLlm();
+  const chat = createChat(envSchema.parse(env), { write: () => undefined });
+  await chat([{ role: "user", content: "hi" }], []);
+  expect(llm.requests).toHaveLength(1);
+  expect(llm.requests[0]).toMatchObject({ model: "test-model", temperature: 0.7, top_p: 0.8, top_k: 20, repeat_penalty: 1.05 });
+});
 
 test("createChat returns the model's message and logs the raw response", async () => {
   const events: TraceEvent[] = [];
-  const chat = createChat(envSchema.parse(await fakeLlmEnv()), { write: (event) => void events.push(event) });
+  const chat = createChat(envSchema.parse((await fakeLlm()).env), { write: (event) => void events.push(event) });
   const reply = await chat([{ role: "user", content: "hi" }], []);
   expect(reply.tool_calls?.[0]).toMatchObject({ function: { name: "finish" } });
   expect(events).toHaveLength(1);
@@ -26,7 +34,7 @@ test("createChat returns the model's message and logs the raw response", async (
 
 test("runOnce writes each raw LLM response to the log directory", async () => {
   const logDir = mkdtempSync(join(tmpdir(), "myjobbot-log-"));
-  const env = { ...(await fakeLlmEnv()), MYJOBBOT_DATA_DIR: makeDataDir(), MYJOBBOT_LOG_DIR: logDir };
+  const env = { ...(await fakeLlm()).env, MYJOBBOT_DATA_DIR: makeDataDir(), MYJOBBOT_LOG_DIR: logDir };
   expect(await runOnce(env)).toMatchObject({ status: "finished", steps: 1 });
   const files = readdirSync(logDir);
   expect(files).toHaveLength(1);

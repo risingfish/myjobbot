@@ -1,4 +1,4 @@
-import { createServer, type Server } from "node:http";
+import { createServer, type RequestListener, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 export const CANNED_COMPLETION = {
@@ -23,17 +23,31 @@ export const CANNED_COMPLETION = {
 
 export interface FakeLlm {
   baseUrl: string;
+  requests: unknown[];
   close: () => Promise<void>;
 }
 
 export async function startFakeLlm(): Promise<FakeLlm> {
-  const server = createServer((request, response) => {
-    request.resume();
-    request.on("end", () => response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(CANNED_COMPLETION)));
-  });
+  const requests: unknown[] = [];
+  const server = createServer(recordAndReply(requests));
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return { baseUrl: baseUrlOf(server), requests, close: () => closeServer(server) };
+}
+
+function recordAndReply(requests: unknown[]): RequestListener {
+  return (request, response) => {
+    const chunks: Buffer[] = [];
+    request.on("data", (chunk: Buffer) => chunks.push(chunk));
+    request.on("end", () => {
+      requests.push(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+      response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(CANNED_COMPLETION));
+    });
+  };
+}
+
+function baseUrlOf(server: Server): string {
   const { port } = server.address() as AddressInfo;
-  return { baseUrl: `http://127.0.0.1:${port}/v1`, close: () => closeServer(server) };
+  return `http://127.0.0.1:${port}/v1`;
 }
 
 function closeServer(server: Server): Promise<void> {

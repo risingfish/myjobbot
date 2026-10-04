@@ -11,10 +11,17 @@ export type FunctionCall = Extract<NonNullable<AssistantMessage["tool_calls"]>[n
 const REQUEST_TIMEOUT_MS = 10 * 60_000;
 const MAX_RETRIES = 1;
 
+const TEMPERATURE = 0.7;
+const TOP_P = 0.8;
+const TOP_K = 20;
+const REPEAT_PENALTY = 1.05;
+
+const SAMPLING = { temperature: TEMPERATURE, top_p: TOP_P, top_k: TOP_K, repeat_penalty: REPEAT_PENALTY };
+
 export function createChat(env: Env, responseLog: Trace): ChatFn {
   const client = openClient(env);
   return async (messages, tools) => {
-    const completion = await client.chat.completions.create({ model: env.LLM_MODEL, messages, tools: tools.map(toFunctionTool) });
+    const completion = await client.chat.completions.create({ model: env.LLM_MODEL, messages, tools: tools.map(toFunctionTool), ...SAMPLING });
     responseLog.write({ type: "llm_response", response: completion });
     return firstMessage(completion);
   };
