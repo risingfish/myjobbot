@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS verdicts (
 CREATE INDEX IF NOT EXISTS verdicts_by_time ON verdicts (scored_at);
 `;
 
-const ADDED_COLUMNS = ["source TEXT", "publisher TEXT"];
+const ADDED_COLUMNS = ["source TEXT", "publisher TEXT", "requirements TEXT", "skills TEXT", "preferred_skills TEXT"];
 const AFTER_COLUMNS = `
 UPDATE jobs SET source = company WHERE source IS NULL;
 CREATE INDEX IF NOT EXISTS jobs_by_source ON jobs (source, scored_at);

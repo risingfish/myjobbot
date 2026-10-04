@@ -4,7 +4,7 @@ import type { FileConfig } from "../config/schema.js";
 import { describeError } from "../errors.js";
 import type { JsonGetter } from "../http/client.js";
 import { makeJob, type Job } from "../jobs/job.js";
-import { optionalDate, optionalFlag, optionalText } from "./fields.js";
+import { optionalDate, optionalFlag, optionalText, textList } from "./fields.js";
 
 type Search = FileConfig["searches"][number];
 type JsearchSettings = FileConfig["jsearch"];
@@ -25,6 +25,9 @@ const result = z.object({
   job_posted_at_datetime_utc: optionalDate,
   job_description: optionalText,
   job_publisher: optionalText,
+  job_highlights: z.object({ Qualifications: textList }).nullish().catch(null),
+  required_technologies: textList,
+  preferred_technologies: textList,
 });
 const response = z.object({ data: z.object({ jobs: z.array(result) }) });
 const SHORT_ID_HEX_CHARS = 16;
@@ -70,6 +73,7 @@ function toJob(post: z.infer<typeof result>): Job {
     {
       location, isRemote: post.job_is_remote, workplaceType: post.work_arrangement, compensation: post.job_salary_string,
       postedAt: post.job_posted_at_datetime_utc, description: post.job_description, publisher: post.job_publisher,
+      requirements: post.job_highlights?.Qualifications, skills: post.required_technologies, preferredSkills: post.preferred_technologies,
     },
   );
 }

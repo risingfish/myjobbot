@@ -40,3 +40,9 @@ test("openDatabase adds the publisher column and the api_calls table", () => {
   expect(columns).toContain("publisher");
   expect({ ...db.prepare("SELECT COUNT(*) AS count FROM api_calls").get() }).toEqual({ count: 0 });
 });
+
+test("openDatabase adds the requirements and skills columns", () => {
+  const db = openDatabase(preSourceDatabase());
+  const columns = db.prepare("PRAGMA table_info(jobs)").all().map((column) => column.name);
+  expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills"]));
+});

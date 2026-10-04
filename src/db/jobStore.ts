@@ -27,15 +27,18 @@ export type JobRow = z.infer<typeof jobRow>;
 
 const UPSERT = `
 INSERT INTO jobs (ats, job_id, company, source, title, normalized_title, location, department, team,
-  workplace_type, is_remote, compensation, url, posted_at, description, publisher, first_seen, last_seen)
+  workplace_type, is_remote, compensation, url, posted_at, description, publisher, requirements, skills,
+  preferred_skills, first_seen, last_seen)
 VALUES (:ats, :job_id, :company, :source, :title, :normalized_title, :location, :department, :team,
-  :workplace_type, :is_remote, :compensation, :url, :posted_at, :description, :publisher, :seen, :seen)
+  :workplace_type, :is_remote, :compensation, :url, :posted_at, :description, :publisher, :requirements, :skills,
+  :preferred_skills, :seen, :seen)
 ON CONFLICT (ats, job_id) DO UPDATE SET
   company = excluded.company, source = excluded.source, title = excluded.title,
   normalized_title = excluded.normalized_title, location = excluded.location,
   department = excluded.department, team = excluded.team, workplace_type = excluded.workplace_type,
   is_remote = excluded.is_remote, compensation = excluded.compensation, url = excluded.url,
   posted_at = excluded.posted_at, description = excluded.description, publisher = excluded.publisher,
+  requirements = excluded.requirements, skills = excluded.skills, preferred_skills = excluded.preferred_skills,
   last_seen = excluded.last_seen`;
 const UNSCORED = "SELECT * FROM jobs WHERE source = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
 const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ? RETURNING ats";
@@ -131,8 +134,13 @@ function toParams(job: Job, seen: string, source: string): Record<string, string
     normalized_title: normalizeTitle(job.title), location: job.location, department: job.department,
     team: job.team, workplace_type: job.workplaceType, is_remote: toFlag(job.isRemote),
     compensation: job.compensation, url: job.url, posted_at: job.postedAt, description: job.description,
-    publisher: job.publisher, seen,
+    publisher: job.publisher, requirements: listParam(job.requirements), skills: listParam(job.skills),
+    preferred_skills: listParam(job.preferredSkills), seen,
   };
+}
+
+function listParam(items: string[]): string | null {
+  return items.length === 0 ? null : JSON.stringify(items);
 }
 
 function toFlag(value: boolean | null): number | null {

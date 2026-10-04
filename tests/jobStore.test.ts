@@ -39,3 +39,12 @@ test("pruneLastSeenBefore deletes stale jobs only", () => {
   expect(store.pruneLastSeenBefore(DAY_TWO)).toBe(1);
   expect(store.unscoredSince("Stripe", DAY_TWO).map((row) => row.job_id)).toEqual(["2"]);
 });
+
+test("upsertAll saves the description, requirements and skills", () => {
+  const db = openDatabase(":memory:");
+  const lists = { description: "Build APIs.", requirements: ["5+ years"], skills: ["Go"], preferredSkills: [] };
+  const job = makeJob({ ats: "jsearch", jobId: "js_1", company: "Acme", title: "Backend Engineer", url: "u" }, lists);
+  new JobStore(db).upsertAll([job], DAY_ONE, "Search");
+  const row = db.prepare("SELECT description, requirements, skills, preferred_skills FROM jobs").get();
+  expect({ ...row }).toEqual({ description: "Build APIs.", requirements: '["5+ years"]', skills: '["Go"]', preferred_skills: null });
+});

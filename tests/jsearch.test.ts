@@ -39,6 +39,15 @@ test("fetchJsearch maps results to jobs", async () => {
   expect(jobs[1]).toMatchObject({ location: "US", isRemote: false, workplaceType: null, publisher: "Stripe Careers" });
 });
 
+test("fetchJsearch keeps requirements and skills when JSearch provides them", async () => {
+  const jobs = await fetchJsearch(request(), routedHttp({ [HOST]: loadFixture("jsearch.json") }));
+  expect(jobs[0]).toMatchObject({
+    description: "Build APIs in Go.", requirements: ["5+ years building APIs", "Go or TypeScript"],
+    skills: ["Go", "PostgreSQL"], preferredSkills: ["Kubernetes", "AWS"],
+  });
+  expect(jobs[1]).toMatchObject({ requirements: [], skills: [], preferredSkills: [] });
+});
+
 test("fetchJsearch shortens JSearch's long job ids to stable short ids", async () => {
   const rawId = "x".repeat(402);
   const job = { job_id: rawId, employer_name: "Long Id Co", job_title: "Backend Engineer", job_apply_link: "https://example.com/l" };

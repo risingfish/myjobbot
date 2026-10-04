@@ -7,7 +7,7 @@ const CASES = [
   {
     ats: "greenhouse" as const,
     slug: "stripe",
-    url: "https://boards-api.greenhouse.io/v1/boards/stripe/jobs",
+    url: "https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true",
     count: 2,
     first: {
       jobId: "8172503",
@@ -15,6 +15,7 @@ const CASES = [
       url: "https://stripe.com/jobs/search?gh_jid=8172503",
       location: "Remote from the US",
       postedAt: "2026-09-09T14:52:09.000Z",
+      description: "Build payments & billing systems.\nGo\nRuby & Rails",
     },
   },
   {

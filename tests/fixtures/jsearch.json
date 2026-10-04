@@ -1,33 +1,56 @@
 {
   "status": "OK",
   "request_id": "test-request",
-  "parameters": { "query": "senior backend engineer", "num_pages": 1, "country": "us" },
-  "data": { "cursor": "next-page-token", "jobs": [
-    {
-      "job_id": "js-linkedin-1",
-      "employer_name": "Acme Robotics, Inc.",
-      "job_title": "Senior Backend Engineer",
-      "job_apply_link": "https://www.linkedin.com/jobs/view/1",
-      "job_city": "Austin",
-      "job_state": "TX",
-      "job_country": "US",
-      "job_is_remote": true,
-      "work_arrangement": "remote",
-      "job_salary_string": "$170K-$210K a year",
-      "job_posted_at_datetime_utc": "2026-10-02T15:00:00.000Z",
-      "job_description": "Build APIs in Go.",
-      "job_publisher": "LinkedIn"
-    },
-    {
-      "job_id": "js-dup-stripe",
-      "employer_name": "Stripe, Inc.",
-      "job_title": "Backend Engineer",
-      "job_apply_link": "https://stripe.com/jobs/1000",
-      "job_city": null,
-      "job_state": null,
-      "job_country": "US",
-      "job_is_remote": false,
-      "job_publisher": "Stripe Careers"
-    }
-  ] }
+  "parameters": {
+    "query": "senior backend engineer",
+    "num_pages": 1,
+    "country": "us"
+  },
+  "data": {
+    "cursor": "next-page-token",
+    "jobs": [
+      {
+        "job_id": "js-linkedin-1",
+        "employer_name": "Acme Robotics, Inc.",
+        "job_title": "Senior Backend Engineer",
+        "job_apply_link": "https://www.linkedin.com/jobs/view/1",
+        "job_city": "Austin",
+        "job_state": "TX",
+        "job_country": "US",
+        "job_is_remote": true,
+        "work_arrangement": "remote",
+        "job_salary_string": "$170K-$210K a year",
+        "job_posted_at_datetime_utc": "2026-10-02T15:00:00.000Z",
+        "job_description": "Build APIs in Go.",
+        "job_publisher": "LinkedIn",
+        "job_highlights": {
+          "Qualifications": [
+            "5+ years building APIs",
+            "Go or TypeScript"
+          ],
+          "Responsibilities": [
+            "Own the payments API"
+          ]
+        },
+        "required_technologies": [
+          "Go",
+          "PostgreSQL"
+        ],
+        "preferred_technologies": "Kubernetes, AWS"
+      },
+      {
+        "job_id": "js-dup-stripe",
+        "employer_name": "Stripe, Inc.",
+        "job_title": "Backend Engineer",
+        "job_apply_link": "https://stripe.com/jobs/1000",
+        "job_city": null,
+        "job_state": null,
+        "job_country": "US",
+        "job_is_remote": false,
+        "job_publisher": "Stripe Careers",
+        "job_highlights": "n/a",
+        "required_technologies": 42
+      }
+    ]
+  }
 }

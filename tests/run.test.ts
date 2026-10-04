@@ -24,7 +24,7 @@ test("runOnce stores fetched jobs in the data directory database", async () => {
   const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])];
   const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http });
   expect(report.status).toBe("finished");
-  expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/stripe/jobs"]);
+  expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true"]);
   const db = openDatabase(join(dataDir, "myjobbot.db"));
   expect({ ...db.prepare("SELECT COUNT(*) AS count FROM jobs").get() }).toEqual({ count: 1 });
 });

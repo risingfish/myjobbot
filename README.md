@@ -250,7 +250,7 @@ flowchart TD
 ```mermaid
 erDiagram
     JOBS {
-        text ats PK "greenhouse | lever | ashby"
+        text ats PK "greenhouse | lever | ashby | jsearch"
         text job_id PK
         text company
         text title
@@ -259,6 +259,10 @@ erDiagram
         text workplace_type
         text compensation
         text posted_at "from the board"
+        text description "plain text, up to 20,000 chars"
+        text requirements "JSON array (JSearch qualifications)"
+        text skills "JSON array (JSearch required technologies)"
+        text preferred_skills "JSON array (JSearch preferred technologies)"
         text first_seen "first time the bot saw it"
         text last_seen "last run it was still listed"
         int score "0-100, set by record_matches"
@@ -267,6 +271,10 @@ erDiagram
         text scored_at
     }
 ```
+
+Every source saves the job description (Greenhouse's HTML is converted to plain text).
+JSearch also supplies requirement bullets and required and preferred technologies, which are
+saved when present; the other boards don't have them as lists, so those columns stay empty.
 
 **Fishing-post detection:** "days open" counts from the oldest date the bot has, either
 `posted_at` or `first_seen`, across all rows with the same company and normalized title.
