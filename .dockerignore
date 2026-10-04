@@ -1,0 +1,11 @@
+.env
+data/
+log/
+node_modules/
+.git/
+tests/
+docs/
+.claude/
+.githooks/
+.habit-hooks/
+.idea/
