@@ -1,7 +1,7 @@
 # myjobbot Docker Deployment — Design Spec
 
 **Date:** 2026-10-04
-**Status:** Approved design, pending implementation plan
+**Status:** Implemented (merged 2026-10-04)
 **Parent spec:** `2026-10-03-myjobbot-design.md` (this replaces its "Deployment" section)
 
 ## Goal
@@ -37,7 +37,7 @@ bug can kill the schedule).
   only: `openai`, `tsx`, `yaml`, `zod`, all exact-pinned in the lockfile).
 - Copy `src/` and `docker/`. No build step: `tsx` runs TypeScript directly, as in development.
 - Environment defaults: `MYJOBBOT_DATA_DIR=/data`, `MYJOBBOT_LOG_DIR=/data/log`,
-  `SCHEDULE="0 6 * * *"`, `TZ=UTC`, `NODE_OPTIONS=--disable-warning=ExperimentalWarning`.
+  `SCHEDULE="30 * * * *"` (hourly at :30), `TZ=UTC`, `NODE_OPTIONS=--disable-warning=ExperimentalWarning`.
 - Runs as the image's non-root `node` user (uid 1000).
 - `ENTRYPOINT ["/app/docker/entrypoint.sh"]`.
 
