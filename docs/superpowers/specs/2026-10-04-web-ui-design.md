@@ -67,8 +67,8 @@ has a matching count method for the summary line.
 
 | Method | Returns |
 |---|---|
-| `recommended(filter, page)` / `countRecommended(filter)` | Scored jobs whose `source` is in `filter.sources` and `score >= filter.threshold`, ordered by score desc, then `scored_at` desc, then `ats, job_id` |
-| `allJobs(page)` / `countAllJobs()` | Every job row, ordered by `last_seen` desc, then `first_seen` desc, then `ats, job_id` |
+| `recommended(filter, page)` / `countRecommended(filter)` | Scored jobs whose `source` is in `filter.sources` and `score >= filter.threshold`, ordered by `COALESCE(posted_at, first_seen)` desc (newest posting first), then `first_seen` desc, then `ats, job_id` |
+| `allJobs(page)` / `countAllJobs()` | Every job row, same newest-first order as `recommended` |
 | `verdictHistory(page)` / `countVerdicts()` | Every verdict joined to its job's title, company, url and source (left join; title shows "(pruned)" if missing), ordered by `scored_at` desc, then `rowid` desc |
 
 The trailing tie-breakers keep the order stable, so consecutive pages neither repeat nor skip

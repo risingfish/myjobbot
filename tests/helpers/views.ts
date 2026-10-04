@@ -11,7 +11,7 @@ export interface SeedJob {
   score?: number;
   title?: string;
   url?: string;
-  postedAt?: string;
+  postedAt?: string | null;
   publisher?: string;
 }
 
@@ -26,7 +26,7 @@ export function seededViews(entries: SeedJob[]): JobViews {
 
 function seedJob(entry: SeedJob) {
   const core = { ats: "greenhouse" as const, jobId: entry.id, company: "Acme", title: entry.title ?? `Software Engineer ${entry.id}`, url: entry.url ?? `https://example.com/${entry.id}` };
-  return makeJob(core, { location: "Remote", postedAt: entry.postedAt ?? "2026-09-30T00:00:00.000Z", publisher: entry.publisher ?? null });
+  return makeJob(core, { location: "Remote", postedAt: entry.postedAt === undefined ? "2026-09-30T00:00:00.000Z" : entry.postedAt, publisher: entry.publisher ?? null });
 }
 
 function seedVerdict(entry: SeedJob) {

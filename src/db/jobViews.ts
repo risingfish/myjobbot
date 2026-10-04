@@ -55,8 +55,8 @@ export interface RecommendedFilter {
 
 const JOB_COLUMNS = `ats, job_id, source, company, title, url, location, workplace_type, is_remote, compensation,
   posted_at, first_seen, last_seen, publisher, score, reasons, gaps, scored_at`;
-const RECOMMENDED_ORDER = "ORDER BY score DESC, scored_at DESC, ats, job_id";
-const ALL_JOBS = `SELECT ${JOB_COLUMNS} FROM jobs ORDER BY last_seen DESC, first_seen DESC, ats, job_id LIMIT ? OFFSET ?`;
+const NEWEST_FIRST = "ORDER BY COALESCE(posted_at, first_seen) DESC, first_seen DESC, ats, job_id";
+const ALL_JOBS = `SELECT ${JOB_COLUMNS} FROM jobs ${NEWEST_FIRST} LIMIT ? OFFSET ?`;
 const VERDICT_HISTORY = `
 SELECT v.run_id, v.scored_at, v.score, v.reasons, v.gaps, j.title, j.company, j.url, j.source
 FROM verdicts v LEFT JOIN jobs j ON j.ats = v.ats AND j.job_id = v.job_id
@@ -67,7 +67,7 @@ export class JobViews {
   constructor(private readonly db: DatabaseSync) {}
 
   recommended(filter: RecommendedFilter, page: Page): JobView[] {
-    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE ${recommendedWhere(filter)} ${RECOMMENDED_ORDER} LIMIT ? OFFSET ?`;
+    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE ${recommendedWhere(filter)} ${NEWEST_FIRST} LIMIT ? OFFSET ?`;
     return z.array(jobView).parse(this.db.prepare(sql).all(filter.threshold, ...filter.sources, page.limit, page.offset));
   }
 
