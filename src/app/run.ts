@@ -22,6 +22,8 @@ interface RunReport extends AgentResult {
   summary: string | null;
 }
 
+const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
+
 export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
   const context = buildContext(config, seams);
@@ -46,20 +48,19 @@ function buildContext(config: AppConfig, seams: RunSeams): ToolContext {
 }
 
 function agentDeps(config: AppConfig, context: ToolContext, seams: RunSeams): AgentDeps {
+  const runId = new Date().toISOString().replace(/[:.]/g, "-");
   return {
-    chat: seams.chat ?? createChat(config.env),
+    chat: seams.chat ?? createChat(config.env, openJsonl(config.env.MYJOBBOT_LOG_DIR, runId)),
     tools: buildTools(context),
     limits: config.file.agent,
-    trace: openTrace(config.dataDir),
+    trace: openJsonl(join(config.dataDir, "runs"), runId),
     clock: Date.now,
     isFinished: () => context.run.finished,
-    nudge: NUDGE,
-    compactionNotice: COMPACTION_NOTICE,
+    ...PROMPT_TEXTS,
   };
 }
 
-function openTrace(dataDir: string): Trace {
-  const runsDir = join(dataDir, "runs");
-  mkdirSync(runsDir, { recursive: true });
-  return fileTrace(join(runsDir, `${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`));
+function openJsonl(dir: string, runId: string): Trace {
+  mkdirSync(dir, { recursive: true });
+  return fileTrace(join(dir, `${runId}.jsonl`));
 }

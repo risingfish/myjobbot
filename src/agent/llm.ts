@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { Env } from "../config/schema.js";
 import type { Tool } from "../tools/tool.js";
+import type { Trace } from "./trace.js";
 
 export type Message = OpenAI.Chat.ChatCompletionMessageParam;
 export type AssistantMessage = OpenAI.Chat.ChatCompletionMessage;
@@ -10,17 +11,22 @@ export type FunctionCall = Extract<NonNullable<AssistantMessage["tool_calls"]>[n
 const REQUEST_TIMEOUT_MS = 10 * 60_000;
 const MAX_RETRIES = 1;
 
-export function createChat(env: Env): ChatFn {
-  const client = new OpenAI({
+export function createChat(env: Env, responseLog: Trace): ChatFn {
+  const client = openClient(env);
+  return async (messages, tools) => {
+    const completion = await client.chat.completions.create({ model: env.LLM_MODEL, messages, tools: tools.map(toFunctionTool) });
+    responseLog.write({ type: "llm_response", response: completion });
+    return firstMessage(completion);
+  };
+}
+
+function openClient(env: Env): OpenAI {
+  return new OpenAI({
     baseURL: env.LLM_BASE_URL,
     apiKey: env.LLM_API_KEY,
     timeout: REQUEST_TIMEOUT_MS,
     maxRetries: MAX_RETRIES,
   });
-  return async (messages, tools) => {
-    const completion = await client.chat.completions.create({ model: env.LLM_MODEL, messages, tools: tools.map(toFunctionTool) });
-    return firstMessage(completion);
-  };
 }
 
 export function functionCalls(reply: AssistantMessage): FunctionCall[] {

@@ -63,6 +63,7 @@ export const envSchema = z.object({
   LLM_MODEL: z.string().min(1),
   LLM_API_KEY: z.string().min(1),
   MYJOBBOT_DATA_DIR: z.string().min(1).default("data"),
+  MYJOBBOT_LOG_DIR: z.string().min(1).default("log"),
 });
 
 function hasUniqueNames(list: Array<{ name: string }>): boolean {
