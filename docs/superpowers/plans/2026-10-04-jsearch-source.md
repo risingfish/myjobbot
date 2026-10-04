@@ -1031,9 +1031,9 @@ test("fetchJsearch accepts results nested under data.jobs", async () => {
   expect(jobs.map((entry) => entry.jobId)).toEqual(["n1"]);
 });
 
-test("fetchJsearch explains a rejected API key", async () => {
+test("fetchJsearch explains a refused request", async () => {
   const http = { getJson: () => Promise.reject(new Error("GET https://api.openwebninja.com/jsearch/search-v2?query=x failed with HTTP 401")) };
-  await expect(fetchJsearch(request(), http)).rejects.toThrow("JSearch rejected the API key (HTTP 401); check JSEARCH_API_KEY");
+  await expect(fetchJsearch(request(), http)).rejects.toThrow("JSearch refused the request (HTTP 401); check JSEARCH_API_KEY and that the account is subscribed to JSearch");
 });
 ```
 
@@ -1316,7 +1316,7 @@ async function withKeyHint<T>(call: () => Promise<T>): Promise<T> {
     return await call();
   } catch (error) {
     const status = /HTTP (401|403)/.exec(describeError(error))?.[1];
-    if (status) throw new Error(`JSearch rejected the API key (HTTP ${status}); check JSEARCH_API_KEY`, { cause: error });
+    if (status) throw new Error(`JSearch refused the request (HTTP ${status}); check JSEARCH_API_KEY and that the account is subscribed to JSearch`, { cause: error });
     throw error;
   }
 }

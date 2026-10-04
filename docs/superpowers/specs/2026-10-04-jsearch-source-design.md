@@ -195,7 +195,7 @@ search rows set `source` = search name.
 `JsonGetter.getJson(url, headers?)` gains an optional headers argument, passed through to
 `fetch`. JSearch requests go through the same `HttpClient`: per-host spacing, the per-run cap,
 and retries on 429/5xx. A 401 or 403 is rethrown as
-`JSearch rejected the API key (HTTP 401); check JSEARCH_API_KEY`.
+`JSearch refused the request (HTTP 401); check JSEARCH_API_KEY and that the account is subscribed to JSearch`.
 
 ### Errors
 
