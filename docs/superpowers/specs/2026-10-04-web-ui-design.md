@@ -21,7 +21,8 @@ as history instead of overwritten.
 
 | Area | Decision |
 |---|---|
-| Rendering | Server-rendered HTML from TypeScript using Node's built-in `http` module. No framework, no new dependencies, no browser JavaScript. Tabs are links |
+| Rendering | Server-rendered HTML from TypeScript using Node's built-in `http` module. No framework, no new dependencies. Tabs are links |
+| Paging | Each tab renders its first 100 rows. Scrolling near the bottom loads the next 100 (infinite scroll) through one small inline script. A "Load more" link does the same without JavaScript |
 | Command | `myjobbot serve` (`npm run serve`) |
 | Data access | Read-only queries against the same SQLite file the agent writes |
 | Concurrency | SQLite WAL mode plus a busy timeout, so the UI reads while a run writes |
@@ -61,11 +62,17 @@ databases (`:memory:` ignores WAL harmlessly). This creates `myjobbot.db-wal` an
 
 A `JobViews` class with three read-only queries. All return plain row objects validated with zod.
 
+Each list method takes a `page: { offset: number; limit: number }` and returns that slice. Each
+has a matching count method for the summary line.
+
 | Method | Returns |
 |---|---|
-| `recommended(sources: string[], threshold: number)` | Scored jobs whose `source` is in `sources` and `score >= threshold`, ordered by score desc, then `scored_at` desc |
-| `allJobs()` | Every job row, ordered by `last_seen` desc, then `first_seen` desc |
-| `verdictHistory()` | Every verdict joined to its job's title, company, url and source (left join; title shows "(pruned)" if missing), ordered by `scored_at` desc |
+| `recommended(filter, page)` / `countRecommended(filter)` | Scored jobs whose `source` is in `filter.sources` and `score >= filter.threshold`, ordered by score desc, then `scored_at` desc, then `ats, job_id` |
+| `allJobs(page)` / `countAllJobs()` | Every job row, ordered by `last_seen` desc, then `first_seen` desc, then `ats, job_id` |
+| `verdictHistory(page)` / `countVerdicts()` | Every verdict joined to its job's title, company, url and source (left join; title shows "(pruned)" if missing), ordered by `scored_at` desc, then `rowid` desc |
+
+The trailing tie-breakers keep the order stable, so consecutive pages neither repeat nor skip
+rows unless data changes while scrolling.
 
 Job rows include: `ats, job_id, source, company, title, url, location, workplace_type,
 is_remote, compensation, posted_at, first_seen, last_seen, publisher, score, reasons, gaps,
@@ -90,7 +97,7 @@ render time. Minimal inline CSS, readable in light and dark (`prefers-color-sche
 - Each row has a `<details>` element listing the model's reasons and gaps.
 
 **All jobs** (`/jobs`)
-- All rows from `allJobs()`, no cap; summary shows the count.
+- Every job, 100 at a time (see Paging); the summary shows the total count.
 - Same columns. Score is blank when unscored. A "hidden by title filter" note marks jobs whose
   title fails the current title filter (the model never sees them).
 - Includes jobs from sources no longer in the config, until they are pruned.
@@ -100,6 +107,14 @@ render time. Minimal inline CSS, readable in light and dark (`prefers-color-sche
   when null), **Job** (title linked to the posting), **Company**, **Score**, **Reasons**,
   **Gaps** (as bullet lists).
 
+**Paging (all tabs):** the page shows the first 100 rows. If more exist, the table ends with a
+sentinel row holding a "Load more" link to the fragment URL for the next offset
+(`/<tab>/rows?offset=100`). One inline script (about 15 lines) watches the sentinel with
+`IntersectionObserver`. When it comes into view, the script fetches the fragment and replaces
+the sentinel with the returned rows, which end with the next sentinel if more remain. Without
+JavaScript, the link opens the next 100 rows as a full page (`/<tab>?offset=100`). Offsets that
+are missing, invalid or negative are treated as 0.
+
 **Empty states:** each tab says plainly when it has no rows (e.g. "No recommendations yet: run
 `myjobbot run`").
 
@@ -108,7 +123,8 @@ render time. Minimal inline CSS, readable in light and dark (`prefers-color-sche
 | Route | Response |
 |---|---|
 | `GET /` | 302 to `/recommended` |
-| `GET /recommended`, `/jobs`, `/reasoning` | 200 HTML |
+| `GET /recommended`, `/jobs`, `/reasoning` (optional `?offset=N`) | 200 HTML page: rows `N` to `N+99` |
+| `GET /recommended/rows`, `/jobs/rows`, `/reasoning/rows` with `?offset=N` | 200 HTML fragment: the `<tr>` rows for that slice, plus the next sentinel row if more remain |
 | Other paths | 404 HTML "Not found" |
 | Non-GET methods | 405 |
 | Render error | 500 HTML with the error message (escaped); the server keeps running |
@@ -163,10 +179,12 @@ render time. Minimal inline CSS, readable in light and dark (`prefers-color-sche
   - a job title containing `<script>` renders escaped
   - a `javascript:` URL renders as text, not a link
   - the title-filter note and the ghost marker
+  - paging: 250 jobs give 100 rows plus a sentinel pointing at offset 100; the fragment at
+    offset 200 has 50 rows and no sentinel; an invalid offset is treated as 0
 - **Server:** routes return the documented status codes (started on an ephemeral port in tests).
 - **CLI:** usage text lists `run | serve`.
 
 ## Out of scope
 
-Sorting and filtering controls, pagination, search, editing, marking jobs applied or ignored,
+Sorting and filtering controls, page-size controls, search, editing, marking jobs applied or ignored,
 auth, live refresh. Each can be added later without changing this structure.
