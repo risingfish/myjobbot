@@ -28,8 +28,8 @@ COPY docker ./docker
 
 ENV MYJOBBOT_DATA_DIR=/data \
     MYJOBBOT_LOG_DIR=/data/log \
-    SCHEDULE="30 * * * *" \
-    TZ=UTC \
+    SCHEDULE="0 1/8 * * *" \
+    TZ=America/Los_Angeles \
     NODE_OPTIONS=--disable-warning=ExperimentalWarning
 
 USER node

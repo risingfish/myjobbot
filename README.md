@@ -79,9 +79,9 @@ cp examples/resume.md data/       # your resume
 docker compose up -d --build
 ```
 
-The container runs `myjobbot run` on `SCHEDULE` (default `30 * * * *`, every hour at :30, in `TZ`,
-default UTC). After a board's backlog is scored, each run only scores new postings, so hourly runs
-are short; a run never starts while the previous one is still going.
+The container runs `myjobbot run` on `SCHEDULE` (default `0 1/8 * * *`, every 8 hours from
+1 a.m.: 01:00, 09:00, 17:00) in `TZ` (default `America/Los_Angeles`, Pacific time). After a board's backlog is scored,
+each run only scores new postings; a run never starts while the previous one is still going.
 Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` traces and
 `log/` files.
 
