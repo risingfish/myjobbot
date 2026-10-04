@@ -42,6 +42,36 @@ Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 npm run check   # typecheck + tests + habit-hooks
 ```
 
+## Deploy with Docker
+
+On the server:
+
+```bash
+git clone <repo> myjobbot && cd myjobbot
+cp .env.example .env              # set LLM_API_KEY; optionally SCHEDULE and TZ
+mkdir -p data
+cp examples/config.yaml data/     # your companies
+cp examples/resume.md data/       # your resume
+docker compose up -d --build
+```
+
+The container runs `myjobbot run` on `SCHEDULE` (default `0 6 * * *`, in `TZ`, default UTC).
+Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` traces and
+`log/` files.
+
+| Task | Command |
+|---|---|
+| Run once now | `docker compose run --rm myjobbot run` |
+| Watch runs | `docker compose logs -f myjobbot` |
+| Update after `git pull` | `docker compose up -d --build` |
+| Stop | `docker compose down` |
+
+The container runs as uid 1000. If your server user has a different uid, run
+`sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),
+add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yaml`.
+
+`tests/docker.sh` builds the image and checks the container's behaviour (needs Docker).
+
 ---
 
 ## How it works
