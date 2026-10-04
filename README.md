@@ -237,7 +237,8 @@ flowchart TD
 - **Title filter:** postings like sales, recruiting and management are stored but never
   shown to the model, which saves steps. Include terms match word prefixes ("engineer"
   matches "Engineering"); exclude terms match whole words ("intern" rejects "Interns" but
-  not "Internal").
+  not "Internal"). Setting `exclude` replaces the default list; to keep the defaults and add
+  your own terms, use `extra_exclude`.
 
 ### What a job row remembers
 
@@ -325,6 +326,7 @@ flowchart LR
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
 | `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold) |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
+| `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
 | `agent.max_steps` | 600 | Step cap per run |
 | `agent.max_wall_clock_min` | 120 | Time cap per run |
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |

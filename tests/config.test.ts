@@ -21,6 +21,17 @@ test("loadConfig rejects an unknown board type", () => {
 
 test("config rejects filter terms without a letter or digit", () => {
   expect(() => testFileConfig({ title_filter: { exclude: ["++"] } })).toThrow(/letter or digit/);
+  expect(() => testFileConfig({ title_filter: { extra_exclude: ["++"] } })).toThrow(/letter or digit/);
+});
+
+test("extra_exclude adds to the default exclude terms", () => {
+  const exclude = testFileConfig({ title_filter: { extra_exclude: ["staff", "principal"] } }).title_filter.exclude;
+  expect(exclude).toEqual(expect.arrayContaining(["intern", "manager", "staff", "principal"]));
+});
+
+test("extra_exclude adds to a custom exclude list", () => {
+  const filter = { exclude: ["sales"], extra_exclude: ["lead"] };
+  expect(testFileConfig({ title_filter: filter }).title_filter.exclude).toEqual(["sales", "lead"]);
 });
 
 test("config rejects duplicate company names ignoring case", () => {

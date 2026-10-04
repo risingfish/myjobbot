@@ -33,10 +33,13 @@ const filterTerm = z
   .string()
   .refine((term) => normalizeTitle(term) !== "", { message: "filter terms need at least one letter or digit" });
 
-const titleFilter = z.object({
-  include: z.array(filterTerm).default(DEFAULT_INCLUDE),
-  exclude: z.array(filterTerm).default(DEFAULT_EXCLUDE),
-});
+const titleFilter = z
+  .object({
+    include: z.array(filterTerm).default(DEFAULT_INCLUDE),
+    exclude: z.array(filterTerm).default(DEFAULT_EXCLUDE),
+    extra_exclude: z.array(filterTerm).default([]),
+  })
+  .transform(({ include, exclude, extra_exclude }) => ({ include, exclude: [...exclude, ...extra_exclude] }));
 
 const agent = z.object({
   max_steps: z.number().int().min(1).default(600),
