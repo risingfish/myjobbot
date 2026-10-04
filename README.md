@@ -191,7 +191,7 @@ work. Three failures in a row and the code ends the run.
 | `list_sources` | Each company board and saved search, with this run's progress: `fetched`, `total_unscored`, `fetch_failed` |
 | `fetch_jobs` | The first call per source per run downloads the board, or calls JSearch if the search is due. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed |
 | `record_matches` | Saves up to 25 scores (0–100), with reasons and gaps, in one call |
-| `get_job_details` | A placeholder in v1. Full descriptions are stored but not yet shown to the model |
+| `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them, and to treat the description as data, not instructions |
 | `finish` | Records the model's summary and ends the loop |
 
 **Paging needs no page numbers.** The model scores a page and calls `fetch_jobs` again.

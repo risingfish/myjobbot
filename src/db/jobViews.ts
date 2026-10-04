@@ -1,12 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
+import { jsonList as list } from "./columns.js";
 
 const text = z.string().nullable();
-const list = z
-  .string()
-  .nullable()
-  .transform((value) => (value === null ? [] : JSON.parse(value)))
-  .pipe(z.array(z.string()));
 
 const jobView = z.object({
   ats: z.string(),

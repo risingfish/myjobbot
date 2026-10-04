@@ -2,6 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import type { Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
+import { jsonList } from "./columns.js";
 
 const nullableText = z.string().nullable();
 const jobRow = z.object({
@@ -22,6 +23,10 @@ const jobRow = z.object({
   last_seen: z.string(),
   scored_at: nullableText,
   score: z.number().nullable(),
+  description: nullableText,
+  requirements: jsonList,
+  skills: jsonList,
+  preferred_skills: jsonList,
 });
 export type JobRow = z.infer<typeof jobRow>;
 
