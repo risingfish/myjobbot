@@ -37,7 +37,7 @@ const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
   const logs = openRunLogs(config);
-  const context = buildContext(config, seams, logs.jobs);
+  const context = buildContext(config, seams, logs);
   const chat = seams.chat ?? createChat(config.env, logs.llm);
   const result = await runAgent(agentDeps(config, context, { chat, trace: logs.trace }), initialMessages(config));
   pruneOldJobs(context);
@@ -50,15 +50,15 @@ function pruneOldJobs(context: ToolContext): void {
   context.apiCalls.pruneBefore(cutoff);
 }
 
-function buildContext(config: AppConfig, seams: RunSeams, jobLog: Trace): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, logs: RunLogs): ToolContext {
   const db = openDatabase(join(config.dataDir, "myjobbot.db"));
   return {
     config: config.file,
-    run: newRunState(),
+    run: newRunState(), runId: logs.runId,
     store: new JobStore(db), apiCalls: new ApiCallLog(db),
     http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
     now: () => new Date(),
-    jobLog,
+    jobLog: logs.jobs,
     jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
   };
 }

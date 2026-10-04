@@ -82,6 +82,8 @@ export const envSchema = z.object({
   MYJOBBOT_DATA_DIR: z.string().min(1).default("data"),
   MYJOBBOT_LOG_DIR: z.string().min(1).default("log"),
   JSEARCH_API_KEY: z.string().min(1).optional(),
+  MYJOBBOT_PORT: z.coerce.number().int().min(1).max(65535).default(8080),
+  MYJOBBOT_HOST: z.string().min(1).default("127.0.0.1"),
 });
 
 interface SourceLists {

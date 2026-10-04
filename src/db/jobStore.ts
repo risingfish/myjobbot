@@ -38,7 +38,10 @@ ON CONFLICT (ats, job_id) DO UPDATE SET
   posted_at = excluded.posted_at, description = excluded.description, publisher = excluded.publisher,
   last_seen = excluded.last_seen`;
 const UNSCORED = "SELECT * FROM jobs WHERE source = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
-const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ?";
+const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ? RETURNING ats";
+const INSERT_VERDICT = "INSERT INTO verdicts (ats, job_id, run_id, scored_at, score, reasons, gaps) VALUES (?, ?, ?, ?, ?, ?, ?)";
+const PRUNE_ORPHAN_VERDICTS = `
+DELETE FROM verdicts WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.ats = verdicts.ats AND jobs.job_id = verdicts.job_id)`;
 const EARLIEST_SEEN = `
 SELECT MIN(MIN(first_seen), COALESCE(MIN(posted_at), MIN(first_seen))) AS earliest
 FROM jobs WHERE company = ? AND normalized_title = ?`;
@@ -46,6 +49,11 @@ const PRUNE = "DELETE FROM jobs WHERE last_seen < ?";
 const UNSCORED_FOR_SOURCE = "SELECT * FROM jobs WHERE source = ? AND scored_at IS NULL ORDER BY job_id";
 const BOARD_COMPANIES_WITH_TITLE = "SELECT DISTINCT company FROM jobs WHERE ats != 'jsearch' AND normalized_title = ?";
 const FIND_JOB = "SELECT * FROM jobs WHERE job_id = ? LIMIT 1";
+
+interface VerdictStamp {
+  scoredAt: string;
+  runId: string | null;
+}
 
 interface Verdict {
   job_id: string;
@@ -77,10 +85,15 @@ export class JobStore {
     return z.array(z.object({ company: z.string() })).parse(rows).map((row) => row.company);
   }
 
-  recordVerdict(verdict: Verdict, scoredAt: string): boolean {
-    const { job_id, score, reasons, gaps } = verdict;
-    const result = this.db.prepare(RECORD_VERDICT).run(score, JSON.stringify(reasons), JSON.stringify(gaps), scoredAt, job_id);
-    return Number(result.changes) > 0;
+  recordVerdict(verdict: Verdict, stamp: VerdictStamp): boolean {
+    const reasons = JSON.stringify(verdict.reasons);
+    const gaps = JSON.stringify(verdict.gaps);
+    return this.transaction(() => {
+      const updated = this.db.prepare(RECORD_VERDICT).all(verdict.score, reasons, gaps, stamp.scoredAt, verdict.job_id);
+      const insert = this.db.prepare(INSERT_VERDICT);
+      for (const row of updated) insert.run(String(row.ats), verdict.job_id, stamp.runId, stamp.scoredAt, verdict.score, reasons, gaps);
+      return updated.length > 0;
+    });
   }
 
   earliestSeen(company: string, normalizedTitle: string): string {
@@ -89,7 +102,9 @@ export class JobStore {
   }
 
   pruneLastSeenBefore(cutoff: string): number {
-    return Number(this.db.prepare(PRUNE).run(cutoff).changes);
+    const pruned = Number(this.db.prepare(PRUNE).run(cutoff).changes);
+    this.db.exec(PRUNE_ORPHAN_VERDICTS);
+    return pruned;
   }
 
   findJob(jobId: string): JobRow | null {
@@ -97,11 +112,12 @@ export class JobStore {
     return row === undefined ? null : jobRow.parse(row);
   }
 
-  private transaction(work: () => void): void {
+  private transaction<T>(work: () => T): T {
     this.db.exec("BEGIN");
     try {
-      work();
+      const result = work();
       this.db.exec("COMMIT");
+      return result;
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;

@@ -15,6 +15,7 @@ interface RunState {
 export interface ToolContext {
   config: FileConfig;
   run: RunState;
+  runId: string;
   store: JobStore;
   apiCalls: ApiCallLog;
   http: JsonGetter;

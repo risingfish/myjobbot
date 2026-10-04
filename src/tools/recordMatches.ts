@@ -22,6 +22,7 @@ export function recordMatchesTool(context: ToolContext): Tool {
 
 function record(context: ToolContext, verdicts: Array<z.infer<typeof verdict>>) {
   const scoredAt = context.now().toISOString();
-  const unknown = verdicts.filter((entry) => !context.store.recordVerdict(entry, scoredAt)).map((entry) => entry.job_id);
+  const stamp = { scoredAt, runId: context.runId };
+  const unknown = verdicts.filter((entry) => !context.store.recordVerdict(entry, stamp)).map((entry) => entry.job_id);
   return { recorded: verdicts.length - unknown.length, unknown_job_ids: unknown };
 }

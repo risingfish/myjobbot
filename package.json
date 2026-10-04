@@ -27,6 +27,7 @@
     "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test && habit-hooks"
+    "check": "npm run typecheck && npm test && habit-hooks",
+    "serve": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts serve"
   }
 }
