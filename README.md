@@ -368,13 +368,6 @@ fixed schedule never skips a refresh by a few seconds), and never once the month
 `fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to
 the run's jobs log.
 
-### First live run (2026-10-03)
-
-Palantir's Lever board with `qwen3-coder-30b` on llama.cpp: **18 steps in 8.5 minutes**,
-all 159 title-filtered jobs scored, 5 at 70 or above, no tool errors, one nudge. Scores
-clustered heavily: 85 of 159 got exactly 40. Two likely causes are that v1 only gives the
-model titles and locations, and that the "below 40" line in the prompt acts as an anchor.
-
 ### Where to look to learn more
 
 - **The trace** in `data/runs/*.jsonl`. Read one top to bottom to see exactly what the model
