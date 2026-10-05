@@ -9,6 +9,7 @@ services:
       MYJOBBOT_LOG_DIR: /data/log
     volumes:
       - ./data:/data
+      - ./src:/app/src:ro
 
   web:
     image: myjobbot:latest
@@ -19,7 +20,9 @@ services:
       MYJOBBOT_DATA_DIR: /data
       MYJOBBOT_LOG_DIR: /data/log
       MYJOBBOT_HOST: 0.0.0.0
+      MYJOBBOT_WATCH: "1"
     ports:
       - "8080:8080"
     volumes:
       - ./data:/data
+      - ./src:/app/src:ro

@@ -90,8 +90,13 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 | Open the web UI | `http://<server>:8080` (the `web` service) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
-| Update after `git pull` | `docker compose up -d --build` |
+| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `Dockerfile` or `docker/` changed |
 | Stop | `docker compose down` |
+
+Both services mount the host's `src/` read-only over the image's copy, so code changes need no
+rebuild: each scheduled run starts a fresh process, and the `web` service runs under `tsx watch`
+(`MYJOBBOT_WATCH=1`) and restarts itself when a file changes. Without the mount (plain
+`docker run`), the image's own copy of the code is used.
 
 The container runs as uid 1000. If your server user has a different uid, run
 `sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),

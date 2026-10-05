@@ -28,6 +28,9 @@ case "${1:-schedule}" in
   serve)
     check_prerequisites
     cd /app
+    if [ "${MYJOBBOT_WATCH:-0}" = "1" ]; then
+      exec node_modules/.bin/tsx watch --clear-screen=false src/cli.ts serve
+    fi
     exec node_modules/.bin/tsx src/cli.ts serve
     ;;
   *)
