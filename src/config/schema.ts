@@ -28,6 +28,7 @@ const jsearch = z.object({
 });
 
 const HOURS_PER_MONTH = 30 * 24;
+export const REFRESH_GRACE_HOURS = 0.25;
 
 const filterTerm = z
   .string()
@@ -105,7 +106,7 @@ function hasUniqueSourceNames(config: SourceLists): boolean {
 }
 
 function fitsJsearchBudget(config: SourceLists & { jsearch: { monthly_request_cap: number; refresh_hours: number } }): boolean {
-  const refreshesPerMonth = Math.ceil(HOURS_PER_MONTH / config.jsearch.refresh_hours);
+  const refreshesPerMonth = Math.ceil(HOURS_PER_MONTH / (config.jsearch.refresh_hours - REFRESH_GRACE_HOURS));
   return config.searches.length * refreshesPerMonth <= config.jsearch.monthly_request_cap;
 }
 

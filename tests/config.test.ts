@@ -101,6 +101,13 @@ test("config rejects more searches than the JSearch budget allows", () => {
   expect(testFileConfig({ searches: searches.slice(0, 6) }).searches).toHaveLength(6);
 });
 
+test("three refreshes a day fit the budget for two searches but not three", () => {
+  const searches = Array.from({ length: 3 }, (_, index) => ({ ...TEST_SEARCH, name: `Search ${index}` }));
+  const jsearch = { refresh_hours: 8 };
+  expect(testFileConfig({ searches: searches.slice(0, 2), jsearch }).jsearch.refresh_hours).toBe(8);
+  expect(() => testFileConfig({ searches, jsearch })).toThrow(/monthly_request_cap/);
+});
+
 test("loadConfig requires JSEARCH_API_KEY when searches are configured", () => {
   const dir = makeDataDir({ ...SAMPLE_CONFIG, searches: [TEST_SEARCH] });
   expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow("JSEARCH_API_KEY is required when searches are configured");

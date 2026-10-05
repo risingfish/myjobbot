@@ -34,6 +34,23 @@ test("a search is not refreshed again within refresh_hours", async () => {
   expect(jsearchRequests()).toHaveLength(1);
 });
 
+test("a search refreshes on a schedule that lands seconds short of refresh_hours", async () => {
+  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+  const { context, jsearchRequests } = searchContext({ config });
+  const almostEightHoursAgo = new Date(TEST_NOW.getTime() - (8 * 3600 - 10) * 1000).toISOString();
+  context.apiCalls.record("jsearch", SEARCH_NAME, almostEightHoursAgo);
+  expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: true });
+  expect(jsearchRequests()).toHaveLength(1);
+});
+
+test("a search is not refreshed well inside refresh_hours", async () => {
+  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+  const { context, jsearchRequests } = searchContext({ config });
+  context.apiCalls.record("jsearch", SEARCH_NAME, new Date(TEST_NOW.getTime() - 7 * 3600 * 1000).toISOString());
+  expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: false, refresh_note: "refreshed 7h ago; next refresh in 1h" });
+  expect(jsearchRequests()).toHaveLength(0);
+});
+
 test("a search is not refreshed once the monthly budget is used", async () => {
   const { context, jsearchRequests } = searchContext();
   for (let index = 0; index < 190; index += 1) context.apiCalls.record("jsearch", "other", TEST_NOW.toISOString());

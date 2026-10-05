@@ -1,3 +1,4 @@
+import { REFRESH_GRACE_HOURS } from "../config/schema.js";
 import type { ToolContext } from "./context.js";
 
 const JSEARCH = "jsearch";
@@ -19,7 +20,7 @@ function tooRecent(context: ToolContext, sourceName: string): string | null {
   if (!last) return null;
   const ageHours = (context.now().getTime() - Date.parse(last)) / MS_PER_HOUR;
   const refreshHours = context.config.jsearch.refresh_hours;
-  if (ageHours >= refreshHours) return null;
+  if (ageHours >= refreshHours - REFRESH_GRACE_HOURS) return null;
   return `refreshed ${Math.floor(ageHours)}h ago; next refresh in ${Math.ceil(refreshHours - ageHours)}h`;
 }
 

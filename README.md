@@ -342,7 +342,7 @@ flowchart LR
 | `companies` | `[]` | `{name, ats, slug}` per company board (at least one company or search) |
 | `searches` | `[]` | Saved JSearch searches: `{name, query, remote_only, country}`. Needs `JSEARCH_API_KEY` |
 | `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
-| `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours |
+| `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
 | `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
@@ -363,8 +363,8 @@ flowchart LR
 JSearch searches Google for Jobs, which includes LinkedIn, Indeed, Glassdoor and company sites,
 without scraping LinkedIn. Results are stored and scored like board jobs. A result is skipped when
 the same employer and title already came from a company board you list. Budget: every request
-is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours`, and
-never once the month's count reaches `monthly_request_cap`. When a search isn't due,
+is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours` (less 15 minutes, so a
+fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`. When a search isn't due,
 `fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to
 the run's jobs log.
 
