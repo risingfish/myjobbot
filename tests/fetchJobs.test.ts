@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { greenhouseBoard } from "./helpers/boards.js";
+import { testFileConfig } from "./helpers/config.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
@@ -12,6 +13,12 @@ test("fetch_jobs returns title-filtered unscored jobs without null fields", asyn
     total_unscored: 1,
     jobs: [{ job_id: "1000", title: "Backend Engineer", location: "Remote", posted_at: "2026-09-01T00:00:00.000Z", days_open: 32, possible_ghost: false }],
   });
+});
+
+test("fetch_jobs leaves out jobs at excluded companies", async () => {
+  const config = testFileConfig({ exclude_companies: ["stripe"] });
+  const context = testContext({ config, http: fakeBoard(greenhouseBoard(["Backend Engineer"])) });
+  expect(await fetchPage(context, "Stripe")).toMatchObject({ total_unscored: 0, jobs: [] });
 });
 
 test("fetch_jobs flags postings open longer than the ghost threshold", async () => {

@@ -32,6 +32,11 @@ test("title boosts default to none and need 1-100 points per term", () => {
   expect(() => testFileConfig({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
 });
 
+test("exclude_companies defaults to none and needs a letter or digit per name", () => {
+  expect(testFileConfig().exclude_companies).toEqual([]);
+  expect(() => testFileConfig({ exclude_companies: ["--"] })).toThrow(/letter or digit/);
+});
+
 test("extra_exclude adds to the default exclude terms", () => {
   const exclude = testFileConfig({ title_filter: { extra_exclude: ["staff", "principal"] } }).title_filter.exclude;
   expect(exclude).toEqual(expect.arrayContaining(["intern", "manager", "staff", "principal"]));

@@ -66,6 +66,7 @@ export const fileConfigSchema = z
     ghost_threshold_days: z.number().int().min(1).default(60),
     job_retention_days: z.number().int().min(1).default(90),
     title_filter: titleFilter.prefault({}),
+    exclude_companies: z.array(filterTerm).default([]),
     title_boosts: z.record(filterTerm, z.number().int().min(1).max(100)).default({}),
     agent: agent.prefault({}),
     http: http.prefault({}),

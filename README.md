@@ -48,7 +48,7 @@ A read-only view of the database with three tabs:
 | Tab | Shows |
 |---|---|
 | **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after title boosts), most recently posted first, with the model's reasons and gaps |
-| **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter hid from the model |
+| **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
 
 Title boosts (`title_boosts`) add fixed points to the model's score for whole words in the
@@ -340,6 +340,7 @@ flowchart LR
 | `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold) |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
+| `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |
 | `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title |
 | `agent.max_steps` | 600 | Step cap per run |
 | `agent.max_wall_clock_min` | 120 | Time cap per run |

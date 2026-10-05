@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { fetchBoard } from "./boardFetch.js";
 import type { ToolContext } from "./context.js";
@@ -22,7 +23,7 @@ export function fetchJobsTool(context: ToolContext): Tool {
 export function unscoredJobs(context: ToolContext, sourceName: string, outcome: FetchOutcome) {
   const { store, config } = context;
   const rows = outcome.seen === null ? store.unscoredForSource(sourceName) : store.unscoredSince(sourceName, outcome.seen);
-  return rows.filter((row) => passesTitleFilter(row.title, config.title_filter));
+  return rows.filter((row) => passesTitleFilter(row.title, config.title_filter) && !isExcludedCompany(row.company, config.exclude_companies));
 }
 
 async function jobPage(context: ToolContext, source: Source) {

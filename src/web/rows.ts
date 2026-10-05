@@ -1,6 +1,7 @@
 import type { FileConfig } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
+import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, titleBoost } from "../jobs/titleBoost.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { bulletList, cells, dateOnly, escapeHtml, linkTo } from "./html.js";
@@ -10,6 +11,7 @@ export interface RowContext {
   ghostDays: number;
   titleFilter: FileConfig["title_filter"];
   boosts: FileConfig["title_boosts"];
+  excludedCompanies: FileConfig["exclude_companies"];
 }
 
 export function jobRow(job: JobView, context: RowContext): string {
@@ -58,6 +60,7 @@ function postedText(job: JobView, context: RowContext): string {
 }
 
 function filterNote(job: JobView, context: RowContext): string {
+  if (isExcludedCompany(job.company, context.excludedCompanies)) return ' <small class="note">hidden: excluded company</small>';
   return passesTitleFilter(job.title, context.titleFilter) ? "" : ' <small class="note">hidden by title filter</small>';
 }
 

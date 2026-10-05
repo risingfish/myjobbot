@@ -25,6 +25,14 @@ test("title boosts lift a job over the threshold and show the model's own score"
   expect(html).toContain("1 recommended · threshold 70");
 });
 
+test("excluded companies drop out of recommended and are marked in all jobs", async () => {
+  const views = seededViews([{ id: "a", score: 90 }]);
+  const config = testFileConfig({ exclude_companies: ["acme"] });
+  const ui = await startTestUi(views, () => ({ config, views, dbPath: "test.db" }));
+  expect(await pageText(ui, "/recommended")).toContain("No recommendations yet");
+  expect(await pageText(ui, "/jobs")).toContain("hidden: excluded company");
+});
+
 test("the all jobs tab lists every job and marks titles the filter hides", async () => {
   const ui = await startTestUi(seededViews([{ id: "a", score: 90 }, { id: "e", title: "Account Executive" }]));
   const html = await pageText(ui, "/jobs");
