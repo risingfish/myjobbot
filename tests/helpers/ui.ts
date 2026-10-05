@@ -20,7 +20,7 @@ export async function pageText(ui: UiFetch, path: string): Promise<string> {
 }
 
 export function countRows(html: string, kind: "job" | "verdict"): number {
-  return html.split(`<tr class="${kind}">`).length - 1;
+  return html.split(`<tr class="${kind}"`).length - 1;
 }
 
 function testState(views: JobViews): UiState {

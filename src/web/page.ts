@@ -19,7 +19,9 @@ table { border-collapse: collapse; width: 100%; }
 th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 1px solid var(--rule); }
 th { border-top: 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
 a { color: var(--accent); } small, .note, footer { color: var(--muted); } .ghost { color: var(--warn); }
-.score { font-weight: 700; font-variant-numeric: tabular-nums; } ul { margin: 4px 0; padding-left: 18px; }`;
+.score { font-weight: 700; font-variant-numeric: tabular-nums; } ul { margin: 4px 0; padding-left: 18px; }
+form.hide { margin: 0; } form.hide button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+tr[data-hidden="0"] .hidden-note { display: none; } tr[data-hidden="1"] { opacity: .6; }`;
 
 const SCRIPT = `
 const observer = new IntersectionObserver((entries) => {
@@ -34,7 +36,21 @@ async function loadMore(row) {
   row.remove();
   watch();
 }
-watch();`;
+watch();
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("form.hide");
+  if (!form) return;
+  event.preventDefault();
+  const body = new URLSearchParams(new FormData(form));
+  const response = await fetch(form.action, { method: "POST", body, headers: { "x-myjobbot-fetch": "1" } });
+  if (!response.ok) return form.submit();
+  const row = form.closest("tr");
+  if (location.pathname === "/recommended") return row.remove();
+  const hidden = form.elements.hidden.value === "1";
+  row.dataset.hidden = hidden ? "1" : "0";
+  form.elements.hidden.value = hidden ? "0" : "1";
+  form.querySelector("button").textContent = hidden ? "Unhide" : "Hide";
+});`;
 
 export function renderPage(tab: Tab, data: TabData, view: { page: Page; footer: PageFooter }): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">

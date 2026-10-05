@@ -23,6 +23,7 @@ const jobView = z.object({
   reasons: list,
   gaps: list,
   scored_at: text,
+  hidden: z.number().transform((flag) => flag === 1),
 });
 export type JobView = z.infer<typeof jobView>;
 
@@ -44,19 +45,26 @@ export interface Page {
   limit: number;
 }
 
+export interface HiddenFlag {
+  ats: string;
+  jobId: string;
+  hidden: boolean;
+}
+
 export interface ScoreFilter {
   sources: string[];
   minScore: number;
 }
 
 const JOB_COLUMNS = `ats, job_id, source, company, title, url, location, workplace_type, is_remote, compensation,
-  posted_at, first_seen, last_seen, publisher, score, reasons, gaps, scored_at`;
+  posted_at, first_seen, last_seen, publisher, score, reasons, gaps, scored_at, hidden`;
 const NEWEST_FIRST = "ORDER BY COALESCE(posted_at, first_seen) DESC, first_seen DESC, ats, job_id";
 const ALL_JOBS = `SELECT ${JOB_COLUMNS} FROM jobs ${NEWEST_FIRST} LIMIT ? OFFSET ?`;
 const VERDICT_HISTORY = `
 SELECT v.run_id, v.scored_at, v.score, v.reasons, v.gaps, j.title, j.company, j.url, j.source
 FROM verdicts v LEFT JOIN jobs j ON j.ats = v.ats AND j.job_id = v.job_id
 ORDER BY v.scored_at DESC, v.rowid DESC LIMIT ? OFFSET ?`;
+const SET_HIDDEN = "UPDATE jobs SET hidden = ? WHERE ats = ? AND job_id = ?";
 const count = z.object({ count: z.number() });
 
 export class JobViews {
@@ -64,8 +72,13 @@ export class JobViews {
 
   scoredFrom(filter: ScoreFilter): JobView[] {
     const placeholders = filter.sources.map(() => "?").join(", ");
-    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE score >= ? AND source IN (${placeholders}) ${NEWEST_FIRST}`;
+    const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE hidden = 0 AND score >= ? AND source IN (${placeholders}) ${NEWEST_FIRST}`;
     return z.array(jobView).parse(this.db.prepare(sql).all(filter.minScore, ...filter.sources));
+  }
+
+  setHidden(flag: HiddenFlag): boolean {
+    const result = this.db.prepare(SET_HIDDEN).run(Number(flag.hidden), flag.ats, flag.jobId);
+    return Number(result.changes) > 0;
   }
 
   allJobs(page: Page): JobView[] {

@@ -25,7 +25,7 @@ export interface Tab {
   load(input: TabInput): TabData;
 }
 
-const JOB_HEADERS = ["Score", "Title", "Company", "Location", "Remote", "Source", "Posted", "Scored"];
+const JOB_HEADERS = ["Score", "Title", "Company", "Location", "Remote", "Source", "Posted", "Scored", ""];
 const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Company", "Score", "Reasons", "Gaps"];
 
 export const TABS: Tab[] = [
@@ -36,7 +36,7 @@ export const TABS: Tab[] = [
 
 function loadRecommended({ views, config, page, now }: TabInput): TabData {
   const jobs = recommendedJobs(views, config);
-  const rows = jobs.slice(page.offset, page.offset + page.limit).map((job) => jobRow(job, rowContext(config, now)));
+  const rows = jobs.slice(page.offset, page.offset + page.limit).map((job) => jobRow(job, rowContext(config, now, "/recommended")));
   const summary = `${jobs.length} recommended · threshold ${config.match_threshold}`;
   return { rows, total: jobs.length, summary, empty: "No recommendations yet: run myjobbot run." };
 }
@@ -50,7 +50,7 @@ function recommendedJobs(views: JobViews, config: FileConfig): JobView[] {
 
 function loadAllJobs({ views, config, page, now }: TabInput): TabData {
   const total = views.countAllJobs();
-  const rows = views.allJobs(page).map((job) => jobRow(job, rowContext(config, now)));
+  const rows = views.allJobs(page).map((job) => jobRow(job, rowContext(config, now, "/jobs")));
   return { rows, total, summary: `${total} jobs`, empty: "No jobs retrieved yet: run myjobbot run." };
 }
 
@@ -64,6 +64,7 @@ function sourceNames(config: FileConfig): string[] {
   return [...config.companies, ...config.searches].map((source) => source.name);
 }
 
-function rowContext(config: FileConfig, now: Date): RowContext {
-  return { now, ghostDays: config.ghost_threshold_days, titleFilter: config.title_filter, boosts: config.title_boosts, excludedCompanies: config.exclude_companies };
+function rowContext(config: FileConfig, now: Date, back: string): RowContext {
+  const filters = { titleFilter: config.title_filter, excludedCompanies: config.exclude_companies };
+  return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filters, back };
 }

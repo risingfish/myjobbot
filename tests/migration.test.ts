@@ -44,5 +44,6 @@ test("openDatabase adds the publisher column and the api_calls table", () => {
 test("openDatabase adds the requirements and skills columns", () => {
   const db = openDatabase(preSourceDatabase());
   const columns = db.prepare("PRAGMA table_info(jobs)").all().map((column) => column.name);
-  expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills"]));
+  expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills", "hidden"]));
+  expect({ ...db.prepare("SELECT hidden FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ hidden: 0 });
 });

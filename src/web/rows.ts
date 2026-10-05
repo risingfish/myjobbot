@@ -12,13 +12,16 @@ export interface RowContext {
   titleFilter: FileConfig["title_filter"];
   boosts: FileConfig["title_boosts"];
   excludedCompanies: FileConfig["exclude_companies"];
+  back: string;
 }
 
+const HIDDEN_NOTE = ' <small class="note hidden-note">hidden by you</small>';
+
 export function jobRow(job: JobView, context: RowContext): string {
-  const title = `${linkTo(job.url, job.title)}${filterNote(job, context)}${reasoning(job)}`;
-  return `<tr class="job">${cells([
-    jobScore(job, context), title, escapeHtml(job.company), escapeHtml(job.location),
-    remoteText(job.is_remote), sourceText(job), postedText(job, context), escapeHtml(dateOnly(job.scored_at)),
+  const title = `${linkTo(job.url, job.title)}${filterNote(job, context)}${HIDDEN_NOTE}${reasoning(job)}`;
+  return `<tr class="job" data-hidden="${Number(job.hidden)}">${cells([
+    jobScore(job, context), title, escapeHtml(job.company), escapeHtml(job.location), remoteText(job.is_remote),
+    sourceText(job), postedText(job, context), escapeHtml(dateOnly(job.scored_at)), hideButton(job, context.back),
   ])}</tr>`;
 }
 
@@ -40,6 +43,12 @@ function jobScore(job: JobView, context: RowContext): string {
   if (boost.points === 0) return scoreText(job.score);
   const note = `model ${job.score} · +${boost.points} ${boost.terms.join(", ")}`;
   return `${scoreText(boostedScore(job.score, boost))}<br><small>${escapeHtml(note)}</small>`;
+}
+
+function hideButton(job: JobView, back: string): string {
+  const fields = { ats: job.ats, job_id: job.job_id, hidden: job.hidden ? "0" : "1", back };
+  const inputs = Object.entries(fields).map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}">`);
+  return `<form method="post" action="/hide" class="hide">${inputs.join("")}<button>${job.hidden ? "Unhide" : "Hide"}</button></form>`;
 }
 
 function remoteText(isRemote: number | null): string {

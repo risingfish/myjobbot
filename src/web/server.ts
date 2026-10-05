@@ -2,8 +2,10 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { FileConfig } from "../config/schema.js";
 import type { JobViews } from "../db/jobViews.js";
 import { describeError } from "../errors.js";
+import { handleHide } from "./hide.js";
 import { escapeHtml } from "./html.js";
 import { renderFragment, renderPage, simplePage } from "./page.js";
+import type { Reply } from "./reply.js";
 import { TABS, type Tab } from "./tabs.js";
 
 const PAGE_SIZE = 100;
@@ -20,23 +22,28 @@ interface UiDeps {
   now: () => Date;
 }
 
-interface Reply {
-  status: number;
-  body: string;
-  headers?: Record<string, string>;
-}
-
 export function createUiServer(deps: UiDeps): Server {
-  return createServer((request, response) => send(response, handle(request, deps)));
+  return createServer((request, response) => {
+    void respond(request, deps).then((reply) => send(response, reply));
+  });
 }
 
-function handle(request: IncomingMessage, deps: UiDeps): Reply {
-  if (request.method !== "GET") return { status: 405, body: simplePage("Method not allowed") };
+async function respond(request: IncomingMessage, deps: UiDeps): Promise<Reply> {
+  try {
+    return await route(request, deps);
+  } catch (error) {
+    return { status: 500, body: simplePage(`Something went wrong: ${escapeHtml(describeError(error))}`) };
+  }
+}
+
+async function route(request: IncomingMessage, deps: UiDeps): Promise<Reply> {
   const url = new URL(request.url ?? "/", "http://localhost");
+  if (request.method === "POST" && url.pathname === "/hide") return handleHide(request, deps.state().views);
+  if (request.method !== "GET") return { status: 405, body: simplePage("Method not allowed") };
   if (url.pathname === "/") return { status: 302, body: "", headers: { location: "/recommended" } };
   const tab = TABS.find((candidate) => candidate.path === url.pathname.replace(ROWS_SUFFIX, ""));
   if (!tab) return { status: 404, body: simplePage("Not found") };
-  return safely(() => renderTab(tab, url, deps));
+  return { status: 200, body: renderTab(tab, url, deps) };
 }
 
 function renderTab(tab: Tab, url: URL, deps: UiDeps): string {
@@ -45,14 +52,6 @@ function renderTab(tab: Tab, url: URL, deps: UiDeps): string {
   const data = tab.load({ views: state.views, config: state.config, page, now: deps.now() });
   if (ROWS_SUFFIX.test(url.pathname)) return renderFragment(tab, data, page);
   return renderPage(tab, data, { page, footer: { dbPath: state.dbPath, renderedAt: deps.now() } });
-}
-
-function safely(render: () => string): Reply {
-  try {
-    return { status: 200, body: render() };
-  } catch (error) {
-    return { status: 500, body: simplePage(`Something went wrong: ${escapeHtml(describeError(error))}`) };
-  }
 }
 
 function parseOffset(raw: string | null): number {

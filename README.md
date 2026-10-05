@@ -43,13 +43,18 @@ Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 npm run serve        # http://localhost:8080
 ```
 
-A read-only view of the database with three tabs:
+A view of the database with three tabs:
 
 | Tab | Shows |
 |---|---|
 | **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after title boosts), most recently posted first, with the model's reasons and gaps |
 | **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
+
+Each job row has a **Hide** button. Hiding sets the job's `hidden` flag: it disappears from
+Recommended at once and stays hidden when the posting is fetched again. All jobs still lists it,
+dimmed, with an **Unhide** button. Hiding is the UI's only write; it accepts requests from its own
+pages only.
 
 Title boosts (`title_boosts`) add fixed points to the model's score for whole words in the
 title, capped at 100, e.g. `{ "typescript": 10, "node": 5 }`. They are applied when the page
