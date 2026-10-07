@@ -46,8 +46,10 @@ ON CONFLICT (ats, job_id) DO UPDATE SET
   requirements = excluded.requirements, skills = excluded.skills, preferred_skills = excluded.preferred_skills,
   last_seen = excluded.last_seen`;
 const UNSCORED = "SELECT * FROM jobs WHERE source = ? AND last_seen = ? AND scored_at IS NULL ORDER BY job_id";
-const RECORD_VERDICT = "UPDATE jobs SET score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ? RETURNING ats";
-const INSERT_VERDICT = "INSERT INTO verdicts (ats, job_id, run_id, scored_at, score, reasons, gaps) VALUES (?, ?, ?, ?, ?, ?, ?)";
+const RECORD_VERDICT = `
+UPDATE jobs SET score = ?, base_score = ?, bonus_score = ?, reasons = ?, gaps = ?, scored_at = ? WHERE job_id = ? RETURNING ats`;
+const INSERT_VERDICT = `
+INSERT INTO verdicts (ats, job_id, run_id, scored_at, score, base_score, bonus_score, reasons, gaps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 const PRUNE_ORPHAN_VERDICTS = `
 DELETE FROM verdicts WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.ats = verdicts.ats AND jobs.job_id = verdicts.job_id)`;
 const EARLIEST_SEEN = `
@@ -66,6 +68,8 @@ interface VerdictStamp {
 interface Verdict {
   job_id: string;
   score: number;
+  base?: number;
+  bonus?: number;
   reasons: string[];
   gaps: string[];
 }
@@ -94,12 +98,12 @@ export class JobStore {
   }
 
   recordVerdict(verdict: Verdict, stamp: VerdictStamp): boolean {
-    const reasons = JSON.stringify(verdict.reasons);
-    const gaps = JSON.stringify(verdict.gaps);
+    const parts = [verdict.score, verdict.base ?? null, verdict.bonus ?? null] as const;
+    const notes = [JSON.stringify(verdict.reasons), JSON.stringify(verdict.gaps)] as const;
     return this.transaction(() => {
-      const updated = this.db.prepare(RECORD_VERDICT).all(verdict.score, reasons, gaps, stamp.scoredAt, verdict.job_id);
+      const updated = this.db.prepare(RECORD_VERDICT).all(...parts, ...notes, stamp.scoredAt, verdict.job_id);
       const insert = this.db.prepare(INSERT_VERDICT);
-      for (const row of updated) insert.run(String(row.ats), verdict.job_id, stamp.runId, stamp.scoredAt, verdict.score, reasons, gaps);
+      for (const row of updated) insert.run(String(row.ats), verdict.job_id, stamp.runId, stamp.scoredAt, ...parts, ...notes);
       return updated.length > 0;
     });
   }

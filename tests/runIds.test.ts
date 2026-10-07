@@ -4,14 +4,15 @@ import { expect, test } from "vitest";
 import { runOnce } from "../src/app/run.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { scriptedChat, toolCallsReply } from "./helpers/chat.js";
-import { makeDataDir, TEST_ENV } from "./helpers/dataDir.js";
+import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
 import { readJsonl } from "./helpers/trace.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 async function fetchAndFinishRun(dataDir: string) {
-  const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])];
+  const score: [string, object] = ["record_matches", { verdicts: [{ job_id: "1000", base: 10, bonus: 0 }] }];
+  const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
   const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
   return runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http });
 }
@@ -23,7 +24,7 @@ function fileFor(dir: string, runId: string, suffix: string): string {
 }
 
 test("one run id ties the trace and the jobs log together", async () => {
-  const dataDir = makeDataDir();
+  const dataDir = makeDataDir(ONE_COMPANY);
   const { runId } = await fetchAndFinishRun(dataDir);
   expect(runId).toMatch(UUID);
   const trace = readJsonl(fileFor(join(dataDir, "runs"), runId, ".jsonl"));
@@ -33,7 +34,7 @@ test("one run id ties the trace and the jobs log together", async () => {
 });
 
 test("each run gets a different run id", async () => {
-  const dataDir = makeDataDir();
+  const dataDir = makeDataDir(ONE_COMPANY);
   const first = await fetchAndFinishRun(dataDir);
   const second = await fetchAndFinishRun(dataDir);
   expect(first.runId).not.toBe(second.runId);

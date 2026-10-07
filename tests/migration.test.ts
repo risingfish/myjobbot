@@ -47,3 +47,11 @@ test("openDatabase adds the requirements and skills columns", () => {
   expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills", "hidden"]));
   expect({ ...db.prepare("SELECT hidden FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ hidden: 0 });
 });
+
+test("openDatabase adds the base and bonus columns to jobs and verdicts", () => {
+  const db = openDatabase(preSourceDatabase());
+  for (const table of ["jobs", "verdicts"]) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
+    expect(columns).toEqual(expect.arrayContaining(["base_score", "bonus_score"]));
+  }
+});

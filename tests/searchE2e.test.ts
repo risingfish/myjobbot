@@ -15,12 +15,16 @@ const CONFIG = { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe"
 const FIRST_RUN = [
   toolCallReply("list_sources", {}),
   toolCallReply("fetch_jobs", { source: "Stripe" }),
-  toolCallReply("record_matches", { verdicts: [{ job_id: "1000", score: 80 }] }),
+  toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 30 }] }),
   toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }),
-  toolCallReply("record_matches", { verdicts: [{ job_id: jsearchId("js-linkedin-1"), score: 85 }] }),
+  toolCallReply("record_matches", { verdicts: [{ job_id: jsearchId("js-linkedin-1"), base: 50, bonus: 35 }] }),
   toolCallReply("finish", { summary: "Scored a board and a search." }),
 ];
-const SECOND_RUN = [toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }), toolCallReply("finish", { summary: "Nothing new." })];
+const SECOND_RUN = [
+  toolCallReply("fetch_jobs", { source: "Stripe" }),
+  toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }),
+  toolCallReply("finish", { summary: "Nothing new." }),
+];
 
 function scoredRows(dataDir: string) {
   const sql = "SELECT job_id, source, score FROM jobs WHERE score IS NOT NULL ORDER BY job_id";

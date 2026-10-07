@@ -35,7 +35,11 @@ CREATE TABLE IF NOT EXISTS verdicts (
 CREATE INDEX IF NOT EXISTS verdicts_by_time ON verdicts (scored_at);
 `;
 
-const ADDED_COLUMNS = ["source TEXT", "publisher TEXT", "requirements TEXT", "skills TEXT", "preferred_skills TEXT", "hidden INTEGER NOT NULL DEFAULT 0"];
+const SCORE_PARTS = ["base_score INTEGER", "bonus_score INTEGER"];
+const ADDED_COLUMNS: Record<string, string[]> = {
+  jobs: ["source TEXT", "publisher TEXT", "requirements TEXT", "skills TEXT", "preferred_skills TEXT", "hidden INTEGER NOT NULL DEFAULT 0", ...SCORE_PARTS],
+  verdicts: SCORE_PARTS,
+};
 const AFTER_COLUMNS = `
 UPDATE jobs SET source = company WHERE source IS NULL;
 CREATE INDEX IF NOT EXISTS jobs_by_source ON jobs (source, scored_at);
@@ -62,9 +66,13 @@ function backfillVerdicts(db: DatabaseSync): void {
 }
 
 function addMissingColumns(db: DatabaseSync): void {
-  const existing = new Set(db.prepare("PRAGMA table_info(jobs)").all().map((column) => String(column.name)));
-  for (const definition of ADDED_COLUMNS) {
+  for (const [table, definitions] of Object.entries(ADDED_COLUMNS)) addColumns(db, table, definitions);
+}
+
+function addColumns(db: DatabaseSync, table: string, definitions: string[]): void {
+  const existing = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((column) => String(column.name)));
+  for (const definition of definitions) {
     const [name = ""] = definition.split(" ");
-    if (!existing.has(name)) db.exec(`ALTER TABLE jobs ADD COLUMN ${definition}`);
+    if (!existing.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
   }
 }

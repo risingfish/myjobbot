@@ -1,7 +1,7 @@
 import type { FileConfig } from "../config/schema.js";
 import type { JobView, JobViews, Page } from "../db/jobViews.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
-import { boostedScore, maxBoost, titleBoost } from "../jobs/titleBoost.js";
+import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import { jobRow, verdictRow, type RowContext } from "./rows.js";
 
 interface TabInput {
@@ -45,7 +45,7 @@ function recommendedJobs(views: JobViews, config: FileConfig): JobView[] {
   const threshold = config.match_threshold;
   const scored = views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
   const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
-  return shown.filter((job) => boostedScore(job.score ?? 0, titleBoost(job.title, config.title_boosts)) >= threshold);
+  return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, job.description], config.title_boosts)) >= threshold);
 }
 
 function loadAllJobs({ views, config, page, now }: TabInput): TabData {

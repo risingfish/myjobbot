@@ -9,8 +9,12 @@ export function listSourcesTool(context: ToolContext): Tool {
     name: "list_sources",
     description: "List the sources you can fetch jobs from (company boards and saved searches), with progress for this run.",
     schema: z.object({}),
-    run: () => Promise.all(configuredSources(context).map((source) => sourceStatus(context, source))),
+    run: () => sourceProgress(context),
   });
+}
+
+export function sourceProgress(context: ToolContext) {
+  return Promise.all(configuredSources(context).map((source) => sourceStatus(context, source)));
 }
 
 function describeSource(source: Source) {

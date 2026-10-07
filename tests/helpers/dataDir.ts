@@ -10,6 +10,8 @@ export const SAMPLE_CONFIG = {
   preferences: "Remote US, senior backend",
 };
 
+export const ONE_COMPANY = { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], preferences: "Remote US, senior backend" };
+
 export const TEST_ENV = {
   LLM_BASE_URL: "http://127.0.0.1:9/v1",
   LLM_MODEL: "test-model",

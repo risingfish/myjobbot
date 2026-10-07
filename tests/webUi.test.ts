@@ -33,6 +33,14 @@ test("excluded companies drop out of recommended and are marked in all jobs", as
   expect(await pageText(ui, "/jobs")).toContain("hidden: excluded company");
 });
 
+test("scores show the base and bonus breakdown, and boosts count matches in the description", async () => {
+  const views = seededViews([{ id: "b", score: 62, parts: { base: 32, bonus: 30 }, description: "Vue and TypeScript." }]);
+  const config = testFileConfig({ title_boosts: { typescript: 10 } });
+  const ui = await startTestUi(views, () => ({ config, views, dbPath: "test.db" }));
+  expect(await pageText(ui, "/recommended")).toContain("base 32 + bonus 30 · model 62 · +10 typescript");
+  expect(await pageText(ui, "/reasoning")).toContain("base 32 + bonus 30");
+});
+
 test("the all jobs tab lists every job and marks titles the filter hides", async () => {
   const ui = await startTestUi(seededViews([{ id: "a", score: 90 }, { id: "e", title: "Account Executive" }]));
   const html = await pageText(ui, "/jobs");
@@ -88,7 +96,7 @@ test("the reasoning tab lists each verdict with its run", async () => {
 });
 
 test("verdicts from before history was kept are labelled", () => {
-  const verdict = { run_id: null, scored_at: "2026-10-01T00:00:00.000Z", score: 70, reasons: [], gaps: [], title: null, company: null, url: null, source: null };
+  const verdict = { run_id: null, scored_at: "2026-10-01T00:00:00.000Z", score: 70, base_score: null, bonus_score: null, reasons: [], gaps: [], title: null, company: null, url: null, source: null };
   const html = verdictRow(verdict);
   expect(html).toContain("before history");
   expect(html).toContain("(pruned)");

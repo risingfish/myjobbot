@@ -4,7 +4,7 @@ import type { TraceEvent } from "../../src/agent/trace.js";
 import type { ToolContext } from "../../src/tools/context.js";
 import { buildTools } from "../../src/tools/registry.js";
 import { scriptedChat } from "./chat.js";
-import { testContext } from "./context.js";
+import { doneContext } from "./context.js";
 import { memoryTrace } from "./trace.js";
 
 export const TEST_LIMITS = { max_steps: 10, max_wall_clock_min: 5, max_consecutive_tool_errors: 3, context_chars: 160_000 };
@@ -19,7 +19,7 @@ interface Harness {
 export async function runScripted(
   replies: AssistantMessage[],
   overrides: Partial<AgentDeps> = {},
-  context = testContext(),
+  context = doneContext(),
 ): Promise<Harness> {
   const { chat, requests } = scriptedChat(replies);
   const trace = memoryTrace();

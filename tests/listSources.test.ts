@@ -32,6 +32,6 @@ test("list_sources clears fetch_failed once a retry succeeds", async () => {
 test("list_sources reports total_unscored once a board has been fetched", async () => {
   const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Frontend Engineer"])) });
   const page = await fetchPage(context, "Stripe");
-  await invokeTool(context, "record_matches", { verdicts: [{ job_id: page.jobs[0]?.job_id, score: 80 }] });
+  await invokeTool(context, "record_matches", { verdicts: [{ job_id: page.jobs[0]?.job_id, base: 50, bonus: 30 }] });
   expect(await invokeTool(context, "list_sources", {})).toEqual([{ ...UNFETCHED, fetched: true, total_unscored: 1 }]);
 });

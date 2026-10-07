@@ -16,3 +16,9 @@ export function testContext(overrides: Partial<ToolContext> = {}, db = openDatab
     ...overrides,
   };
 }
+
+export function doneContext(): ToolContext {
+  const context = testContext();
+  context.run.fetches.set("Stripe", Promise.resolve({ seen: TEST_NOW.toISOString(), note: null }));
+  return context;
+}

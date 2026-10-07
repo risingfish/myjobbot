@@ -13,7 +13,10 @@ export const CANNED_COMPLETION = {
       message: {
         role: "assistant",
         content: "",
-        tool_calls: [{ id: "call_0", type: "function", function: { name: "finish", arguments: '{"summary":"done"}' } }],
+        tool_calls: [
+          { id: "call_0", type: "function", function: { name: "fetch_jobs", arguments: '{"source":"Stripe"}' } },
+          { id: "call_1", type: "function", function: { name: "finish", arguments: '{"summary":"done"}' } },
+        ],
       },
     },
   ],

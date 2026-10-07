@@ -9,8 +9,8 @@ export interface Boost {
   terms: string[];
 }
 
-export function titleBoost(title: string, boosts: TitleBoosts): Boost {
-  const normalized = normalizeTitle(title);
+export function jobBoost(texts: Array<string | null>, boosts: TitleBoosts): Boost {
+  const normalized = texts.map((text) => normalizeTitle(text ?? "")).join("\n");
   const matched = Object.entries(boosts).filter(([term]) => hasWord(normalized, term));
   return { points: matched.reduce((sum, [, points]) => sum + points, 0), terms: matched.map(([term]) => term) };
 }

@@ -21,8 +21,8 @@ function scoredContext() {
 test("record_matches keeps every verdict as history tagged with the run", async () => {
   const { context, views } = scoredContext();
   await fetchPage(context, "Stripe");
-  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", score: 60, reasons: ["first"] }] });
-  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", score: 85, reasons: ["second"] }] });
+  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10, reasons: ["first"] }] });
+  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 35, reasons: ["second"] }] });
   const history = views.verdictHistory(FIRST_PAGE).map((verdict) => [verdict.run_id, verdict.score, verdict.reasons]);
   expect(history).toEqual([["test-run", 85, ["second"]], ["test-run", 60, ["first"]]]);
   expect(views.allJobs(FIRST_PAGE).find((job) => job.job_id === "1000")).toMatchObject({ score: 85, reasons: ["second"] });
@@ -30,14 +30,14 @@ test("record_matches keeps every verdict as history tagged with the run", async 
 
 test("record_matches writes no history for unknown job ids", async () => {
   const { context, views } = scoredContext();
-  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "nope", score: 60 }] });
+  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "nope", base: 50, bonus: 10 }] });
   expect(views.countVerdicts()).toBe(0);
 });
 
 test("pruning a job removes its verdict history", async () => {
   const { context, views } = scoredContext();
   await fetchPage(context, "Stripe");
-  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", score: 60 }] });
+  await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10 }] });
   context.store.pruneLastSeenBefore("2099-01-01T00:00:00.000Z");
   expect(views.countVerdicts()).toBe(0);
 });

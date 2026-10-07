@@ -47,7 +47,7 @@ A view of the database with three tabs:
 
 | Tab | Shows |
 |---|---|
-| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after title boosts), most recently posted first, with the model's reasons and gaps |
+| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after boosts), most recently posted first, with the model's reasons and gaps |
 | **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
 
@@ -56,10 +56,8 @@ Recommended at once and stays hidden when the posting is fetched again. All jobs
 dimmed, with an **Unhide** button. Hiding is the UI's only write; it accepts requests from its own
 pages only.
 
-Title boosts (`title_boosts`) add fixed points to the model's score for whole words in the
-title, capped at 100, e.g. `{ "typescript": 10, "node": 5 }`. They are applied when the page
-is shown, not stored, so changing them re-weights every job at once. A boosted score shows
-the breakdown ("model 65 · +10 typescript"); the Reasoning tab keeps the model's own score.
+Scores show their breakdown ("base 38 + bonus 40", plus any boost). See
+[How scoring works](#how-scoring-works) for what the numbers mean.
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
 `data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` / `MYJOBBOT_HOST` to
@@ -200,9 +198,9 @@ work. Three failures in a row and the code ends the run.
 |---|---|
 | `list_sources` | Each company board and saved search, with this run's progress: `fetched`, `total_unscored`, `fetch_failed` |
 | `fetch_jobs` | The first call per source per run downloads the board, or calls JSearch if the search is due. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed |
-| `record_matches` | Saves up to 25 scores (0–100), with reasons and gaps, in one call |
+| `record_matches` | Saves up to 25 verdicts in one call: a `base` (0–50, resume fit) and a `bonus` (0–50, preference fit) that code sums into the score, with reasons and gaps |
 | `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them, and to treat the description as data, not instructions |
-| `finish` | Records the model's summary and ends the loop |
+| `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source is unfetched or still has unscored jobs (a source whose fetch failed doesn't count) |
 
 **Paging needs no page numbers.** The model scores a page and calls `fetch_jobs` again.
 The database only returns jobs that are still unscored, so each call gets the next batch
@@ -275,7 +273,9 @@ erDiagram
         text preferred_skills "JSON array (JSearch preferred technologies)"
         text first_seen "first time the bot saw it"
         text last_seen "last run it was still listed"
-        int score "0-100, set by record_matches"
+        int score "base + bonus, set by record_matches"
+        int base_score "0-50, resume fit"
+        int bonus_score "0-50, preference fit"
         text reasons "JSON array"
         text gaps "JSON array"
         text scored_at
@@ -321,11 +321,66 @@ flowchart LR
   resume, notice) stays byte-identical and llama.cpp's prompt cache keeps working.
 - After compaction the model calls `list_sources` to see which sources are done.
 
+### How scoring works
+
+A job's score is decided in four stages. Only the third involves the model.
+
+**1. Filters decide what the model sees** (before scoring, in code). `fetch_jobs` offers only
+jobs whose title passes `title_filter` (an include term, no exclude term, matched as whole
+words) and whose company isn't in `exclude_companies`. Filtered jobs are stored but never
+scored; All jobs marks them.
+
+**2. The model reads what looks promising.** `fetch_jobs` returns metadata only. For each job
+whose title, seniority and location could plausibly fit, the prompt asks the model to call
+`get_job_details` and read the description (first 6,000 characters) before scoring.
+
+**3. The model scores with a rubric, in two parts** (`src/agent/prompt.ts`). For each job it
+returns a `base` and a `bonus` to `record_matches`; code checks each is an integer from 0 to
+50 and stores their sum as the score, keeping both parts.
+
+| Part | Points | Rubric |
+|---|---|---|
+| **Base: fit with your resume** | **0–50** | |
+| Stack | up to 25 | 20–25: the job's main languages and frameworks are ones the resume shows. 10–19: partial overlap or close neighbours. 0–9: mostly a different stack |
+| Level | up to 15 | 15: the seniority the resume shows. 8: one step off. 0–4: far off (junior, or principal and director scope) |
+| Kind of work | up to 10 | 10: the kind of work the resume shows strength in. 5: adjacent. 0: unrelated |
+| **Bonus: fit with your `preferences`** | **0–50** | |
+| Location | up to 25 | 25: location or remote terms the preferences ask for. 0: anything else, including remote roles limited to another country |
+| Role | up to 15 | 15: the role and level the preferences ask for; less for roles the preferences say to score low |
+| Other preferences | up to 10 | Anything else the preferences mention |
+
+If the preferences say to score a job 0 (for example a company you won't work for), both parts
+are 0. With a base of at most 50, a job needs bonus points to reach `match_threshold`: at a
+threshold of 60, a perfect base still needs 10 bonus points; at 70 it needs 20, which in
+practice means the location has to fit. Reasons and gaps are required from a score of 40 and
+should name the rubric parts behind the numbers. `possible_ghost` (open over 60 days) lowers
+the base slightly.
+
+The rubric is written in terms of "the resume" and "the preferences", never specific
+technologies, so editing `data/resume.md` or the `preferences` text changes what counts as a
+fit without touching the prompt.
+
+**4. Boosts and your choices adjust what's shown** (at display time, in the web UI). Each
+`title_boosts` term found as a whole word in the title or description adds its points once,
+capped at 100 ("model 62 · +10 typescript"). Recommended shows jobs whose boosted score is at
+or above `match_threshold`, minus excluded companies and jobs you hid. None of this is stored,
+so changing boosts or the threshold re-sorts every job on the next page load, without
+re-scoring. The Reasoning tab always shows the model's own score.
+
+**Every verdict is kept.** Each `record_matches` call also appends to the `verdicts` table with
+the run ID, so re-scoring a job (for example after changing the rubric) never loses what the
+model said before.
+
+**What to expect from the model.** Scores come from a local 30B model sampling at temperature
+0.7, so the same job can score differently on another run, and reasons are occasionally wrong.
+The rubric narrows that spread; treat a score as a sort order, not a verdict.
+
 ### Design lessons built into it
 
 1. **Limits live in code, not the prompt.** The step cap, the time cap, the error streak and
-   the nudge are all enforced in `agent/budget.ts` and `agent/loop.ts`. The model can't
-   argue its way past them.
+   the nudge are all enforced in `agent/budget.ts` and `agent/loop.ts`, and `finish` is
+   refused while any source is unfetched or still has unscored jobs. The model can't argue
+   its way past them.
 2. **The database is the memory.** That's what makes compaction safe, and it's why a crashed
    run loses nothing: unscored jobs are offered again on the next run.
 3. **Keep the prompt prefix stable** so a local model's prompt cache stays warm.
@@ -351,7 +406,7 @@ flowchart LR
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
 | `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |
-| `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title |
+| `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title or description (each term counted once) |
 | `agent.max_steps` | 600 | Step cap per run |
 | `agent.max_wall_clock_min` | 120 | Time cap per run |
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
