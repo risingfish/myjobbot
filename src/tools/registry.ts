@@ -6,6 +6,7 @@ import { listSourcesTool } from "./listSources.js";
 import { recordMatchesTool } from "./recordMatches.js";
 import type { Tool } from "./tool.js";
 
+/** Assembles the list_sources, fetch_jobs, get_job_details, record_matches, and finish tools for the model. */
 export function buildTools(context: ToolContext): Tool[] {
   return [
     listSourcesTool(context),

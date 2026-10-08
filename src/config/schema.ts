@@ -97,24 +97,29 @@ interface SourceLists {
   searches: Array<{ name: string }>;
 }
 
+/** Validates that the config defines at least one company or saved-search source to work from. */
 function hasAtLeastOneSource(config: SourceLists): boolean {
   return config.companies.length + config.searches.length > 0;
 }
 
+/** Validates that company and search names are unique across both lists, since names identify sources. */
 function hasUniqueSourceNames(config: SourceLists): boolean {
   return hasUniqueNames([...config.companies, ...config.searches]);
 }
 
+/** Validates that refreshing all configured searches won't exceed the JSearch monthly request cap. */
 function fitsJsearchBudget(config: SourceLists & { jsearch: { monthly_request_cap: number; refresh_hours: number } }): boolean {
   const refreshesPerMonth = Math.ceil(HOURS_PER_MONTH / (config.jsearch.refresh_hours - REFRESH_GRACE_HOURS));
   return config.searches.length * refreshesPerMonth <= config.jsearch.monthly_request_cap;
 }
 
+/** Reports whether a list of named entries has no duplicate names, ignoring case. */
 function hasUniqueNames(list: Array<{ name: string }>): boolean {
   const names = list.map((entry) => entry.name.toLowerCase());
   return new Set(names).size === names.length;
 }
 
+/** Validates job retention outlasts the ghost-job threshold so repost history survives for ghost detection. */
 function hasLongerRetentionThanGhostThreshold(config: { ghost_threshold_days: number; job_retention_days: number }): boolean {
   return config.job_retention_days > config.ghost_threshold_days;
 }

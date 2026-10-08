@@ -9,6 +9,7 @@ export const textList = z
   .catch(null)
   .transform((value) => value ?? []);
 
+/** Parses a date-like value into an ISO timestamp string, or null if it can't be parsed. */
 function toIsoOrNull(value: string | number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   const time = new Date(value).getTime();

@@ -10,6 +10,7 @@ type Command = (environment: NodeJS.ProcessEnv) => Promise<number>;
 
 const COMMANDS: Record<string, Command> = { run: runCommand, serve: serveCommand };
 
+/** Parses argv and dispatches to the matching subcommand, returning the process exit code. */
 async function main(argv: string[]): Promise<number> {
   const { positionals } = parseArgs({ args: argv, allowPositionals: true });
   const command = COMMANDS[positionals[0] ?? ""];
@@ -21,6 +22,7 @@ async function main(argv: string[]): Promise<number> {
   return command(process.env);
 }
 
+/** Runs one agent session, prints its outcome, and maps the result to an exit code. */
 async function runCommand(environment: NodeJS.ProcessEnv): Promise<number> {
   const report = await runOnce(environment);
   console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
@@ -28,6 +30,7 @@ async function runCommand(environment: NodeJS.ProcessEnv): Promise<number> {
   return report.status === "finished" ? 0 : 1;
 }
 
+/** Starts the web UI and keeps the process alive until its server closes. */
 function serveCommand(environment: NodeJS.ProcessEnv): Promise<number> {
   return new Promise((resolve) => startUi(environment).on("close", () => resolve(0)));
 }

@@ -10,12 +10,14 @@ export interface FetchOutcome {
   note: string | null;
 }
 
+/** Lists every configured company board and saved search as a uniform Source list. */
 export function configuredSources(context: ToolContext): Source[] {
   const boards = context.config.companies.map((company) => ({ kind: "board" as const, name: company.name, company }));
   const searches = context.config.searches.map((search) => ({ kind: "search" as const, name: search.name, search }));
   return [...boards, ...searches];
 }
 
+/** Looks up a configured source by name (case-insensitive), throwing if none matches. */
 export function findSource(context: ToolContext, name: string): Source {
   const wanted = name.trim().toLowerCase();
   const source = configuredSources(context).find((candidate) => candidate.name.toLowerCase() === wanted);

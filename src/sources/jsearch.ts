@@ -38,22 +38,26 @@ interface SearchRequest {
   apiKey: string;
 }
 
+/** Builds the JSearch query-string parameters for a saved search given its settings. */
 export function searchParams(search: Search, settings: JsearchSettings): Record<string, string> {
   const params: Record<string, string> = { query: search.query, country: search.country, date_posted: settings.date_posted };
   if (search.remote_only) params.work_from_home = "true";
   return params;
 }
 
+/** Queries the JSearch API for a saved search and maps the results into Jobs. */
 export async function fetchJsearch(request: SearchRequest, http: JsonGetter): Promise<Job[]> {
   const url = `${ENDPOINT}?${new URLSearchParams(searchParams(request.search, request.settings))}`;
   const body = await withKeyHint(() => http.getJson(url, { "x-api-key": request.apiKey }));
   return response.parse(body).data.jobs.map(toJob);
 }
 
+/** Derives a short, stable job id by hashing JSearch's raw id. */
 function shortId(rawId: string): string {
   return `js_${createHash("sha256").update(rawId).digest("hex").slice(0, SHORT_ID_HEX_CHARS)}`;
 }
 
+/** Runs a JSearch call, rewording an auth failure into a hint to check the API key and subscription. */
 async function withKeyHint<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
@@ -66,6 +70,7 @@ async function withKeyHint<T>(call: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Converts a JSearch result into the shared Job record, keeping compensation, skills, and requirements. */
 function toJob(post: z.infer<typeof result>): Job {
   const location = [post.job_city, post.job_state, post.job_country].filter((part) => part !== null).join(", ") || null;
   return makeJob(

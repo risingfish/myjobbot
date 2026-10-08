@@ -22,6 +22,7 @@ export const fetchLever = defineBoard({
   toJob,
 });
 
+/** Converts a Lever posting into the shared Job record, including department/team/location categories. */
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   return makeJob(
     { ats: "lever", jobId: post.id, company, title: post.text, url: post.hostedUrl },
