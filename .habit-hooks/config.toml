@@ -1,1 +1,4 @@
 plugins = ["typescript", "generic"]
+
+[smells.non-essential-comment]
+disabled = true
