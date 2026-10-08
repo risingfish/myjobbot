@@ -36,6 +36,7 @@ Jobs whose score is {threshold} or more are shown to the user. When the score is
 User preferences:
 {preferences}`;
 
+/** Builds the system and first user message that seed a run with the resume and job-finding instructions. */
 export function initialMessages(config: AppConfig): Message[] {
   return [
     { role: "system", content: systemPrompt(config) },
@@ -43,6 +44,7 @@ export function initialMessages(config: AppConfig): Message[] {
   ];
 }
 
+/** Fills the system prompt template with the configured match threshold and user preferences. */
 function systemPrompt(config: AppConfig): string {
   const preferences = config.file.preferences.trim() || "(none given)";
   return SYSTEM_PROMPT.replace("{threshold}", String(config.file.match_threshold)).replace("{preferences}", preferences);

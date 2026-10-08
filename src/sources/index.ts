@@ -10,6 +10,7 @@ const FETCHERS: Record<Ats, BoardFetcher> = {
   ashby: fetchAshby,
 };
 
+/** Returns the board fetcher implementation registered for the given ATS. */
 export function fetcherFor(ats: Ats): BoardFetcher {
   return FETCHERS[ats];
 }

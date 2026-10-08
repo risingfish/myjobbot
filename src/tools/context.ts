@@ -24,6 +24,7 @@ export interface ToolContext {
   jsearchApiKey: string | null;
 }
 
+/** Creates the empty per-run state used to track in-flight fetches, failures, and finish status. */
 export function newRunState(): RunState {
   return { finished: false, summary: null, fetches: new Map(), failedFetches: new Set() };
 }

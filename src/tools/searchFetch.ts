@@ -7,6 +7,7 @@ import { withoutDescription } from "./jobLog.js";
 import { refreshBlocker, requestsThisMonth } from "./searchBudget.js";
 import type { FetchOutcome, Search } from "./sources.js";
 
+/** Refreshes a saved JSearch search against the API, storing new jobs and skipping board duplicates. */
 export async function refreshSearch(context: ToolContext, search: Search): Promise<FetchOutcome> {
   const blocker = refreshBlocker(context, search.name);
   if (blocker) return { seen: null, note: blocker };
@@ -18,16 +19,19 @@ export async function refreshSearch(context: ToolContext, search: Search): Promi
   return { seen: null, note: null };
 }
 
+/** Returns the configured JSearch API key, or throws if none is set. */
 function requireKey(context: ToolContext): string {
   if (!context.jsearchApiKey) throw new Error("JSEARCH_API_KEY is not set");
   return context.jsearchApiKey;
 }
 
+/** Reports whether a company board already supplied this job, so JSearch duplicates are skipped. */
 function hasBoardCopy(context: ToolContext, job: Job): boolean {
   const company = normalizeCompany(job.company);
   return context.store.boardCompaniesWithTitle(normalizeTitle(job.title)).some((name) => normalizeCompany(name) === company);
 }
 
+/** Writes a search_fetch entry with the query, budget used and fetched jobs to the run's jobs log. */
 function logSearchFetch(context: ToolContext, search: Search, result: { fresh: Job[]; skipped: number }): void {
   context.jobLog.write({
     type: "search_fetch", source: search.name, query: search.query, params: searchParams(search, context.config.jsearch),

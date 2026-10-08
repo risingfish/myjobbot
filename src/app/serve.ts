@@ -5,6 +5,7 @@ import { JobViews } from "../db/jobViews.js";
 import { openDatabase } from "../db/open.js";
 import { createUiServer, type UiState } from "../web/server.js";
 
+/** Starts the web UI HTTP server for browsing scored jobs, loading fresh config on each request. */
 export function startUi(environment: NodeJS.ProcessEnv): Server {
   const { dataDir, env } = loadConfig(environment);
   const dbPath = join(dataDir, "myjobbot.db");

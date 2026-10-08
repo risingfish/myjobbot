@@ -34,6 +34,7 @@ export const TABS: Tab[] = [
   { path: "/reasoning", label: "Reasoning", headers: VERDICT_HEADERS, load: loadReasoning },
 ];
 
+/** Loads the page of jobs that meet the recommendation threshold, for the Recommended tab. */
 function loadRecommended({ views, config, page, now }: TabInput): TabData {
   const jobs = recommendedJobs(views, config);
   const rows = jobs.slice(page.offset, page.offset + page.limit).map((job) => jobRow(job, rowContext(config, now, "/recommended")));
@@ -41,6 +42,7 @@ function loadRecommended({ views, config, page, now }: TabInput): TabData {
   return { rows, total: jobs.length, summary, empty: "No recommendations yet: run myjobbot run." };
 }
 
+/** Returns the jobs, from configured sources, whose boosted score meets the match threshold. */
 function recommendedJobs(views: JobViews, config: FileConfig): JobView[] {
   const threshold = config.match_threshold;
   const scored = views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
@@ -48,22 +50,26 @@ function recommendedJobs(views: JobViews, config: FileConfig): JobView[] {
   return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, job.description], config.title_boosts)) >= threshold);
 }
 
+/** Loads a page of all retrieved jobs, for the All jobs tab. */
 function loadAllJobs({ views, config, page, now }: TabInput): TabData {
   const total = views.countAllJobs();
   const rows = views.allJobs(page).map((job) => jobRow(job, rowContext(config, now, "/jobs")));
   return { rows, total, summary: `${total} jobs`, empty: "No jobs retrieved yet: run myjobbot run." };
 }
 
+/** Loads a page of scoring verdict history, for the Reasoning tab. */
 function loadReasoning({ views, page }: TabInput): TabData {
   const total = views.countVerdicts();
   const rows = views.verdictHistory(page).map(verdictRow);
   return { rows, total, summary: `${total} scoring decisions`, empty: "No jobs scored yet: run myjobbot run." };
 }
 
+/** Returns the names of all configured company and search sources. */
 function sourceNames(config: FileConfig): string[] {
   return [...config.companies, ...config.searches].map((source) => source.name);
 }
 
+/** Builds the rendering context shared by job rows, from the current config, time and return tab. */
 function rowContext(config: FileConfig, now: Date, back: string): RowContext {
   const filters = { titleFilter: config.title_filter, excludedCompanies: config.exclude_companies };
   return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filters, back };

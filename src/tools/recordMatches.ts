@@ -14,6 +14,7 @@ const verdict = z.object({
 });
 const schema = z.object({ verdicts: z.array(verdict).min(1).max(MAX_VERDICTS) });
 
+/** Builds the record_matches tool, letting the model save its base+bonus fit scores for scored jobs. */
 export function recordMatchesTool(context: ToolContext): Tool {
   return defineTool({
     name: "record_matches",
@@ -23,6 +24,7 @@ export function recordMatchesTool(context: ToolContext): Tool {
   });
 }
 
+/** Persists each verdict's total score, reporting how many were recorded and which job ids were unknown. */
 function record(context: ToolContext, verdicts: Array<z.infer<typeof verdict>>) {
   const scoredAt = context.now().toISOString();
   const stamp = { scoredAt, runId: context.runId };

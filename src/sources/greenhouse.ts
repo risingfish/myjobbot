@@ -20,6 +20,7 @@ export const fetchGreenhouse = defineBoard({
   toJob,
 });
 
+/** Converts a Greenhouse posting into the shared Job record, converting its HTML description to text. */
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   return makeJob(
     { ats: "greenhouse", jobId: String(post.id), company, title: post.title, url: post.absolute_url },

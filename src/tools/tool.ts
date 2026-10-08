@@ -14,6 +14,7 @@ export interface Tool {
   invoke(raw: unknown): Promise<unknown>;
 }
 
+/** Builds a Tool from a name, description, zod schema, and handler, deriving its JSON parameter schema. */
 export function defineTool<S extends z.ZodType>(spec: ToolSpec<S>): Tool {
   const { $schema: _schema, ...parameters } = z.toJSONSchema(spec.schema, { io: "input" });
   return {

@@ -24,6 +24,7 @@ export interface AgentResult {
   steps: number;
 }
 
+/** Runs the agent loop against a conversation until it finishes or its budget is exhausted. */
 export async function runAgent(deps: AgentDeps, messages: Message[]): Promise<AgentResult> {
   return new AgentSession(deps, messages).run();
 }
@@ -31,6 +32,7 @@ export async function runAgent(deps: AgentDeps, messages: Message[]): Promise<Ag
 class AgentSession {
   private readonly budget: Budget;
 
+  /** Sets up a fresh step/error/wall-clock budget for this agent session. */
   constructor(
     private readonly deps: AgentDeps,
     private readonly messages: Message[],
@@ -38,6 +40,7 @@ class AgentSession {
     this.budget = new Budget(deps.limits, deps.clock);
   }
 
+  /** Drives the agent step by step until the task finishes or the run's budget is exhausted. */
   async run(): Promise<AgentResult> {
     this.deps.trace.write({ type: "start", messages: this.messages });
     while (!this.deps.isFinished()) {
@@ -49,6 +52,7 @@ class AgentSession {
     return this.end("finished", "finish called");
   }
 
+  /** Runs one step, turning an LLM/tool error into an abort reason instead of letting it throw. */
   private async safeStep(): Promise<string | null> {
     try {
       await this.step();
@@ -58,6 +62,7 @@ class AgentSession {
     }
   }
 
+  /** Takes one turn: calls the model, records its reply, and executes any tool calls it made. */
   private async step(): Promise<void> {
     this.budget.countStep();
     this.compact();
@@ -68,11 +73,13 @@ class AgentSession {
     for (const call of calls) await this.execute(call);
   }
 
+  /** Trims the conversation history when it has outgrown the configured context budget. */
   private compact(): void {
     const removed = compactInPlace(this.messages, this.deps.limits.context_chars, this.deps.compactionNotice);
     if (removed > 0) this.deps.trace.write({ type: "compacted", removed });
   }
 
+  /** Dispatches one tool call, records its outcome in the trace/history, and feeds it into the error budget. */
   private async execute(call: FunctionCall): Promise<void> {
     const outcome = await dispatch(this.deps.tools, call.function);
     this.budget.recordOutcome(outcome.ok);
@@ -82,16 +89,19 @@ class AgentSession {
     );
   }
 
+  /** Prompts the model to keep working with tool calls when a reply made none, counting it as a failure. */
   private nudge(): void {
     this.budget.recordOutcome(false);
     this.record({ type: "nudge" }, { role: "user", content: this.deps.nudge });
   }
 
+  /** Writes a trace event and appends the corresponding message to the conversation history. */
   private record(event: TraceEvent, message: Message): void {
     this.deps.trace.write(event);
     this.messages.push(message);
   }
 
+  /** Builds and traces the final result for a finished or aborted agent run. */
   private end(status: AgentResult["status"], reason: string): AgentResult {
     const result = { status, reason, steps: this.budget.steps };
     this.deps.trace.write({ type: "end", ...result });

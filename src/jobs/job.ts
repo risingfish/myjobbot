@@ -43,12 +43,14 @@ const NO_DETAILS: JobDetails = {
   preferredSkills: [],
 };
 
+/** Builds a complete Job from required identity fields plus optional details, filling gaps and capping sizes. */
 export function makeJob(core: JobCore, details: Partial<JobDetails>): Job {
   const description = details.description?.slice(0, MAX_DESCRIPTION_CHARS) ?? null;
   const lists = { requirements: capList(details.requirements), skills: capList(details.skills), preferredSkills: capList(details.preferredSkills) };
   return { ...NO_DETAILS, ...details, ...core, description, ...lists };
 }
 
+/** Trims, drops blank entries from, and caps the length and count of a job's list field (e.g. skills). */
 function capList(items: string[] = []): string[] {
   const entries = items.map((item) => item.trim()).filter((item) => item !== "");
   return entries.slice(0, MAX_LIST_ITEMS).map((item) => item.slice(0, MAX_LIST_ITEM_CHARS));

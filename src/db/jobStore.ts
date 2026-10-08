@@ -77,6 +77,7 @@ interface Verdict {
 export class JobStore {
   constructor(private readonly db: DatabaseSync) {}
 
+  /** Inserts or refreshes jobs from a fetch, marking them seen now so stale postings age out later. */
   upsertAll(jobs: Job[], seen: string, source: string): void {
     const statement = this.db.prepare(UPSERT);
     this.transaction(() => {
@@ -84,19 +85,23 @@ export class JobStore {
     });
   }
 
+  /** Returns jobs from a source that were last seen in a given fetch and still need scoring. */
   unscoredSince(source: string, seen: string): JobRow[] {
     return z.array(jobRow).parse(this.db.prepare(UNSCORED).all(source, seen));
   }
 
+  /** Returns every unscored job for a source, regardless of when it was last seen. */
   unscoredForSource(source: string): JobRow[] {
     return z.array(jobRow).parse(this.db.prepare(UNSCORED_FOR_SOURCE).all(source));
   }
 
+  /** Lists company names with company-board postings for a title, so JSearch duplicates can be skipped. */
   boardCompaniesWithTitle(normalizedTitle: string): string[] {
     const rows = this.db.prepare(BOARD_COMPANIES_WITH_TITLE).all(normalizedTitle);
     return z.array(z.object({ company: z.string() })).parse(rows).map((row) => row.company);
   }
 
+  /** Stores a job's score on the job row and appends it to the verdict history; reports whether the job existed. */
   recordVerdict(verdict: Verdict, stamp: VerdictStamp): boolean {
     const parts = [verdict.score, verdict.base ?? null, verdict.bonus ?? null] as const;
     const notes = [JSON.stringify(verdict.reasons), JSON.stringify(verdict.gaps)] as const;
@@ -108,22 +113,26 @@ export class JobStore {
     });
   }
 
+  /** Returns the oldest date seen for a company and title across reposts, so ghost detection counts true age. */
   earliestSeen(company: string, normalizedTitle: string): string {
     const row = this.db.prepare(EARLIEST_SEEN).get(company, normalizedTitle);
     return z.object({ earliest: z.string() }).parse(row).earliest;
   }
 
+  /** Deletes jobs not seen since a cutoff and their now-orphaned verdicts; returns the number of jobs removed. */
   pruneLastSeenBefore(cutoff: string): number {
     const pruned = Number(this.db.prepare(PRUNE).run(cutoff).changes);
     this.db.exec(PRUNE_ORPHAN_VERDICTS);
     return pruned;
   }
 
+  /** Looks up a single job by its id, or null if no such job is stored. */
   findJob(jobId: string): JobRow | null {
     const row = this.db.prepare(FIND_JOB).get(jobId);
     return row === undefined ? null : jobRow.parse(row);
   }
 
+  /** Runs a block of writes atomically, rolling back if any step throws. */
   private transaction<T>(work: () => T): T {
     this.db.exec("BEGIN");
     try {
@@ -137,6 +146,7 @@ export class JobStore {
   }
 }
 
+/** Maps a job and fetch metadata to the named parameters the upsert statement expects. */
 function toParams(job: Job, seen: string, source: string): Record<string, string | number | null> {
   return {
     ats: job.ats, job_id: job.jobId, company: job.company, source, title: job.title,
@@ -148,10 +158,12 @@ function toParams(job: Job, seen: string, source: string): Record<string, string
   };
 }
 
+/** Encodes a string list as JSON for storage, or null when the list is empty. */
 function listParam(items: string[]): string | null {
   return items.length === 0 ? null : JSON.stringify(items);
 }
 
+/** Converts a nullable boolean to the 0/1 encoding the is_remote column stores. */
 function toFlag(value: boolean | null): number | null {
   return value === null ? null : Number(value);
 }

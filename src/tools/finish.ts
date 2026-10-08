@@ -7,6 +7,7 @@ const schema = z.object({
   summary: z.string().min(1).describe("One paragraph: companies searched, jobs scored, notable matches."),
 });
 
+/** Builds the finish tool, letting the model end the run once every source is fetched and scored. */
 export function finishTool(context: ToolContext): Tool {
   return defineTool({
     name: "finish",
@@ -16,6 +17,7 @@ export function finishTool(context: ToolContext): Tool {
   });
 }
 
+/** Ends the run with the given summary, or refuses while any source is unfetched or unscored. */
 async function finish(context: ToolContext, summary: string) {
   const remaining = await remainingWork(context);
   if (remaining.length > 0) return { ok: false, not_done: remaining, next: "Keep going: call fetch_jobs for these sources, then finish." };
@@ -24,6 +26,7 @@ async function finish(context: ToolContext, summary: string) {
   return { ok: true };
 }
 
+/** Lists the sources that still need fetching or scoring before the run can finish. */
 async function remainingWork(context: ToolContext): Promise<string[]> {
   const progress = await sourceProgress(context);
   return progress.flatMap((source) => {

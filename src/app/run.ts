@@ -34,6 +34,7 @@ interface RunReport extends AgentResult {
 
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
+/** Runs one full agent session end to end: loads config, runs the agent, and prunes stale jobs afterward. */
 export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
   const logs = openRunLogs(config);
@@ -44,12 +45,14 @@ export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = 
   return { ...result, runId: logs.runId, summary: context.run.summary };
 }
 
+/** Deletes jobs and API call records older than the configured retention window. */
 function pruneOldJobs(context: ToolContext): void {
   const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
   context.store.pruneLastSeenBefore(cutoff);
   context.apiCalls.pruneBefore(cutoff);
 }
 
+/** Assembles the tool context (database, HTTP client, run state) a single run's tools operate against. */
 function buildContext(config: AppConfig, seams: RunSeams, logs: RunLogs): ToolContext {
   const db = openDatabase(join(config.dataDir, "myjobbot.db"));
   return {
@@ -63,6 +66,7 @@ function buildContext(config: AppConfig, seams: RunSeams, logs: RunLogs): ToolCo
   };
 }
 
+/** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */
 function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, "chat" | "trace">): AgentDeps {
   return {
     ...io,
@@ -74,6 +78,7 @@ function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, 
   };
 }
 
+/** Opens the trace, LLM, and job JSONL log files used to record one run. */
 function openRunLogs(config: AppConfig): RunLogs {
   const runId = randomUUID();
   const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
@@ -86,6 +91,7 @@ function openRunLogs(config: AppConfig): RunLogs {
   };
 }
 
+/** Creates a file-backed Trace, creating its parent directory first if needed. */
 function openJsonl(dir: string, file: string, runId: string): Trace {
   mkdirSync(dir, { recursive: true });
   return fileTrace(join(dir, file), runId);

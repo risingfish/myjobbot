@@ -10,6 +10,7 @@ export class HostLimiter {
     private readonly clock: Clock,
   ) {}
 
+  /** Runs a task against a host, delaying it as needed so requests to that host stay spaced out and capped. */
   async schedule<T>(host: string, task: () => Promise<T>): Promise<T> {
     this.claim(host);
     const now = this.clock.now();
@@ -19,6 +20,7 @@ export class HostLimiter {
     return task();
   }
 
+  /** Enforces the per-host per-run request cap, throwing once a host's budget is used up. */
   private claim(host: string): void {
     const used = this.counts.get(host) ?? 0;
     if (used >= this.config.max_requests_per_host_per_run) {

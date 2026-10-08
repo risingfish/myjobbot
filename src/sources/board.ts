@@ -9,6 +9,7 @@ interface BoardDef<T> {
   keep?: (post: T) => boolean;
 }
 
+/** Builds a BoardFetcher that downloads a company's postings, validates them, and maps each into a Job. */
 export function defineBoard<T>(def: BoardDef<T>): BoardFetcher {
   return async (ref, http) => {
     const posts = def.postings.parse(await http.getJson(def.url(ref.slug)));

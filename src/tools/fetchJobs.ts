@@ -11,6 +11,7 @@ import { defineTool, type Tool } from "./tool.js";
 const PAGE_SIZE = 25;
 const schema = z.object({ source: z.string().describe("Source name exactly as returned by list_sources") });
 
+/** Builds the fetch_jobs tool, letting the model refresh a source and page through its unscored jobs. */
 export function fetchJobsTool(context: ToolContext): Tool {
   return defineTool({
     name: "fetch_jobs",
@@ -20,12 +21,14 @@ export function fetchJobsTool(context: ToolContext): Tool {
   });
 }
 
+/** Returns a source's jobs that still need scoring, filtered by the title and excluded-company config. */
 export function unscoredJobs(context: ToolContext, sourceName: string, outcome: FetchOutcome) {
   const { store, config } = context;
   const rows = outcome.seen === null ? store.unscoredForSource(sourceName) : store.unscoredSince(sourceName, outcome.seen);
   return rows.filter((row) => passesTitleFilter(row.title, config.title_filter) && !isExcludedCompany(row.company, config.exclude_companies));
 }
 
+/** Fetches a source, then builds the paginated fetch_jobs response of its unscored jobs. */
 async function jobPage(context: ToolContext, source: Source) {
   const outcome = await fetchOnce(context, source);
   const unscored = unscoredJobs(context, source.name, outcome);
@@ -34,10 +37,12 @@ async function jobPage(context: ToolContext, source: Source) {
   return source.kind === "search" ? { ...page, ...refreshFields(outcome) } : page;
 }
 
+/** Reports, for a search source, whether JSearch was actually refreshed or skipped and why. */
 function refreshFields(outcome: FetchOutcome) {
   return outcome.note === null ? { refreshed: true } : { refreshed: false, refresh_note: outcome.note };
 }
 
+/** Fetches a source at most once per run, caching and reusing the in-flight or completed fetch. */
 function fetchOnce(context: ToolContext, source: Source): Promise<FetchOutcome> {
   const cached = context.run.fetches.get(source.name);
   if (cached) return cached;
@@ -47,6 +52,7 @@ function fetchOnce(context: ToolContext, source: Source): Promise<FetchOutcome> 
   return pending;
 }
 
+/** Records that a source's fetch failed so later status checks and finish report it. */
 function onFetchFailure(context: ToolContext, source: Source): void {
   context.run.fetches.delete(source.name);
   context.run.failedFetches.add(source.name);

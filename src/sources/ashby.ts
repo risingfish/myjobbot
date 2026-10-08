@@ -26,6 +26,7 @@ export const fetchAshby = defineBoard({
   keep: (post) => post.isListed !== false,
 });
 
+/** Converts an Ashby posting into the shared Job record, keeping compensation and workplace fields. */
 function toJob(company: string, post: z.infer<typeof posting>): Job {
   const { department, team, location, isRemote, workplaceType } = post;
   const compensation = post.compensation?.compensationTierSummary ?? null;

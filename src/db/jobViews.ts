@@ -76,29 +76,35 @@ const count = z.object({ count: z.number() });
 export class JobViews {
   constructor(private readonly db: DatabaseSync) {}
 
+  /** Returns the visible, newest-first jobs from the given sources that meet a minimum score, for the recommended tab. */
   scoredFrom(filter: ScoreFilter): JobView[] {
     const placeholders = filter.sources.map(() => "?").join(", ");
     const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE hidden = 0 AND score >= ? AND source IN (${placeholders}) ${NEWEST_FIRST}`;
     return z.array(jobView).parse(this.db.prepare(sql).all(filter.minScore, ...filter.sources));
   }
 
+  /** Sets whether a job is hidden from the recommended tab; reports whether the job existed. */
   setHidden(flag: HiddenFlag): boolean {
     const result = this.db.prepare(SET_HIDDEN).run(Number(flag.hidden), flag.ats, flag.jobId);
     return Number(result.changes) > 0;
   }
 
+  /** Returns one newest-first page of every stored job, hidden or not, for the all-jobs tab. */
   allJobs(page: Page): JobView[] {
     return z.array(jobView).parse(this.db.prepare(ALL_JOBS).all(page.limit, page.offset));
   }
 
+  /** Counts every stored job, for paginating the all-jobs tab. */
   countAllJobs(): number {
     return count.parse(this.db.prepare("SELECT COUNT(*) AS count FROM jobs").get()).count;
   }
 
+  /** Returns one page of past scoring verdicts, newest first, joined with their job's details. */
   verdictHistory(page: Page): VerdictView[] {
     return z.array(verdictView).parse(this.db.prepare(VERDICT_HISTORY).all(page.limit, page.offset));
   }
 
+  /** Counts every recorded verdict, for paginating the verdict history tab. */
   countVerdicts(): number {
     return count.parse(this.db.prepare("SELECT COUNT(*) AS count FROM verdicts").get()).count;
   }

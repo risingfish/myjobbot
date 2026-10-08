@@ -52,6 +52,7 @@ document.addEventListener("submit", async (event) => {
   form.querySelector("button").textContent = hidden ? "Unhide" : "Hide";
 });`;
 
+/** Renders the full HTML page for a tab, including navigation, summary, table and footer. */
 export function renderPage(tab: Tab, data: TabData, view: { page: Page; footer: PageFooter }): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>myjobbot · ${escapeHtml(tab.label)}</title><style>${STYLE}</style></head><body>
@@ -59,36 +60,43 @@ export function renderPage(tab: Tab, data: TabData, view: { page: Page; footer: 
 ${footerText(view.footer)}<script>${SCRIPT}</script></body></html>`;
 }
 
+/** Renders the HTML fragment of rows plus a "load more" trigger, for infinite-scroll fetches. */
 export function renderFragment(tab: Tab, data: TabData, page: Page): string {
   return data.rows.join("") + loadMoreRow(tab, nextOffset(page, data.total));
 }
 
+/** Renders a minimal HTML page for a plain message, with a link back to the recommended tab. */
 export function simplePage(message: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>myjobbot</title></head><body><p>${message}</p><p><a href="/recommended">Back to myjobbot</a></p></body></html>`;
 }
 
+/** Renders the tab navigation bar, marking the current tab. */
 function navigation(current: Tab): string {
   const links = TABS.map((tab) => `<a href="${tab.path}"${tab === current ? ' class="current"' : ""}>${tab.label}</a>`);
   return `<nav>${links.join("")}</nav>`;
 }
 
+/** Renders the tab's table of rows, or an empty-state message when there is no data. */
 function content(tab: Tab, data: TabData, page: Page): string {
   if (data.total === 0) return `<p>${escapeHtml(data.empty)}</p>`;
   const headers = tab.headers.map((header) => `<th>${header}</th>`).join("");
   return `<div class="table"><table><thead><tr>${headers}</tr></thead><tbody>${renderFragment(tab, data, page)}</tbody></table></div>`;
 }
 
+/** Renders the infinite-scroll "load more" row, or an empty string when no further page exists. */
 function loadMoreRow(tab: Tab, offset: number | null): string {
   if (offset === null) return "";
   const link = `<a href="${tab.path}?offset=${offset}" data-rows="${tab.path}/rows?offset=${offset}">Load more</a>`;
   return `<tr class="more"><td colspan="${tab.headers.length}">${link}</td></tr>`;
 }
 
+/** Returns the offset of the next page, or null when the current page reaches the end. */
 function nextOffset(page: Page, total: number): number | null {
   const next = page.offset + page.limit;
   return next < total ? next : null;
 }
 
+/** Renders the page footer showing the database path and render time. */
 function footerText(footer: PageFooter): string {
   return `<footer><small>${escapeHtml(footer.dbPath)} · rendered ${escapeHtml(footer.renderedAt.toISOString())}</small></footer>`;
 }
