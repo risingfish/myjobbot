@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { isExcludedCompany } from "../src/jobs/companyFilter.js";
+import { isExcludedCompany, isExcludedPublisher } from "../src/jobs/companyFilter.js";
 
 test("excluded companies match whole words, ignoring case and punctuation", () => {
   expect(isExcludedCompany("NVIDIA Corporation", ["nvidia"])).toBe(true);
@@ -14,4 +14,14 @@ test("excluded companies do not match inside longer words", () => {
 
 test("no excluded companies hides nothing", () => {
   expect(isExcludedCompany("Palantir", [])).toBe(false);
+});
+
+test("excluded publishers match whole words, ignoring case", () => {
+  expect(isExcludedPublisher("DailyRemote", ["dailyremote"])).toBe(true);
+  expect(isExcludedPublisher("Remote Quest Jobs", ["remote quest"])).toBe(true);
+  expect(isExcludedPublisher("DailyRemote", ["remote"])).toBe(false);
+});
+
+test("a job with no publisher is never excluded", () => {
+  expect(isExcludedPublisher(null, ["dailyremote"])).toBe(false);
 });

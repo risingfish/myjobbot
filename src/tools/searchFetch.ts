@@ -1,4 +1,5 @@
 import { normalizeCompany } from "../jobs/company.js";
+import { isExcludedPublisher } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import { fetchJsearch, searchParams } from "../sources/jsearch.js";
@@ -7,15 +8,16 @@ import { withoutDescription } from "./jobLog.js";
 import { refreshBlocker, requestsThisMonth } from "./searchBudget.js";
 import type { FetchOutcome, Search } from "./sources.js";
 
-/** Refreshes a saved JSearch search against the API, storing new jobs and skipping board duplicates. */
+/** Refreshes a saved JSearch search against the API, storing new jobs and skipping excluded publishers and board duplicates. */
 export async function refreshSearch(context: ToolContext, search: Search): Promise<FetchOutcome> {
   const blocker = refreshBlocker(context, search.name);
   if (blocker) return { seen: null, note: blocker };
   context.apiCalls.record("jsearch", search.name, context.now().toISOString());
   const jobs = await fetchJsearch({ search, settings: context.config.jsearch, apiKey: requireKey(context) }, context.http);
-  const fresh = jobs.filter((job) => !hasBoardCopy(context, job));
+  const wanted = jobs.filter((job) => !isExcludedPublisher(job.publisher, context.config.jsearch.exclude_publishers));
+  const fresh = wanted.filter((job) => !hasBoardCopy(context, job));
   context.store.upsertAll(fresh, context.now().toISOString(), search.name);
-  logSearchFetch(context, search, { fresh, skipped: jobs.length - fresh.length });
+  logSearchFetch(context, search, { fresh, skipped: wanted.length - fresh.length, skippedPublishers: jobs.length - wanted.length });
   return { seen: null, note: null };
 }
 
@@ -32,10 +34,10 @@ function hasBoardCopy(context: ToolContext, job: Job): boolean {
 }
 
 /** Writes a search_fetch entry with the query, budget used and fetched jobs to the run's jobs log. */
-function logSearchFetch(context: ToolContext, search: Search, result: { fresh: Job[]; skipped: number }): void {
+function logSearchFetch(context: ToolContext, search: Search, result: { fresh: Job[]; skipped: number; skippedPublishers: number }): void {
   context.jobLog.write({
     type: "search_fetch", source: search.name, query: search.query, params: searchParams(search, context.config.jsearch),
     requests_this_month: requestsThisMonth(context), job_count: result.fresh.length,
-    skipped_duplicates: result.skipped, jobs: result.fresh.map(withoutDescription),
+    skipped_duplicates: result.skipped, skipped_publishers: result.skippedPublishers, jobs: result.fresh.map(withoutDescription),
   });
 }

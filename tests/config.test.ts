@@ -32,6 +32,10 @@ test("title boosts default to none and need 1-100 points per term", () => {
   expect(() => testFileConfig({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
 });
 
+test("jsearch.exclude_publishers needs a letter or digit per name", () => {
+  expect(() => testFileConfig({ jsearch: { exclude_publishers: ["--"] } })).toThrow(/letter or digit/);
+});
+
 test("exclude_companies defaults to none and needs a letter or digit per name", () => {
   expect(testFileConfig().exclude_companies).toEqual([]);
   expect(() => testFileConfig({ exclude_companies: ["--"] })).toThrow(/letter or digit/);
@@ -80,7 +84,7 @@ test("loadConfig asks to convert a leftover config.yaml", () => {
 test("config applies search and JSearch defaults", () => {
   const config = testFileConfig({ searches: [TEST_SEARCH] });
   expect(config.searches[0]).toEqual({ ...TEST_SEARCH, country: "us" });
-  expect(config.jsearch).toEqual({ monthly_request_cap: 190, refresh_hours: 24, date_posted: "3days" });
+  expect(config.jsearch).toEqual({ monthly_request_cap: 190, refresh_hours: 24, date_posted: "3days", exclude_publishers: [] });
 });
 
 test("config accepts searches without companies", () => {

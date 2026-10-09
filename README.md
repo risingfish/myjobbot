@@ -399,6 +399,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
 | `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
 | `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
+| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing (whole words, any case: `"dailyremote"` drops results published by DailyRemote). Use full board names: `"remote"` would also drop Remote.co and Remote Rocketship |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
@@ -417,7 +418,10 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 JSearch searches Google for Jobs, which includes LinkedIn, Indeed, Glassdoor and company sites,
 without scraping LinkedIn. Results are stored and scored like board jobs. A result is skipped when
-the same employer and title already came from a company board you list. Budget: every request
+the same employer and title already came from a company board you list. A result whose
+publisher (the board it was found on) is in `jsearch.exclude_publishers` is dropped and never
+stored; `exclude_companies` can't do this, because an aggregator's results name the real employer as the company.
+Excluded results still count against the budget. Budget: every request
 is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours` (less 15 minutes, so a
 fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`. When a search isn't due,
 `fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to

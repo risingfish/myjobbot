@@ -76,6 +76,15 @@ test("each JSearch request is logged with its query and skipped duplicates", asy
   });
 });
 
+test("JSearch results from an excluded publisher are dropped before storing", async () => {
+  const jobLog = memoryTrace();
+  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: ["stripe careers"] } });
+  const { context } = searchContext({ config, jobLog });
+  expect((await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id)).toEqual([jsearchId("js-linkedin-1")]);
+  expect(context.store.unscoredForSource(SEARCH_NAME)).toHaveLength(1);
+  expect(jobLog.events.at(-1)).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
+});
+
 test("list_sources shows saved searches next to boards", async () => {
   const { context } = searchContext();
   await fetchPage(context, SEARCH_NAME);
