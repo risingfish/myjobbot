@@ -16,12 +16,27 @@ test("no excluded companies hides nothing", () => {
   expect(isExcludedCompany("Palantir", [])).toBe(false);
 });
 
+const OTHER_LINK = "https://www.example.com/j";
+const JOBMESH_LINK = "https://jobmesh.io/job/1";
+
 test("excluded publishers match whole words, ignoring case", () => {
-  expect(isExcludedPublisher("DailyRemote", ["dailyremote"])).toBe(true);
-  expect(isExcludedPublisher("Remote Quest Jobs", ["remote quest"])).toBe(true);
-  expect(isExcludedPublisher("DailyRemote", ["remote"])).toBe(false);
+  expect(isExcludedPublisher({ publisher: "DailyRemote", url: OTHER_LINK }, ["dailyremote"])).toBe(true);
+  expect(isExcludedPublisher({ publisher: "Remote Quest Jobs", url: OTHER_LINK }, ["remote quest"])).toBe(true);
+  expect(isExcludedPublisher({ publisher: "DailyRemote", url: OTHER_LINK }, ["remote"])).toBe(false);
 });
 
-test("a job with no publisher is never excluded", () => {
-  expect(isExcludedPublisher(null, ["dailyremote"])).toBe(false);
+test("a job with no publisher is never excluded by name", () => {
+  expect(isExcludedPublisher({ publisher: null, url: OTHER_LINK }, ["dailyremote"])).toBe(false);
+});
+
+test("name entries match only the publisher and domain entries only the apply link", () => {
+  expect(isExcludedPublisher({ publisher: "DailyRemote", url: OTHER_LINK }, ["dailyremote", "*.trabajo.org"])).toBe(true);
+  expect(isExcludedPublisher({ publisher: "Trabajo.org", url: OTHER_LINK }, ["trabajo.org"])).toBe(false);
+  expect(isExcludedPublisher({ publisher: "LinkedIn", url: "https://www.linkedin.com/jobs/view/1" }, ["dailyremote", "jobmesh.io"])).toBe(false);
+  expect(isExcludedPublisher({ publisher: "Remote.co", url: OTHER_LINK }, ["remote.co"])).toBe(false);
+});
+
+test("a domain entry excludes by apply link, whatever the publisher is called", () => {
+  expect(isExcludedPublisher({ publisher: "JobMESH", url: JOBMESH_LINK }, ["jobmesh.io"])).toBe(true);
+  expect(isExcludedPublisher({ publisher: null, url: JOBMESH_LINK }, ["jobmesh.io"])).toBe(true);
 });

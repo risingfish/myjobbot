@@ -14,7 +14,7 @@ export async function refreshSearch(context: ToolContext, search: Search): Promi
   if (blocker) return { seen: null, note: blocker };
   context.apiCalls.record("jsearch", search.name, context.now().toISOString());
   const jobs = await fetchJsearch({ search, settings: context.config.jsearch, apiKey: requireKey(context) }, context.http);
-  const wanted = jobs.filter((job) => !isExcludedPublisher(job.publisher, context.config.jsearch.exclude_publishers));
+  const wanted = jobs.filter((job) => !isExcludedPublisher(job,context.config.jsearch.exclude_publishers));
   const fresh = wanted.filter((job) => !hasBoardCopy(context, job));
   context.store.upsertAll(fresh, context.now().toISOString(), search.name);
   logSearchFetch(context, search, { fresh, skipped: wanted.length - fresh.length, skippedPublishers: jobs.length - wanted.length });

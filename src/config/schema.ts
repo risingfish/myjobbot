@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ATS_NAMES } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
+import { isDomainEntry, isValidDomainEntry } from "../jobs/publisherDomain.js";
 
 const DEFAULT_INCLUDE = [
   "engineer", "developer", "software", "sre", "devops", "platform",
@@ -28,11 +29,15 @@ const filterTerm = z
   .string()
   .refine((term) => normalizeTitle(term) !== "", { message: "filter terms need at least one letter or digit" });
 
+const publisherTerm = filterTerm.refine((entry) => !isDomainEntry(entry) || isValidDomainEntry(entry), {
+  error: (issue) => `'${String(issue.input)}' is not a valid domain entry; use a host like 'jobmesh.io' or '*.trabajo.org'`,
+});
+
 const jsearch = z.object({
   monthly_request_cap: z.number().int().min(1).default(190),
   refresh_hours: z.number().min(1).default(24),
   date_posted: z.enum(["today", "3days", "7days", "30days"]).default("3days"),
-  exclude_publishers: z.array(filterTerm).default([]),
+  exclude_publishers: z.array(publisherTerm).default([]),
 });
 
 const titleFilter = z

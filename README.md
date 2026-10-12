@@ -399,7 +399,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
 | `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
 | `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
-| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing (whole words, any case: `"dailyremote"` drops results published by DailyRemote). Use full board names: `"remote"` would also drop Remote.co and Remote Rocketship |
+| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, stops the app at startup |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
@@ -418,9 +418,11 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 JSearch searches Google for Jobs, which includes LinkedIn, Indeed, Glassdoor and company sites,
 without scraping LinkedIn. Results are stored and scored like board jobs. A result is skipped when
-the same employer and title already came from a company board you list. A result whose
-publisher (the board it was found on) is in `jsearch.exclude_publishers` is dropped and never
-stored; `exclude_companies` can't do this, because an aggregator's results name the real employer as the company.
+the same employer and title already came from a company board you list. A result is dropped and never
+stored when its publisher (the board it was found on) or its apply link's domain is in
+`jsearch.exclude_publishers`; `exclude_companies` can't do this, because an aggregator's results name the real employer as the company.
+Domains catch a board however its name is spelled ("JobMesh.io" and "JobMESH" both link to `jobmesh.io`),
+and a wildcard like `"*.trabajo.org"` covers regional hosts such as `us.trabajo.org`.
 Excluded results still count against the budget. Budget: every request
 is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours` (less 15 minutes, so a
 fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`. When a search isn't due,

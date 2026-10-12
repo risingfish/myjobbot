@@ -36,6 +36,14 @@ test("jsearch.exclude_publishers needs a letter or digit per name", () => {
   expect(() => testFileConfig({ jsearch: { exclude_publishers: ["--"] } })).toThrow(/letter or digit/);
 });
 
+test("jsearch.exclude_publishers rejects malformed domain entries by name", () => {
+  for (const entry of ["trabajo.*", "https://trabajo.org/", "trabajo.org:443", "*.com"]) {
+    expect(() => testFileConfig({ jsearch: { exclude_publishers: [entry] } })).toThrow(`'${entry}' is not a valid domain entry`);
+  }
+  const entries = ["dailyremote", "jobmesh.io", "*.trabajo.org"];
+  expect(testFileConfig({ jsearch: { exclude_publishers: entries } }).jsearch.exclude_publishers).toEqual(entries);
+});
+
 test("exclude_companies defaults to none and needs a letter or digit per name", () => {
   expect(testFileConfig().exclude_companies).toEqual([]);
   expect(() => testFileConfig({ exclude_companies: ["--"] })).toThrow(/letter or digit/);
