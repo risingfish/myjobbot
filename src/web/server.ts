@@ -4,7 +4,7 @@ import type { JobViews } from "../db/jobViews.js";
 import { describeError } from "../errors.js";
 import { handleHide } from "./hide.js";
 import { escapeHtml } from "./html.js";
-import { renderFragment, renderPage, simplePage } from "./page.js";
+import { renderFragment, renderPage, renderSettingsPage, SETTINGS, simplePage } from "./page.js";
 import type { Reply } from "./reply.js";
 import { TABS, type Tab } from "./tabs.js";
 
@@ -44,6 +44,7 @@ async function route(request: IncomingMessage, deps: UiDeps): Promise<Reply> {
   if (request.method === "POST" && url.pathname === "/hide") return handleHide(request, deps.state().views);
   if (request.method !== "GET") return { status: 405, body: simplePage("Method not allowed") };
   if (url.pathname === "/") return { status: 302, body: "", headers: { location: "/recommended" } };
+  if (url.pathname === SETTINGS.path) return { status: 200, body: renderSettingsPage(pageFooter(deps.state(), deps.now())) };
   const tab = TABS.find((candidate) => candidate.path === url.pathname.replace(ROWS_SUFFIX, ""));
   if (!tab) return { status: 404, body: simplePage("Not found") };
   return { status: 200, body: renderTab(tab, url, deps) };
@@ -55,7 +56,12 @@ function renderTab(tab: Tab, url: URL, deps: UiDeps): string {
   const page = { offset: parseOffset(url.searchParams.get("offset")), limit: PAGE_SIZE };
   const data = tab.load({ views: state.views, config: state.config, page, now: deps.now() });
   if (ROWS_SUFFIX.test(url.pathname)) return renderFragment(tab, data, page);
-  return renderPage(tab, data, { page, footer: { dbPath: state.dbPath, renderedAt: deps.now() } });
+  return renderPage(tab, data, { page, footer: pageFooter(state, deps.now()) });
+}
+
+/** Builds the page footer from the loaded UI state and the render time. */
+function pageFooter(state: UiState, renderedAt: Date): { dbPath: string; renderedAt: Date } {
+  return { dbPath: state.dbPath, renderedAt };
 }
 
 /** Parses the offset query parameter, defaulting to 0 for missing or invalid values. */

@@ -7,6 +7,13 @@ interface PageFooter {
   renderedAt: Date;
 }
 
+interface NavItem {
+  path: string;
+  label: string;
+}
+
+export const SETTINGS: NavItem = { path: "/settings", label: "Settings" };
+
 const STYLE = `
 :root { --bg: #f6f7f5; --fg: #1b211e; --muted: #5b655f; --rule: #d5dbd6; --accent: #2b4fb0; --card: #fff; --warn: #a3561a; }
 @media (prefers-color-scheme: dark) { :root { --bg: #121614; --fg: #e3e8e4; --muted: #98a29c; --rule: #2c3430; --accent: #93a8ff; --card: #1a1f1c; --warn: #e6a467; } }
@@ -54,10 +61,12 @@ document.addEventListener("submit", async (event) => {
 
 /** Renders the full HTML page for a tab, including navigation, summary, table and footer. */
 export function renderPage(tab: Tab, data: TabData, view: { page: Page; footer: PageFooter }): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>myjobbot · ${escapeHtml(tab.label)}</title><style>${STYLE}</style></head><body>
-<h1>myjobbot</h1>${navigation(tab)}<p>${escapeHtml(data.summary)}</p>${content(tab, data, view.page)}
-${footerText(view.footer)}<script>${SCRIPT}</script></body></html>`;
+  return pageShell(tab, `<p>${escapeHtml(data.summary)}</p>${content(tab, data, view.page)}`, view.footer);
+}
+
+/** Renders the settings page, which has no settings yet. */
+export function renderSettingsPage(footer: PageFooter): string {
+  return pageShell(SETTINGS, "", footer);
 }
 
 /** Renders the HTML fragment of rows plus a "load more" trigger, for infinite-scroll fetches. */
@@ -70,9 +79,17 @@ export function simplePage(message: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>myjobbot</title></head><body><p>${message}</p><p><a href="/recommended">Back to myjobbot</a></p></body></html>`;
 }
 
-/** Renders the tab navigation bar, marking the current tab. */
-function navigation(current: Tab): string {
-  const links = TABS.map((tab) => `<a href="${tab.path}"${tab === current ? ' class="current"' : ""}>${tab.label}</a>`);
+/** Wraps a page body in the shared document head, title, navigation, footer and script. */
+function pageShell(current: NavItem, body: string, footer: PageFooter): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>myjobbot · ${escapeHtml(current.label)}</title><style>${STYLE}</style></head><body>
+<h1>myjobbot</h1>${navigation(current)}${body}
+${footerText(footer)}<script>${SCRIPT}</script></body></html>`;
+}
+
+/** Renders the navigation bar of tabs and the settings page, marking the current one. */
+function navigation(current: NavItem): string {
+  const links = [...TABS, SETTINGS].map((item) => `<a href="${item.path}"${item.path === current.path ? ' class="current"' : ""}>${item.label}</a>`);
   return `<nav>${links.join("")}</nav>`;
 }
 

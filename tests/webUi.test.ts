@@ -102,6 +102,19 @@ test("verdicts from before history was kept are labelled", () => {
   expect(html).toContain("(pruned)");
 });
 
+test("the settings page is blank, marked in the navigation, and linked from every tab", async () => {
+  const ui = await startTestUi(seededViews([{ id: "a", score: 90 }]));
+  const response = await ui("/settings");
+  const html = await response.text();
+  expect(response.status).toBe(200);
+  expect(html).toContain("<title>myjobbot · Settings</title>");
+  expect(html).toContain('<a href="/settings" class="current">Settings</a>');
+  expect(html).not.toContain("<table");
+  expect(html).not.toContain("Software Engineer a");
+  expect(await pageText(ui, "/recommended")).toContain('<a href="/settings">Settings</a>');
+  expect((await ui("/settings/rows")).status).toBe(404);
+});
+
 test("the server redirects the root, rejects unknown paths and methods", async () => {
   const ui = await startTestUi(seededViews([]));
   const root = await ui("/");
