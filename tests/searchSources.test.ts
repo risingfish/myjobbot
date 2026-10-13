@@ -76,6 +76,39 @@ test("each JSearch request is logged with its query and skipped duplicates", asy
   });
 });
 
+async function fetchExcluding(excludePublishers: string[]) {
+  const jobLog = memoryTrace();
+  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: excludePublishers } });
+  const { context } = searchContext({ config, jobLog });
+  const served = (await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
+  return { served, stored: context.store.unscoredForSource(SEARCH_NAME).length, log: jobLog.events.at(-1) };
+}
+
+test("JSearch results from an excluded publisher are dropped before storing", async () => {
+  const { served, stored, log } = await fetchExcluding(["stripe careers"]);
+  expect(served).toEqual([jsearchId("js-linkedin-1")]);
+  expect(stored).toBe(1);
+  expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
+});
+
+test("JSearch results on an excluded domain are dropped before storing", async () => {
+  const { served, stored, log } = await fetchExcluding(["stripe.com"]);
+  expect(served).toEqual([jsearchId("js-linkedin-1")]);
+  expect(stored).toBe(1);
+  expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
+});
+
+test("a wildcard domain drops results on any subdomain", async () => {
+  const { served, log } = await fetchExcluding(["*.linkedin.com"]);
+  expect(served).toEqual([jsearchId("js-dup-stripe")]);
+  expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
+});
+
+test("a result matched by a name and a domain entry is counted once", async () => {
+  const { log } = await fetchExcluding(["stripe careers", "stripe.com"]);
+  expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
+});
+
 test("list_sources shows saved searches next to boards", async () => {
   const { context } = searchContext();
   await fetchPage(context, SEARCH_NAME);

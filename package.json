@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "openai": "7.27.0",
+    "tldts": "7.4.18",
     "tsx": "4.23.15",
     "zod": "4.6.5"
   },
@@ -28,6 +29,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test && habit-hooks",
-    "serve": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts serve"
+    "serve": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts serve",
+    "docker:up": "docker compose up -d --build",
+    "docker:watch": "docker compose up -d --build && docker compose watch --no-up"
   }
 }

@@ -93,13 +93,23 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 | Open the web UI | `http://<server>:8080` (the `web` service) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
-| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `Dockerfile` or `docker/` changed |
+| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile` or `docker/` changed (or leave `npm run docker:watch` running) |
+| Start (or update) the stack | `npm run docker:up` (`docker compose up -d --build`) |
+| Start and rebuild automatically | `npm run docker:watch`: starts the stack, then runs `docker compose watch` in the foreground. Ctrl-C stops only the watcher; the stack keeps running |
 | Stop | `docker compose down` |
 
 Both services mount the host's `src/` read-only over the image's copy, so code changes need no
 rebuild: each scheduled run starts a fresh process, and the `web` service runs under `tsx watch`
 (`MYJOBBOT_WATCH=1`) and restarts itself when a file changes. Without the mount (plain
 `docker run`), the image's own copy of the code is used.
+
+Dependencies are different: `node_modules` is baked into the image, so new code that imports a
+new package crashes both services until the image is rebuilt. `npm run docker:watch` (or
+`docker compose watch`) rebuilds the image and recreates both containers whenever
+`package.json`, `package-lock.json`, `Dockerfile` or `docker/` changes. Two limits: it only
+works while that command is running (a reboot or a plain `up -d` leaves nothing watching), and
+recreating `myjobbot` stops a scheduled run that is in progress (check with
+`docker compose top myjobbot` before changing dependencies near 01:00, 09:00 or 17:00).
 
 The container runs as uid 1000. If your server user has a different uid, run
 `sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),
@@ -399,6 +409,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
 | `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
 | `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
+| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, stops the app at startup |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
@@ -417,7 +428,12 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 JSearch searches Google for Jobs, which includes LinkedIn, Indeed, Glassdoor and company sites,
 without scraping LinkedIn. Results are stored and scored like board jobs. A result is skipped when
-the same employer and title already came from a company board you list. Budget: every request
+the same employer and title already came from a company board you list. A result is dropped and never
+stored when its publisher (the board it was found on) or its apply link's domain is in
+`jsearch.exclude_publishers`; `exclude_companies` can't do this, because an aggregator's results name the real employer as the company.
+Domains catch a board however its name is spelled ("JobMesh.io" and "JobMESH" both link to `jobmesh.io`),
+and a wildcard like `"*.trabajo.org"` covers regional hosts such as `us.trabajo.org`.
+Excluded results still count against the budget. Budget: every request
 is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours` (less 15 minutes, so a
 fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`. When a search isn't due,
 `fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to

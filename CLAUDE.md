@@ -36,6 +36,8 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   the function and update it when the purpose changes. Tests stay uncommented.
 - No other comments, except one explaining *why* something non-obvious was chosen.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
+- Spec-kit feature directories go in `docs/specs/` (e.g. `docs/specs/002-name/`), never `./specs`;
+  when `/speckit-specify` runs, set `SPECIFY_FEATURE_DIRECTORY` there and number after `docs/specs/`.
 - New dependencies: exact or `~` pins, installed via the lockfile.
 
 ## Commands
