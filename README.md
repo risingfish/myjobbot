@@ -93,13 +93,23 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 | Open the web UI | `http://<server>:8080` (the `web` service) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
-| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `Dockerfile` or `docker/` changed |
+| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile` or `docker/` changed (or leave `npm run docker:watch` running) |
+| Start (or update) the stack | `npm run docker:up` (`docker compose up -d --build`) |
+| Start and rebuild automatically | `npm run docker:watch`: starts the stack, then runs `docker compose watch` in the foreground. Ctrl-C stops only the watcher; the stack keeps running |
 | Stop | `docker compose down` |
 
 Both services mount the host's `src/` read-only over the image's copy, so code changes need no
 rebuild: each scheduled run starts a fresh process, and the `web` service runs under `tsx watch`
 (`MYJOBBOT_WATCH=1`) and restarts itself when a file changes. Without the mount (plain
 `docker run`), the image's own copy of the code is used.
+
+Dependencies are different: `node_modules` is baked into the image, so new code that imports a
+new package crashes both services until the image is rebuilt. `npm run docker:watch` (or
+`docker compose watch`) rebuilds the image and recreates both containers whenever
+`package.json`, `package-lock.json`, `Dockerfile` or `docker/` changes. Two limits: it only
+works while that command is running (a reboot or a plain `up -d` leaves nothing watching), and
+recreating `myjobbot` stops a scheduled run that is in progress (check with
+`docker compose top myjobbot` before changing dependencies near 01:00, 09:00 or 17:00).
 
 The container runs as uid 1000. If your server user has a different uid, run
 `sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),
