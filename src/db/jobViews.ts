@@ -31,6 +31,7 @@ const jobView = z.object({
 export type JobView = z.infer<typeof jobView>;
 
 const verdictView = z.object({
+  id: z.number(),
   run_id: text,
   scored_at: z.string(),
   score: z.number(),
@@ -67,7 +68,7 @@ const JOB_COLUMNS = `ats, job_id, source, company, title, url, location, workpla
 const NEWEST_FIRST = "ORDER BY COALESCE(posted_at, first_seen) DESC, first_seen DESC, ats, job_id";
 const ALL_JOBS = `SELECT ${JOB_COLUMNS} FROM jobs ${NEWEST_FIRST} LIMIT ? OFFSET ?`;
 const VERDICT_HISTORY = `
-SELECT v.run_id, v.scored_at, v.score, v.base_score, v.bonus_score, v.reasons, v.gaps, j.title, j.company, j.url, j.source
+SELECT v.rowid AS id, v.run_id, v.scored_at, v.score, v.base_score, v.bonus_score, v.reasons, v.gaps, j.title, j.company, j.url, j.source
 FROM verdicts v LEFT JOIN jobs j ON j.ats = v.ats AND j.job_id = v.job_id
 ORDER BY v.scored_at DESC, v.rowid DESC LIMIT ? OFFSET ?`;
 const SET_HIDDEN = "UPDATE jobs SET hidden = ? WHERE ats = ? AND job_id = ?";

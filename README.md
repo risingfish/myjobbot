@@ -43,7 +43,7 @@ Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 npm run serve        # http://localhost:8080
 ```
 
-A view of the database with three tabs:
+A React app for browsing the database, with three tabs and a (for now empty) Settings page:
 
 | Tab | Shows |
 |---|---|
@@ -62,6 +62,17 @@ Scores show their breakdown ("base 38 + bonus 40", plus any boost). See
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
 `data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` / `MYJOBBOT_HOST` to
 change where it listens. There is no login: keep it on your LAN.
+
+How it's built:
+- **The server does the deciding.** The pages are React components in `src/web/client/`, fed by
+  a small JSON API (`/api/pages/:name`, `/api/meta`). The server works out scores, boosts and
+  filter notes, so the browser only lays them out.
+- **`serve` builds the browser code at start-up** with Vite, into a temporary folder, which takes
+  a few seconds. With `MYJOBBOT_WATCH=1` it rebuilds about a second after you save a file.
+- **For hot reload while editing**, run `npm run serve` and `npm run dev:web` together, then
+  open `http://localhost:5173`. That's Vite's development server, on localhost only.
+- **To learn React** from this code, see [docs/react-walkthrough.md](docs/react-walkthrough.md).
+  It maps each React idea to the files that use it and ends with exercises.
 
 ## Develop
 
@@ -100,7 +111,9 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 
 Both services mount the host's `src/` read-only over the image's copy, so code changes need no
 rebuild: each scheduled run starts a fresh process, and the `web` service runs under `tsx watch`
-(`MYJOBBOT_WATCH=1`) and restarts itself when a file changes. Without the mount (plain
+(`MYJOBBOT_WATCH=1`), so the server restarts when its code changes and the React app is rebuilt
+when a file under `src/web/client/` changes (reload the browser to see it). The `web` service
+builds the React app when it starts, so it answers a few seconds after `up`. Without the mount (plain
 `docker run`), the image's own copy of the code is used.
 
 Dependencies are different: `node_modules` is baked into the image, so new code that imports a

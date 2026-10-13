@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { runOnce } from "./app/run.js";
-import { startUi } from "./app/serve.js";
 import { describeError } from "./errors.js";
 
 const USAGE = "usage: myjobbot run | serve";
@@ -31,8 +30,10 @@ async function runCommand(environment: NodeJS.ProcessEnv): Promise<number> {
 }
 
 /** Starts the web UI and keeps the process alive until its server closes. */
-function serveCommand(environment: NodeJS.ProcessEnv): Promise<number> {
-  return new Promise((resolve) => startUi(environment).on("close", () => resolve(0)));
+async function serveCommand(environment: NodeJS.ProcessEnv): Promise<number> {
+  const { startUi } = await import("./app/serve.js");
+  const server = await startUi(environment);
+  return new Promise((resolve) => server.on("close", () => resolve(0)));
 }
 
 main(process.argv.slice(2)).then(

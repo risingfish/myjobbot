@@ -19,6 +19,9 @@ as history instead of overwritten.
 
 ## Decisions
 
+> The Rendering and Paging rows are superseded by `docs/specs/002-react-web-ui/` (2026-10-13):
+> the UI is now a React app fed by a JSON API.
+
 | Area | Decision |
 |---|---|
 | Rendering | Server-rendered HTML from TypeScript using Node's built-in `http` module. No framework, no new dependencies. Tabs are links |
