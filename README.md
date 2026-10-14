@@ -464,3 +464,11 @@ the run's jobs log.
 
 This covers plan 1 of 4 (the agent core). Still to come: the email digest, Glassdoor
 ratings, and Docker plus cron deployment.
+
+## License
+
+Copyright (C) 2026 Zachary Feuerborn
+
+myjobbot is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License, version 3 only (`GPL-3.0-only`), as published by the Free Software
+Foundation. It is distributed WITHOUT ANY WARRANTY. See [LICENSE](LICENSE) for the full text.
