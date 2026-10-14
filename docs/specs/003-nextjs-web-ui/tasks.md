@@ -574,7 +574,7 @@ from the worktree first, then switched in the main checkout (T045).
 
   Record the results in this file's notes, mark completed tasks `[X]`, and leave the worktree's
   changes uncommitted unless the user asks to commit.
-- [ ] T045 Switch-over handoff, which needs the user's approval:
+- [X] T045 Switch-over handoff, which needs the user's approval:
   1. **Ask the user which `host:port` names and IPs they open the UI with**, and add
      `MYJOBBOT_HOSTS=…` to the main checkout's `.env` with their answer.
   2. **Rebuild.** Once the branch is committed and merged (or checked out in the main checkout),
@@ -664,6 +664,11 @@ from the worktree first, then switched in the main checkout (T045).
   `web/next.config.ts` turns that off, so neither local runs nor the Docker service write it into
   the checkout; `CLAUDE.md` stays the agent guide. `web/tsconfig.tsbuildinfo` (TypeScript's
   incremental cache) is gitignored.
+- **T045** (2026-10-14): implementation committed as `64036cc`; the worktree was removed and the
+  main checkout switched to `nextjs-web-ui`. The `docker compose watch` process was stopped, then
+  `docker compose up -d --build` ran with no agent run in progress. `web` serves Next.js; a
+  request naming `192.168.1.20:8080` gets 200 with rows. This machine's own LAN address
+  (`192.168.2.50`) gets 421; the user confirmed `192.168.1.20:8080` is the address they use.
 
 ## Dependencies & Execution Order
 
