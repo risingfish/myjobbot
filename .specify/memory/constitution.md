@@ -6,7 +6,7 @@
 
 All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings, at all
 times, not only at commit:
-- functions at most 12 lines, at most 3 parameters, complexity at most 10, nesting at most 4
+- functions at most 20 lines, at most 3 parameters, complexity at most 10, nesting at most 4
 - files at most 200 lines
 - `===` only, no `var`, `const` where possible, no inferrable type annotations
 - no unused code: knip's unused files, exports, dependencies and test-only code
@@ -61,8 +61,10 @@ Rationale: one documentation root for the project.
   clean.
 - `.githooks/pre-commit` blocks commits with enforced findings
   (`git config core.hooksPath .githooks`).
-- `knip.json` replaces habit-hooks' shipped knip config. When habit-hooks is upgraded, it MUST be
-  diffed against the shipped config and changes carried over.
+- `knip.json` and `eslint.config.mjs` replace habit-hooks' shipped configs (the ESLint copy raises
+  the function limit to 20 lines, owner decision 2026-10-14, because Prettier lays out JSX and
+  object literals one item per line). When habit-hooks is upgraded, both MUST be diffed against
+  the shipped configs and changes carried over.
 - `non-essential-comment` is disabled in `.habit-hooks/config.toml` (owner decision,
   2026-10-08) so functions can carry doc comments; Principle III's no-other-comments rule is a
   convention, not a check.
@@ -84,4 +86,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 1.3.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14

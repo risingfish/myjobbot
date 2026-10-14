@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 
 /** Renders the All jobs page from the database, on the server. */
 export default function JobsPage() {
-  return <DataPage name="jobs" label="All jobs" />;
+    return <DataPage name="jobs" label="All jobs" />;
 }

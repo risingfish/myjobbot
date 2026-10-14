@@ -1,0 +1,13 @@
+# Ignore artifacts:
+build
+coverage
+*.md
+
+# Rewritten by npm and spec-kit in their own formats:
+package-lock.json
+.specify/
+.claude/
+
+# Next.js output:
+web/.next*/
+web/next-env.d.ts

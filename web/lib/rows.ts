@@ -13,15 +13,15 @@ const hideChange = z.object({ ats: z.string().min(1), jobId: z.string().min(1), 
 
 /** Loads one page of rows for a web UI page, refusing an unknown page or an out-of-range offset. */
 export function loadRows(views: JobViews, config: FileConfig, request: unknown): PageData {
-  const parsed = rowsRequest.safeParse(request);
-  if (!parsed.success) throw new Error("Invalid page request");
-  const { name, offset } = parsed.data;
-  return loadPageData(name, { views, config, page: { offset, limit: PAGE_SIZE }, now: new Date() });
+    const parsed = rowsRequest.safeParse(request);
+    if (!parsed.success) throw new Error("Invalid page request");
+    const { name, offset } = parsed.data;
+    return loadPageData(name, { views, config, page: { offset, limit: PAGE_SIZE }, now: new Date() });
 }
 
 /** Hides or unhides one job, refusing a malformed change and reporting a job that doesn't exist. */
 export function setHiddenFor(views: JobViews, change: unknown): HideResult {
-  const parsed = hideChange.safeParse(change);
-  if (!parsed.success) throw new Error("Invalid hide request");
-  return views.setHidden(parsed.data) ? { ok: true } : { ok: false, error: "No such job." };
+    const parsed = hideChange.safeParse(change);
+    if (!parsed.success) throw new Error("Invalid hide request");
+    return views.setHidden(parsed.data) ? { ok: true } : { ok: false, error: "No such job." };
 }

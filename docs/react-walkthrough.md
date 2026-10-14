@@ -55,7 +55,7 @@ syntax inside it. React turns JSX into calls that build the page, and **escapes 
 **Where:** `JobRow` in `web/components/tables/JobRow.tsx`, built from `ScoreCell`, `TitleCell`,
 `WhereCells`, `SourceCell` and `WhenCells`.
 
-Notice how small each component is: habit-hooks allows 12 lines per function, so a table row is
+Notice how small each component is: habit-hooks allows 20 lines per function, so a table row is
 split into cells. That is also how React code is usually written. When a component grows, you
 pull out a smaller one with a clear name.
 

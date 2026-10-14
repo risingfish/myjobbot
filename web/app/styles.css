@@ -1,14 +1,106 @@
-:root { --bg: #f6f7f5; --fg: #1b211e; --muted: #5b655f; --rule: #d5dbd6; --accent: #2b4fb0; --card: #fff; --warn: #a3561a; }
-@media (prefers-color-scheme: dark) { :root { --bg: #121614; --fg: #e3e8e4; --muted: #98a29c; --rule: #2c3430; --accent: #93a8ff; --card: #1a1f1c; --warn: #e6a467; } }
-body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
-nav { display: flex; gap: 16px; margin: 12px 0; flex-wrap: wrap; }
-nav a { color: var(--muted); text-decoration: none; padding-bottom: 2px; }
-nav a.current { color: var(--fg); border-bottom: 2px solid var(--accent); }
-.table { overflow-x: auto; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; }
-table { border-collapse: collapse; width: 100%; }
-th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 1px solid var(--rule); }
-th { border-top: 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
-a { color: var(--accent); } small, .note, footer { color: var(--muted); } .ghost { color: var(--warn); }
-.score { font-weight: 700; font-variant-numeric: tabular-nums; } ul { margin: 4px 0; padding-left: 18px; }
-form.hide { margin: 0; } form.hide button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
-tr[data-hidden="0"] .hidden-note { display: none; } tr[data-hidden="1"] { opacity: .6; }
+:root {
+    --bg: #f6f7f5;
+    --fg: #1b211e;
+    --muted: #5b655f;
+    --rule: #d5dbd6;
+    --accent: #2b4fb0;
+    --card: #fff;
+    --warn: #a3561a;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #121614;
+        --fg: #e3e8e4;
+        --muted: #98a29c;
+        --rule: #2c3430;
+        --accent: #93a8ff;
+        --card: #1a1f1c;
+        --warn: #e6a467;
+    }
+}
+body {
+    margin: 0;
+    padding: 24px 16px;
+    background: var(--bg);
+    color: var(--fg);
+    font:
+        15px/1.5 system-ui,
+        sans-serif;
+}
+nav {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+}
+nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding-bottom: 2px;
+}
+nav a.current {
+    color: var(--fg);
+    border-bottom: 2px solid var(--accent);
+}
+.table {
+    overflow-x: auto;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th,
+td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px 10px;
+    border-top: 1px solid var(--rule);
+}
+th {
+    border-top: 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+a {
+    color: var(--accent);
+}
+small,
+.note,
+footer {
+    color: var(--muted);
+}
+.ghost {
+    color: var(--warn);
+}
+.score {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+ul {
+    margin: 4px 0;
+    padding-left: 18px;
+}
+form.hide {
+    margin: 0;
+}
+form.hide button {
+    font: inherit;
+    font-size: 13px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+tr[data-hidden="0"] .hidden-note {
+    display: none;
+}
+tr[data-hidden="1"] {
+    opacity: 0.6;
+}

@@ -9,9 +9,11 @@ const Link = NextLink.default;
 
 /** Renders the navigation bar of all web UI pages, marking the one at the current address. */
 export function Nav() {
-  const path = usePathname();
-  const links = PAGES.map((page) => (
-    <Link key={page.path} href={page.path} className={page.path === path ? "current" : undefined}>{page.label}</Link>
-  ));
-  return <nav>{links}</nav>;
+    const path = usePathname();
+    const links = PAGES.map((page) => (
+        <Link key={page.path} href={page.path} className={page.path === path ? "current" : undefined}>
+            {page.label}
+        </Link>
+    ));
+    return <nav>{links}</nav>;
 }

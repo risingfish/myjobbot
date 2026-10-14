@@ -16,42 +16,51 @@ VALUES ('lever', 'old-1', 'Palantir', 'Backend Engineer', 'backend engineer', 'u
   '2026-10-01T00:00:00.000Z', '2026-10-01T00:00:00.000Z');`;
 
 function preSourceDatabase(): string {
-  const path = join(mkdtempSync(join(tmpdir(), "myjobbot-db-")), "old.db");
-  const db = new DatabaseSync(path);
-  db.exec(PRE_SOURCE_SCHEMA);
-  db.close();
-  return path;
+    const path = join(mkdtempSync(join(tmpdir(), "myjobbot-db-")), "old.db");
+    const db = new DatabaseSync(path);
+    db.exec(PRE_SOURCE_SCHEMA);
+    db.close();
+    return path;
 }
 
 test("openDatabase adds the source column to an old database and backfills it", () => {
-  const db = openDatabase(preSourceDatabase());
-  expect({ ...db.prepare("SELECT source FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ source: "Palantir" });
+    const db = openDatabase(preSourceDatabase());
+    expect({ ...db.prepare("SELECT source FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ source: "Palantir" });
 });
 
 test("openDatabase migrations are safe to run twice", () => {
-  const path = preSourceDatabase();
-  openDatabase(path).close();
-  expect(() => openDatabase(path)).not.toThrow();
+    const path = preSourceDatabase();
+    openDatabase(path).close();
+    expect(() => openDatabase(path)).not.toThrow();
 });
 
 test("openDatabase adds the publisher column and the api_calls table", () => {
-  const db = openDatabase(preSourceDatabase());
-  const columns = db.prepare("PRAGMA table_info(jobs)").all().map((column) => column.name);
-  expect(columns).toContain("publisher");
-  expect({ ...db.prepare("SELECT COUNT(*) AS count FROM api_calls").get() }).toEqual({ count: 0 });
+    const db = openDatabase(preSourceDatabase());
+    const columns = db
+        .prepare("PRAGMA table_info(jobs)")
+        .all()
+        .map((column) => column.name);
+    expect(columns).toContain("publisher");
+    expect({ ...db.prepare("SELECT COUNT(*) AS count FROM api_calls").get() }).toEqual({ count: 0 });
 });
 
 test("openDatabase adds the requirements and skills columns", () => {
-  const db = openDatabase(preSourceDatabase());
-  const columns = db.prepare("PRAGMA table_info(jobs)").all().map((column) => column.name);
-  expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills", "hidden"]));
-  expect({ ...db.prepare("SELECT hidden FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ hidden: 0 });
+    const db = openDatabase(preSourceDatabase());
+    const columns = db
+        .prepare("PRAGMA table_info(jobs)")
+        .all()
+        .map((column) => column.name);
+    expect(columns).toEqual(expect.arrayContaining(["requirements", "skills", "preferred_skills", "hidden"]));
+    expect({ ...db.prepare("SELECT hidden FROM jobs WHERE job_id = 'old-1'").get() }).toEqual({ hidden: 0 });
 });
 
 test("openDatabase adds the base and bonus columns to jobs and verdicts", () => {
-  const db = openDatabase(preSourceDatabase());
-  for (const table of ["jobs", "verdicts"]) {
-    const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
-    expect(columns).toEqual(expect.arrayContaining(["base_score", "bonus_score"]));
-  }
+    const db = openDatabase(preSourceDatabase());
+    for (const table of ["jobs", "verdicts"]) {
+        const columns = db
+            .prepare(`PRAGMA table_info(${table})`)
+            .all()
+            .map((column) => column.name);
+        expect(columns).toEqual(expect.arrayContaining(["base_score", "bonus_score"]));
+    }
 });
