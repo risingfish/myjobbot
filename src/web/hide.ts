@@ -1,9 +1,9 @@
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
 import type { JobViews } from "../db/jobViews.js";
-import { simplePage } from "./page.js";
+import { simplePage } from "./html.js";
 import type { Reply } from "./reply.js";
-import { TABS } from "./tabs.js";
+import { PAGES } from "./api.js";
 
 const MAX_BODY_CHARS = 4096;
 const DEFAULT_BACK = "/recommended";
@@ -13,7 +13,7 @@ const hideForm = z.object({
   ats: z.string().min(1),
   job_id: z.string().min(1),
   hidden: z.enum(["0", "1"]).transform((flag) => flag === "1"),
-  back: z.string().refine((path) => TABS.some((tab) => tab.path === path)).catch(DEFAULT_BACK),
+  back: z.string().refine((path) => PAGES.some((page) => page.path === path)).catch(DEFAULT_BACK),
 });
 
 /** Toggles a job's hidden flag from the hide form, returning a redirect or an empty reply for fetch submissions. */

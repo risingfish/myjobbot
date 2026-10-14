@@ -1,5 +1,5 @@
 export interface Reply {
   status: number;
-  body: string;
+  body: string | Buffer;
   headers?: Record<string, string>;
 }

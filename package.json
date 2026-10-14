@@ -8,10 +8,16 @@
     "node": ">=24 <25"
   },
   "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
     "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@typescript-eslint/eslint-plugin": "8.71.0",
     "@typescript-eslint/parser": "8.71.0",
     "eslint": "10.12.0",
+    "happy-dom": "21.0.1",
     "jscpd": "5.4.0",
     "knip": "6.39.0",
     "ts-morph": "28.0.0",
@@ -19,9 +25,13 @@
     "vitest": "5.0.3"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "6.1.2",
     "openai": "7.27.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "tldts": "7.4.18",
     "tsx": "4.23.15",
+    "vite": "8.3.2",
     "zod": "4.6.5"
   },
   "scripts": {
@@ -30,6 +40,7 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test && habit-hooks",
     "serve": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts serve",
+    "dev:web": "vite",
     "docker:up": "docker compose up -d --build",
     "docker:watch": "docker compose up -d --build && docker compose watch --no-up"
   }
