@@ -6,7 +6,7 @@ export interface CliResult {
   stderr: string;
 }
 
-export function runCli(args: string[], env: NodeJS.ProcessEnv = {}): CliResult {
+export function runCli(args: string[], env: Record<string, string> = {}): CliResult {
   const result = spawnSync("node_modules/.bin/tsx", ["src/cli.ts", ...args], {
     encoding: "utf8",
     env: { ...process.env, ...env },

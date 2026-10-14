@@ -2,7 +2,7 @@ import { screen } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { expect, test } from "vitest";
 import type { JobRowView } from "../../src/web/api.js";
-import { JobRow } from "../../src/web/client/components/tables/JobRow.js";
+import { JobRow } from "../../web/components/tables/JobRow.js";
 import { jobRowView } from "../helpers/rowFixtures.js";
 
 function renderRow(overrides: Partial<JobRowView> = {}) {

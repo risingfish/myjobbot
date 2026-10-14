@@ -27,11 +27,13 @@ case "${1:-schedule}" in
     ;;
   serve)
     check_prerequisites
-    cd /app
-    if [ "${MYJOBBOT_WATCH:-0}" = "1" ]; then
-      exec node_modules/.bin/tsx watch --clear-screen=false src/cli.ts serve
+    if [ -z "${MYJOBBOT_HOSTS:-}" ]; then
+      echo "myjobbot: set MYJOBBOT_HOSTS to the host:port names you open the UI with (for example myserver.lan:8080,192.168.1.20:8080)" >&2
+      exit 1
     fi
-    exec node_modules/.bin/tsx src/cli.ts serve
+    cd /app
+    export NEXT_TELEMETRY_DISABLED=1
+    exec node_modules/.bin/next dev web --hostname 0.0.0.0 --port "${MYJOBBOT_PORT:-8080}"
     ;;
   *)
     exec "$@"

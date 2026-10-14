@@ -9,3 +9,5 @@ docs/
 .githooks/
 .habit-hooks/
 .idea/
+web/.next*/
+web/next-env.d.ts
