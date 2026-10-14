@@ -34,14 +34,18 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 
 ## Conventions
 
-- Every function and method in `src/` gets a succinct one-line `/** … */` doc comment
+- Every function and method in `src/` and `web/` gets a succinct one-line `/** … */` doc comment
   stating its purpose: what it is for, not how it works, as a full sentence. Write it with
   the function and update it when the purpose changes. Tests stay uncommented.
 - No other comments, except one explaining *why* something non-obvious was chosen.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
 - Spec-kit feature directories go in `docs/specs/` (e.g. `docs/specs/002-name/`), never `./specs`;
   when `/speckit-specify` runs, set `SPECIFY_FEATURE_DIRECTORY` there and number after `docs/specs/`.
-- New dependencies: exact or `~` pins, installed via the lockfile.
+- External libraries are allowed, but before choosing one, present the options (the most
+  popular candidates, trade-offs, a recommendation) and get the owner's approval.
+- New dependencies: exact or `~` pins, installed via the lockfile; lockfile changes must not
+  drop optional platform entries.
+- These rules are ratified in `.specify/memory/constitution.md`; keep the two in agreement.
 
 ## Commands
 

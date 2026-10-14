@@ -101,7 +101,7 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 
 | Task | Command |
 |---|---|
-| Open the web UI | `http://<server>:8080` (the `web` service) |
+| Open the web UI | `http://<server>:8080` (the `web` service; `MYJOBBOT_PORT` in `.env` changes the port) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
 | Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile` or `docker/` changed (or leave `npm run docker:watch` running) |
