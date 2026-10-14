@@ -35,6 +35,9 @@ with `next start` and `next dev`, and probed. Results are quoted below.
     with `strict` and `noUncheckedIndexedAccess`.
   - **`web/next.config.ts`** sets `turbopack.root` and `outputFileTracingRoot` to the repository
     root.
+- **Found at T006**: under `nodenext`, Next.js's own subpath modules must be imported with
+  `.js` (`next/navigation.js`, `next/server.js`, `next/link.js`), because the `next` package has
+  no `exports` map. Turbopack resolves them to the same files.
 - **Spike evidence**:
   - With Next.js's generated `tsconfig` (`moduleResolution: "bundler"`, `strict: false`),
     Turbopack could not resolve the agent's NodeNext-style imports (`./schema.js`, where the
@@ -155,7 +158,13 @@ with `next start` and `next dev`, and probed. Results are quoted below.
     `distDir`. Next.js 16 points that file at the output folder's route types, so it may
     differ. If it does, the file is gitignored, `typecheck` runs `next typegen web` first, and
     Docker uses the writable-mount fallback below, because `next dev` must write it.
-    (Result: to be recorded here at T006.)
+    **Result (T006, 2026-10-14)**: the file differs in all three cases. `next dev` points it at
+    `./.next/dev/types/…`, `next build` at `./.next/types/…`, and a `.next-test` build at
+    `./.next-test/types/…`. So it is gitignored, `typecheck` runs `next typegen web` first, and
+    Docker uses the writable-mount fallback (`NEXT_DIST_DIR=.next-docker`). Next.js also
+    rewrites `web/tsconfig.json` into its own formatting and adds include entries for each output
+    folder it sees. The committed file is in that format, with the `.next-test` and
+    `.next-docker` entries already present, and stays unchanged across dev and all three builds.
   - **Watch rules**: `compose.yaml` adds `web/next.config.ts` and `web/tsconfig.json` as
     rebuild triggers. Other `web/` changes are hot.
   - **Image size**: Next.js adds about 300 MB to `node_modules`: `next` is 207 MB, and the

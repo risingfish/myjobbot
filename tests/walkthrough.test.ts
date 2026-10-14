@@ -1,19 +1,24 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 
-const CLIENT = "src/web/client";
+const CLIENT = "web";
 const walkthrough = readFileSync("docs/react-walkthrough.md", "utf8");
-const PLATFORM = new Set(["AbortController", "IntersectionObserver", "useCallback", "useEffect", "useRef", "useState"]);
+const PLATFORM = new Set(["IntersectionObserver", "Link", "notFound", "redirect", "useCallback", "useEffect", "usePathname", "useRef", "useState"]);
+
+function sourceFiles(): string[] {
+  const entries = readdirSync(CLIENT).filter((entry) => !entry.startsWith(".next")).map((entry) => join(CLIENT, entry));
+  const files = entries.flatMap((path) => (statSync(path).isDirectory() ? readdirSync(path, { recursive: true }).map((file) => join(path, String(file))) : [path]));
+  return files.filter((file) => /\.tsx?$/.test(file));
+}
 
 function definedFunctions(): Set<string> {
-  const files = readdirSync(CLIENT, { recursive: true }).map(String).filter((file) => /\.tsx?$/.test(file));
-  const sources = files.map((file) => readFileSync(join(CLIENT, file), "utf8"));
+  const sources = sourceFiles().map((file) => readFileSync(file, "utf8"));
   return new Set(sources.flatMap((source) => [...source.matchAll(/function (\w+)/g)].map((match) => match[1] ?? "")));
 }
 
 test("every source file the walkthrough names exists, apart from new files an exercise creates", () => {
-  const named = [...walkthrough.matchAll(/(a new )?`((?:src|tests)\/[\w/.-]+\.(?:tsx?|css|html))`/g)];
+  const named = [...walkthrough.matchAll(/(a new )?`((?:src|tests|web)\/[\w/.-]+\.(?:tsx?|css|html))`/g)];
   const paths = named.filter((match) => match[1] === undefined).map((match) => match[2] ?? "");
   expect(paths.length).toBeGreaterThan(15);
   expect(paths.filter((path) => !existsSync(path))).toEqual([]);

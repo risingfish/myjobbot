@@ -23,9 +23,11 @@ Enforcement in this repo:
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
 - `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not clean.
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
-- `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13, adding the browser
-  entry `src/web/client/main.tsx`); when upgrading habit-hooks, diff it against the shipped
-  `habit_hooks_typescript/knip.json` and carry over changes.
+- `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
+  `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,
+  `web/proxy.ts` and the `page`/`layout`/`not-found`/`error` files under `web/app/`). When
+  upgrading habit-hooks, diff it against the shipped `habit_hooks_typescript/knip.json` and carry
+  over changes.
 
 Key limits from the TypeScript plugin's eslint config: functions ≤ 12 lines,
 ≤ 3 parameters, complexity ≤ 10, nesting ≤ 4, files ≤ 200 lines, `===` only,
@@ -51,4 +53,5 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 
 - `npm run check`: typecheck, tests, habit-hooks (run before claiming any task done)
 - `npm start -- run`: one agent run using `.env` and `data/`
+- `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

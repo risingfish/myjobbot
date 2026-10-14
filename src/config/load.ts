@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { describeError } from "../errors.js";
 import { envSchema, fileConfigSchema, type Env, type FileConfig } from "./schema.js";
 
+export type Environment = Readonly<Record<string, string | undefined>>;
+
 export interface AppConfig {
   env: Env;
   file: FileConfig;
@@ -11,12 +13,17 @@ export interface AppConfig {
 }
 
 /** Loads and validates the environment and on-disk config, returning the app's combined configuration. */
-export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
+export function loadConfig(environment: Environment): AppConfig {
   const env = envSchema.parse(environment);
   const dataDir = env.MYJOBBOT_DATA_DIR;
-  const file = fileConfigSchema.parse(readConfigJson(dataDir));
+  const file = loadFileConfig(dataDir);
   requireSearchKey(env, file);
   return { env, file, resume: readText(dataDir, "resume.md"), dataDir };
+}
+
+/** Loads and validates only the on-disk config, for readers such as the web UI that need no agent settings. */
+export function loadFileConfig(dataDir: string): FileConfig {
+  return fileConfigSchema.parse(readConfigJson(dataDir));
 }
 
 /** Ensures a JSearch API key is configured whenever saved searches need it to run. */

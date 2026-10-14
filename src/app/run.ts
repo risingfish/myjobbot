@@ -5,7 +5,7 @@ import { createChat, type ChatFn } from "../agent/llm.js";
 import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
-import { loadConfig, type AppConfig } from "../config/load.js";
+import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
 import { ApiCallLog } from "../db/apiCalls.js";
 import { JobStore } from "../db/jobStore.js";
 import { openDatabase } from "../db/open.js";
@@ -35,7 +35,7 @@ interface RunReport extends AgentResult {
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
 /** Runs one full agent session end to end: loads config, runs the agent, and prunes stale jobs afterward. */
-export async function runOnce(environment: NodeJS.ProcessEnv, seams: RunSeams = {}): Promise<RunReport> {
+export async function runOnce(environment: Environment, seams: RunSeams = {}): Promise<RunReport> {
   const config = loadConfig(environment);
   const logs = openRunLogs(config);
   const context = buildContext(config, seams, logs);

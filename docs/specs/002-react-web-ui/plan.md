@@ -4,6 +4,11 @@
 
 **Input**: Feature specification from `docs/specs/002-react-web-ui/spec.md`
 
+> **Superseded in part (2026-10-14)**: the `serve` command, the Vite build and the
+> `src/web/client/` structure described here were replaced by the Next.js app in `web/`. See
+> `docs/specs/003-nextjs-web-ui/`. The shared rules (`src/web/api.ts`, `rowViews.ts`,
+> `pageData.ts`) and the paging fixes still apply.
+
 ## Summary
 
 The web UI's four pages are rebuilt as a React 19 single-page app:

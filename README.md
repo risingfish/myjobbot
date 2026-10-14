@@ -40,10 +40,11 @@ Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 ## Web UI
 
 ```bash
-npm run serve        # http://localhost:8080
+npm run web          # development server, http://localhost:8080
+npm run web:build && npm run web:start   # production build and server
 ```
 
-A React app for browsing the database, with three tabs and a (for now empty) Settings page:
+A Next.js app for browsing the database, with three tabs and a (for now empty) Settings page:
 
 | Tab | Shows |
 |---|---|
@@ -60,19 +61,25 @@ Scores show their breakdown ("base 38 + bonus 40", plus any boost). See
 [How scoring works](#how-scoring-works) for what the numbers mean.
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
-`data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` / `MYJOBBOT_HOST` to
-change where it listens. There is no login: keep it on your LAN.
+`data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
+is no login: keep it on your LAN. The web UI needs no LLM settings, only `data/`.
+
+**Which hosts may connect.** Every request must name the UI in its `Host`, or it gets 421; that
+stops other websites reaching it through DNS tricks. By default that's `localhost` and
+`127.0.0.1` on `MYJOBBOT_PORT`. To open it from another machine, list every `host:port` you use
+in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:8080`.
 
 How it's built:
-- **The server does the deciding.** The pages are React components in `src/web/client/`, fed by
-  a small JSON API (`/api/pages/:name`, `/api/meta`). The server works out scores, boosts and
-  filter notes, so the browser only lays them out.
-- **`serve` builds the browser code at start-up** with Vite, into a temporary folder, which takes
-  a few seconds. With `MYJOBBOT_WATCH=1` it rebuilds about a second after you save a file.
-- **For hot reload while editing**, run `npm run serve` and `npm run dev:web` together, then
-  open `http://localhost:5173`. That's Vite's development server, on localhost only.
-- **To learn React** from this code, see [docs/react-walkthrough.md](docs/react-walkthrough.md).
-  It maps each React idea to the files that use it and ends with exercises.
+- **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
+  server, so its first rows are in the HTML. Only scrolling and Hide run in the browser, and they
+  call server functions in `web/lib/actions.ts`.
+- **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
+  the agent in `src/web/`, so the browser only lays them out.
+- **`myjobbot serve` is gone.** `myjobbot` only runs the agent; the UI is started with the npm
+  scripts above.
+- **To learn React and Next.js** from this code, see
+  [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
+  it and ends with exercises.
 
 ## Develop
 
@@ -86,7 +93,7 @@ On the server:
 
 ```bash
 git clone <repo> myjobbot && cd myjobbot
-cp .env.example .env              # set LLM_API_KEY; optionally SCHEDULE and TZ
+cp .env.example .env              # set LLM_API_KEY and MYJOBBOT_HOSTS; optionally SCHEDULE and TZ
 mkdir -p data
 cp examples/config.json data/     # your companies
 cp examples/resume.md data/       # your resume
@@ -104,22 +111,23 @@ Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` tra
 | Open the web UI | `http://<server>:8080` (the `web` service; `MYJOBBOT_PORT` in `.env` changes the port) |
 | Run once now | `docker compose run --rm myjobbot run` |
 | Watch runs | `docker compose logs -f myjobbot` |
-| Update after `git pull` | Nothing for code under `src/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile` or `docker/` changed (or leave `npm run docker:watch` running) |
+| Update after `git pull` | Nothing for code under `src/` or `web/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile`, `docker/`, `web/next.config.ts` or `web/tsconfig.json` changed (or leave `npm run docker:watch` running) |
 | Start (or update) the stack | `npm run docker:up` (`docker compose up -d --build`) |
 | Start and rebuild automatically | `npm run docker:watch`: starts the stack, then runs `docker compose watch` in the foreground. Ctrl-C stops only the watcher; the stack keeps running |
 | Stop | `docker compose down` |
 
 Both services mount the host's `src/` read-only over the image's copy, so code changes need no
-rebuild: each scheduled run starts a fresh process, and the `web` service runs under `tsx watch`
-(`MYJOBBOT_WATCH=1`), so the server restarts when its code changes and the React app is rebuilt
-when a file under `src/web/client/` changes (reload the browser to see it). The `web` service
-builds the React app when it starts, so it answers a few seconds after `up`. Without the mount (plain
-`docker run`), the image's own copy of the code is used.
+rebuild: each scheduled run starts a fresh process. The `web` service runs Next.js's development
+server (`next dev`) on the host's `web/` and `src/`, so a saved change shows on the next reload.
+It needs `MYJOBBOT_HOSTS` in `.env` and refuses to start without it. Its `web/` mount is writable,
+because Next.js writes its build output (`web/.next-docker/`, gitignored) and `web/next-env.d.ts`
+there. Without the mounts (plain `docker run`), the image's own copy of the code is used.
 
 Dependencies are different: `node_modules` is baked into the image, so new code that imports a
 new package crashes both services until the image is rebuilt. `npm run docker:watch` (or
 `docker compose watch`) rebuilds the image and recreates both containers whenever
-`package.json`, `package-lock.json`, `Dockerfile` or `docker/` changes. Two limits: it only
+`package.json`, `package-lock.json`, `Dockerfile`, `docker/`, `web/next.config.ts` or
+`web/tsconfig.json` changes. Two limits: it only
 works while that command is running (a reboot or a plain `up -d` leaves nothing watching), and
 recreating `myjobbot` stops a scheduled run that is in progress (check with
 `docker compose top myjobbot` before changing dependencies near 01:00, 09:00 or 17:00).

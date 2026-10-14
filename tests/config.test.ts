@@ -1,7 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { loadConfig } from "../src/config/load.js";
+import { loadConfig, loadFileConfig } from "../src/config/load.js";
 import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 import { makeDataDir, SAMPLE_CONFIG, TEST_ENV } from "./helpers/dataDir.js";
 
@@ -12,6 +12,12 @@ test("loadConfig applies defaults", () => {
   expect(config.file.http.min_interval_ms).toBe(1000);
   expect(config.file.title_filter.include).toContain("engineer");
   expect(config.resume).toContain("Jane Doe");
+});
+
+test("loadFileConfig reads config.json without any LLM settings", () => {
+  const file = loadFileConfig(makeDataDir());
+  expect(file.companies).toHaveLength(2);
+  expect(file.match_threshold).toBe(70);
 });
 
 test("loadConfig rejects an unknown board type", () => {

@@ -50,20 +50,22 @@ docker rm -f "$name" >/dev/null
 grep -q "scheduling runs at '\*/5 \* \* \* \*'" <<<"$logs" || fail "schedule mode announces its schedule. Logs: $logs"
 ok "schedule mode starts supercronic with SCHEDULE"
 
-check_serve() {
-  local label=$1; shift
-  local web="myjobbot-web-test-$$" page="" web_logs
-  docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" -e MYJOBBOT_HOST=0.0.0.0 \
-    -e LLM_BASE_URL=http://127.0.0.1:9/v1 -e LLM_MODEL=m -e LLM_API_KEY=k "$@" "$IMAGE" serve >/dev/null
-  for _ in $(seq 1 20); do page=$(curl -s http://127.0.0.1:18082/recommended || true); [ -n "$page" ] && break; sleep 0.5; done
-  web_logs=$(docker logs "$web" 2>&1)
-  docker rm -f "$web" >/dev/null
-  grep -q "<h1>myjobbot</h1>" <<<"$page" || fail "$label. Logs: $web_logs"
-  ok "$label"
-}
+expect_exit 1 "set MYJOBBOT_HOSTS" "serve refuses to start without MYJOBBOT_HOSTS" -v "$configured:/data" "$IMAGE" serve
 
-check_serve "serve mode answers on its port"
-check_serve "serve mode answers in watch mode" -e MYJOBBOT_WATCH=1
+web="myjobbot-web-test-$$"
+docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" -e MYJOBBOT_HOSTS=127.0.0.1:18082 "$IMAGE" serve >/dev/null
+page=""
+for _ in $(seq 1 60); do page=$(curl -s --max-time 30 http://127.0.0.1:18082/recommended || true); [ -n "$page" ] && break; sleep 1; done
+foreign=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H "Host: evil.example:18082" http://127.0.0.1:18082/recommended || true)
+web_logs=$(docker logs "$web" 2>&1)
+docker rm -f "$web" >/dev/null
+grep -q "<h1>myjobbot</h1>" <<<"$page" || fail "serve mode renders pages with next dev. Logs: $web_logs"
+grep -q "recommended · threshold" <<<"$page" || fail "serve mode renders rows on the server. Logs: $web_logs"
+ok "serve mode renders pages with next dev"
+if grep -q "Installing dependencies" <<<"$web_logs"; then fail "next dev tried to install packages itself. Logs: $web_logs"; fi
+ok "next dev finds every package it needs in the image"
+[ "$foreign" = "421" ] || fail "serve mode refuses a foreign Host (got $foreign)"
+ok "serve mode refuses a foreign Host"
 
 rm -rf "$empty" "$configured"
 echo "all docker checks passed"

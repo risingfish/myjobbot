@@ -24,6 +24,7 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY src ./src
+COPY --chown=node:node web ./web
 COPY docker ./docker
 
 ENV MYJOBBOT_DATA_DIR=/data \

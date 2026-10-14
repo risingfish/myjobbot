@@ -2,7 +2,7 @@ import { screen } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { expect, test } from "vitest";
 import type { VerdictRowView } from "../../src/web/api.js";
-import { VerdictRow } from "../../src/web/client/components/tables/VerdictRow.js";
+import { VerdictRow } from "../../web/components/tables/VerdictRow.js";
 import { verdictRowView } from "../helpers/rowFixtures.js";
 
 function renderRow(overrides: Partial<VerdictRowView> = {}) {

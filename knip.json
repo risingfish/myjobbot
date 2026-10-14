@@ -2,7 +2,6 @@
   "entry": [
     "src/cli.ts!",
     "src/index.ts!",
-    "src/web/client/main.tsx!",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",
@@ -11,8 +10,12 @@
   ],
   "project": [
     "src/**/*.ts!",
-    "src/**/*.tsx!"
+    "src/**/*.tsx!",
+    "web/**/*.{ts,tsx}!"
   ],
+  "next": {
+    "entry": ["web/next.config.ts", "web/proxy.ts", "web/app/**/{page,layout,not-found,error}.tsx"]
+  },
   "ignore": [
     "dist/**"
   ],

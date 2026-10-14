@@ -7,3 +7,6 @@ browser-profile/
 .idea/
 data/
 log/
+web/.next*/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo

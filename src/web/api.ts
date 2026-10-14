@@ -1,14 +1,5 @@
 export type PageName = "recommended" | "jobs" | "reasoning";
 
-export const PAGE_NAMES: readonly PageName[] = ["recommended", "jobs", "reasoning"];
-
-export const PAGES = [
-  { path: "/recommended", label: "Recommended" },
-  { path: "/jobs", label: "All jobs" },
-  { path: "/reasoning", label: "Reasoning" },
-  { path: "/settings", label: "Settings" },
-] as const;
-
 export interface Score {
   value: number;
   note: string;
@@ -53,8 +44,3 @@ interface PageText {
 }
 
 export type PageData = PageText & ({ kind: "jobs"; rows: JobRowView[] } | { kind: "verdicts"; rows: VerdictRowView[] });
-
-export interface Meta {
-  dbPath: string;
-  renderedAt: string;
-}

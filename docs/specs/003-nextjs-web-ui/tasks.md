@@ -88,7 +88,7 @@ Tick each row when its new test passes. Delete a test file only when every row f
 
 ## Phase 1: Setup
 
-- [ ] T001 Create the worktree. Use the `superpowers:using-git-worktrees` skill. The branch
+- [X] T001 Create the worktree. Use the `superpowers:using-git-worktrees` skill. The branch
   `nextjs-web-ui` already exists and holds uncommitted work:
   - the 003 spec documents
   - constitution v1.2.0 and the matching `CLAUDE.md` rules
@@ -102,9 +102,9 @@ Tick each row when its new test passes. Delete a test file only when every row f
   3. Run `git worktree add ../myjobbot-nextjs nextjs-web-ui`.
 
   From here on, every task runs in `../myjobbot-nextjs`.
-- [ ] T002 In the worktree, run `npm ci` and `npm run check`. It must pass with 242 tests.
+- [X] T002 In the worktree, run `npm ci` and `npm run check`. It must pass with 242 tests.
   Record the count in this file's notes.
-- [ ] T003 Install `next` 16.4.0 exact-pinned (`npm install --save-exact next@16.4.0`). Then:
+- [X] T003 Install `next` 16.4.0 exact-pinned (`npm install --save-exact next@16.4.0`). Then:
   1. Check the lockfile kept its optional platform packages:
      - `grep -c '"node_modules/@next/swc-' package-lock.json` must be 8
      - `@rolldown/binding-` must be 15
@@ -120,7 +120,7 @@ Tick each row when its new test passes. Delete a test file only when every row f
 **Purpose**: `web/` builds, type-checks and is understood by knip before any page moves in. Atomic
 unit T004–T012.
 
-- [ ] T004 [P] Write `tests/webBuild.test.ts` (node project, 120 s timeout). It runs
+- [X] T004 [P] Write `tests/webBuild.test.ts` (node project, 120 s timeout). It runs
   `next build web` with:
   - `NEXT_TELEMETRY_DISABLED=1`
   - `NEXT_DIST_DIR=.next-test`, so it never collides with a running `npm run web`
@@ -134,7 +134,7 @@ unit T004–T012.
   - there are no `/api` routes
   - if T006 decided to commit `web/next-env.d.ts`, the build left it unchanged
     (`git diff --exit-code web/next-env.d.ts`)
-- [ ] T005 [P] Write `tests/proxy.test.ts`. It imports `proxy` and `config` from `web/proxy.ts`
+- [X] T005 [P] Write `tests/proxy.test.ts`. It imports `proxy` and `config` from `web/proxy.ts`
   and builds `NextRequest` objects. Cases:
   - **Defaults**: with `MYJOBBOT_HOSTS` and `MYJOBBOT_PORT` unset, `localhost:8080` and
     `127.0.0.1:8080` pass through and `localhost:3000` gets 421. With `MYJOBBOT_PORT=9000`,
@@ -144,7 +144,7 @@ unit T004–T012.
     `vi.stubEnv`) lets those two through, `MyServer.LAN:8080` too because matching ignores
     case, and refuses everything else.
   - **No `Host`**: refused.
-- [ ] T006 Create `web/tsconfig.json` (research R2):
+- [X] T006 Create `web/tsconfig.json` (research R2):
   - `"module": "nodenext"`, `"moduleResolution": "nodenext"`
   - `strict`, `noUncheckedIndexedAccess`, `jsx: "react-jsx"`, `isolatedModules`,
     `resolveJsonModule`, `incremental`
@@ -173,20 +173,20 @@ unit T004–T012.
 
   Either way, confirm Next.js left `web/tsconfig.json` unchanged
   (`git diff --exit-code web/tsconfig.json`).
-- [ ] T007 Create `web/next.config.ts`:
+- [X] T007 Create `web/next.config.ts`:
   - `turbopack: { root: <repo root> }` and `outputFileTracingRoot: <repo root>`, both from
     `fileURLToPath(new URL("..", import.meta.url))`
   - `poweredByHeader: false`
   - `distDir: process.env.NEXT_DIST_DIR ?? ".next"`, so the build test and the Docker fallback
     can use their own folders
   - no `allowedDevOrigins` (research R6)
-- [ ] T008 Create `web/proxy.ts`. Export `proxy(request)` and `config` (matcher: all paths). It
+- [X] T008 Create `web/proxy.ts`. Export `proxy(request)` and `config` (matcher: all paths). It
   answers 421 unless `request.headers.get("host")`, lowercased, is in `allowedHosts()`. That
   reads `MYJOBBOT_HOSTS` (comma-separated `host:port`, lowercased) or defaults to
   `localhost:${port}` and `127.0.0.1:${port}`, where `port` is
   `process.env.MYJOBBOT_PORT ?? "8080"`. That matches the `--port` every script and the entrypoint
   pass, and the host port `compose.yaml` publishes. Keep each function at most 12 lines. T005 must pass.
-- [ ] T009 Let the web app load config without agent secrets, test first (Principle II):
+- [X] T009 Let the web app load config without agent secrets, test first (Principle II):
   1. **Test**: add a case to `tests/config.test.ts`: `loadFileConfig(makeDataDir())` works with
      **no** LLM environment variables. Run it and watch it fail.
   2. **In `src/config/load.ts`**: export `loadFileConfig(dataDir: string): FileConfig`, which
@@ -204,7 +204,7 @@ unit T004–T012.
   - `config` comes from `loadFileConfig(dataDir)` on every call
 
   It never calls `loadConfig` or reads `LLM_*` variables.
-- [ ] T010 Create the app frame:
+- [X] T010 Create the app frame:
   - **`web/app/layout.tsx`**: `<html lang="en"><body>{children}</body></html>`,
     `metadata = { title: { template: "myjobbot · %s", default: "myjobbot" } }`, and
     `export const dynamic = "force-dynamic"`. The layout reads the database for the footer
@@ -215,7 +215,7 @@ unit T004–T012.
     rendering its label, exporting `metadata.title` and marked `dynamic = "force-dynamic"`. The
     data pages call `getUiState()` and render `loadPageData(name, …).summary`, so `uiState.ts`
     has a caller.
-- [ ] T011 Wire up the tooling:
+- [X] T011 Wire up the tooling:
   - **Root `tsconfig.json`**: add `"exclude": ["web"]`.
   - **`package.json` scripts**:
     - `"typecheck": "tsc --noEmit && tsc --noEmit -p web"`
@@ -227,7 +227,7 @@ unit T004–T012.
     - add `"next": { "entry": ["web/next.config.ts", "web/proxy.ts", "web/app/**/{page,layout,not-found,error}.tsx"] }`
     - keep `src/web/client/main.tsx!` for now; T033 removes it
     - add `"web/**/*.{ts,tsx}!"` to `project`
-- [ ] T012 Run `npm run check` in the worktree. T004, T005 and T009's config test pass, and so do
+- [X] T012 Run `npm run check` in the worktree. T004, T005 and T009's config test pass, and so do
   all 242 existing tests. Fix every habit-hooks finding without exemptions. If knip doesn't see
   `web/` files through its `next` plugin entries, fix the plugin config (research R9). That
   closes atomic unit T004–T012.
@@ -252,30 +252,30 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
 
 ### Tests for US1 (write first)
 
-- [ ] T013 [P] [US1] Create `tests/pageData.test.ts` from the rule cases in
+- [X] T013 [P] [US1] Create `tests/pageData.test.ts` from the rule cases in
   `tests/webApi.test.ts` (carry-over rows 1–8 and 10). Call
   `loadPageData(name, { views, config, page, now: TEST_NOW })` directly instead of over HTTP,
   with the same seeds and expectations.
-- [ ] T014 [P] [US1] Rewrite `tests/client/nav.test.tsx` against
+- [X] T014 [P] [US1] Rewrite `tests/client/nav.test.tsx` against
   `web/components/menus/Nav.tsx`:
   - Use `vi.mock("next/navigation", () => ({ usePathname: () => currentPath }))`.
   - Mock `next/link` as a plain `<a>` that passes `href` and `className`.
   - **Marking**: the link for the mocked path has `className` `current` and the others don't.
   - **Links**: every `PAGES` entry renders an `<a href>` in order.
-- [ ] T015 [P] [US1] Create `tests/client/footer.test.tsx`. Render
+- [X] T015 [P] [US1] Create `tests/client/footer.test.tsx`. Render
   `web/components/sections/Footer.tsx` with `dbPath="test.db"` and a fixed `renderedAt`, and
   expect the text `test.db · rendered <iso>`. Create `tests/client/errorPage.test.tsx`: render
   `web/app/error.tsx` with `error: new Error("broken <db>")`, expect the message shown as text,
   and expect no `script` elements.
-- [ ] T016 [P] [US1] Update `tests/client/jobRow.test.tsx` and `tests/client/verdictRow.test.tsx`
+- [X] T016 [P] [US1] Update `tests/client/jobRow.test.tsx` and `tests/client/verdictRow.test.tsx`
   to import from `web/components/tables/*`. The assertions don't change.
-- [ ] T017 [P] [US1] Rewrite `tests/client/settings.test.tsx` to render the default export of
+- [X] T017 [P] [US1] Rewrite `tests/client/settings.test.tsx` to render the default export of
   `web/app/settings/page.tsx`. Expect `<main>` with no children, and `metadata.title` equal to
   `"Settings"`.
 
 ### Tests for US2 (write first)
 
-- [ ] T018 [P] [US2] Create `tests/webRows.test.ts`, covering `web/lib/rows.ts`:
+- [X] T018 [P] [US2] Create `tests/webRows.test.ts`, covering `web/lib/rows.ts`:
   - **`loadRows(views, config, { name, offset })`** returns `loadPageData`'s slice.
   - **Bad input is refused**: an unknown name, or an offset that is negative, not an integer or
     too large, throws `"Invalid page request"`. A `views` that throws gives an `Error` whose
@@ -286,7 +286,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
       rows 1 and 2)
     - an unknown job gives `{ ok: false, error: "No such job." }`
     - a non-boolean `hidden` or an empty `ats` is refused
-- [ ] T019 [P] [US2] Rename `tests/client/rowsPage.test.tsx` to `tests/client/rowsList.test.tsx`
+- [X] T019 [P] [US2] Rename `tests/client/rowsPage.test.tsx` to `tests/client/rowsList.test.tsx`
   and rewrite it against `web/components/pages/RowsList.tsx`, given `initial: PageData` and
   `name`:
   - the summary is shown
@@ -294,7 +294,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
   - `total: 0` shows the empty text and no table
   - the server-rendered output, from `renderToString(<RowsList …/>)`, contains a `<noscript>`
     notice: "Loading more rows and Hide need JavaScript."
-- [ ] T020 [P] [US2] Rewrite `tests/client/hide.test.tsx` and `tests/client/loadMore.test.tsx`
+- [X] T020 [P] [US2] Rewrite `tests/client/hide.test.tsx` and `tests/client/loadMore.test.tsx`
   against `RowsList`, with
   `vi.mock("../../web/lib/actions.js", () => ({ setJobHidden: vi.fn(), loadMoreRows: vi.fn() }))`
   replacing `stubFetch`. Every scenario stays:
@@ -310,7 +310,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
 
 ### Implementation (atomic unit T021–T034)
 
-- [ ] T021 [US1] `git mv` the components and helpers:
+- [X] T021 [US1] `git mv` the components and helpers:
   - `src/web/client/components/` to `web/components/` (keeping the subfolders)
   - `src/web/client/styles.css` to `web/app/styles.css`
   - `src/web/client/{pageRows,useWhenVisible,useHide,usePageRows}.ts` to `web/lib/`
@@ -321,18 +321,18 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
   Also move `PAGES` and `PAGE_NAMES` out of `src/web/api.ts` into a new `web/lib/pages.ts`.
   `src/` keeps only the `PageName` type, which `pageData.ts` needs, so adding a page never
   touches `src/` (SC-004). Update every importer.
-- [ ] T022 [US1] Retire the client-only routing and fetching:
+- [X] T022 [US1] Retire the client-only routing and fetching:
   - `git rm` `src/web/client/usePath.ts`, `useDocumentTitle.ts`, `useMeta.ts`, `fetchJson.ts`,
     `App.tsx`, `main.tsx` and `index.html`
   - `git rm` `web/components/menus/NavLink.tsx` and `web/components/pages/CurrentPage.tsx`
   - `git rm` `web/components/pages/RowsPage.tsx`, which T026 replaces
-- [ ] T023 [US1] Rewrite `web/components/menus/Nav.tsx` as `"use client"`. It uses
+- [X] T023 [US1] Rewrite `web/components/menus/Nav.tsx` as `"use client"`. It uses
   `usePathname()` and renders `PAGES` from `web/lib/pages.ts` as `next/link`
   `<Link href className>` (`"current"` when it matches). T014 must pass.
-- [ ] T024 [US1] Rewrite `web/components/sections/Header.tsx` (moved by T021) as a server component rendering
+- [X] T024 [US1] Rewrite `web/components/sections/Header.tsx` (moved by T021) as a server component rendering
   `<header><h1>myjobbot</h1><Nav /></header>`. Rewrite `web/components/sections/Footer.tsx` as a
   server component taking `{ dbPath, renderedAt }`. T015's footer test must pass.
-- [ ] T025 [US1] Finish `web/app/layout.tsx`:
+- [X] T025 [US1] Finish `web/app/layout.tsx`:
   - import `./styles.css`
   - render `<Header />`, `{children}` and `<Footer>` with `dbPath()` (not `getUiState()`) and
     `new Date().toISOString()`
@@ -347,7 +347,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
   screen instead of the message (spec edge case). Config loading therefore happens only in the
   pages and server functions. Check this by hand: break the config on the scratch copy and load
   `/jobs`. The message must show inside the usual header and footer.
-- [ ] T026 [US2] Create `web/components/pages/RowsList.tsx` (`"use client"`).
+- [X] T026 [US2] Create `web/components/pages/RowsList.tsx` (`"use client"`).
   - **Props**: `{ name: PageName; initial: PageData }`.
   - **State**: `usePageRows(name, initial)`, as reshaped in T028.
   - **Renders**: the summary, the empty text or the right table, `LoadMore` when `nextOffset`
@@ -357,7 +357,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
     so with JavaScript off the page says why those controls do nothing (spec edge case).
 
   Port the logic of the old `RowsPage` and `Rows`, keeping each function at most 12 lines.
-- [ ] T027 [US2] Create `web/lib/rows.ts`:
+- [X] T027 [US2] Create `web/lib/rows.ts`:
   - **`loadRows(views, config, request)`**:
     - validates `request.name` against `PAGE_NAMES` and `request.offset` as an integer in
       `[0, 1_000_000]`, throwing `"Invalid page request"` otherwise
@@ -370,7 +370,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
   Create `web/lib/actions.ts` (`"use server"`) with `loadMoreRows(name, offset)` and
   `setJobHidden(ats, jobId, hidden)`, each a two-line wrapper calling `getUiState()` and the
   matching `rows.ts` function. T018 must pass.
-- [ ] T028 [US2] Reshape `web/lib/usePageRows.ts` to `usePageRows(name, initial)`:
+- [X] T028 [US2] Reshape `web/lib/usePageRows.ts` to `usePageRows(name, initial)`:
   - state starts at `{ data: initial, error: null, moreError: null, version: 0 }`
   - the first-page fetch effect is removed
   - `loadMore` calls `loadMoreRows(name, nextOffset)` from `./actions.js` instead of
@@ -379,7 +379,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
 
   Change `web/lib/useHide.ts` to call `setJobHidden(job.ats, job.jobId, !job.hidden)` and treat
   `ok: false`, or a rejected promise, as failed.
-- [ ] T029 [US1] Make the four pages real:
+- [X] T029 [US1] Make the four pages real:
   - **Data pages**: `web/app/{recommended,jobs,reasoning}/page.tsx` load
     `loadRows(views, config, { name, offset: 0 })` from `getUiState()` and render
     `<main aria-label={label}><RowsList name initial /></main>`. Each keeps its
@@ -387,7 +387,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
   - **Settings**: `web/app/settings/page.tsx` renders `<main aria-label="Settings" />`.
   - **Old Settings component**: delete `web/components/pages/SettingsPage.tsx`; the page itself
     is the component now.
-- [ ] T030 [US1] Delete the old server stack:
+- [X] T030 [US1] Delete the old server stack:
   - `git rm` `src/app/serve.ts`, and from `src/web/`: `server.ts`, `staticFiles.ts`,
     `clientBuild.ts`, `viteConfig.ts`, `hide.ts`, `html.ts` and `reply.ts`
   - `git rm` the root `vite.config.ts`
@@ -400,22 +400,22 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
     entrypoint.
   - in `.env.example`, replace the `MYJOBBOT_HOST` and `MYJOBBOT_PORT` lines with a commented
     `MYJOBBOT_PORT=8080` under a "Web UI (npm run web, Docker web service)" heading
-- [ ] T031 [US1] Update the tests and their helpers:
+- [X] T031 [US1] Update the tests and their helpers:
   - `git rm` `tests/webApi.test.ts` and `tests/webServer.test.ts`, once their carry-over rows
     are ticked
   - `git rm` `tests/clientBuild.test.ts`, `tests/helpers/clientDir.ts` and `tests/helpers/ui.ts`
   - `git rm` `tests/helpers/fetchStub.ts` if no test still uses it
   - in `tests/hideJobs.test.ts`, keep only the store-level re-fetch test and drop the HTTP
     helpers
-- [ ] T032 [US1] Update `vitest.config.ts`. The `dom` project keeps
+- [X] T032 [US1] Update `vitest.config.ts`. The `dom` project keeps
   `include: ["tests/**/*.test.tsx"]`. In `tests/helpers/domSetup.ts`, add nothing global: mock
   Next.js modules per test file. If server-only imports such as `node:sqlite` get pulled into a
   component test, mock `web/lib/uiState.js` in that file.
-- [ ] T033 [US1] Update `knip.json`: remove the `src/web/client/main.tsx!` entry. Confirm with
+- [X] T033 [US1] Update `knip.json`: remove the `src/web/client/main.tsx!` entry. Confirm with
   `npx knip` that `web/lib/actions.ts` (`"use server"`), reached only from client components, is
   treated as used (research R9). If it isn't, add it to the `next` plugin's `entry` with a
   one-line note in research R9.
-- [ ] T034 [US1] Run `npm run check` in the worktree, which closes atomic unit T013–T034:
+- [X] T034 [US1] Run `npm run check` in the worktree, which closes atomic unit T013–T034:
   - both tsconfigs pass
   - every test passes, including `webBuild`
   - habit-hooks is clean
@@ -435,7 +435,7 @@ components, so they land in one atomic unit, T013–T034, with separate test tas
 **Independent Test**: add a throwaway `web/app/about/page.tsx` and a `PAGES` entry. It works by
 address, menu and reload, with no other file touched. Then revert it.
 
-- [ ] T035 [US3] Prove SC-004. In the worktree:
+- [X] T035 [US3] Prove SC-004. In the worktree:
   1. Add `web/app/about/page.tsx` (with `metadata.title` "About") and
      `{ path: "/about", label: "About" }` to `PAGES` in `web/lib/pages.ts`.
   2. Run `npm run web:build` and confirm `/about` is in the route list.
@@ -446,10 +446,10 @@ address, menu and reload, with no other file touched. Then revert it.
 
 ## Phase 5: User Story 4 - learning Next.js from the code (Priority: P2)
 
-- [ ] T036 [P] [US4] Update `tests/walkthrough.test.ts`. `CLIENT` becomes `"web"`. Scan
+- [X] T036 [P] [US4] Update `tests/walkthrough.test.ts`. `CLIENT` becomes `"web"`. Scan
   `web/**/*.{ts,tsx}` recursively, excluding `web/.next*`. The platform-name allowlist gains
   `Link`, `usePathname`, `redirect` and `notFound`.
-- [ ] T037 [US4] Restructure `docs/react-walkthrough.md` (research R12):
+- [X] T037 [US4] Restructure `docs/react-walkthrough.md` (research R12):
   - **New layout section**: `web/app/` routes, `web/components/` grouped by kind, `web/lib/`
     for hooks, server functions, state and `pages.ts`, and the shared rules in `src/web/`.
   - **Server and client components**: pages and `Header` versus `RowsList` and `HideButton`,
@@ -478,7 +478,7 @@ address, menu and reload, with no other file touched. Then revert it.
 **Purpose**: the Docker `web` service runs `next dev` with the safeguards. The stack is checked
 from the worktree first, then switched in the main checkout (T045).
 
-- [ ] T038 Update the Docker files in the worktree:
+- [X] T038 Update the Docker files in the worktree:
   - **`Dockerfile`**: `COPY web ./web` after `COPY src ./src`.
   - **`docker/entrypoint.sh`**: the `serve` case:
     - **Refuses to start** with `myjobbot: set MYJOBBOT_HOSTS to the host:port names you open
@@ -502,7 +502,7 @@ from the worktree first, then switched in the main checkout (T045).
     - expect HTML from `/recommended` with rows, with `MYJOBBOT_HOSTS` set
     - expect the entrypoint to refuse to start without `MYJOBBOT_HOSTS`
     - drop the watch-mode case, and the `-e MYJOBBOT_HOST=0.0.0.0` flag on its `docker run`
-- [ ] T039 Try the new stack from the worktree as a separate Compose project, so the live stack
+- [X] T039 Try the new stack from the worktree as a separate Compose project, so the live stack
   is untouched:
   1. **Prepare scratch data** in the worktree's gitignored `data/`:
      ```bash
@@ -525,7 +525,7 @@ from the worktree first, then switched in the main checkout (T045).
      setup was used.
   5. **Stop the stack** with `docker compose -p mjnext down`. Keep the image, the worktree's
      `data/` copy and `.env`: T044 needs them. T044 cleans up.
-- [ ] T040 Final dependency tidy-up:
+- [X] T040 Final dependency tidy-up:
   - move `vite` and `@vitejs/plugin-react` to `devDependencies`, editing `package.json` and the
     lockfile flags with `npm install --save-dev --save-exact` and the count check from T003
   - `npm ls vite` shows one 8.3.2
@@ -535,7 +535,7 @@ from the worktree first, then switched in the main checkout (T045).
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T041 [P] Update `README.md`:
+- [X] T041 [P] Update `README.md`:
   - **Web UI section**: Next.js, `npm run web`, `web:build` and `web:start`, the Host allowlist
     (`MYJOBBOT_HOSTS`), and that `myjobbot serve` is gone.
   - **Docker section**: the `web` service runs `next dev`; changes under `web/` and `src/` are
@@ -543,12 +543,12 @@ from the worktree first, then switched in the main checkout (T045).
     required.
   - **Update after `git pull`** row, to match.
   - Remove the `MYJOBBOT_WATCH` / `tsx watch` paragraph.
-- [ ] T042 [P] Add a note to `docs/specs/002-react-web-ui/plan.md` saying its serve, Vite and
+- [X] T042 [P] Add a note to `docs/specs/002-react-web-ui/plan.md` saying its serve, Vite and
   `src/web/client` structure is superseded by `docs/specs/003-nextjs-web-ui/` (2026-10-14).
   Update the `CLAUDE.md` knip note to describe the `next` plugin entries instead of
   `src/web/client/main.tsx`. (Its doc-comment and dependency rules already match constitution
   v1.2.0.)
-- [ ] T043 Run a read-only review agent with shell probes over `git diff main` in the worktree.
+- [X] T043 Run a read-only review agent with shell probes over `git diff main` in the worktree.
   It checks:
   - escaping and `http(s)`-only links
   - server-action input validation and the origin check
@@ -559,7 +559,7 @@ from the worktree first, then switched in the main checkout (T045).
     `src/` import graph)
 
   Fix every confirmed finding test-first.
-- [ ] T044 Run the quickstart in the worktree, using the scratch `data/` copy from T039:
+- [X] T044 Run the quickstart in the worktree, using the scratch `data/` copy from T039:
   - `npm run check`
   - **Production mode**: `npm run web:build`, then `npm run web:start`, then
     `curl localhost:8080/jobs | grep -c 'class="job"'` returns 100. No LLM variables are set,
@@ -590,8 +590,80 @@ from the worktree first, then switched in the main checkout (T045).
 
 ## Notes
 
-(Filled in during implementation: baseline counts, the Docker mount setup used, quickstart
-measurements.)
+- **T002**: baseline `npm run check` passed with 242 tests in 48 files.
+- **T003**: `next` 16.4.0 installed; lockfile kept 8 `@next/swc-*`, 15 `@rolldown/binding-*` and
+  28 `@img/*` entries. `npm ls next` shows one 16.4.0.
+- **T006**: `next-env.d.ts` churns (dev, build and `.next-test` each point it elsewhere), so it is
+  gitignored, `typecheck` runs `next typegen web`, and Docker will use the R7 writable-mount
+  fallback. `web/tsconfig.json` is committed in Next.js's formatting with `.next-test` and
+  `.next-docker` includes, and stays unchanged. Next.js subpaths need `.js` under `nodenext`.
+- **T012**: `npm run check` green with 249 tests; habit-hooks clean. Placeholder pages verified
+  under `next dev` on a copy of the data (31 recommended, 754 jobs, 720 decisions), with `/`
+  redirecting (307), unknown paths 404, a foreign `Host` 421 and no LLM variables set.
+- **T013–T034 (MVP)**: `npm run check` green with 239 tests (the API, server and Vite tests were
+  retired or re-homed per the carry-over table; every row has its new home). Decisions made
+  while implementing:
+  - **`DataPage`** (`web/components/pages/DataPage.tsx`), a server component that loads the first
+    rows and renders `RowsList`, so the three data pages are two-line files and jscpd sees no
+    duplicates.
+  - **`Environment`** type in `src/config/load.ts` replaces `NodeJS.ProcessEnv` in `src/`. Next.js's
+    global types make `NODE_ENV` required on `ProcessEnv`, which reached the root typecheck once
+    tests imported `web/` code.
+  - **`next/link.js`** under `nodenext`: the default import is the CommonJS module, so `Nav` uses
+    `NextLink.default`. Next.js's dist modules set `module.exports.default` to the component, so it
+    is correct under Node, Turbopack and vitest alike.
+  - **`useLoadMore`** takes `{ name, offset, version }` as one object (habit-hooks: at most 3
+    parameters).
+  - knip needed no extra entry for `web/lib/actions.ts` (T033).
+  - **MVP checkpoint** on a copy of the data, in headless Chromium: navigation via `Link` with no
+    full reload, back and forward, reload of `/reasoning`, scrolling All jobs to all 754 rows (754
+    distinct jobs; 23 look alike because the same posting has several job IDs), Hide in 62 ms,
+    hidden after reload, Unhide, and Recommended 31 → 30 → 31. The only console error is a
+    `/favicon.ico` 404, which the old server returned too.
+- **T035**: adding `web/app/about/page.tsx` and one `PAGES` entry put `/about` in the build's
+  route list and touched exactly those two files, both in `web/`. Reverted. (The worktree is
+  uncommitted, so this was checked by comparing `git status` and file contents before and after,
+  not `git diff --stat`.)
+- **T036–T037**: done inside the MVP unit, because moving the files breaks the walkthrough test
+  until the walkthrough is updated.
+- **T038**: Docker uses the R7 writable-mount fallback (`./web:/app/web`,
+  `NEXT_DIST_DIR=.next-docker`), as T006 decided; the image copies `web/` owned by uid 1000 so
+  plain `docker run` works too. `next dev` insists on `typescript`, `@types/react` and
+  `@types/node` and otherwise runs an unpinned `yarn add` from the network, so those three moved
+  from devDependencies to dependencies (same exact versions; lockfile `dev` flags only).
+  `tests/docker.sh` now fails if the container ever tries to install packages, and gives `curl`
+  timeouts.
+- **T039**: run as Compose project `mjnext` with a scratch override naming the image
+  `mjnext:latest`, so the live `myjobbot:latest` was never retagged. The scratch `.env` held only
+  `MYJOBBOT_HOSTS`, because the web service needs no secrets, so the real `.env` was not copied.
+  Quickstart Docker checks: pages render (31/100/100 rows); a live edit to `Footer.tsx` showed on
+  the next request with no rebuild; nine path probes (`..`, encoded `..`, `/.env`,
+  `/data/myjobbot.db`, `/src/cli.ts`, `/web/next.config.ts`) all 404 with no file contents; a
+  foreign `Host` gets 421; the Hide action with `Origin: https://evil.example` gets 500 and the
+  job is unchanged, while the same call from the app's origin works and was undone.
+  `tests/docker.sh`: all 10 checks pass.
+- **T040**: `vite` and `@vitejs/plugin-react` moved to devDependencies with no lockfile entry
+  added, removed or re-versioned; `npm ls vite` shows one 8.3.2; swc 8, rolldown 15, img 28.
+- **T041–T042**: README, `CLAUDE.md` (knip note, `npm run web`) and the 002 plan's superseded
+  note updated.
+- **T043**: a read-only review agent found no confirmed problems in escaping, server-action
+  validation, the proxy, the client/server import boundary, row state, agent isolation or the
+  Docker setup. It noted that IPv6 `[::1]` and trailing-dot hosts are refused unless listed,
+  which fails safe.
+- **T044**: `npm run check` green (239 tests). Production mode with no LLM variables: `/jobs`
+  HTML holds 100 rows. Timings on a scratch database grown to 1,004 jobs, warm:
+  - development (Docker `next dev`): pages 27–102 ms, Hide 19–26 ms
+  - production (`web:start`): pages 9–36 ms, Hide 10–22 ms
+
+  Targets are 1 s and 0.5 s. Scratch image, data copy and `.env` removed.
+- **T045 step 1** (2026-10-14): the user opens the UI at `192.168.1.20:8080`;
+  `MYJOBBOT_HOSTS=192.168.1.20:8080` was appended to the main checkout's `.env` (no other lines
+  read or printed). The running stack ignores it until the switch-over.
+- **Before staging**: `next dev` writes `web/AGENTS.md` (Next.js's notes for AI coding agents)
+  whenever it detects one, and restores it if deleted. `agentRules: false` in
+  `web/next.config.ts` turns that off, so neither local runs nor the Docker service write it into
+  the checkout; `CLAUDE.md` stays the agent guide. `web/tsconfig.tsbuildinfo` (TypeScript's
+  incremental cache) is gitignored.
 
 ## Dependencies & Execution Order
 
