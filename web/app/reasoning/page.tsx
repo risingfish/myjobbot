@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 
 /** Renders the Reasoning page from the database, on the server. */
 export default function ReasoningPage() {
-  return <DataPage name="reasoning" label="Reasoning" />;
+    return <DataPage name="reasoning" label="Reasoning" />;
 }

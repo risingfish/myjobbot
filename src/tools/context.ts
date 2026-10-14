@@ -6,25 +6,25 @@ import type { JsonGetter } from "../http/client.js";
 import type { FetchOutcome } from "./sources.js";
 
 interface RunState {
-  finished: boolean;
-  summary: string | null;
-  fetches: Map<string, Promise<FetchOutcome>>;
-  failedFetches: Set<string>;
+    finished: boolean;
+    summary: string | null;
+    fetches: Map<string, Promise<FetchOutcome>>;
+    failedFetches: Set<string>;
 }
 
 export interface ToolContext {
-  config: FileConfig;
-  run: RunState;
-  runId: string;
-  store: JobStore;
-  apiCalls: ApiCallLog;
-  http: JsonGetter;
-  now: () => Date;
-  jobLog: Trace;
-  jsearchApiKey: string | null;
+    config: FileConfig;
+    run: RunState;
+    runId: string;
+    store: JobStore;
+    apiCalls: ApiCallLog;
+    http: JsonGetter;
+    now: () => Date;
+    jobLog: Trace;
+    jsearchApiKey: string | null;
 }
 
 /** Creates the empty per-run state used to track in-flight fetches, failures, and finish status. */
 export function newRunState(): RunState {
-  return { finished: false, summary: null, fetches: new Map(), failedFetches: new Set() };
+    return { finished: false, summary: null, fetches: new Map(), failedFetches: new Set() };
 }

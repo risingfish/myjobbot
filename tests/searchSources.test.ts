@@ -13,107 +13,112 @@ const JSEARCH_HOST = "api.openwebninja.com";
 const SEARCH_NAME = TEST_SEARCH.name;
 
 function searchContext(overrides: Partial<ToolContext> = {}) {
-  const http = routedHttp({ [JSEARCH_HOST]: loadFixture("jsearch.json"), "boards-api.greenhouse.io": greenhouseBoard(["Backend Engineer"]) });
-  const context = testContext({ config: testFileConfig({ searches: [TEST_SEARCH] }), http, ...overrides });
-  const jsearchRequests = () => http.requests.filter((sent) => new URL(sent.url).host === JSEARCH_HOST);
-  return { context, jsearchRequests };
+    const http = routedHttp({ [JSEARCH_HOST]: loadFixture("jsearch.json"), "boards-api.greenhouse.io": greenhouseBoard(["Backend Engineer"]) });
+    const context = testContext({ config: testFileConfig({ searches: [TEST_SEARCH] }), http, ...overrides });
+    const jsearchRequests = () => http.requests.filter((sent) => new URL(sent.url).host === JSEARCH_HOST);
+    return { context, jsearchRequests };
 }
 
 test("fetch_jobs on a search calls JSearch once per run and serves its jobs", async () => {
-  const { context, jsearchRequests } = searchContext();
-  expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ source: SEARCH_NAME, total_unscored: 2, refreshed: true });
-  await fetchPage(context, SEARCH_NAME);
-  expect(jsearchRequests()).toHaveLength(1);
+    const { context, jsearchRequests } = searchContext();
+    expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ source: SEARCH_NAME, total_unscored: 2, refreshed: true });
+    await fetchPage(context, SEARCH_NAME);
+    expect(jsearchRequests()).toHaveLength(1);
 });
 
 test("a search is not refreshed again within refresh_hours", async () => {
-  const { context, jsearchRequests } = searchContext();
-  await fetchPage(context, SEARCH_NAME);
-  const page = await fetchPage({ ...context, run: newRunState() }, SEARCH_NAME);
-  expect(page).toMatchObject({ total_unscored: 2, refreshed: false, refresh_note: "refreshed 0h ago; next refresh in 24h" });
-  expect(jsearchRequests()).toHaveLength(1);
+    const { context, jsearchRequests } = searchContext();
+    await fetchPage(context, SEARCH_NAME);
+    const page = await fetchPage({ ...context, run: newRunState() }, SEARCH_NAME);
+    expect(page).toMatchObject({ total_unscored: 2, refreshed: false, refresh_note: "refreshed 0h ago; next refresh in 24h" });
+    expect(jsearchRequests()).toHaveLength(1);
 });
 
 test("a search refreshes on a schedule that lands seconds short of refresh_hours", async () => {
-  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
-  const { context, jsearchRequests } = searchContext({ config });
-  const almostEightHoursAgo = new Date(TEST_NOW.getTime() - (8 * 3600 - 10) * 1000).toISOString();
-  context.apiCalls.record("jsearch", SEARCH_NAME, almostEightHoursAgo);
-  expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: true });
-  expect(jsearchRequests()).toHaveLength(1);
+    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+    const { context, jsearchRequests } = searchContext({ config });
+    const almostEightHoursAgo = new Date(TEST_NOW.getTime() - (8 * 3600 - 10) * 1000).toISOString();
+    context.apiCalls.record("jsearch", SEARCH_NAME, almostEightHoursAgo);
+    expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: true });
+    expect(jsearchRequests()).toHaveLength(1);
 });
 
 test("a search is not refreshed well inside refresh_hours", async () => {
-  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
-  const { context, jsearchRequests } = searchContext({ config });
-  context.apiCalls.record("jsearch", SEARCH_NAME, new Date(TEST_NOW.getTime() - 7 * 3600 * 1000).toISOString());
-  expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: false, refresh_note: "refreshed 7h ago; next refresh in 1h" });
-  expect(jsearchRequests()).toHaveLength(0);
+    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+    const { context, jsearchRequests } = searchContext({ config });
+    context.apiCalls.record("jsearch", SEARCH_NAME, new Date(TEST_NOW.getTime() - 7 * 3600 * 1000).toISOString());
+    expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: false, refresh_note: "refreshed 7h ago; next refresh in 1h" });
+    expect(jsearchRequests()).toHaveLength(0);
 });
 
 test("a search is not refreshed once the monthly budget is used", async () => {
-  const { context, jsearchRequests } = searchContext();
-  for (let index = 0; index < 190; index += 1) context.apiCalls.record("jsearch", "other", TEST_NOW.toISOString());
-  const page = await fetchPage(context, SEARCH_NAME);
-  expect(page).toMatchObject({ total_unscored: 0, refreshed: false, refresh_note: "monthly JSearch budget used (190/190)" });
-  expect(jsearchRequests()).toHaveLength(0);
+    const { context, jsearchRequests } = searchContext();
+    for (let index = 0; index < 190; index += 1) context.apiCalls.record("jsearch", "other", TEST_NOW.toISOString());
+    const page = await fetchPage(context, SEARCH_NAME);
+    expect(page).toMatchObject({ total_unscored: 0, refreshed: false, refresh_note: "monthly JSearch budget used (190/190)" });
+    expect(jsearchRequests()).toHaveLength(0);
 });
 
 test("JSearch results that duplicate a company-board job are skipped", async () => {
-  const { context } = searchContext();
-  await fetchPage(context, "Stripe");
-  expect((await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id)).toEqual([jsearchId("js-linkedin-1")]);
+    const { context } = searchContext();
+    await fetchPage(context, "Stripe");
+    expect((await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id)).toEqual([jsearchId("js-linkedin-1")]);
 });
 
 test("each JSearch request is logged with its query and skipped duplicates", async () => {
-  const jobLog = memoryTrace();
-  const { context } = searchContext({ jobLog });
-  await fetchPage(context, "Stripe");
-  await fetchPage(context, SEARCH_NAME);
-  expect(jobLog.events.at(-1)).toMatchObject({
-    type: "search_fetch", source: SEARCH_NAME, query: "senior backend engineer", requests_this_month: 1,
-    job_count: 1, skipped_duplicates: 1, params: { country: "us", date_posted: "3days", work_from_home: "true" },
-  });
+    const jobLog = memoryTrace();
+    const { context } = searchContext({ jobLog });
+    await fetchPage(context, "Stripe");
+    await fetchPage(context, SEARCH_NAME);
+    expect(jobLog.events.at(-1)).toMatchObject({
+        type: "search_fetch",
+        source: SEARCH_NAME,
+        query: "senior backend engineer",
+        requests_this_month: 1,
+        job_count: 1,
+        skipped_duplicates: 1,
+        params: { country: "us", date_posted: "3days", work_from_home: "true" },
+    });
 });
 
 async function fetchExcluding(excludePublishers: string[]) {
-  const jobLog = memoryTrace();
-  const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: excludePublishers } });
-  const { context } = searchContext({ config, jobLog });
-  const served = (await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
-  return { served, stored: context.store.unscoredForSource(SEARCH_NAME).length, log: jobLog.events.at(-1) };
+    const jobLog = memoryTrace();
+    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: excludePublishers } });
+    const { context } = searchContext({ config, jobLog });
+    const served = (await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
+    return { served, stored: context.store.unscoredForSource(SEARCH_NAME).length, log: jobLog.events.at(-1) };
 }
 
 test("JSearch results from an excluded publisher are dropped before storing", async () => {
-  const { served, stored, log } = await fetchExcluding(["stripe careers"]);
-  expect(served).toEqual([jsearchId("js-linkedin-1")]);
-  expect(stored).toBe(1);
-  expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
+    const { served, stored, log } = await fetchExcluding(["stripe careers"]);
+    expect(served).toEqual([jsearchId("js-linkedin-1")]);
+    expect(stored).toBe(1);
+    expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
 });
 
 test("JSearch results on an excluded domain are dropped before storing", async () => {
-  const { served, stored, log } = await fetchExcluding(["stripe.com"]);
-  expect(served).toEqual([jsearchId("js-linkedin-1")]);
-  expect(stored).toBe(1);
-  expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
+    const { served, stored, log } = await fetchExcluding(["stripe.com"]);
+    expect(served).toEqual([jsearchId("js-linkedin-1")]);
+    expect(stored).toBe(1);
+    expect(log).toMatchObject({ job_count: 1, skipped_duplicates: 0, skipped_publishers: 1 });
 });
 
 test("a wildcard domain drops results on any subdomain", async () => {
-  const { served, log } = await fetchExcluding(["*.linkedin.com"]);
-  expect(served).toEqual([jsearchId("js-dup-stripe")]);
-  expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
+    const { served, log } = await fetchExcluding(["*.linkedin.com"]);
+    expect(served).toEqual([jsearchId("js-dup-stripe")]);
+    expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
 });
 
 test("a result matched by a name and a domain entry is counted once", async () => {
-  const { log } = await fetchExcluding(["stripe careers", "stripe.com"]);
-  expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
+    const { log } = await fetchExcluding(["stripe careers", "stripe.com"]);
+    expect(log).toMatchObject({ job_count: 1, skipped_publishers: 1 });
 });
 
 test("list_sources shows saved searches next to boards", async () => {
-  const { context } = searchContext();
-  await fetchPage(context, SEARCH_NAME);
-  expect(await invokeTool(context, "list_sources", {})).toEqual([
-    { name: "Stripe", kind: "board", ats: "greenhouse", fetched: false },
-    { name: SEARCH_NAME, kind: "search", fetched: true, total_unscored: 2 },
-  ]);
+    const { context } = searchContext();
+    await fetchPage(context, SEARCH_NAME);
+    expect(await invokeTool(context, "list_sources", {})).toEqual([
+        { name: "Stripe", kind: "board", ats: "greenhouse", fetched: false },
+        { name: SEARCH_NAME, kind: "search", fetched: true, total_unscored: 2 },
+    ]);
 });

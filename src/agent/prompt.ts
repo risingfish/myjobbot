@@ -2,10 +2,9 @@ import type { AppConfig } from "../config/load.js";
 import type { Message } from "./llm.js";
 
 export const NUDGE = "Respond only with tool calls. Call finish when every source has total_unscored 0.";
-export const COMPACTION_NOTICE =
-  "Earlier tool calls and results were removed to save context. Call list_sources to see each source's progress, then continue.";
+export const COMPACTION_NOTICE = "Earlier tool calls and results were removed to save context. Call list_sources to see each source's progress, then continue.";
 
-const SYSTEM_PROMPT =`You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
+const SYSTEM_PROMPT = `You are myjobbot, an autonomous agent that finds software engineering jobs that fit the user's resume.
 
 Work only through tool calls:
 1. Call list_sources. Sources are company job boards and saved job searches.
@@ -38,14 +37,14 @@ User preferences:
 
 /** Builds the system and first user message that seed a run with the resume and job-finding instructions. */
 export function initialMessages(config: AppConfig): Message[] {
-  return [
-    { role: "system", content: systemPrompt(config) },
-    { role: "user", content: `My resume:\n\n${config.resume}\n\nFind and score new jobs for me now.` },
-  ];
+    return [
+        { role: "system", content: systemPrompt(config) },
+        { role: "user", content: `My resume:\n\n${config.resume}\n\nFind and score new jobs for me now.` },
+    ];
 }
 
 /** Fills the system prompt template with the configured match threshold and user preferences. */
 function systemPrompt(config: AppConfig): string {
-  const preferences = config.file.preferences.trim() || "(none given)";
-  return SYSTEM_PROMPT.replace("{threshold}", String(config.file.match_threshold)).replace("{preferences}", preferences);
+    const preferences = config.file.preferences.trim() || "(none given)";
+    return SYSTEM_PROMPT.replace("{threshold}", String(config.file.match_threshold)).replace("{preferences}", preferences);
 }

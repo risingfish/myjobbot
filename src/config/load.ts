@@ -6,53 +6,53 @@ import { envSchema, fileConfigSchema, type Env, type FileConfig } from "./schema
 export type Environment = Readonly<Record<string, string | undefined>>;
 
 export interface AppConfig {
-  env: Env;
-  file: FileConfig;
-  resume: string;
-  dataDir: string;
+    env: Env;
+    file: FileConfig;
+    resume: string;
+    dataDir: string;
 }
 
 /** Loads and validates the environment and on-disk config, returning the app's combined configuration. */
 export function loadConfig(environment: Environment): AppConfig {
-  const env = envSchema.parse(environment);
-  const dataDir = env.MYJOBBOT_DATA_DIR;
-  const file = loadFileConfig(dataDir);
-  requireSearchKey(env, file);
-  return { env, file, resume: readText(dataDir, "resume.md"), dataDir };
+    const env = envSchema.parse(environment);
+    const dataDir = env.MYJOBBOT_DATA_DIR;
+    const file = loadFileConfig(dataDir);
+    requireSearchKey(env, file);
+    return { env, file, resume: readText(dataDir, "resume.md"), dataDir };
 }
 
 /** Loads and validates only the on-disk config, for readers such as the web UI that need no agent settings. */
 export function loadFileConfig(dataDir: string): FileConfig {
-  return fileConfigSchema.parse(readConfigJson(dataDir));
+    return fileConfigSchema.parse(readConfigJson(dataDir));
 }
 
 /** Ensures a JSearch API key is configured whenever saved searches need it to run. */
 function requireSearchKey(env: Env, file: FileConfig): void {
-  if (file.searches.length > 0 && !env.JSEARCH_API_KEY) {
-    throw new Error("JSEARCH_API_KEY is required when searches are configured");
-  }
+    if (file.searches.length > 0 && !env.JSEARCH_API_KEY) {
+        throw new Error("JSEARCH_API_KEY is required when searches are configured");
+    }
 }
 
 /** Reads and parses the JSON config file, rejecting a legacy YAML config with a migration hint. */
 function readConfigJson(dataDir: string): unknown {
-  const jsonPath = join(dataDir, "config.json");
-  const yamlPath = join(dataDir, "config.yaml");
-  if (!existsSync(jsonPath) && existsSync(yamlPath)) {
-    throw new Error(`config is now JSON: convert ${yamlPath} to ${jsonPath}`);
-  }
-  return parseJson(readText(dataDir, "config.json"));
+    const jsonPath = join(dataDir, "config.json");
+    const yamlPath = join(dataDir, "config.yaml");
+    if (!existsSync(jsonPath) && existsSync(yamlPath)) {
+        throw new Error(`config is now JSON: convert ${yamlPath} to ${jsonPath}`);
+    }
+    return parseJson(readText(dataDir, "config.json"));
 }
 
 /** Parses JSON text, wrapping any parse error with a clearer, config-specific message. */
 function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new Error(`config.json is not valid JSON: ${describeError(error)}`, { cause: error });
-  }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new Error(`config.json is not valid JSON: ${describeError(error)}`, { cause: error });
+    }
 }
 
 /** Reads a text file from the configured data directory. */
 function readText(dir: string, name: string): string {
-  return readFileSync(join(dir, name), "utf8");
+    return readFileSync(join(dir, name), "utf8");
 }
