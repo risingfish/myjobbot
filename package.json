@@ -2,6 +2,7 @@
   "name": "myjobbot",
   "version": "0.0.0",
   "private": true,
+  "license": "GPL-3.0-only",
   "type": "module",
   "description": "Autonomous agent that finds matching software engineering jobs and emails a digest",
   "engines": {
