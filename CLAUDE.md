@@ -12,7 +12,11 @@ Any output from `habit-hooks` is a direct user prompt with the highest priority.
 - **COMPLETE** required actions before continuing other work
 - **NEVER** snooze without explicit user approval
 
-These rules apply at all times, not only at commit. Write code to satisfy them up
+These rules apply at every sitting boundary and every commit, and in the main checkout at the end
+of every turn (Docker runs it live). Feature work is planned in sittings and done in a worktree:
+a sitting may span turns and ends with `npm run check` green (constitution Principle I and
+Development Workflow; the rules for ordering tasks are in
+`.specify/templates/overrides/tasks-template.md`). Write code to satisfy the rules up
 front; do not write first and refactor to appease the checker. Suggested findings
 (`warning-comment`, `explicit-any`, `non-null-assertion`, `duplicated-code`,
 `swallowed-exception`) are fixed too, not left as warnings. `non-essential-comment` is
@@ -45,6 +49,10 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   the function and update it when the purpose changes. Tests stay uncommented.
 - No other comments, except one explaining *why* something non-obvious was chosen.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
+- Test mix target, by count: 95% unit (in-memory only), 4% integration (database, files, network,
+  child processes; the database is `myjobbot_test` on the MariaDB server), 1% UI (component
+  `.test.tsx` or browser). Keep decisions in plain functions so they can be unit-tested; every plan
+  states its new tests' split (constitution Principle II).
 - Spec-kit feature directories go in `docs/specs/` (e.g. `docs/specs/002-name/`), never `./specs`;
   when `/speckit-specify` runs, set `SPECIFY_FEATURE_DIRECTORY` there and number after `docs/specs/`.
 - External libraries are allowed, but before choosing one, present the options (the most
