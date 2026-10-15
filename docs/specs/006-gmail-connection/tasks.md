@@ -362,14 +362,14 @@ first.
 
 Create `.specify/sitting-in-progress` naming S3 before T023.
 
-- [ ] T023 [P] [US2] **Unit**: write `tests/gmailAlerts.test.ts` for `src/gmail/alerts.ts`. 4 tests:
+- [X] T023 [P] [US2] **Unit**: write `tests/gmailAlerts.test.ts` for `src/gmail/alerts.ts`. 4 tests:
   - `alertQuery(["a@x.com", "y.org"])` is `from:(a@x.com OR y.org) newer_than:7d`
   - the config schema accepts an email (`^[a-z0-9][a-z0-9._%+-]*@[a-z0-9-]+(\.[a-z0-9-]+)+$`) or
     a domain (`^[a-z0-9][a-z0-9-]*(\.[a-z0-9-]+)+$`), case-insensitive. It
     refuses quotes, spaces, `(`, `)`, a leading `-` and the empty string.
   - `summarize(headers)` picks From, Subject and Date, with "(no subject)" for a missing subject
   - `newestFirst` orders by the Date header, falling back to Gmail's order for an unparsable date
-- [ ] T024 [US2] [US3] **Unit and integration (contract)**: first add case 5 to
+- [X] T024 [US2] [US3] **Unit and integration (contract)**: first add case 5 to
   `tests/helpers/gmailStoreContract.ts` and run it red:
   - `needsReconnect(reason)` keeps the email **and the sealed token** (so a later disconnect can
     still revoke), and sets the status and reason
@@ -377,7 +377,7 @@ Create `.specify/sitting-in-progress` naming S3 before T023.
 
   Then add `needsReconnect` and `disconnect` to `GmailStore`, the Kysely store and the memory
   fake, until it passes. T027 wires them in this sitting.
-- [ ] T025 [US2] [US3] **Unit**: add `listMessageIds`, `messageHeaders` and `revoke` to
+- [X] T025 [US2] [US3] **Unit**: add `listMessageIds`, `messageHeaders` and `revoke` to
   `tests/helpers/fakeGoogle.ts`, and add 3 tests to `tests/gmailConnection.test.ts`:
   - **`check(deps, senders)`**:
     - pages through ids until there is no next page token: 3 pages with 1,200 ids give 1,200,
@@ -393,14 +393,14 @@ Create `.specify/sitting-in-progress` naming S3 before T023.
     returns `{ revoked: false }`. Whenever a token is stored, whether connected or needing to
     reconnect, `saveCredentials` and `clearCredentials` call `disconnect` first; after a key
     change that means the old connection is cleared even though the revoke can't run.
-- [ ] T026 [US2] [US3] **UI**: add 1 test to `tests/client/gmailPanel.test.tsx`, mocking
+- [X] T026 [US2] [US3] **UI**: add 1 test to `tests/client/gmailPanel.test.tsx`, mocking
   `web/lib/gmailActions.js` as `loadMore.test.tsx` does and using `renderPanel`:
   - the connected view offers Check now, Disconnect and "Replace credentials"
   - Check now shows the count and the newest subjects from the mocked action
   - Disconnect with `window.confirm` stubbed to false doesn't call the action; with true it does,
     and `{ revoked: false }` shows "the revoke may need to be done in your Google account"
   - the needs-reconnecting view shows the reason and Connect
-- [ ] T027 [US2] [US3] Implement:
+- [X] T027 [US2] [US3] Implement:
   - **`src/config/schema.ts`**: `gmail: { alert_senders }`, defaulting to research R6's four
     senders, with T023's patterns.
   - **`src/gmail/alerts.ts`**.
@@ -418,8 +418,18 @@ Create `.specify/sitting-in-progress` naming S3 before T023.
   - The `checkGmail` and `disconnectGmail` actions have the same key guard as the others.
 
   T023–T026 pass.
-- [ ] T028 Close S3: both checks green, the ledger updated. Delete the marker and commit ("Check
+- [X] T028 Close S3: both checks green, the ledger updated. Delete the marker and commit ("Check
   and disconnect Gmail (006 S3)").
+
+S3 notes (2026-10-15):
+- **Results**: node 258 (+8), dom 31 (+1), integration 25 (+1).
+- **Paging moved**: the paging loop lives in `src/gmail/check.ts`, so the fake can drive it, with
+  a 20-page safety limit. `GoogleApi` exposes a one-page `messagePage`.
+- **Shared helpers**: `openOrNull` and `clientFor` moved to `src/gmail/access.ts`, shared by
+  `connection.ts` and `check.ts`.
+- **Disconnect**: Disconnect without a stored token reports `revoked: true`, since there was
+  nothing to revoke.
+- **Test environment**: happy-dom has no `window.confirm`, so the UI test defines it.
 
 ---
 

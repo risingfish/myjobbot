@@ -22,6 +22,14 @@ export class MemoryGmailStore implements GmailStore {
         if (this.row !== null) this.row = { ...this.row, refresh_token: grant.sealedToken, email: grant.email, connected_at: at, status: "connected", reason: null };
     }
 
+    async needsReconnect(reason: string): Promise<void> {
+        if (this.row !== null) this.row = { ...this.row, status: "needs_reconnect", reason };
+    }
+
+    async disconnect(): Promise<void> {
+        if (this.row !== null) this.row = { ...this.row, refresh_token: null, email: null, connected_at: null, status: "none", reason: null };
+    }
+
     async addConnectRequest(state: string, sealedVerifier: string, at: string): Promise<void> {
         this.requests.set(state, { sealedVerifier, createdAt: at });
     }

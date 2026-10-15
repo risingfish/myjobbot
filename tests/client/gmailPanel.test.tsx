@@ -9,7 +9,7 @@ import { gmailPanelView } from "../../src/web/gmailPanel.js";
 import { GmailPanel } from "../../web/components/settings/GmailPanel.js";
 import { gmailRow } from "../helpers/gmailRows.js";
 
-const actions = vi.hoisted(() => ({ saveGmailCredentials: vi.fn(), clearGmailCredentials: vi.fn(), connectGmail: vi.fn() }));
+const actions = vi.hoisted(() => ({ saveGmailCredentials: vi.fn(), clearGmailCredentials: vi.fn(), connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 
 vi.mock("../../web/lib/gmailActions.js", () => actions);
 
@@ -17,6 +17,8 @@ const KEY = randomBytes(32);
 const PLAIN = "plain-secret-value-123";
 
 beforeEach(() => {
+    actions.checkGmail.mockReset().mockResolvedValue({ ok: true, count: 3, newest: [{ from: "LinkedIn", subject: "5 new jobs", date: "Wed, 15 Oct 2026" }] });
+    actions.disconnectGmail.mockReset().mockResolvedValue({ revoked: false });
     actions.saveGmailCredentials.mockReset().mockResolvedValue({ ok: false, error: "The client secret must be 1–255 characters." });
 });
 
@@ -46,4 +48,24 @@ test("a connected panel names the address and time, and a sign-in outcome shows 
     const lan = renderPanel(gmailRow(), { host: "192.168.1.20:8080" });
     expect(within(lan.container).getByRole("button", { name: "Connect Gmail" })).toHaveProperty("disabled", true);
     expect(within(lan.container).getByText("Open Settings at http://localhost:8080 to connect")).toBeTruthy();
+});
+
+async function disconnectAnswering(answer: boolean, panel: HTMLElement) {
+    Object.defineProperty(window, "confirm", { value: () => answer, configurable: true });
+    await userEvent.click(within(panel).getByRole("button", { name: "Disconnect" }));
+}
+
+test("a connected panel checks the inbox, and disconnects only after confirming", async () => {
+    const { container } = renderPanel(gmailRow({ status: "connected", email: "me@example.com", connected_at: "2026-10-15T20:00:00.000Z" }));
+    expect(within(container).getByText("Replace credentials")).toBeTruthy();
+    await userEvent.click(within(container).getByRole("button", { name: "Check now" }));
+    expect(await within(container).findByText(/3 job-alert emails in the last 7 days/)).toBeTruthy();
+    expect(within(container).getByText(/5 new jobs/)).toBeTruthy();
+    await disconnectAnswering(false, container);
+    expect(actions.disconnectGmail).not.toHaveBeenCalled();
+    await disconnectAnswering(true, container);
+    expect(await within(container).findByText(/the revoke may need to be done in your Google account/)).toBeTruthy();
+    const reconnect = renderPanel(gmailRow({ status: "needs_reconnect", reason: "access revoked or expired" }));
+    expect(within(reconnect.container).getByText(/Needs reconnecting: access revoked or expired/)).toBeTruthy();
+    expect(within(reconnect.container).getByRole("button", { name: "Connect Gmail" })).toBeTruthy();
 });

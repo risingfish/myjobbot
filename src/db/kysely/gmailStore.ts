@@ -64,6 +64,17 @@ export class KyselyGmailStore implements GmailStore {
         });
     }
 
+    /** Marks the connection as needing the owner to sign in again, keeping the token so a later disconnect can still revoke it. */
+    async needsReconnect(reason: string): Promise<void> {
+        await this.db.updateTable("gmail_connection").set({ status: "needs_reconnect", reason }).where("id", "=", ROW).execute();
+    }
+
+    /** Forgets the connection's token and address, keeping the OAuth client for reconnecting. */
+    async disconnect(): Promise<void> {
+        const values = { refresh_token: null, email: null, connected_at: null, status: "none", reason: null };
+        await this.db.updateTable("gmail_connection").set(values).where("id", "=", ROW).execute();
+    }
+
     /** Forgets sign-ins started before a cutoff, which can no longer be finished. */
     async pruneConnectRequests(before: string): Promise<void> {
         await this.db.deleteFrom("gmail_connect_requests").where("created_at", "<", before).execute();

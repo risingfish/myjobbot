@@ -41,11 +41,22 @@ async function case4(make: MakeStores) {
     expect(await gmail.takeConnectRequest("new")).not.toBeNull();
 }
 
+async function case5(make: MakeStores) {
+    const { gmail } = await make();
+    await gmail.saveCredentials("client-1", "v1.sealed-1", AT);
+    await gmail.connected({ sealedToken: "v1.token-1", email: "me@example.com" }, AT);
+    await gmail.needsReconnect("access revoked or expired");
+    expect(await gmail.connection()).toMatchObject({ status: "needs_reconnect", reason: "access revoked or expired", email: "me@example.com", refresh_token: "v1.token-1" });
+    await gmail.disconnect();
+    expect(await gmail.connection()).toMatchObject({ client_id: "client-1", client_secret: "v1.sealed-1", refresh_token: null, email: null, connected_at: null, status: "none", reason: null });
+}
+
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [
     ["Gmail credentials are saved, replaced and cleared", case1],
     ["connecting stores the sealed token and address, and a second connection replaces the first", case2],
     ["a connect request is taken once, by its exact state", case3],
     ["pruning removes only connect requests older than the cutoff", case4],
+    ["needing to reconnect keeps the token for a later revoke, and disconnecting keeps only the credentials", case5],
 ];
 
 export function gmailStoreContract(make: MakeStores): void {

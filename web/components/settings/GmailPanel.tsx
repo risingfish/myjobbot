@@ -1,7 +1,9 @@
 import type { GmailPanelView } from "../../../src/web/gmailPanel.js";
 import { clearGmailCredentials, connectGmail } from "../../lib/gmailActions.js";
 import { Panel } from "../sections/Panel.js";
+import { CheckNow } from "./CheckNow.js";
 import { CredentialsForm } from "./CredentialsForm.js";
+import { DisconnectButton } from "./DisconnectButton.js";
 
 interface GmailPanelProps {
     view: GmailPanelView;
@@ -17,6 +19,8 @@ export function GmailPanel({ view, notice }: GmailPanelProps) {
             {view.message && <p className="note">{view.message}</p>}
             <GmailStatus view={view} />
             {offers.has("connect") && <ConnectForm view={view} />}
+            {offers.has("check") && <CheckNow />}
+            {offers.has("disconnect") && <DisconnectButton />}
             {offers.has("save") && <CredentialsForm />}
             <CredentialChanges offers={offers} />
         </Panel>

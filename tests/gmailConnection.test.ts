@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
 import { GoogleError } from "../src/gmail/googleErrors.js";
-import { finishConnect, keyChanged, saveCredentials, startConnect, type GmailDeps } from "../src/gmail/connection.js";
+import { check } from "../src/gmail/check.js";
+import { clearCredentials, disconnect, finishConnect, keyChanged, saveCredentials, startConnect, type GmailDeps } from "../src/gmail/connection.js";
 import { openSealed, seal } from "../src/gmail/seal.js";
-import { fakeGoogle, type FakeGoogle } from "./helpers/fakeGoogle.js";
+import { fakeGoogle, type FakeGoogle, type FakeScript } from "./helpers/fakeGoogle.js";
 import { gmailRow } from "./helpers/gmailRows.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
@@ -79,7 +80,7 @@ test("a denied, unknown, rejected or failed sign-in changes nothing and says why
         ["failed", async () => Promise.reject(new GoogleError("network"))],
     ];
     for (const [outcome, exchange] of failures) {
-        const gmail = await savedDeps(fakeGoogle(exchange));
+        const gmail = await savedDeps(fakeGoogle({ exchange }));
         const started = await startConnect(gmail, "localhost:8080", NOW);
         expect(await finishConnect(gmail, { state: started.ok ? stateOf(started.url) : "", code: "c", error: null, host: "localhost:8080" }, NOW)).toBe(outcome);
         expect((await gmail.gmail.connection())?.status).toBe("none");
@@ -91,4 +92,51 @@ test("a denied, unknown, rejected or failed sign-in changes nothing and says why
     const otherKey = { ...gmail, key: randomBytes(32) };
     expect(await finishConnect(otherKey, { state: started.ok ? stateOf(started.url) : "", code: "c", error: null, host: "localhost:8080" }, NOW)).toBe("key_changed");
     expect((await gmail.gmail.connection())?.status).toBe("none");
+});
+
+async function connectedDeps(script: FakeScript = {}): Promise<{ gmail: GmailDeps; fake: FakeGoogle }> {
+    const fake = fakeGoogle(script);
+    const gmail = await savedDeps(fake);
+    await gmail.gmail.connected({ sealedToken: seal("refresh-1", "refresh_token", KEY), email: "me@example.com" }, NOW.toISOString());
+    return { gmail, fake };
+}
+
+test("checking pages through every alert, reads only the newest five, and refuses when not connected", async () => {
+    const ids = Array.from({ length: 1200 }, (_, index) => `m${index}`);
+    const many = await connectedDeps({ ids });
+    const result = await check(many.gmail, ["jobs@example.com"]);
+    expect(result.ok && [result.count, result.newest.length]).toEqual([1200, 5]);
+    expect([many.fake.pages, many.fake.headersFor]).toEqual([
+        [null, "500", "1000"],
+        ["m0", "m1", "m2", "m3", "m4"],
+    ]);
+    expect(await check((await connectedDeps()).gmail, ["jobs@example.com"])).toEqual({ ok: true, count: 0, newest: [] });
+    const unconnected = fakeGoogle();
+    expect(await check(await savedDeps(unconnected), ["jobs@example.com"])).toEqual({ ok: false, reason: "not connected" });
+    expect(unconnected.pages).toEqual([]);
+});
+
+test("a revoked grant or a changed key marks the connection as needing to reconnect", async () => {
+    const revoked = await connectedDeps({ failList: new GoogleError("invalid_grant") });
+    expect(await check(revoked.gmail, ["x.com"])).toEqual({ ok: false, reason: "access revoked or expired" });
+    expect(await revoked.gmail.gmail.connection()).toMatchObject({ status: "needs_reconnect", reason: "access revoked or expired" });
+    const changed = await connectedDeps();
+    expect(await check({ ...changed.gmail, key: randomBytes(32) }, ["x.com"])).toEqual({ ok: false, reason: "server key changed" });
+    expect(await changed.gmail.gmail.connection()).toMatchObject({ status: "needs_reconnect", reason: "server key changed" });
+});
+
+test("disconnecting forgets the token even when the revoke fails, and changing credentials disconnects first", async () => {
+    const plain = await connectedDeps();
+    expect(await disconnect(plain.gmail)).toEqual({ revoked: true });
+    expect([plain.fake.revoked, (await plain.gmail.gmail.connection())?.refresh_token]).toEqual([["refresh-1"], null]);
+    const failing = await connectedDeps({ failRevoke: new GoogleError("network") });
+    expect(await disconnect(failing.gmail)).toEqual({ revoked: false });
+    const changed = await connectedDeps();
+    expect(await disconnect({ ...changed.gmail, key: randomBytes(32) })).toEqual({ revoked: false });
+    expect((await changed.gmail.gmail.connection())?.refresh_token).toBeNull();
+    const replaced = await connectedDeps();
+    await saveCredentials(replaced.gmail, { clientId: "client-2", clientSecret: "secret-2" }, NOW);
+    const cleared = await connectedDeps();
+    await clearCredentials(cleared.gmail);
+    expect([replaced.fake.revoked, cleared.fake.revoked, (await replaced.gmail.gmail.connection())?.refresh_token]).toEqual([["refresh-1"], ["refresh-1"], null]);
 });

@@ -94,6 +94,8 @@ export interface GmailStore {
     addConnectRequest(state: string, sealedVerifier: string, at: string): Promise<void>;
     takeConnectRequest(state: string): Promise<ConnectRequest | null>;
     pruneConnectRequests(before: string): Promise<void>;
+    needsReconnect(reason: string): Promise<void>;
+    disconnect(): Promise<void>;
 }
 
 export interface Stores {
