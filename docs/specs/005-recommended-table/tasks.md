@@ -55,7 +55,7 @@ Stories 1 and 2 share a sitting so the score breakdown is never missing from the
 
 #### Tests first
 
-- [ ] T003 [P] [US1] **Unit**: write `tests/shortTitle.test.ts` for `shortTitle(title, limit)`
+- [X] T003 [P] [US1] **Unit**: write `tests/shortTitle.test.ts` for `shortTitle(title, limit)`
   from `src/web/shortTitle.ts`:
   - a title of 10 characters is returned unchanged
   - exactly 64 characters is returned unchanged, with no "…"
@@ -65,10 +65,10 @@ Stories 1 and 2 share a sitting so the score breakdown is never missing from the
     without splitting one
 
   5 tests. They fail until T005.
-- [ ] T004 [P] [US1] **Unit**: in `tests/pageData.test.ts`, add one test: a stored job titled with
+- [X] T004 [P] [US1] **Unit**: in `tests/pageData.test.ts`, add one test: a stored job titled with
   80 characters gives a row whose `shortTitle` is 64 characters + "…", whose `title` is the full
   80, and which has no `scoredDate` key. Fails until T006.
-- [ ] T005 [US1] **UI**: update `tests/client/jobRow.test.tsx` and `tests/helpers/rowFixtures.ts`:
+- [X] T005 [US1] **UI**: update `tests/client/jobRow.test.tsx` and `tests/helpers/rowFixtures.ts`:
   - The fixture gets `shortTitle` and drops `scoredDate`.
   - Change "the score cell shows the boosted score and its note": the `.score` text starts with
     "75", the note sits in `[role=tooltip]` inside it, and the cell has no other visible text. A
@@ -83,18 +83,18 @@ Stories 1 and 2 share a sitting so the score breakdown is never missing from the
 
 #### Implementation
 
-- [ ] T006 [US1] Create `src/web/shortTitle.ts`: `shortTitle(title: string, limit = 64): string`.
+- [X] T006 [US1] Create `src/web/shortTitle.ts`: `shortTitle(title: string, limit = 64): string`.
   It splits with `Intl.Segmenter(undefined, { granularity: "grapheme" })`, returns `title` when it
   has ≤ `limit` graphemes, and otherwise returns the first `limit`, `trimEnd()`, + "…". Doc
   comment. T003 passes.
-- [ ] T007 [US1] In `src/web/api.ts`, `JobRowView` gets `shortTitle: string` and loses
+- [X] T007 [US1] In `src/web/api.ts`, `JobRowView` gets `shortTitle: string` and loses
   `scoredDate`. In `src/web/rowViews.ts`, `toJobRowView` sets
   `shortTitle: shortTitle(job.title)` and drops `scoredDate`; delete `dateOnly` only if nothing
   else uses it (`posted` does, so keep it). T004 passes; typecheck points at every display use.
-- [ ] T008 [US1] In `web/components/tables/Tables.tsx`, drop "Scored" from `JOB_HEADERS`. In
+- [X] T008 [US1] In `web/components/tables/Tables.tsx`, drop "Scored" from `JOB_HEADERS`. In
   `web/components/tables/JobCells.tsx`, `WhenCells` drops the scored `<td>` (update its doc
   comment: "when it was posted and how long it has been open").
-- [ ] T009 [US1] In `web/components/tables/TitleCell.tsx`, the `<td>` gets `className="title-cell"`,
+- [X] T009 [US1] In `web/components/tables/TitleCell.tsx`, the `<td>` gets `className="title-cell"`,
   and the link shows `job.shortTitle`. When it differs from `job.title`, the link gets a `title`
   attribute with the full title. Add a `title` prop to `web/components/common/ExternalLink.tsx`
   if it lacks one.
@@ -105,7 +105,7 @@ Stories 1 and 2 share a sitting so the score breakdown is never missing from the
 
 **Independent Test**: T005's tooltip assertions, plus quickstart step 3 in a browser.
 
-- [ ] T010 [US2] Create `web/components/tables/ScoreTipCell.tsx`, following
+- [X] T010 [US2] Create `web/components/tables/ScoreTipCell.tsx`, following
   `contracts/job-table.md`:
   - `<td className="score-col">`, empty when the score is null.
   - With an empty note: `<span className="score">{value}</span>`.
@@ -122,8 +122,18 @@ Stories 1 and 2 share a sitting so the score breakdown is never missing from the
   - `.score:hover .tip, .score:focus .tip { display: block }`
 
   T005 passes.
-- [ ] T011 Close S1: `npm run check` and `npm run check:db` green; the ledger is updated; delete
+- [X] T011 Close S1: `npm run check` and `npm run check:db` green; the ledger is updated; delete
   the marker. Commit ("Narrow the job tables' score and title columns (005 S1)").
+
+S1 notes (2026-10-15):
+- **Header check**: `tests/client/rowsList.test.tsx` already checked the job table's headers, so it
+  was updated in place instead of adding T005's header test.
+- **Cut-title check**: folded into the existing link test.
+- **Tooltip test**: the old score test became two, so UI is +1.
+- **Renames**: `WhenCells` became `WhenCell`, since it now renders one cell.
+- **Split for the line limit**: `ScoreTipCell` was split into the cell and `ScoreNumber`.
+- **Walkthrough**: `docs/react-walkthrough.md` now names the new components.
+- **Result**: node 227, dom 27, integration 20, all green.
 
 **Checkpoint**: Stories 1 and 2 work on both pages.
 

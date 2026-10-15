@@ -5,6 +5,7 @@ import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, type Boost } from "../jobs/titleBoost.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import type { JobRowView, Score, VerdictRowView } from "./api.js";
+import { shortTitle } from "./shortTitle.js";
 
 export interface RowContext {
     now: Date;
@@ -22,6 +23,7 @@ export function toJobRowView(job: JobView, context: RowContext): JobRowView {
         ats: job.ats,
         jobId: job.job_id,
         title: job.title,
+        shortTitle: shortTitle(job.title),
         url: webUrl(job.url),
         company: job.company,
         location: job.location ?? "",
@@ -29,7 +31,6 @@ export function toJobRowView(job: JobView, context: RowContext): JobRowView {
         source: job.source,
         via: job.publisher,
         posted: posted(job, context),
-        scoredDate: dateOnly(job.scored_at),
         score: jobScore(job, context),
         filterNote: filterNote(job, context),
         hidden: job.hidden,

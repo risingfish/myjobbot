@@ -96,3 +96,10 @@ test("reasoning lists each verdict with its run and scoring time", async () => {
     expect(data.summary).toBe("1 scoring decisions");
     expect(verdictRows(data)[0]).toMatchObject({ run: "run-1", scoredAt: "2026-10-02 00:00", title: "Software Engineer a", gaps: ["gap a"] });
 });
+
+test("job rows carry a title cut to 64 characters alongside the full title, and no scoring date", async () => {
+    const title = `Senior Software Engineer ${"platform ".repeat(7)}`.trim();
+    const rows = jobRows(await pagesOf([{ id: "long", score: 90, title }])("jobs"));
+    expect(rows).toMatchObject([{ title, shortTitle: `${title.slice(0, 64).trimEnd()}…` }]);
+    expect(rows[0]).not.toHaveProperty("scoredDate");
+});
