@@ -76,10 +76,24 @@ export interface GmailConnectionRow {
     reason: string | null;
 }
 
+export interface GmailGrant {
+    sealedToken: string;
+    email: string;
+}
+
+export interface ConnectRequest {
+    sealedVerifier: string;
+    createdAt: string;
+}
+
 export interface GmailStore {
     connection(): Promise<GmailConnectionRow | null>;
     saveCredentials(clientId: string, sealedSecret: string, at: string): Promise<void>;
     clearCredentials(): Promise<void>;
+    connected(grant: GmailGrant, at: string): Promise<void>;
+    addConnectRequest(state: string, sealedVerifier: string, at: string): Promise<void>;
+    takeConnectRequest(state: string): Promise<ConnectRequest | null>;
+    pruneConnectRequests(before: string): Promise<void>;
 }
 
 export interface Stores {

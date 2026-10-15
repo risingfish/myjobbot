@@ -1,16 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache.js";
-import { clearCredentials, saveCredentials, type GmailDeps, type SaveResult } from "../../src/gmail/connection.js";
-import { getUiState } from "./uiState.js";
+import { headers } from "next/headers.js";
+import { redirect } from "next/navigation.js";
+import { clearCredentials, saveCredentials, type SaveResult } from "../../src/gmail/connection.js";
+import { connectTarget } from "./gmailConnect.js";
+import { gmailDeps } from "./gmailDeps.js";
 
 const KEY_NOT_SET: SaveResult = { ok: false, error: "Set MYJOBBOT_SECRET_KEY first." };
-
-/** Returns what the Gmail services need, or null when the server key isn't usable. */
-async function gmailDeps(): Promise<GmailDeps | null> {
-    const { gmail, key } = await getUiState();
-    return key.status === "ok" ? { gmail, key: key.key } : null;
-}
 
 /** Saves the owner's Google OAuth client from the Settings form, reporting a field problem if it is refused. */
 export async function saveGmailCredentials(_previous: SaveResult, form: FormData): Promise<SaveResult> {
@@ -28,4 +25,9 @@ export async function clearGmailCredentials(): Promise<void> {
     if (deps === null) return;
     await clearCredentials(deps);
     revalidatePath("/settings");
+}
+
+/** Starts connecting Gmail: sends the owner to Google's consent screen, or back to Settings saying why it can't. */
+export async function connectGmail(): Promise<void> {
+    redirect(await connectTarget((await headers()).get("host") ?? ""));
 }

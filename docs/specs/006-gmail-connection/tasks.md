@@ -216,7 +216,7 @@ manually, the quickstart's Manual steps 1–3, 5 and 6.
 
 Create `.specify/sitting-in-progress` naming S2 before T015.
 
-- [ ] T015 [US1] **Unit and integration (contract)**: first add cases 2–4 to
+- [X] T015 [US1] **Unit and integration (contract)**: first add cases 2–4 to
   `tests/helpers/gmailStoreContract.ts` and run them red:
   - case 2: `connected` stores the sealed token, the email and the time, and connecting again
     (a second account) leaves one row with the second email
@@ -226,7 +226,7 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
   Then add `connected`, `addConnectRequest`, `takeConnectRequest` (`SELECT … FOR UPDATE`, then
   `DELETE`, in one transaction) and `pruneConnectRequests` to `GmailStore`, the Kysely store and
   the memory fake, until the cases pass. T020 wires them in this sitting.
-- [ ] T016 Install `google-auth-library@11.3.0` with an exact pin, keeping the lockfile's optional
+- [X] T016 Install `google-auth-library@11.3.0` with an exact pin, keeping the lockfile's optional
   platform entries (npm/cli#4828):
   1. Note `grep -c '"node_modules/@rolldown/binding-' package-lock.json` (15).
   2. Run `npm install --save-exact google-auth-library@11.3.0`.
@@ -242,7 +242,7 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
   `serverExternalPackages: ["google-auth-library"]` to `web/next.config.ts`. Record the outcome in
   Notes and delete the scratch code. `tests/webBuild.test.ts` (part of `npm test`) covers the
   production build.
-- [ ] T017 [P] [US1] **Unit**: add 4 tests to `tests/connectRequest.test.ts`:
+- [X] T017 [P] [US1] **Unit**: add 4 tests to `tests/connectRequest.test.ts`:
   - `newConnectRequest(random)` gives a 43-character base64url `state` and a verifier, and its
     challenge is the S256 of the verifier
   - `redirectUri(host)` is `http://<host>/settings/gmail/callback`
@@ -251,7 +251,7 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
   - `authUrlOptions({ state, challenge })` equals `{ access_type: "offline", prompt: "consent",
     scope: ["https://www.googleapis.com/auth/gmail.readonly"], state, code_challenge,
     code_challenge_method: "S256" }`, with exactly one scope (FR-003)
-- [ ] T018 [P] [US1] **Unit**: write `tests/googleErrors.test.ts` (1 test) for the pure
+- [X] T018 [P] [US1] **Unit**: write `tests/googleErrors.test.ts` (1 test) for the pure
   `googleErrorCode(err)` from `src/gmail/googleErrors.ts`:
   - a `GaxiosError`-shaped object whose config body contains `client_secret=SECRET123` and whose
     response is `{ error: "invalid_client" }` gives `invalid_client`
@@ -275,12 +275,12 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
     - a client secret that won't open gives `key_changed`, the sixth outcome code (research R8)
 
     None of them changes the row.
-- [ ] T019 [US1] **UI**: add 1 test to `tests/client/gmailPanel.test.tsx`. The "connected" view
+- [X] T019 [US1] **UI**: add 1 test to `tests/client/gmailPanel.test.tsx`. The "connected" view
   shows the email and time, and the outcome `refused` shows its fixed text, never the query
   value.
   Extend `tests/client/settings.test.tsx` in place so `searchParams: { gmail: "denied" }` shows
   "Access was not granted." and an unknown code shows nothing.
-- [ ] T020 [US1] Create the connect flow:
+- [X] T020 [US1] Create the connect flow:
   - **`src/gmail/connectRequest.ts`**: add `newConnectRequest`, `redirectUri`, `checkTaken`, and
     `authUrlOptions`, which owns the scope constant.
   - **`src/gmail/googleErrors.ts`**.
@@ -300,7 +300,7 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
     fixed outcome codes; a `SealError` becomes `key_changed`.
 
   T017 and T018 pass.
-- [ ] T021 [US1] Web, following `contracts/gmail-panel.md`:
+- [X] T021 [US1] Web, following `contracts/gmail-panel.md`:
   - **`connectGmail` action**: it's a plain form action, so it has no return value to show.
     Every refusal redirects to `/settings?gmail=<code>` instead: `key_not_set`, `not_loopback`,
     `no_credentials` or `key_changed`. Otherwise it calls `redirect(url)` to Google.
@@ -315,8 +315,35 @@ Create `.specify/sitting-in-progress` naming S2 before T015.
   - **`tests/webBuild.test.ts`**: add `/settings/gmail/callback` to `ROUTES`.
 
   T019 passes.
-- [ ] T022 Close S2: both checks green, the ledger updated. Delete the marker and commit ("Connect
+- [X] T022 Close S2: both checks green, the ledger updated. Delete the marker and commit ("Connect
   Gmail through Google sign-in (006 S2)").
+
+S2 notes (2026-10-15):
+- **Results**: node 250 (+11), dom 30 (+2), integration 24 (+3). The settings page's outcome
+  check became its own test rather than folding into the structure test, so UI is +2, one over
+  the ledger.
+- **Lockfile (T016)**: `npm install --save-exact google-auth-library@11.3.0` kept all 15
+  `@rolldown/binding-*` entries, 12 `lightningcss` entries and 189 optional entries. It added 21
+  packages, and `debug` and `ms` moved from dev to runtime. No splice was needed.
+- **Bundling spike**: done with `MYJOBBOT_DB_NAME=myjobbot_test npm run web` on port 8097, with
+  a throwaway key.
+  - Settings rendered both panels.
+  - The callback route redirected `?state=nope&code=x` to `?gmail=refused` and
+    `?error=access_denied` to `?gmail=denied`.
+  - The outcome message rendered.
+  - google-auth-library bundles without `serverExternalPackages`, and `webBuild.test.ts`
+    covers the production build.
+- **Consent link**: the real library, run offline with a dummy client, builds
+  `accounts.google.com/o/oauth2/v2/auth` with `access_type=offline`, `prompt=consent`, the
+  `gmail.readonly` scope only, a 43-character state and challenge, `S256`, and the localhost
+  callback.
+- **Design changes**:
+  - `GoogleApi.exchange` returns both the refresh token and the address, replacing the
+    separate `profileEmail`.
+  - `GmailStore.connected` takes `{ sealedToken, email }`.
+  - `googleErrorCode` is private and tested through `guarded()`, so nothing is test-only.
+  - `connectGmail` redirects every refusal with a code (U1).
+  - The helpers live in `web/lib/gmailDeps.ts` and `web/lib/gmailConnect.ts`.
 
 **Checkpoint**: US1 is complete. The live connection is checked in S4 with the owner.
 

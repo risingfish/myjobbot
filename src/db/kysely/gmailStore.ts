@@ -1,7 +1,7 @@
 import type { Kysely } from "kysely";
 import { z } from "zod";
 import type { Database } from "../schema.js";
-import type { GmailConnectionRow, GmailStore } from "../store.js";
+import type { ConnectRequest, GmailConnectionRow, GmailGrant, GmailStore } from "../store.js";
 
 const ROW = 1;
 const COLUMNS = ["client_id", "client_secret", "credentials_saved_at", "refresh_token", "email", "connected_at", "status", "reason"] as const;
@@ -41,5 +41,31 @@ export class KyselyGmailStore implements GmailStore {
     /** Forgets the OAuth client and any connection, leaving the panel as if nothing was ever saved. */
     async clearCredentials(): Promise<void> {
         await this.db.updateTable("gmail_connection").set(EMPTY).where("id", "=", ROW).execute();
+    }
+
+    /** Records a successful sign-in: the sealed refresh token and the address it belongs to, replacing any earlier one. */
+    async connected(grant: GmailGrant, at: string): Promise<void> {
+        const values = { refresh_token: grant.sealedToken, email: grant.email, connected_at: at, status: "connected", reason: null };
+        await this.db.updateTable("gmail_connection").set(values).where("id", "=", ROW).execute();
+    }
+
+    /** Remembers a sign-in the owner started, so Google's return can be matched to it. */
+    async addConnectRequest(state: string, sealedVerifier: string, at: string): Promise<void> {
+        await this.db.insertInto("gmail_connect_requests").values({ state, code_verifier: sealedVerifier, created_at: at }).execute();
+    }
+
+    /** Removes and returns a started sign-in, so each one can be finished only once. */
+    async takeConnectRequest(state: string): Promise<ConnectRequest | null> {
+        return this.db.transaction().execute(async (trx) => {
+            const row = await trx.selectFrom("gmail_connect_requests").select(["code_verifier", "created_at"]).where("state", "=", state).forUpdate().executeTakeFirst();
+            if (row === undefined) return null;
+            await trx.deleteFrom("gmail_connect_requests").where("state", "=", state).execute();
+            return { sealedVerifier: row.code_verifier, createdAt: row.created_at };
+        });
+    }
+
+    /** Forgets sign-ins started before a cutoff, which can no longer be finished. */
+    async pruneConnectRequests(before: string): Promise<void> {
+        await this.db.deleteFrom("gmail_connect_requests").where("created_at", "<", before).execute();
     }
 }

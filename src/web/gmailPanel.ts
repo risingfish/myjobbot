@@ -53,11 +53,16 @@ export function gmailPanelView(row: GmailConnectionRow | null, context: PanelCon
 function baseView(row: GmailConnectionRow | null, context: PanelContext): GmailPanelView {
     const stored = row ?? NOTHING_SAVED;
     const secretSaved = stored.client_id !== null && stored.client_secret !== null;
-    return { keyStatus: context.keyStatus, clientId: stored.client_id, secretSaved, state: stored.status, message: null, offers: [], email: stored.email, connectedAt: stored.connected_at, reason: stored.reason, canConnect: false, connectHint: null };
+    return { keyStatus: context.keyStatus, clientId: stored.client_id, secretSaved, state: stored.status, message: null, offers: [], email: stored.email, connectedAt: localTime(stored.connected_at), reason: stored.reason, canConnect: false, connectHint: null };
 }
 
 /** Tells the owner which address to open Settings on so Google can send them back after signing in. */
 function connectHint(host: string): string {
     const port = /:(\d+)$/.exec(host)?.[1] ?? "8080";
     return `Open Settings at http://localhost:${port} to connect`;
+}
+
+/** Shows a stored UTC time as YYYY-MM-DD HH:mm in the server's time zone, or null when there is none. */
+function localTime(iso: string | null): string | null {
+    return iso === null ? null : new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
 }

@@ -34,7 +34,8 @@ Enforcement in this repo:
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
 - `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
   `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,
-  `web/proxy.ts` and the `page`/`layout`/`not-found`/`error` files under `web/app/`). When
+  `web/proxy.ts`, the `page`/`layout`/`not-found`/`error` files under `web/app/`, and route
+  handlers, `web/app/**/route.ts`). When
   upgrading habit-hooks, diff it against the shipped `habit_hooks_typescript/knip.json` and carry
   over changes.
 - `eslint.config.mjs` replaces habit-hooks' shipped eslint config (copied 2026-10-14 from 1.5.0)
