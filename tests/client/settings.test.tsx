@@ -3,11 +3,11 @@ import { render } from "@testing-library/react";
 import { expect, test } from "vitest";
 import SettingsPage, { metadata } from "../../web/app/settings/page.js";
 
-test("the settings page holds one empty panel and is labelled", () => {
+test("the settings page holds the Scoring panel and is labelled", () => {
     const { container } = render(<SettingsPage />);
     expect(container.querySelector("table")).toBeNull();
     expect(container.querySelector("main")?.childElementCount).toBe(1);
-    expect(container.querySelector("main > div > h4")?.textContent).toBe("");
+    expect(container.querySelector("main > div > h4")?.textContent).toBe("Scoring");
     expect(screen.getByRole("main").getAttribute("aria-label")).toBe("Settings");
 });
 
