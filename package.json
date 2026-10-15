@@ -28,6 +28,8 @@
     "dependencies": {
         "@types/node": "26.6.4",
         "@types/react": "19.3.0",
+        "kysely": "0.29.6",
+        "mysql2": "3.24.6",
         "next": "16.4.0",
         "openai": "7.27.0",
         "react": "19.3.0",
@@ -39,9 +41,11 @@
     },
     "scripts": {
         "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts",
-        "test": "vitest run",
+        "test": "vitest run --project node --project dom",
+        "test:db": "vitest run --project integration",
         "typecheck": "tsc --noEmit && NEXT_TELEMETRY_DISABLED=1 next typegen web && tsc --noEmit -p web",
         "check": "npm run typecheck && npm test && habit-hooks",
+        "check:db": "npm run test:db",
         "format": "prettier --write .",
         "web": "NEXT_TELEMETRY_DISABLED=1 next dev web --port ${MYJOBBOT_PORT:-8080}",
         "web:build": "NEXT_TELEMETRY_DISABLED=1 next build web",

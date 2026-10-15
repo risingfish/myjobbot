@@ -86,7 +86,7 @@ async function fetchExcluding(excludePublishers: string[]) {
     const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: excludePublishers } });
     const { context } = searchContext({ config, jobLog });
     const served = (await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
-    return { served, stored: context.store.unscoredForSource(SEARCH_NAME).length, log: jobLog.events.at(-1) };
+    return { served, stored: (await context.store.unscoredForSource(SEARCH_NAME)).length, log: jobLog.events.at(-1) };
 }
 
 test("JSearch results from an excluded publisher are dropped before storing", async () => {

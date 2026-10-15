@@ -2,10 +2,15 @@
 
 ## Core Principles
 
-### I. Habit-hooks clean at all times
+### I. Habit-hooks clean at every sitting boundary
 
-All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings, at all
-times, not only at commit:
+All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings:
+- at the end of every **sitting** (see Development Workflow) and at every commit
+- at the end of every turn whenever the Docker stack is running, because it runs this checkout's
+  `src/` and `web/` live. Feature work is done in this checkout with the stack stopped (see
+  Development Workflow).
+
+The limits:
 - functions at most 20 lines, at most 3 parameters, complexity at most 10, nesting at most 4
 - files at most 200 lines
 - `===` only, no `var`, `const` where possible, no inferrable type annotations
@@ -21,9 +26,24 @@ Rationale: small, checked units keep an autonomous agent's code reviewable.
 ### II. Test-first, checked before done
 
 Tests MUST be written before the code they cover and MUST live in `tests/`. `npm run check`
-(typecheck, tests, habit-hooks) MUST pass before any task is called done.
+(typecheck, unit and UI tests, habit-hooks) and `npm run check:db` (the integration tests against
+the test database) MUST both pass before any sitting is called done, and before any commit or
+PR. Within a sitting, each task runs the tests it touches.
 
-Rationale: the agent runs unattended; the check is the only proof a change works.
+New tests MUST keep the suite moving toward a mix, by count, of **95% unit, 4% integration and
+1% UI** (owner decision, 2026-10-14):
+- **Unit**: in-memory code only, with no database, files, network, child processes or rendered
+  components. Code that talks to those MUST keep its decisions in plain functions, so the
+  decisions can be unit-tested and only the thin edge needs an integration test.
+- **Integration**: touches a database (the `myjobbot_test` database on the MariaDB server), files,
+  a network server or a child process.
+- **UI**: renders components (`.test.tsx`, vitest's `dom` project) or drives a real browser.
+
+Every plan MUST state how its new tests split across the three, and SHOULD move existing tests
+toward the target where it touches them.
+
+Rationale: the agent runs unattended; the check is the only proof a change works, and it is run
+constantly, so most of it has to be fast and exact.
 
 ### III. Purpose comments only
 
@@ -58,7 +78,8 @@ Rationale: one documentation root for the project.
 
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
 - `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not
-  clean.
+  clean. While a sitting is in progress (`.specify/sitting-in-progress` exists), it reports instead;
+  the marker is removed when the sitting ends green.
 - `.githooks/pre-commit` blocks commits with enforced findings
   (`git config core.hooksPath .githooks`).
 - `knip.json` and `eslint.config.mjs` replace habit-hooks' shipped configs (the ESLint copy raises
@@ -74,7 +95,25 @@ Rationale: one documentation root for the project.
 
 - Features go through spec-kit: specify, clarify, plan, tasks, analyze, implement. Every plan
   has a Constitution Check against Principles I–V.
-- `npm run check` is the gate before any task is called done (Principle II).
+- **Sittings.** A task list groups its tasks into numbered sittings. A sitting:
+  - may span several turns
+  - is worked in the main checkout, on the feature branch, with the Docker stack stopped
+    (`docker compose stop`, and `docker:watch` not running) from the first code change until the
+    feature is merged and the stack is rebuilt
+  - ends with `npm run check` green
+  - is the only point where work may be committed (when the owner asks)
+
+  Tasks are ordered so every sitting can end green:
+  - a new module is reached from a production entry point within the sitting that creates it
+  - a dependency is installed in the sitting of its first import
+  - a test sits in the same sitting as the code it imports, before it
+  - an implementation is replaced by first moving callers behind an interface on the old one,
+    then swapping in one sitting
+
+  `/speckit-analyze` checks every sitting boundary against Principle I. The project's tasks
+  template (`.specify/templates/overrides/tasks-template.md`) carries these rules.
+- `npm run check` and `npm run check:db` are the gate before any sitting is called done
+  (Principle II).
 - habit-hooks output is a direct instruction from the owner, with the highest priority: each
   reported item becomes a task and is completed before other work continues.
 
@@ -86,4 +125,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 1.3.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 2.2.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14

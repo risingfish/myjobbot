@@ -1,7 +1,6 @@
-import { JobStore } from "../../src/db/jobStore.js";
-import { JobViews } from "../../src/db/jobViews.js";
-import { openDatabase } from "../../src/db/open.js";
+import type { Stores } from "../../src/db/store.js";
 import { makeJob } from "../../src/jobs/job.js";
+import { memoryStores } from "./memoryStore.js";
 
 export const FIRST_PAGE = { offset: 0, limit: 100 };
 
@@ -17,13 +16,12 @@ export interface SeedJob {
     parts?: { base: number; bonus: number };
 }
 
-export function seededViews(entries: SeedJob[]): JobViews {
-    const db = openDatabase(":memory:");
-    const store = new JobStore(db);
-    for (const entry of entries) store.upsertAll([seedJob(entry)], "2026-10-01T00:00:00.000Z", entry.source ?? "Stripe");
+export async function seededStores(entries: SeedJob[]): Promise<Stores> {
+    const stores = memoryStores();
+    for (const entry of entries) await stores.jobStore.upsertAll([seedJob(entry)], "2026-10-01T00:00:00.000Z", entry.source ?? "Stripe");
     const scored = entries.filter((entry) => entry.score !== undefined);
-    for (const entry of scored) store.recordVerdict(seedVerdict(entry), { scoredAt: "2026-10-02T00:00:00.000Z", runId: "run-1" });
-    return new JobViews(db);
+    for (const entry of scored) await stores.jobStore.recordVerdict(seedVerdict(entry), { scoredAt: "2026-10-02T00:00:00.000Z", runId: "run-1" });
+    return stores;
 }
 
 function seedJob(entry: SeedJob) {

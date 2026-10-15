@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Footer } from "../components/sections/Footer.js";
 import { Header } from "../components/sections/Header.js";
-import { dbPath } from "../lib/uiState.js";
+import { dbLabel } from "../lib/uiState.js";
 import "./styles.css";
 
 export const metadata: Metadata = { title: { template: "myjobbot · %s", default: "myjobbot" } };
@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <body>
                 <Header />
                 {children}
-                <Footer dbPath={dbPath()} renderedAt={new Date().toISOString()} />
+                <Footer database={dbLabel()} renderedAt={new Date().toISOString()} />
             </body>
         </html>
     );

@@ -3,7 +3,7 @@
 An autonomous agent that pulls software-engineering postings from company job boards
 (Greenhouse, Lever, Ashby) and saved JSearch searches (Google for Jobs: LinkedIn, Indeed and
 more), scores them against your resume with a local LLM, and keeps
-history in SQLite to spot long-open "ghost" postings.
+history in MariaDB to spot long-open "ghost" postings.
 
 Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
 
@@ -11,7 +11,7 @@ Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
 
 ```bash
 npm ci
-cp .env.example .env            # set LLM_API_KEY
+cp .env.example .env            # set LLM_API_KEY and the MYJOBBOT_DB_* settings (see Storage)
 mkdir -p data
 cp examples/config.json data/   # list your target companies
 cp examples/resume.md data/     # replace with your resume
@@ -19,6 +19,33 @@ cp examples/resume.md data/     # replace with your resume
 
 The LLM server must be llama.cpp `llama-server` started with `--jinja` and a
 tool-calling model.
+
+## Storage
+
+Jobs, scores, verdict history and the JSearch request log live in MariaDB (10.11 or later),
+reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `config.json`,
+`resume.md`, run traces and logs.
+
+1. **Create two databases**, `myjobbot` and `myjobbot_test`, both `CHARACTER SET utf8mb4` with the
+   same collation (any; the tables set their own), and a user with rights on just those two.
+2. **Set in `.env`**: `MYJOBBOT_DB_HOST`, `MYJOBBOT_DB_USER`, `MYJOBBOT_DB_PASSWORD`, and
+   optionally `MYJOBBOT_DB_PORT` (3306) and `MYJOBBOT_DB_NAME` (`myjobbot`).
+3. **Start anything**: the agent and the web UI create or update the tables on first use. Each
+   schema change is a numbered step in `src/db/migrations/`, run once per database.
+
+Every table compares text exactly (`utf8mb4_bin`), so job IDs that differ only in letter case
+stay distinct, and every connection sets `utf8mb4`, so accents and emoji survive. Backups are the
+MariaDB server's job.
+
+**Coming from SQLite?** Copy the old database across once, with the agent stopped:
+
+```bash
+sqlite3 data/myjobbot.db ".backup 'data/myjobbot-pre-mariadb.db'"
+npm start -- import-sqlite data/myjobbot-pre-mariadb.db
+```
+
+The import is all or nothing. It refuses a database that already has rows, and any value too long
+for its column, and it checks counts and a sample before committing.
 
 ## Run
 
@@ -84,8 +111,12 @@ How it's built:
 ## Develop
 
 ```bash
-npm run check   # typecheck + tests + habit-hooks
+npm run check      # typecheck + unit and UI tests + habit-hooks
+npm run check:db   # integration tests against myjobbot_test (needs the MYJOBBOT_DB_* settings)
 ```
+
+Most tests run on in-memory stores; the same store contract runs against MariaDB in
+`tests/integration/`, which only ever touches `myjobbot_test`.
 
 ## Deploy with Docker
 
@@ -93,7 +124,7 @@ On the server:
 
 ```bash
 git clone <repo> myjobbot && cd myjobbot
-cp .env.example .env              # set LLM_API_KEY and MYJOBBOT_HOSTS; optionally SCHEDULE and TZ
+cp .env.example .env              # set LLM_API_KEY, MYJOBBOT_HOSTS and MYJOBBOT_DB_*; optionally SCHEDULE and TZ
 mkdir -p data
 cp examples/config.json data/     # your companies
 cp examples/resume.md data/       # your resume
@@ -103,8 +134,9 @@ docker compose up -d --build
 The container runs `myjobbot run` on `SCHEDULE` (default `0 1/8 * * *`, every 8 hours from
 1 a.m.: 01:00, 09:00, 17:00) in `TZ` (default `America/Los_Angeles`, Pacific time). After a board's backlog is scored,
 each run only scores new postings; a run never starts while the previous one is still going.
-Everything it writes goes to the host `data/` folder: `myjobbot.db`, `runs/` traces and
-`log/` files.
+Jobs and scores go to MariaDB (see Storage); `runs/` traces and `log/` files go to the host
+`data/` folder. Both containers reach the database over the network, so there is no database
+container.
 
 | Task | Command |
 |---|---|
@@ -157,7 +189,7 @@ whether that's allowed, runs it, and hands the result back.
 flowchart TD
     CLI["src/cli.ts<br/>load .env, call runOnce()"] --> CFG
     CFG["config/load.ts<br/>config.json + resume.md + env<br/>(validated with zod)"] --> CTX
-    CTX["app/run.ts<br/>tool context: SQLite store, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LOOP
+    CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LOOP
     LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> PRUNE
     PRUNE["app/run.ts<br/>prune postings not seen in 90 days"] --> OUT
     OUT["print status, steps, reason<br/>and the model's summary"]
@@ -203,7 +235,7 @@ sequenceDiagram
     participant M as Model (llama.cpp)
     participant D as dispatch
     participant T as fetch_jobs tool
-    participant DB as SQLite
+    participant DB as MariaDB
 
     L->>M: messages + tool schemas
     M-->>L: tool_calls: fetch_jobs({"source":"Palantir"})
@@ -261,7 +293,7 @@ flowchart TD
     TOOLS["tools/<br/>thin adapters from model requests to the layers below"]
     SOURCES["sources/<br/>Greenhouse · Lever · Ashby adapters<br/>(defineBoard: URL + schema + mapper)"]
     HTTP["http/<br/>1 s spacing per host · 300 requests/run cap<br/>retry 429 and 5xx with backoff"]
-    DB["db/ + jobs/<br/>SQLite job store · title filter · days open"]
+    DB["db/ + jobs/<br/>MariaDB stores (Kysely) · title filter · days open"]
     LLAMA[("llama.cpp server<br/>OpenAI-compatible API")]
     BOARDS[("Job board APIs")]
 

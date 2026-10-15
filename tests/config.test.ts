@@ -1,12 +1,14 @@
-import { rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { expect, test } from "vitest";
-import { loadConfig, loadFileConfig } from "../src/config/load.js";
-import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
-import { makeDataDir, SAMPLE_CONFIG, TEST_ENV } from "./helpers/dataDir.js";
+import type { Environment } from "../src/config/load.js";
+import { appConfigFrom, parseFileConfig } from "../src/config/parse.js";
+import { LLM_ENV, SAMPLE_CONFIG, TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 
-test("loadConfig applies defaults", () => {
-    const config = loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir() });
+function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
+    return appConfigFrom(environment, { configText: JSON.stringify(config), resume: "# Jane Doe", dataDir: "data" });
+}
+
+test("the app config applies defaults", () => {
+    const config = configFrom(LLM_ENV);
     expect(config.file.companies).toHaveLength(2);
     expect(config.file.match_threshold).toBe(70);
     expect(config.file.http.min_interval_ms).toBe(1000);
@@ -14,15 +16,14 @@ test("loadConfig applies defaults", () => {
     expect(config.resume).toContain("Jane Doe");
 });
 
-test("loadFileConfig reads config.json without any LLM settings", () => {
-    const file = loadFileConfig(makeDataDir());
+test("config.json parses without any LLM settings", () => {
+    const file = parseFileConfig(JSON.stringify(SAMPLE_CONFIG));
     expect(file.companies).toHaveLength(2);
     expect(file.match_threshold).toBe(70);
 });
 
-test("loadConfig rejects an unknown board type", () => {
-    const dir = makeDataDir({ companies: [{ name: "X", ats: "workday", slug: "x" }] });
-    expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/ats/);
+test("config rejects an unknown board type", () => {
+    expect(() => configFrom(LLM_ENV, { companies: [{ name: "X", ats: "workday", slug: "x" }] })).toThrow(/ats/);
 });
 
 test("config rejects filter terms without a letter or digit", () => {
@@ -73,8 +74,8 @@ test("config rejects duplicate company names ignoring case", () => {
     expect(() => testFileConfig({ companies })).toThrow(/names must be unique/);
 });
 
-test("loadConfig requires LLM settings", () => {
-    expect(() => loadConfig({ MYJOBBOT_DATA_DIR: makeDataDir() })).toThrow(/LLM_BASE_URL/);
+test("the app config requires LLM settings", () => {
+    expect(() => configFrom({})).toThrow(/LLM_BASE_URL/);
 });
 
 test("config rejects retention not longer than ghost threshold", () => {
@@ -82,17 +83,8 @@ test("config rejects retention not longer than ghost threshold", () => {
     expect(() => testFileConfig(overrides)).toThrow(/job_retention_days/);
 });
 
-test("loadConfig reports invalid JSON readably", () => {
-    const dir = makeDataDir();
-    writeFileSync(join(dir, "config.json"), "{ not json");
-    expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/config.json is not valid JSON/);
-});
-
-test("loadConfig asks to convert a leftover config.yaml", () => {
-    const dir = makeDataDir();
-    rmSync(join(dir, "config.json"));
-    writeFileSync(join(dir, "config.yaml"), "companies: []\n");
-    expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow(/config is now JSON: convert .*config.yaml to .*config.json/);
+test("config.json that isn't valid JSON is reported readably", () => {
+    expect(() => parseFileConfig("{ not json")).toThrow(/config.json is not valid JSON/);
 });
 
 test("config applies search and JSearch defaults", () => {
@@ -126,8 +118,8 @@ test("three refreshes a day fit the budget for two searches but not three", () =
     expect(() => testFileConfig({ searches, jsearch })).toThrow(/monthly_request_cap/);
 });
 
-test("loadConfig requires JSEARCH_API_KEY when searches are configured", () => {
-    const dir = makeDataDir({ ...SAMPLE_CONFIG, searches: [TEST_SEARCH] });
-    expect(() => loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir })).toThrow("JSEARCH_API_KEY is required when searches are configured");
-    expect(loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dir, JSEARCH_API_KEY: "k" }).file.searches).toHaveLength(1);
+test("the app config requires JSEARCH_API_KEY when searches are configured", () => {
+    const config = { ...SAMPLE_CONFIG, searches: [TEST_SEARCH] };
+    expect(() => configFrom(LLM_ENV, config)).toThrow("JSEARCH_API_KEY is required when searches are configured");
+    expect(configFrom({ ...LLM_ENV, JSEARCH_API_KEY: "k" }, config).file.searches).toHaveLength(1);
 });

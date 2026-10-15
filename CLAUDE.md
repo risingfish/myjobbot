@@ -12,7 +12,13 @@ Any output from `habit-hooks` is a direct user prompt with the highest priority.
 - **COMPLETE** required actions before continuing other work
 - **NEVER** snooze without explicit user approval
 
-These rules apply at all times, not only at commit. Write code to satisfy them up
+These rules apply at every sitting boundary and every commit, and at the end of every turn while
+the Docker stack is running (it runs this checkout live). Spec-kit feature work is planned in
+sittings and done in this main checkout, on the feature branch, with the Docker stack stopped
+(`docker compose stop`, no `docker:watch`) until the feature merges: a sitting may span turns and
+ends with `npm run check` green (constitution Principle I and
+Development Workflow; the rules for ordering tasks are in
+`.specify/templates/overrides/tasks-template.md`). Write code to satisfy the rules up
 front; do not write first and refactor to appease the checker. Suggested findings
 (`warning-comment`, `explicit-any`, `non-null-assertion`, `duplicated-code`,
 `swallowed-exception`) are fixed too, not left as warnings. `non-essential-comment` is
@@ -21,7 +27,10 @@ doc comments; the no-other-comments rule under Conventions is now a convention, 
 
 Enforcement in this repo:
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
-- `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not clean.
+- `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not clean,
+  except during a sitting: while `.specify/sitting-in-progress` (gitignored) exists, naming the
+  sitting, it reports the findings instead. Create the marker at a sitting's start and delete it
+  once `npm run check` is green; never leave it behind.
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
 - `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
   `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,
@@ -45,6 +54,10 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   the function and update it when the purpose changes. Tests stay uncommented.
 - No other comments, except one explaining *why* something non-obvious was chosen.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
+- Test mix target, by count: 95% unit (in-memory only), 4% integration (database, files, network,
+  child processes; the database is `myjobbot_test` on the MariaDB server), 1% UI (component
+  `.test.tsx` or browser). Keep decisions in plain functions so they can be unit-tested; every plan
+  states its new tests' split (constitution Principle II).
 - Spec-kit feature directories go in `docs/specs/` (e.g. `docs/specs/002-name/`), never `./specs`;
   when `/speckit-specify` runs, set `SPECIFY_FEATURE_DIRECTORY` there and number after `docs/specs/`.
 - External libraries are allowed, but before choosing one, present the options (the most
@@ -52,10 +65,22 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - New dependencies: exact or `~` pins, installed via the lockfile; lockfile changes must not
   drop optional platform entries.
 - These rules are ratified in `.specify/memory/constitution.md`; keep the two in agreement.
+- Storage is MariaDB through Kysely (`src/db/`): typed queries checked against `src/db/schema.ts`,
+  every table `utf8mb4_bin` (exact comparison, as SQLite was), and `SET NAMES utf8mb4` on every
+  connection. To change the schema, add a numbered step `src/db/migrations/00N_name.ts`, list it in
+  `src/db/migrations/index.ts`, update `src/db/schema.ts`, and add or adjust a case in
+  `tests/helpers/storeContract.ts` if the stores' behaviour changes. Steps run once per database,
+  even when the agent and the web app start together.
+- Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
+  against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
+  `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
 
 ## Commands
 
-- `npm run check`: typecheck, tests, habit-hooks (run before claiming any task done)
-- `npm start -- run`: one agent run using `.env` and `data/`
+- `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
+- `npm run check:db`: the MariaDB integration tests against `myjobbot_test` (needs `.env`'s
+  `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
+- `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
+- `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

@@ -1,21 +1,12 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-export const SAMPLE_CONFIG = {
-    companies: [
-        { name: "Stripe", ats: "greenhouse", slug: "stripe" },
-        { name: "Palantir", ats: "lever", slug: "palantir" },
-    ],
-    preferences: "Remote US, senior backend",
-};
+import { LLM_ENV, SAMPLE_CONFIG } from "./config.js";
 
 export const ONE_COMPANY = { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], preferences: "Remote US, senior backend" };
 
 export const TEST_ENV = {
-    LLM_BASE_URL: "http://127.0.0.1:9/v1",
-    LLM_MODEL: "test-model",
-    LLM_API_KEY: "test-key",
+    ...LLM_ENV,
     MYJOBBOT_LOG_DIR: mkdtempSync(join(tmpdir(), "myjobbot-log-")),
 };
 

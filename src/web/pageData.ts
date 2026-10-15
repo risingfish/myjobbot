@@ -1,5 +1,5 @@
 import type { FileConfig } from "../config/schema.js";
-import type { JobView, JobViews, Page } from "../db/jobViews.js";
+import type { JobView, JobViews, Page } from "../db/store.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
@@ -12,44 +12,44 @@ export interface PageInput {
     now: Date;
 }
 
-const LOADERS: Record<PageName, (input: PageInput) => PageData> = {
+const LOADERS: Record<PageName, (input: PageInput) => Promise<PageData>> = {
     recommended: loadRecommended,
     jobs: loadAllJobs,
     reasoning: loadReasoning,
 };
 
 /** Loads one page of display-ready rows, with its summary and empty-state text, for a web UI page. */
-export function loadPageData(name: PageName, input: PageInput): PageData {
+export async function loadPageData(name: PageName, input: PageInput): Promise<PageData> {
     return LOADERS[name](input);
 }
 
 /** Loads the page of jobs that meet the recommendation threshold, for the Recommended page. */
-function loadRecommended({ views, config, page, now }: PageInput): PageData {
-    const jobs = recommendedJobs(views, config);
+async function loadRecommended({ views, config, page, now }: PageInput): Promise<PageData> {
+    const jobs = await recommendedJobs(views, config);
     const rows = jobs.slice(page.offset, page.offset + page.limit).map((job) => toJobRowView(job, rowContext(config, now)));
     const text = { summary: `${jobs.length} recommended · threshold ${config.match_threshold}`, empty: "No recommendations yet: run myjobbot run." };
     return { kind: "jobs", rows, total: jobs.length, nextOffset: nextOffset(page, jobs.length), ...text };
 }
 
 /** Returns the jobs, from configured sources, whose boosted score meets the match threshold. */
-function recommendedJobs(views: JobViews, config: FileConfig): JobView[] {
+async function recommendedJobs(views: JobViews, config: FileConfig): Promise<JobView[]> {
     const threshold = config.match_threshold;
-    const scored = views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
+    const scored = await views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
     const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
     return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, job.description], config.title_boosts)) >= threshold);
 }
 
 /** Loads a page of all retrieved jobs, for the All jobs page. */
-function loadAllJobs({ views, config, page, now }: PageInput): PageData {
-    const total = views.countAllJobs();
-    const rows = views.allJobs(page).map((job) => toJobRowView(job, rowContext(config, now)));
+async function loadAllJobs({ views, config, page, now }: PageInput): Promise<PageData> {
+    const total = await views.countAllJobs();
+    const rows = (await views.allJobs(page)).map((job) => toJobRowView(job, rowContext(config, now)));
     return { kind: "jobs", rows, total, nextOffset: nextOffset(page, total), summary: `${total} jobs`, empty: "No jobs retrieved yet: run myjobbot run." };
 }
 
 /** Loads a page of scoring verdict history, for the Reasoning page. */
-function loadReasoning({ views, page }: PageInput): PageData {
-    const total = views.countVerdicts();
-    const rows = views.verdictHistory(page).map(toVerdictRowView);
+async function loadReasoning({ views, page }: PageInput): Promise<PageData> {
+    const total = await views.countVerdicts();
+    const rows = (await views.verdictHistory(page)).map(toVerdictRowView);
     const text = { summary: `${total} scoring decisions`, empty: "No jobs scored yet: run myjobbot run." };
     return { kind: "verdicts", rows, total, nextOffset: nextOffset(page, total), ...text };
 }

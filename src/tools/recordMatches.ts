@@ -25,10 +25,12 @@ export function recordMatchesTool(context: ToolContext): Tool {
 }
 
 /** Persists each verdict's total score, reporting how many were recorded and which job ids were unknown. */
-function record(context: ToolContext, verdicts: Array<z.infer<typeof verdict>>) {
-    const scoredAt = context.now().toISOString();
-    const stamp = { scoredAt, runId: context.runId };
-    const stored = verdicts.map((entry) => ({ ...entry, score: entry.base + entry.bonus }));
-    const unknown = stored.filter((entry) => !context.store.recordVerdict(entry, stamp)).map((entry) => entry.job_id);
+async function record(context: ToolContext, verdicts: Array<z.infer<typeof verdict>>) {
+    const stamp = { scoredAt: context.now().toISOString(), runId: context.runId };
+    const unknown: string[] = [];
+    for (const entry of verdicts) {
+        const known = await context.store.recordVerdict({ ...entry, score: entry.base + entry.bonus }, stamp);
+        if (!known) unknown.push(entry.job_id);
+    }
     return { recorded: verdicts.length - unknown.length, unknown_job_ids: unknown };
 }

@@ -1,14 +1,16 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { importSqlite } from "./app/importSqlite.js";
 import { runOnce } from "./app/run.js";
 import type { Environment } from "./config/load.js";
+import { parseDbSettings } from "./db/settings.js";
 import { describeError } from "./errors.js";
 
-const USAGE = "usage: myjobbot run";
+const USAGE = "usage: myjobbot run | import-sqlite <path>";
 
-type Command = (environment: Environment) => Promise<number>;
+type Command = (environment: Environment, args: string[]) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: runCommand };
+const COMMANDS: Record<string, Command> = { run: runCommand, "import-sqlite": importCommand };
 
 /** Parses argv and dispatches to the matching subcommand, returning the process exit code. */
 async function main(argv: string[]): Promise<number> {
@@ -19,7 +21,7 @@ async function main(argv: string[]): Promise<number> {
         return 2;
     }
     if (existsSync(".env")) process.loadEnvFile(".env");
-    return command(process.env);
+    return command(process.env, positionals.slice(1));
 }
 
 /** Runs one agent session, prints its outcome, and maps the result to an exit code. */
@@ -28,6 +30,17 @@ async function runCommand(environment: Environment): Promise<number> {
     console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
     if (report.summary) console.log(report.summary);
     return report.status === "finished" ? 0 : 1;
+}
+
+/** Copies an old SQLite database into the configured MariaDB database once, printing the row counts. */
+async function importCommand(environment: Environment, [path]: string[]): Promise<number> {
+    if (!path) {
+        console.error(USAGE);
+        return 2;
+    }
+    const report = await importSqlite(path, parseDbSettings(environment));
+    console.log(`imported jobs ${report.jobs}, verdicts ${report.verdicts}, api_calls ${report.api_calls}, hidden ${report.hidden}`);
+    return 0;
 }
 
 main(process.argv.slice(2)).then(

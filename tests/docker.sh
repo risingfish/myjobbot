@@ -3,6 +3,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 IMAGE=myjobbot:test
+
+# The web service needs the database. Pass only the connection lines from .env, always pointed at
+# the test database, and never print them.
+db_env=$(mktemp)
+trap 'rm -f "$db_env"' EXIT
+grep -E '^MYJOBBOT_DB_(HOST|PORT|USER|PASSWORD)=' .env > "$db_env" 2>/dev/null || true
+echo "MYJOBBOT_DB_NAME=myjobbot_test" >> "$db_env"
 BAD_LLM=(-e LLM_BASE_URL=not-a-url -e LLM_MODEL=m -e LLM_API_KEY=k)
 
 ok() { echo "ok - $1"; }
@@ -53,7 +60,7 @@ ok "schedule mode starts supercronic with SCHEDULE"
 expect_exit 1 "set MYJOBBOT_HOSTS" "serve refuses to start without MYJOBBOT_HOSTS" -v "$configured:/data" "$IMAGE" serve
 
 web="myjobbot-web-test-$$"
-docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" -e MYJOBBOT_HOSTS=127.0.0.1:18082 "$IMAGE" serve >/dev/null
+docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" --env-file "$db_env" -e MYJOBBOT_HOSTS=127.0.0.1:18082 "$IMAGE" serve >/dev/null
 page=""
 for _ in $(seq 1 60); do page=$(curl -s --max-time 30 http://127.0.0.1:18082/recommended || true); [ -n "$page" ] && break; sleep 1; done
 foreign=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H "Host: evil.example:18082" http://127.0.0.1:18082/recommended || true)

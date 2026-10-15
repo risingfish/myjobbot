@@ -3,11 +3,12 @@ import type { JobRowView, PageData, PageName, VerdictRowView } from "../src/web/
 import { loadPageData } from "../src/web/pageData.js";
 import { testFileConfig } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
-import { seededViews, type SeedJob } from "./helpers/views.js";
+import { seededStores, type SeedJob } from "./helpers/views.js";
 
 function pagesOf(jobs: SeedJob[], overrides: Parameters<typeof testFileConfig>[0] = {}) {
-    const input = { views: seededViews(jobs), config: testFileConfig(overrides), now: TEST_NOW };
-    return (name: PageName, offset = 0) => loadPageData(name, { ...input, page: { offset, limit: 100 } });
+    const views = seededStores(jobs).then((stores) => stores.jobViews);
+    const config = testFileConfig(overrides);
+    return async (name: PageName, offset = 0) => loadPageData(name, { views: await views, config, now: TEST_NOW, page: { offset, limit: 100 } });
 }
 
 function jobRows(data: PageData): JobRowView[] {
@@ -20,8 +21,8 @@ function verdictRows(data: PageData): VerdictRowView[] {
     return data.rows;
 }
 
-test("recommended holds jobs at or above the threshold, with their reasoning and publisher", () => {
-    const data = pagesOf([
+test("recommended holds jobs at or above the threshold, with their reasoning and publisher", async () => {
+    const data = await pagesOf([
         { id: "a", score: 90, publisher: "LinkedIn" },
         { id: "b", score: 40 },
     ])("recommended");
@@ -30,31 +31,31 @@ test("recommended holds jobs at or above the threshold, with their reasoning and
     expect(jobRows(data)[0]).toMatchObject({ reasons: ["reason a"], gaps: ["gap a"], via: "LinkedIn" });
 });
 
-test("title boosts lift a job over the threshold and report the model's own score", () => {
+test("title boosts lift a job over the threshold and report the model's own score", async () => {
     const jobs = [
         { id: "t", score: 65, title: "Senior TypeScript Engineer" },
         { id: "j", score: 65, title: "Senior Java Engineer" },
     ];
-    const rows = jobRows(pagesOf(jobs, { title_boosts: { typescript: 10 } })("recommended"));
+    const rows = jobRows(await pagesOf(jobs, { title_boosts: { typescript: 10 } })("recommended"));
     expect(rows.map((row) => row.title)).toEqual(["Senior TypeScript Engineer"]);
     expect(rows[0]?.score).toEqual({ value: 75, note: "model 65 · +10 typescript" });
 });
 
-test("excluded companies drop out of recommended and are marked in all jobs", () => {
+test("excluded companies drop out of recommended and are marked in all jobs", async () => {
     const page = pagesOf([{ id: "a", score: 90 }], { exclude_companies: ["acme"] });
-    expect(page("recommended")).toMatchObject({ total: 0, empty: "No recommendations yet: run myjobbot run." });
-    expect(jobRows(page("jobs"))[0]?.filterNote).toBe("hidden: excluded company");
+    expect(await page("recommended")).toMatchObject({ total: 0, empty: "No recommendations yet: run myjobbot run." });
+    expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden: excluded company");
 });
 
-test("scores carry the base and bonus breakdown, and boosts count matches in the description", () => {
+test("scores carry the base and bonus breakdown, and boosts count matches in the description", async () => {
     const job = { id: "b", score: 62, parts: { base: 32, bonus: 30 }, description: "Vue and TypeScript." };
     const page = pagesOf([job], { title_boosts: { typescript: 10 } });
-    expect(jobRows(page("recommended"))[0]?.score).toEqual({ value: 72, note: "base 32 + bonus 30 · model 62 · +10 typescript" });
-    expect(verdictRows(page("reasoning"))[0]?.score).toEqual({ value: 62, note: "base 32 + bonus 30" });
+    expect(jobRows(await page("recommended"))[0]?.score).toEqual({ value: 72, note: "base 32 + bonus 30 · model 62 · +10 typescript" });
+    expect(verdictRows(await page("reasoning"))[0]?.score).toEqual({ value: 62, note: "base 32 + bonus 30" });
 });
 
-test("all jobs lists every job and marks titles the filter hides", () => {
-    const data = pagesOf([
+test("all jobs lists every job and marks titles the filter hides", async () => {
+    const data = await pagesOf([
         { id: "a", score: 90 },
         { id: "e", title: "Account Executive" },
     ])("jobs");
@@ -63,9 +64,9 @@ test("all jobs lists every job and marks titles the filter hides", () => {
     expect(jobRows(data).find((row) => row.jobId === "a")?.filterNote).toBeNull();
 });
 
-test("only http and https postings carry a link", () => {
+test("only http and https postings carry a link", async () => {
     const rows = jobRows(
-        pagesOf([
+        await pagesOf([
             { id: "x", url: "javascript:alert(1)" },
             { id: "y", url: "https://example.com/y" },
         ])("jobs"),
@@ -74,15 +75,15 @@ test("only http and https postings carry a link", () => {
     expect(rows.find((row) => row.jobId === "y")?.url).toBe("https://example.com/y");
 });
 
-test("long-open postings are flagged as possible ghosts", () => {
-    const rows = jobRows(pagesOf([{ id: "g", score: 90, postedAt: "2026-06-01T00:00:00.000Z" }])("recommended"));
+test("long-open postings are flagged as possible ghosts", async () => {
+    const rows = jobRows(await pagesOf([{ id: "g", score: 90, postedAt: "2026-06-01T00:00:00.000Z" }])("recommended"));
     expect(rows[0]?.posted).toMatchObject({ date: "2026-06-01", ghost: true });
     expect(rows[0]?.posted.daysOpen).toBeGreaterThan(60);
 });
 
-test("pages hold 100 rows and say where the next page starts", () => {
+test("pages hold 100 rows and say where the next page starts", async () => {
     const page = pagesOf(Array.from({ length: 250 }, (_, index) => ({ id: String(index).padStart(3, "0") })));
-    const slices = [page("jobs"), page("jobs", 100), page("jobs", 200)];
+    const slices = [await page("jobs"), await page("jobs", 100), await page("jobs", 200)];
     expect(slices.map((data) => [data.rows.length, data.nextOffset, data.total])).toEqual([
         [100, 100, 250],
         [100, 200, 250],
@@ -90,8 +91,8 @@ test("pages hold 100 rows and say where the next page starts", () => {
     ]);
 });
 
-test("reasoning lists each verdict with its run and scoring time", () => {
-    const data = pagesOf([{ id: "a", score: 80 }])("reasoning");
+test("reasoning lists each verdict with its run and scoring time", async () => {
+    const data = await pagesOf([{ id: "a", score: 80 }])("reasoning");
     expect(data.summary).toBe("1 scoring decisions");
     expect(verdictRows(data)[0]).toMatchObject({ run: "run-1", scoredAt: "2026-10-02 00:00", title: "Software Engineer a", gaps: ["gap a"] });
 });

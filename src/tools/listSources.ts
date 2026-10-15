@@ -41,7 +41,7 @@ async function sourceStatus(context: ToolContext, source: Source) {
 async function fetchedStatus(context: ToolContext, source: Source, cached: Promise<FetchOutcome>) {
     try {
         const outcome = await cached;
-        return { ...describeSource(source), fetched: true, total_unscored: unscoredJobs(context, source.name, outcome).length };
+        return { ...describeSource(source), fetched: true, total_unscored: (await unscoredJobs(context, source.name, outcome)).length };
     } catch {
         return notFetched(context, source);
     }

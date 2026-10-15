@@ -22,17 +22,17 @@ export function fetchJobsTool(context: ToolContext): Tool {
 }
 
 /** Returns a source's jobs that still need scoring, filtered by the title and excluded-company config. */
-export function unscoredJobs(context: ToolContext, sourceName: string, outcome: FetchOutcome) {
+export async function unscoredJobs(context: ToolContext, sourceName: string, outcome: FetchOutcome) {
     const { store, config } = context;
-    const rows = outcome.seen === null ? store.unscoredForSource(sourceName) : store.unscoredSince(sourceName, outcome.seen);
+    const rows = outcome.seen === null ? await store.unscoredForSource(sourceName) : await store.unscoredSince(sourceName, outcome.seen);
     return rows.filter((row) => passesTitleFilter(row.title, config.title_filter) && !isExcludedCompany(row.company, config.exclude_companies));
 }
 
 /** Fetches a source, then builds the paginated fetch_jobs response of its unscored jobs. */
 async function jobPage(context: ToolContext, source: Source) {
     const outcome = await fetchOnce(context, source);
-    const unscored = unscoredJobs(context, source.name, outcome);
-    const jobs = unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row));
+    const unscored = await unscoredJobs(context, source.name, outcome);
+    const jobs = await Promise.all(unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row)));
     const page = { source: source.name, total_unscored: unscored.length, jobs };
     return source.kind === "search" ? { ...page, ...refreshFields(outcome) } : page;
 }
