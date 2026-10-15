@@ -612,6 +612,12 @@ S5 notes (2026-10-15):
 - **Generated types**: Next.js's stale types for the removed callback route (in `web/.next*`,
   gitignored) were deleted.
 
+Production repair (2026-10-15, owner-approved): the Docker stack, which runs this checkout, had
+applied the OAuth `002_gmail` to production `myjobbot` at 19:45 UTC, so the rewritten step never
+ran there ("Unknown column 'app_password'"). After a guarded check that both tables were
+OAuth-shaped and empty, `gmail_connect_requests` and `gmail_connection` were dropped and the
+`002_gmail` row deleted. `docker compose restart web` then applied the IMAP step (21:19 UTC).
+
 ### Sitting S6: docs, review, live check, PR (R009–R012)
 
 - [X] R009 Docs:
@@ -641,6 +647,10 @@ S5 notes (2026-10-15):
   - the quickstart's setup steps 1–3 and Manual steps 1–8
   - time Connect and Check now (each ≤ 5 s)
   - record the results in Notes, fixing anything found test-first
+  2026-10-15, owner on production (the stack runs this branch): Connect worked, and Check now
+  worked, showing the 3 latest LinkedIn alerts. The remaining steps are not yet run: restart
+  persistence, the wrong-password refusal, the count against Gmail's search, the leak search and
+  Disconnect.
 - [ ] R011 Close S6: both checks green; delete the marker; commit; push to update PR #11, and
   rewrite its description for IMAP.
 - [ ] R012 After the owner merges:
