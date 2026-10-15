@@ -436,7 +436,7 @@ run is refused, and an over-long row is reported with nothing written.
   owner-accepted 75/16/10.
 ### Sitting S7: switch-over, with the owner (T039)
 
-- [ ] T039 **Switch-over (with the owner, no run in progress, `docker:watch` stopped)**:
+- [X] T039 **Switch-over (with the owner, no run in progress, `docker:watch` stopped)**:
   1. `docker compose top myjobbot` is idle.
   2. **Snapshot the pages (SC-002)**: save
      `curl -s -H "Host: localhost:8080" localhost:8080/{recommended,jobs,reasoning}` to
@@ -457,6 +457,23 @@ run is refused, and an over-long row is reported with nothing written.
   9. Set `MYJOBBOT_DB_NAME=myjobbot` in `.env`; `docker compose up -d` (or restart `docker:watch`).
 
   The rollback is the previous `main` plus `docker:up`; the SQLite file is untouched.
+
+  Progress 2026-10-14: steps 1–4 done. The stack was idle. The "before" snapshots were taken with
+  `next dev` from a `main` worktree over a copy of the backup (stable across two takes: 37, 102
+  and 102 rows). The backup holds 772 jobs, 735 verdicts, 47 api_calls and 196 hidden. PR #8 is
+  open.
+
+  Done 2026-10-15:
+  - Step 5: the import printed `jobs 772, verdicts 735, api_calls 47, hidden 196`, the backup's
+    counts. `.env` was switched to `myjobbot` before `docker:up` (step 9 moved ahead of step 6),
+    because the containers read `.env` and the comparison needs production.
+  - Step 6: PR #8 was merged by the owner; `main` updated; `npm run docker:up`.
+  - Step 7: /reasoning was identical. /jobs and /recommended differed only in one job,
+    `jsearch/js_7a223961601b5840`, hidden after the import (197 hidden vs the copied 196), which
+    takes /recommended from 36 to 35. Every other row matched.
+  - Step 8: that hide shows Hide writing to MariaDB. `docker compose run --rm myjobbot run`
+    (run 38e355c6) finished and wrote 10 jobs, 6 verdicts and 2 api_calls to MariaDB. Its Boise
+    search hit a JSearch timeout, unrelated to storage.
 
 ---
 
