@@ -147,7 +147,7 @@ S1 notes (2026-10-15):
 
 ### Sitting S2: wrapping, docs and the browser check (T012–T015)
 
-- [ ] T012 [US3] In `web/app/styles.css`, add `.title-cell { overflow-wrap: anywhere;
+- [X] T012 [US3] In `web/app/styles.css`, add `.title-cell { overflow-wrap: anywhere;
   min-width: 16em }`. Also `.title-cell details ul { overflow-wrap: anywhere }` if the list
   doesn't inherit it. No test: CSS layout is checked in T014 (research R4).
 
@@ -155,15 +155,20 @@ S1 notes (2026-10-15):
 
 ## Phase 6: Polish, in sitting S2
 
-- [ ] T013 [P] In `README.md`, update any description of the job table's columns (Scored and the
+- [X] T013 [P] In `README.md`, update any description of the job table's columns (Scored and the
   score breakdown), if one exists. Grep for "Scored" and "breakdown".
-- [ ] T014 Run `quickstart.md`'s manual steps 1–8 with the owner's browser, or, without one,
+- [X] T014 Run `quickstart.md`'s manual steps 1–8 with the owner's browser, or, without one,
   `npm run web` plus a by-hand check of the console expression from step 1. Record the results in
   Notes. Restart the stack (`npm run docker:up`) only after the merge.
-- [ ] T015 Close S2: `npm run check` and `npm run check:db` green; delete the marker; commit
+- [X] T015 Close S2: `npm run check` and `npm run check:db` green; delete the marker; commit
   ("Wrap the title column (005 S2)"); with the owner's OK, push and open the PR.
 
 ---
+
+S2 notes (2026-10-15):
+- **Markup**: `npm run web` against the live database. Both pages have no Scored header, the
+  longest title link is 64 characters + "…", and every score with a breakdown carries its tooltip.
+- **Browser check**: the owner checked the pages in their browser and approved them ("it's good").
 
 ## Dependencies & Execution Order
 

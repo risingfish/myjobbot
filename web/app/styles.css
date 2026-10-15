@@ -110,6 +110,10 @@ footer {
 .score:focus .tip {
     display: block;
 }
+.title-cell {
+    min-width: 16em;
+    overflow-wrap: anywhere;
+}
 ul {
     margin: 4px 0;
     padding-left: 18px;
