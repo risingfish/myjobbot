@@ -69,11 +69,17 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   every table `utf8mb4_bin` (exact comparison, as SQLite was), and `SET NAMES utf8mb4` on every
   connection. To change the schema, add a numbered step `src/db/migrations/00N_name.ts`, list it in
   `src/db/migrations/index.ts`, update `src/db/schema.ts`, and add or adjust a case in
-  `tests/helpers/storeContract.ts` if the stores' behaviour changes. Steps run once per database,
+  the store's contract (`tests/helpers/storeContract.ts`, or a store's own file such as
+  `tests/helpers/gmailStoreContract.ts`) if its behaviour changes. Steps run once per database,
   even when the agent and the web app start together.
 - Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
   against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
   `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
+- Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006): IMAP with an app
+  password, through imapflow created with `logger: false` and mailboxes opened read-only. The app
+  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
+  database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
+  Never print `.env`, sealed columns or app passwords.
 
 ## Commands
 

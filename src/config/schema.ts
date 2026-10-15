@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_ALERT_SENDERS, isAlertSender } from "../gmail/alerts.js";
 import { ATS_NAMES } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import { isDomainEntry, isValidDomainEntry } from "../jobs/publisherDomain.js";
@@ -33,6 +34,10 @@ const jsearch = z.object({
     refresh_hours: z.number().min(1).default(24),
     date_posted: z.enum(["today", "3days", "7days", "30days"]).default("3days"),
     exclude_publishers: z.array(publisherTerm).default([]),
+});
+
+const gmail = z.object({
+    alert_senders: z.array(z.string().refine(isAlertSender, { error: (issue) => `'${String(issue.input)}' is not a valid alert sender; use an email address or a domain` })).default(DEFAULT_ALERT_SENDERS),
 });
 
 const titleFilter = z
@@ -72,6 +77,7 @@ export const fileConfigSchema = z
         title_boosts: z.record(filterTerm, z.number().int().min(1).max(100)).default({}),
         agent: agent.prefault({}),
         http: http.prefault({}),
+        gmail: gmail.prefault({}),
     })
     .refine(hasAtLeastOneSource, { message: "configure at least one company or search" })
     .refine(hasUniqueSourceNames, { message: "company and search names must be unique" })

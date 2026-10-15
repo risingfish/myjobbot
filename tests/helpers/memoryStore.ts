@@ -1,6 +1,7 @@
 import { jobRowSchema, jobViewSchema, toParams, verdictViewSchema } from "../../src/db/rows.js";
 import type { ApiCallLog, HiddenFlag, JobRow, JobStore, JobView, JobViews, Page, ScoreFilter, Stores, Verdict, VerdictStamp, VerdictView } from "../../src/db/store.js";
 import type { Job } from "../../src/jobs/job.js";
+import { MemoryGmailStore } from "./memoryGmailStore.js";
 
 type Row = Record<string, string | number | null>;
 
@@ -162,5 +163,5 @@ class MemoryApiCallLog implements ApiCallLog {
 export function memoryStores(): Stores {
     const tables: Tables = { jobs: [], verdicts: [], calls: [] };
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), close };
 }

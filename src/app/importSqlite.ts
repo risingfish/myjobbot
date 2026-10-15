@@ -5,7 +5,7 @@ import type { Database } from "../db/schema.js";
 import type { DbSettings } from "../db/settings.js";
 import { batches, compareCounts, oversizedValues, sampleIndexes } from "./importPlan.js";
 
-type Table = keyof Database;
+type Table = keyof Pick<Database, "jobs" | "verdicts" | "api_calls">;
 type Row = Record<string, unknown>;
 type Source = Record<Table, Row[]>;
 type Reader = Kysely<Database> | Transaction<Database>;

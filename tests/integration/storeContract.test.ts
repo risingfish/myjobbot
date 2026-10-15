@@ -3,6 +3,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { storesOver } from "../../src/db/kysely/stores.js";
 import type { Database } from "../../src/db/schema.js";
 import { makeJob } from "../../src/jobs/job.js";
+import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
 import { storeContract } from "../helpers/storeContract.js";
 import { connectTestDb, emptyTables } from "../helpers/testDb.js";
 
@@ -16,10 +17,13 @@ afterAll(async () => {
     if (db) await db.destroy();
 });
 
-storeContract(async () => {
+async function emptyStores() {
     await emptyTables(db);
     return { ...storesOver(db), close: async () => {} };
-});
+}
+
+storeContract(emptyStores);
+gmailStoreContract(emptyStores);
 
 const JOB = makeJob({ ats: "greenhouse", jobId: "race", company: "Acme", title: "Backend Engineer", url: "u" }, {});
 

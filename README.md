@@ -71,7 +71,7 @@ npm run web          # development server, http://localhost:8080
 npm run web:build && npm run web:start   # production build and server
 ```
 
-A Next.js app for browsing the database, with three tabs and a (for now empty) Settings page:
+A Next.js app for browsing the database, with three tabs and a Settings page (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
@@ -81,8 +81,8 @@ A Next.js app for browsing the database, with three tabs and a (for now empty) S
 
 Each job row has a **Hide** button. Hiding sets the job's `hidden` flag: it disappears from
 Recommended at once and stays hidden when the posting is fetched again. All jobs still lists it,
-dimmed, with an **Unhide** button. Hiding is the UI's only write; it accepts requests from its own
-pages only.
+dimmed, with an **Unhide** button. Hiding, and the Gmail panel on Settings, are the UI's only
+writes; they accept requests from its own pages only.
 
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
 bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
@@ -98,10 +98,39 @@ stops other websites reaching it through DNS tricks. By default that's `localhos
 `127.0.0.1` on `MYJOBBOT_PORT`. To open it from another machine, list every `host:port` you use
 in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:8080`.
 
+### Gmail
+
+Settings has a Gmail panel that connects your mailbox over IMAP with an app password, so a later
+feature can read LinkedIn and Indeed job-alert emails. For now it connects, checks and
+disconnects; runs don't read mail yet.
+
+One-time setup:
+1. **Turn on 2-step verification** for your Google account, if it isn't on already.
+2. **Create an app password** at https://myaccount.google.com/apppasswords (call it "myjobbot")
+   and keep the 16 letters Google shows.
+3. **Set the server key** in `.env`: `MYJOBBOT_SECRET_KEY=` followed by the output of
+   `openssl rand -base64 32`. It seals the app password in the database. If it changes, the panel
+   asks for the app password again. It takes effect after `docker compose up -d` (not `restart`)
+   or restarting `npm run web`.
+
+To connect, open Settings from any address, enter your Gmail address and the app password
+(spaces are fine), and press **Connect**. myjobbot signs in to `imap.gmail.com` first, and
+saves the pair only if that works. After that:
+- **Check now** counts the job-alert emails of the last 7 days in All Mail and lists the newest
+  five. It opens the mailbox read-only, so nothing is marked read, moved or deleted.
+- **Disconnect** forgets the address and app password. To revoke access, also delete the app
+  password at the same Google page.
+
+The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`. An app
+password gives full access to the mailbox (Google has no read-only kind), and myjobbot only ever
+reads it. The web UI has no login, so anyone on your LAN can connect or disconnect. The stored app
+password can't be read back through it.
+
 How it's built:
 - **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
-  server, so its first rows are in the HTML. Only scrolling and Hide run in the browser, and they
-  call server functions in `web/lib/actions.ts`.
+  server, so its first rows are in the HTML. Scrolling, Hide and the Gmail panel's buttons run in
+  the browser, and they call server functions in `web/lib/actions.ts` and
+  `web/lib/gmailActions.ts`.
 - **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
   the agent in `src/web/`, so the browser only lays them out.
 - **`myjobbot serve` is gone.** `myjobbot` only runs the agent; the UI is started with the npm
@@ -478,6 +507,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
 | `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
+| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert in the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error |
 
 ### Saved searches (JSearch)
 
