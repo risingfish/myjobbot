@@ -63,9 +63,29 @@ export interface ApiCallLog {
     pruneBefore(cutoff: string): Promise<void>;
 }
 
+export type GmailStatus = "none" | "connected" | "needs_reconnect";
+
+export interface GmailConnectionRow {
+    client_id: string | null;
+    client_secret: string | null;
+    credentials_saved_at: string | null;
+    refresh_token: string | null;
+    email: string | null;
+    connected_at: string | null;
+    status: GmailStatus;
+    reason: string | null;
+}
+
+export interface GmailStore {
+    connection(): Promise<GmailConnectionRow | null>;
+    saveCredentials(clientId: string, sealedSecret: string, at: string): Promise<void>;
+    clearCredentials(): Promise<void>;
+}
+
 export interface Stores {
     jobStore: JobStore;
     jobViews: JobViews;
     apiCalls: ApiCallLog;
+    gmail: GmailStore;
     close(): Promise<void>;
 }

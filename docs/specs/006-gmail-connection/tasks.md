@@ -64,23 +64,23 @@ That is the first slice of US1.
 
 Create `.specify/sitting-in-progress` naming S1 before T003.
 
-- [ ] T003 [P] **Unit**: write `tests/seal.test.ts` for `seal(value, field, key)` and
+- [X] T003 [P] **Unit**: write `tests/seal.test.ts` for `seal(value, field, key)` and
   `openSealed(sealed, field, key)` from `src/gmail/seal.ts` (research R4). 4 tests:
   - a round trip returns the value, and two seals of one value differ (random IV)
   - opening with another key throws `SealError` "key changed or data damaged", and the message
     never contains the value
   - opening under another field name throws (the AAD binds the field)
   - a tampered tag, and a string not starting with `v1.`, both throw
-- [ ] T004 [P] **Unit**: write `tests/secretKey.test.ts` for `secretKeyStatus(env)` from
+- [X] T004 [P] **Unit**: write `tests/secretKey.test.ts` for `secretKeyStatus(env)` from
   `src/gmail/secretKey.ts`. 1 test with 3 cases:
   - missing gives `{ status: "missing" }`
   - not base64 of 32 bytes gives `{ status: "invalid" }`, with the value nowhere in the result
   - valid gives `{ status: "ok", key }` with a 32-byte `Buffer`
-- [ ] T005 [P] **Unit**: write `tests/connectRequest.test.ts` with `isLoopbackHost` from
+- [X] T005 [P] **Unit**: write `tests/connectRequest.test.ts` with `isLoopbackHost` from
   `src/gmail/connectRequest.ts` (1 test): `localhost:8080` and `127.0.0.1:8080` are true;
   `192.168.1.20:8080`, `localhost.evil.com` and `localhost:8080.evil.com` are false. S2 adds the
   rest of this file's tests.
-- [ ] T006 [P] **Unit and integration (contract)**: write `tests/helpers/gmailStoreContract.ts`
+- [X] T006 [P] **Unit and integration (contract)**: write `tests/helpers/gmailStoreContract.ts`
   (`gmailStoreContract(make)`, with a `CASES` list like `storeContract.ts`). S1 adds only case 1:
   - saving credentials stores the client ID, the sealed secret and the time
   - saving again replaces both
@@ -89,7 +89,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   Call it from `tests/storeContract.test.ts` with the memory fake, and from
   `tests/integration/storeContract.test.ts` with MariaDB. Cases 2–4 come in S2 (T015) and case 5
   in S3 (T024).
-- [ ] T007 [P] **Unit**: write `tests/gmailPanel.test.ts` for
+- [X] T007 [P] **Unit**: write `tests/gmailPanel.test.ts` for
   `gmailPanelView(row, { keyStatus, keyChanged, host })` from `src/web/gmailPanel.ts`. The view
   carries `message` and `offers` (data-model.md), so these rules live in the view and the component
   only renders them. 3 tests:
@@ -102,7 +102,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     client secret again", `offers` is `["save"]`, and `canConnect` is false
 
   The view type has no field that can hold a secret.
-- [ ] T008 [P] **UI**: write `tests/client/gmailPanel.test.tsx`. Build the view with
+- [X] T008 [P] **UI**: write `tests/client/gmailPanel.test.tsx`. Build the view with
   `gmailPanelView` from a row whose `client_secret` is a real sealed value (no cast), render
   `GmailPanel`, and check:
   - the client ID and "secret saved" are shown
@@ -115,11 +115,11 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
   1 test. S2 and S3 each add one more test to this file (T019, T026). The shared rendering lives
   in a `renderPanel(row, options)` helper so each test stays under 20 lines.
-- [ ] T009 **UI**: update `tests/client/settings.test.tsx` for the async page. Mock
+- [X] T009 **UI**: update `tests/client/settings.test.tsx` for the async page. Mock
   `web/lib/uiState.js` (memory stores, a test key) and `next/headers.js` (host `localhost:8080`).
   Render `await SettingsPage({ searchParams: Promise.resolve({}) })` and expect 2 panels:
   Scoring, and Gmail. The test is changed in place.
-- [ ] T009a **Unit**: write `tests/gmailConnection.test.ts` (2 tests) for S1's services, against
+- [X] T009a **Unit**: write `tests/gmailConnection.test.ts` (2 tests) for S1's services, against
   the memory Gmail store:
   - `saveCredentials(deps, input, now)` stores a `v1.`-sealed secret that `openSealed` turns back
     into the input, and refuses a client ID or secret of length 0 or 256 without storing anything
@@ -130,14 +130,14 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
 #### Implementation
 
-- [ ] T010 Create the pure modules:
+- [X] T010 Create the pure modules:
   - `src/gmail/seal.ts`: AES-256-GCM, stored as `v1.<iv>.<ct>.<tag>` in base64url, with the
     field as the AAD, and `SealError`
   - `src/gmail/secretKey.ts`
   - `src/gmail/connectRequest.ts` with `isLoopbackHost` only
 
   T003–T005 pass.
-- [ ] T011 Write the schema step `src/db/migrations/002_gmail.ts` with the raw DDL, every table
+- [X] T011 Write the schema step `src/db/migrations/002_gmail.ts` with the raw DDL, every table
   `utf8mb4_bin` like `001_initial`:
   - `gmail_connection`: `id TINYINT PK`, `client_id VARCHAR(255) NULL`, `client_secret TEXT NULL`,
     `credentials_saved_at VARCHAR(32) NULL`, `refresh_token TEXT NULL`, `email VARCHAR(320) NULL`,
@@ -156,7 +156,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     `gmail_connection` before `gmail_connect_requests` (checked on the server), so the order is
     `api_calls`, `gmail_connection`, `gmail_connect_requests`, `jobs`, `verdicts`, each
     `utf8mb4_bin`.
-- [ ] T012 Add `GmailStore` to `src/db/store.ts` with only S1's methods (`connection`,
+- [X] T012 Add `GmailStore` to `src/db/store.ts` with only S1's methods (`connection`,
   `saveCredentials` and `clearCredentials`), and add `Stores.gmail`.
   - Implement `src/db/kysely/gmailStore.ts`. Row 1 uses `INSERT … ON DUPLICATE KEY UPDATE`.
   - Wire it in `src/db/kysely/stores.ts`.
@@ -165,7 +165,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     `tests/helpers/gmailStoreContract.ts`, because `storeContract.ts` is near the 200-line limit).
 
   T006 passes against both.
-- [ ] T013 Services, the view and the web layer:
+- [X] T013 Services, the view and the web layer:
   - **`src/gmail/connection.ts`**: `GmailDeps`, `saveCredentials(deps, { clientId, clientSecret },
     now)` (both 1–255 characters; it seals the secret), `clearCredentials(deps)`, and
     `keyChanged(deps, row)`. `keyChanged` returns true when the stored secret won't open with the
@@ -189,8 +189,19 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     that it takes effect after `docker compose up -d` or a dev-server restart.
 
   T007–T009a pass.
-- [ ] T014 Close S1: `npm run check` and `npm run check:db` green, and the ledger updated. Delete
+- [X] T014 Close S1: `npm run check` and `npm run check:db` green, and the ledger updated. Delete
   the marker and commit ("Store sealed Gmail credentials behind a Settings panel (006 S1)").
+
+S1 notes (2026-10-15):
+- **Results**: node 239 (+12), dom 28 (+1), integration 21 (+1), matching the ledger.
+- **Import command**: `src/app/importSqlite.ts` typed its tables as `keyof Database`, so it
+  narrowed to the three tables the import copies.
+- **Habit-hooks fixes**:
+  - `baseView` reads from an empty-row constant (complexity)
+  - `GmailPanel` was split into `CredentialChanges` (length)
+  - the view's helper types stopped being exported
+- **Docs and styles**: `.env.example` and CLAUDE.md's storage line were updated. No styles were
+  added; `web/app/styles.css` has the owner's uncommitted edits.
 
 ---
 

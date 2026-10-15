@@ -3,14 +3,17 @@ import { loadFileConfig } from "../../src/config/load.js";
 import type { FileConfig } from "../../src/config/schema.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
-import type { JobViews, Stores } from "../../src/db/store.js";
+import type { GmailStore, JobViews, Stores } from "../../src/db/store.js";
+import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 
 interface UiState {
     views: JobViews;
+    gmail: GmailStore;
+    key: SecretKeyStatus;
     config: FileConfig;
 }
 
-const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores> };
+const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
 
 /** Returns the data folder the web UI reads its config from, from MYJOBBOT_DATA_DIR. */
 function dataDir(): string {
@@ -42,7 +45,14 @@ function stores(): Promise<Stores> {
     return cache.__myjobbotStores;
 }
 
-/** Returns the database views and the freshly loaded file config for one request. */
+/** Returns the key that seals Gmail secrets, read once per process after the stores have loaded the root .env. */
+function secretKey(): SecretKeyStatus {
+    cache.__myjobbotKey ??= secretKeyStatus(process.env);
+    return cache.__myjobbotKey;
+}
+
+/** Returns the database views, the Gmail store, the sealing key and the freshly loaded file config for one request. */
 export async function getUiState(): Promise<UiState> {
-    return { views: (await stores()).jobViews, config: loadFileConfig(dataDir()) };
+    const opened = await stores();
+    return { views: opened.jobViews, gmail: opened.gmail, key: secretKey(), config: loadFileConfig(dataDir()) };
 }

@@ -55,8 +55,28 @@ interface ApiCallsTable {
     called_at: string;
 }
 
+interface GmailConnectionTable {
+    id: number;
+    client_id: Text;
+    client_secret: Text;
+    credentials_saved_at: Text;
+    refresh_token: Text;
+    email: Text;
+    connected_at: Text;
+    status: Generated<string>;
+    reason: Text;
+}
+
+interface GmailConnectRequestsTable {
+    state: string;
+    code_verifier: string;
+    created_at: string;
+}
+
 export interface Database {
     jobs: JobsTable;
     verdicts: VerdictsTable;
     api_calls: ApiCallsTable;
+    gmail_connection: GmailConnectionTable;
+    gmail_connect_requests: GmailConnectRequestsTable;
 }

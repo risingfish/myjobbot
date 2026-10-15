@@ -52,9 +52,9 @@ test("on an empty database, two processes migrating at once run each step once, 
     try {
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(first);
         const ran = await Promise.all([migrateToLatest(first), migrateToLatest(second)]);
-        expect(ran.flat()).toEqual(["001_initial"]);
+        expect(ran.flat()).toEqual(["001_initial", "002_gmail"]);
         expect(await migrateToLatest(first)).toEqual([]);
-        expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "jobs utf8mb4_bin", "verdicts utf8mb4_bin"]);
+        expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "gmail_connection utf8mb4_bin", "gmail_connect_requests utf8mb4_bin", "jobs utf8mb4_bin", "verdicts utf8mb4_bin"]);
     } finally {
         await Promise.all([first.destroy(), second.destroy()]);
     }
