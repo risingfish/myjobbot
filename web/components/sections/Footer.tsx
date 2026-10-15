@@ -1,9 +1,9 @@
 /** Renders the page footer naming the database shown and when the server answered. */
-export function Footer({ dbPath, renderedAt }: { dbPath: string; renderedAt: string }) {
+export function Footer({ database, renderedAt }: { database: string; renderedAt: string }) {
     return (
         <footer>
             <small>
-                {dbPath} · rendered {renderedAt}
+                {database} · rendered {renderedAt}
             </small>
         </footer>
     );

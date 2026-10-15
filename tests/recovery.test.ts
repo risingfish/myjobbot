@@ -7,7 +7,7 @@ import { chatThenCrash, scriptedChat, toolCallReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
-import { latestToolEvent } from "./helpers/trace.js";
+import { latestToolEvent } from "./helpers/traceFiles.js";
 
 function envFor(dataDir: string) {
     return { ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir };

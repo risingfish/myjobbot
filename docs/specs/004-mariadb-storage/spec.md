@@ -123,9 +123,10 @@ the biggest part of today's gap.
 
 **Acceptance Scenarios**:
 
-1. **Given** the finished feature, **When** tests are counted by kind, **Then** unit tests are at
-   least 80% of the suite, integration at most 10%, and UI at most 10%, with the plan saying how the
-   rest of the gap closes.
+1. **Given** the finished feature, **When** tests are counted by kind, **Then** the mix has moved
+   substantially toward 95/4/1, and what remains is named. The owner accepted **75% unit, 16%
+   integration, 10% UI** for this feature (2026-10-14), from 37/51/12; the remaining integration
+   tests are genuine: end-to-end runs, MariaDB, the CLI and the fake LLM server.
 2. **Given** an integration test, **When** it runs, **Then** it uses only the test database and
    starts from empty tables, so tests can run repeatedly, alongside the unit and UI tests.
 3. **Given** the test database is unreachable, **When** the check runs, **Then** unit and UI tests
@@ -207,8 +208,10 @@ the biggest part of today's gap.
   after the move.
 - **SC-003**: Pages show their first rows within 1 second with 1,000 jobs, and Hide responds within
   half a second, on the home network.
-- **SC-004**: At least 80% of tests are unit tests, at most 10% integration and at most 10% UI, and
-  the full check finishes no slower than today.
+- **SC-004**: The test mix reaches the accepted 75% unit, 16% integration, 10% UI (amended
+  2026-10-14, from at least 80/10/10). `npm run check` (typecheck, unit and UI tests, habit-hooks)
+  finishes no slower than today. The MariaDB integration tests run separately as
+  `npm run check:db`, required at the end of every sitting and before commits and PRs.
 - **SC-005**: Scheduled runs keep succeeding through the move, with no run lost and no extra paid
   search requests.
 - **SC-006**: The next schema change (for example a column rename) needs one new numbered step and

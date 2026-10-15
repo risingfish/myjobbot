@@ -7,7 +7,7 @@ import { scriptedChat, toolCallsReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
-import { readJsonl } from "./helpers/trace.js";
+import { readJsonl } from "./helpers/traceFiles.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

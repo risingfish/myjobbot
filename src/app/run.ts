@@ -6,7 +6,8 @@ import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
-import { openSqliteStores } from "../db/sqliteStores.js";
+import { openStores } from "../db/connect.js";
+import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
@@ -17,7 +18,7 @@ import { buildTools } from "../tools/registry.js";
 interface RunSeams {
     chat?: ChatFn;
     http?: JsonGetter;
-    openStores?: (config: AppConfig) => Promise<Stores>;
+    openStores?: () => Promise<Stores>;
 }
 
 interface RunParts {
@@ -43,7 +44,7 @@ const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 export async function runOnce(environment: Environment, seams: RunSeams = {}): Promise<RunReport> {
     const config = loadConfig(environment);
     const logs = openRunLogs(config);
-    const stores = await (seams.openStores ?? openDefaultStores)(config);
+    const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
         return await runWithStores(config, seams, { logs, stores });
     } finally {
@@ -58,11 +59,6 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
     await pruneOldJobs(context);
     return { ...result, runId: parts.logs.runId, summary: context.run.summary };
-}
-
-/** Opens the stores a run uses by default: the SQLite file in the data directory. */
-async function openDefaultStores(config: AppConfig): Promise<Stores> {
-    return openSqliteStores(join(config.dataDir, "myjobbot.db"));
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */

@@ -39,11 +39,11 @@ processes) or **UI**.
 
 Fill this in at the end of each phase:
 
-| Kind | Start | After S1 | After S2 | After S5 | Target (spec) |
+| Kind | Start | After S1 | After S2 | After S5 | Target (spec, amended) |
 |---|---|---|---|---|---|
-| Unit | 72 | 92 (37%) | | | ≥ 80% |
-| Integration | 135 | 128 (51%) | | | ≤ 10% |
-| UI | 29 | 29 (12%) | | | ≤ 10% |
+| Unit | 72 | 92 (37%) | 97 (38%) | 196 (75%) | 75% (accepted) |
+| Integration | 135 | 128 (51%) | 126 (50%) | 41 (16%) | 16% (accepted) |
+| UI | 29 | 29 (12%) | 29 (12%) | 26 (10%) | 10% |
 
 **How to count** (the same way every time):
 - **Tests**: lines matching `^\s*test\(` in `tests/**/*.test.ts(x)`, plus `test.each` rows. Compare
@@ -193,7 +193,7 @@ the seeded rows.
 
 #### Tests first
 
-- [ ] T013 [P] [US1] **Unit** `tests/dbSettings.test.ts`, for `parseDbSettings(env)` in
+- [X] T013 [P] [US1] **Unit** `tests/dbSettings.test.ts`, for `parseDbSettings(env)` in
   `src/db/settings.ts`:
   - **defaults**: port 3306, name `myjobbot`
   - **missing host, user or password**: the error names the variable
@@ -202,17 +202,17 @@ the seeded rows.
   - **`describeConnectionError(error, settings)`**: maps `ER_ACCESS_DENIED_ERROR` to "MariaDB at
     `<host>:<port>` rejected user `<user>`", and `ECONNREFUSED` / `ETIMEDOUT` / `EHOSTUNREACH` to
     "can't reach MariaDB at `<host>:<port>`"
-- [ ] T014 [P] [US1] **Unit** `tests/retry.test.ts`, for `withRetry(attempt, { tries: 3, delayMs:
+- [X] T014 [P] [US1] **Unit** `tests/retry.test.ts`, for `withRetry(attempt, { tries: 3, delayMs:
   10_000, sleep })` in `src/db/retry.ts`:
   - succeeds on try 2 after one failure
   - gives up after 3 tries with the last error
   - waits 10 s between tries (fake `sleep` records the delays)
-- [ ] T015 [P] [US1] **Integration** `tests/integration/migrate.test.ts`:
+- [X] T015 [P] [US1] **Integration** `tests/integration/migrate.test.ts`:
   - on empty tables, `migrateToLatest` runs `001_initial` once; running it again does nothing
   - `jobs`, `verdicts` and `api_calls` exist with collation `utf8mb4_bin`
   - `myjobbot` and `myjobbot_test` report the same default character set and collation, read from
     `information_schema.SCHEMATA`, which works because the account can read both
-- [ ] T016 [P] [US1] **Integration** `tests/integration/storeContract.test.ts`, which runs
+- [X] T016 [P] [US1] **Integration** `tests/integration/storeContract.test.ts`, which runs
   `storeContract` against the Kysely stores on `myjobbot_test` via `tests/helpers/testDb.ts`. Each
   case starts with `emptyTables()`.
 
@@ -220,17 +220,17 @@ the seeded rows.
   moment". On two separate pools, `setHidden` and `recordVerdict` for the same job run together
   (`Promise.all`, repeated 20 times with alternating order). Afterwards the job has both the new
   score and `hidden = 1`, and exactly one verdict per round.
-- [ ] T017 [P] [US1] **Unit** `tests/run.test.ts`, added to: `runOnce` with an injected
+- [X] T017 [P] [US1] **Unit** `tests/run.test.ts`, added to: `runOnce` with an injected
   `openStores` seam:
   - **unreachable server**: a seam that fails 3 times ends the run with the connection message,
     and no tool is called
   - **pool lifecycle**: `close` is called on success and on failure
-- [ ] T018 [P] [US1] **UI** `tests/client/footer.test.tsx`: renders the `database` prop, for
+- [X] T018 [P] [US1] **UI** `tests/client/footer.test.tsx`: renders the `database` prop, for
   example `myjobbot T0 192.168.3.10`.
 
 #### Implementation
 
-- [ ] T019 [US1] Install and configure:
+- [X] T019 [US1] Install and configure:
   - **Packages**: `npm install --save-exact kyselyT00.29.6 mysql2T03.24.6` (T002's approval). Check
     the lockfile: `T0next/swc-*` 8, `T0rolldown/binding-*` 15, `T0img/*` 28. Run `npm ls kysely
     mysql2` and confirm one version of each.
@@ -239,7 +239,7 @@ the seeded rows.
     `fileParallelism: false` and a 30 s timeout.
   - **`src/db/settings.ts`** (`parseDbSettings`, `describeConnectionError`; T013 passes) and
     **`src/db/retry.ts`** (`withRetry` with an injected `sleep`; T014 passes).
-- [ ] T020 [US1] Schema and Kysely stores:
+- [X] T020 [US1] Schema and Kysely stores:
   - **`src/db/schema.ts`**: the Kysely `Database` type, per data-model.md.
   - **`src/db/migrations/001_initial.ts`**: every table uses `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COLLATE=utf8mb4_bin`, with the data-model types:
@@ -262,7 +262,7 @@ the seeded rows.
     - **`earliestSeen`**: `LEAST(...)`
     - **counts**: `Number(...)` on BigInt results
     - **`verdictHistory`**: orders by `scored_at DESC, id DESC`
-- [ ] T021 [US1] `src/db/connect.ts` and the agent switch:
+- [X] T021 [US1] `src/db/connect.ts` and the agent switch:
   - **`openStores(settings, options)`**: builds a `mysql2` pool (`dateStrings: true`,
     `supportBigNumbers: true`, `connectionLimit: 4`, `connectTimeout: 3000`) and Kysely with
     `MysqlDialect` and an `onCreateConnection` hook running `SET NAMES utf8mb4 COLLATE
@@ -277,7 +277,7 @@ the seeded rows.
     non-`_test` names), `retry: { tries: 1 }` and `connectTimeout: 3000` (so an unreachable server
     fails each test in about 3 s), and provides `emptyTables()` (`DELETE FROM` on all three
     tables). It reads `.env` through `process.loadEnvFile` when it exists. T015 and T016 pass.
-- [ ] T022 [US1] Web switch: `web/lib/uiState.ts`:
+- [X] T022 [US1] Web switch: `web/lib/uiState.ts`:
   - **`getUiState()`** opens the stores once per server process, as a promise cached on
     `globalThis.__myjobbotStores`, cleared on failure so the next request retries. `retry: {
     tries: 1 }`, so a page fails fast to `error.tsx`.
@@ -285,7 +285,7 @@ the seeded rows.
 
   `web/app/layout.tsx` passes `dbLabel()` to `Footer`, whose prop becomes `database`. T018
   passes.
-- [ ] T023 [US1] Remove SQLite from normal use:
+- [X] T023 [US1] Remove SQLite from normal use:
   - **Delete** `src/db/jobStore.ts`, `jobViews.ts`, `apiCalls.ts` and `open.ts`, plus
     `tests/sqliteStoreContract.test.ts` (T005) and `tests/migration.test.ts`, which
     `tests/integration/migrate.test.ts` replaces.
@@ -294,14 +294,14 @@ the seeded rows.
   - **Close the sitting**: `npm run check` is green with no knip entries.
 ### Sitting S3: Docker (T024–T025; ends green)
 
-- [ ] T024 [US1] Docker: `compose.yaml` needs no changes, because `env_file` already supplies
+- [X] T024 [US1] Docker: `compose.yaml` needs no changes, because `env_file` already supplies
   `MYJOBBOT_DB_*`. Check that `tests/docker.sh` serve and run cases still pass when given
   `MYJOBBOT_DB_*` pointing at `myjobbot_test`. The script writes a temporary env file holding only
   the `MYJOBBOT_DB_*` lines from `.env`, plus `MYJOBBOT_DB_NAME=myjobbot_test`, using
   `grep '^MYJOBBOT_DB_'` and never printing it. It passes that file with `--env-file` and deletes
   it in an `EXIT` trap. So the script's deliberately bad `LLM_*` values still win, and the real
   `.env`'s LLM settings never reach the test containers.
-- [ ] T025 [US1] Fill in the ledger's "After S2" column.
+- [X] T025 [US1] Fill in the ledger's "After S2" column.
 **Checkpoint (MVP)**: the whole app runs on MariaDB in this checkout (stack still stopped); SQLite
 is unused.
 
@@ -316,7 +316,7 @@ run is refused, and an over-long row is reported with nothing written.
 
 ### Sitting S4: the importer and the manual check (T026–T030; ends green)
 
-- [ ] T026 [P] [US2] **Unit** `tests/importPlan.test.ts`, for the pure parts in
+- [X] T026 [P] [US2] **Unit** `tests/importPlan.test.ts`, for the pure parts in
   `src/app/importPlan.ts`:
   - **`oversizedValues(row, limits)`**: lists `table.column (length > limit)` using data-model's
     limits: `ats 32`, `job_id 255`, `company 255`, `source 255`, `title 500`, `normalized_title
@@ -324,14 +324,14 @@ run is refused, and an over-long row is reported with nothing written.
   - **`batches(rows, 500)`**
   - **`sampleIndexes(count, 50)`**: spread evenly and deterministic
   - **`compareCounts(expected, actual)`**: names any table that differs
-- [ ] T027 [P] [US2] **Integration** `tests/integration/importSqlite.test.ts`, against a small
+- [X] T027 [P] [US2] **Integration** `tests/integration/importSqlite.test.ts`, against a small
   seeded SQLite file in a temp folder:
   - **First import**: counts match, verdict `id`s equal the source `rowid`s, and a sample matches
     field by field.
   - **Second import**: refused ("target is not empty"), with nothing changed.
   - **A 600-character title**: refused with `jobs.title (600 > 500)` listed, and the target still
     empty.
-- [ ] T028 [US2] `src/app/importPlan.ts` (pure, T026 passes) and `src/app/importSqlite.ts`:
+- [X] T028 [US2] `src/app/importPlan.ts` (pure, T026 passes) and `src/app/importSqlite.ts`:
   1. opens the file with `new DatabaseSync(path, { readOnly: true })`
   2. reads `jobs`, `verdicts` (with `rowid`) and `api_calls`
   3. runs `oversizedValues` on every row
@@ -342,11 +342,11 @@ run is refused, and an over-long row is reported with nothing written.
 
   `src/cli.ts` gets `import-sqlite <path>` (usage `myjobbot run | import-sqlite <path>`); update
   `tests/cli.test.ts`. T027 passes.
-- [ ] T029 [US2] Run it on a backup copy of the real data into `myjobbot_test`, timing it and
+- [X] T029 [US2] Run it on a backup copy of the real data into `myjobbot_test`, timing it and
   recording the counts. Compare with `sqlite3 -readonly` counts: about 754 jobs, 720 verdicts, 45
   API calls and 196 hidden. Then empty the test tables.
 
-- [ ] T030 [US1] Manual check: `npm run web` (`.env` already names `myjobbot_test`), after seeding
+- [X] T030 [US1] Manual check: `npm run web` (`.env` already names `myjobbot_test`), after seeding
   `myjobbot_test` with the importer (T028) from a copy of `data/myjobbot.db`. The four pages
   render, and Hide works. Then empty the test tables. This closes S4.
 
@@ -356,14 +356,14 @@ run is refused, and an over-long row is reported with nothing written.
 
 ### Sitting S5: schema changes and test mix (T031–T035; ends green)
 
-- [ ] T031 [P] [US3] **Integration** `tests/integration/migrate.test.ts`, extended:
+- [X] T031 [P] [US3] **Integration** `tests/integration/migrate.test.ts`, extended:
   - **A rename keeps data**: a throwaway step list `[001_initial, 002_test_rename]`, where `002`
     renames `jobs.compensation` to `pay` and back, run on `myjobbot_test`. The value is kept.
     This uses its own migration table names (`test_kysely_migration…`), which are dropped
     afterwards.
   - **Two at once**: two concurrent `migrateToLatest` calls on separate pools run each step once
     (R5).
-- [ ] T032 [US3] Document how to add a step in `CLAUDE.md` (Conventions):
+- [X] T032 [US3] Document how to add a step in `CLAUDE.md` (Conventions):
   - add `src/db/migrations/00N_name.ts`
   - list it in `index.ts`
   - update `src/db/schema.ts`
@@ -373,16 +373,16 @@ run is refused, and an over-long row is reported with nothing written.
 
 ## Phase 6: User Story 4 - mostly fast, exact tests (Priority: P2)
 
-- [ ] T033 [P] [US4] `src/config/load.ts`: add a pure `parseFileConfig(text)` that
+- [X] T033 [P] [US4] `src/config/load.ts`: add a pure `parseFileConfig(text)` that
   `loadFileConfig` uses. Convert `tests/config.test.ts` so 21 of its 22 tests call
   `parseFileConfig` (**unit**, including invalid JSON, which is just text). Only the
   YAML-leftover test reads files (**integration**), because it is about which file exists.
   `loadConfig`'s own tests that need `resume.md` share one temp folder with that test.
-- [ ] T034 [P] [US4] Move load-more logic out of the UI tests: duplicate skipping and the
+- [X] T034 [P] [US4] Move load-more logic out of the UI tests: duplicate skipping and the
   stale-reply version checks in `tests/client/loadMore.test.tsx` become **unit** tests of
   `withMore`, `withoutJob` and `withJobHidden` in `tests/pageRows.test.ts`. Keep one scroll test
   and one Load more button test as **UI**.
-- [ ] T035 [US4] Recount the mix and fill in the ledger's "After S5" column. It must show at least
+- [X] T035 [US4] Recount the mix and fill in the ledger's "After S5" column. It must show at least
   80% unit, at most 10% integration and at most 10% UI (SC-004). If integration is over 10%,
   convert `tests/runIds.test.ts` and `tests/trace.test.ts` to in-memory writers before going on.
   Record what's left for 95/4/1 in Notes.
@@ -479,6 +479,85 @@ run is refused, and an over-long row is reported with nothing written.
     rules, because they import helpers that touch files when loaded (`helpers/dataDir.ts` makes
     a temp folder at import; `helpers/trace.ts` has a file reader). Splitting those helpers is
     S5's job (T035).
+- **S2 (T013–T023), green**: the app runs on MariaDB, and SQLite is gone from `src/`, `web/` and
+  `tests/` (`grep node:sqlite` finds nothing). `npm run check`: 256 tests, habit-hooks clean,
+  **13.33 s**; the integration project alone takes 4.9 s.
+  - **SC-004**: the check is slower than the 9.61 s baseline. T035 must deal with it.
+  - **Packages**: `kysely` 0.29.6 and `mysql2` 3.24.6, exact. The lockfile only added entries
+    (11), and still has swc 8, rolldown 15, img 28.
+  - **Integration, first run on MariaDB**: all 16 pass against `myjobbot_test`: the 13 contract
+    cases, the 20-round Hide-and-score race (both writes always land) and the 2 migrate tests.
+    `setHidden` with an unchanged value returns true on MariaDB too (mysql2 counts found rows).
+  - **Modules**:
+    - `src/db/database.ts` (pool, `SET NAMES`)
+    - `src/db/kysely/stores.ts` (`storesOver`)
+    - `src/db/connect.ts` (`openStores`: retry, migrate, close on failure)
+    - `src/db/settings.ts`, `src/db/retry.ts`, `src/db/migrate.ts`
+    - `src/db/migrations/001_initial.ts`
+    - `src/db/schema.ts`
+
+    `createDatabase` and `storesOver` live in their own modules because knip flagged them as
+    test-only exports of `connect.ts`.
+  - **`runOnce`**: `openStores` is now a no-argument seam. The default reads `MYJOBBOT_DB_*` from
+    the environment.
+  - **Web**: `getUiState()` is async and caches the open stores on `globalThis` (cleared on
+    failure). The footer shows `dbLabel()`.
+  - **Removed**: the SQLite verdict-backfill test, with `open.ts`.
+- **S3 (T024–T025), green**: `tests/docker.sh` passes all 10 checks. The `serve` container gets
+  only the `MYJOBBOT_DB_HOST/PORT/USER/PASSWORD` lines from `.env`, through a temporary env file
+  (removed on exit), with `MYJOBBOT_DB_NAME=myjobbot_test`, and renders pages from MariaDB.
+- **S4 (T026–T030), green**: `npm run check` passes, with 264 tests and habit-hooks clean.
+  - **The importer**: `myjobbot import-sqlite <path>` (`src/app/importSqlite.ts`, with the pure
+    `src/app/importPlan.ts`). Its 3 integration tests pass: a full copy that keeps verdict order
+    and exact text, a second run refused, and an over-long title stopping the copy before
+    anything is written. `connect.ts` gained `connectDatabase`, which `openStores` uses too.
+  - **Rehearsal (T029)** on a `.backup` copy of the live file into `myjobbot_test`: jobs 772,
+    verdicts 735, api_calls 47, hidden 196, matching the source exactly. It took **3.12 s**. A
+    second run was refused ("target is not empty"), with nothing changed.
+  - **Found at T030**: `npm run web` never read the root `.env`, because Next.js only loads
+    `web/.env`, so local pages had no database settings. Docker wasn't affected, since Compose
+    passes `.env` as environment variables. Fix: `web/lib/uiState.ts` loads the root `.env` (when
+    present, without overriding) before reading the settings, as `src/cli.ts` does.
+  - **Manual check (T030)**, `npm run web` on the imported copy: Recommended 36 (threshold 60),
+    All jobs 772, Reasoning 735, and the footer shows `myjobbot_test @ 192.168.3.10`. In headless
+    Chromium, Hide took 288 ms and stayed hidden after a reload (36 → 35), scrolling loaded all
+    772 rows, and there were no page errors. Test tables emptied afterwards.
+- **S5 (T031–T035)**: `npm run check` passes, with 267 tests and habit-hooks clean.
+  - **T031**: a throwaway step renamed `jobs.compensation` to `pay` and back, and the value
+    survived both. In a separate test, two migrators started at once on a freshly dropped
+    database ran `001_initial` exactly once (merged with the fresh-schema and collation checks to
+    save one schema rebuild).
+  - **T032**: `CLAUDE.md` explains how to add a schema step, the stores, and the new commands.
+  - **T033**: the config parsing moved to `src/config/parse.ts` (`appConfigFrom`,
+    `parseFileConfig`), with `load.ts` as a thin file reader. `config.test.ts` is now all unit;
+    `configFiles.test.ts` keeps 2 file tests.
+  - **Other helper splits**:
+    - `helpers/trace.ts` now holds only the in-memory trace; its file readers moved to
+      `helpers/traceFiles.ts`.
+    - Fixtures are imported as JSON modules (`resolveJsonModule`).
+    - The prompt tests use an in-memory `testAppConfig()`.
+  - **T034**: 3 load-more cases became unit tests of `web/lib/pageRows.ts`
+    (`tests/pageRows.test.ts`, 4 tests); 2 UI tests remain.
+  - **T035 (open: decisions needed)**:
+    - **Mix**: 75% unit, 16% integration, 10% UI. **Below the spec's at least 80% unit and at
+      most 10% integration.** The remaining 41 integration tests are mostly genuine: 10 through
+      `runOnce` (it reads config files and writes traces), 20 MariaDB, 2 CLI, 3 against the fake
+      LLM HTTP server, 3 walkthrough file checks, and a few file-trace tests.
+    - **Speed (SC-004)**: median of three `npm run check` runs is **15.47 s**, against the
+      **9.61 s** baseline (18.04 s before the schema-rebuild merge). By part: typecheck 3.2 s,
+      node 2.3 s, dom 0.5 s, integration 8.5 s, habit-hooks 1.3 s. The integration time is the
+      real server: dropping and recreating the schema about 2.5 s, the rename about 1.6 s, and
+      the contract and import about 4 s.
+    - **US4.3 check**: `MYJOBBOT_DB_HOST=192.0.2.1 npx vitest run` passes every `node` and `dom`
+      test. Every integration file fails with "can't reach MariaDB at 192.0.2.1:3306" (its tests
+      skipped), with no other error, after guarding `afterAll` when connecting fails.
+  - **Owner decisions (2026-10-14)**:
+    - The mix is accepted at 75/16/10 for this feature; spec US4.1 and SC-004 are amended.
+    - The MariaDB tests moved out of `npm run check` into `npm run check:db` (`test:db` runs the
+      `integration` project), required at every sitting's end and before commits and PRs.
+      Constitution v2.2.0 and `CLAUDE.md` say so.
+    - Result: `npm run check` median **7.41 s** (3 runs: 7.43, 7.41, 7.53), faster than the 9.61 s
+      baseline. `npm run check:db` takes 11.6 s for 20 tests.
 
 ## Dependencies & Execution Order
 

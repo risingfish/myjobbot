@@ -70,7 +70,34 @@ export const verdictViewSchema = z.object({
     source: text,
 });
 
-export type JobParams = Record<string, string | number | null>;
+type Text = string | null;
+
+type PostingFields = {
+    ats: string;
+    job_id: string;
+    company: string;
+    title: string;
+    normalized_title: string;
+    url: string;
+    posted_at: Text;
+    publisher: Text;
+};
+
+type DetailFields = {
+    location: Text;
+    department: Text;
+    team: Text;
+    workplace_type: Text;
+    is_remote: number | null;
+    compensation: Text;
+    description: Text;
+    requirements: Text;
+    skills: Text;
+    preferred_skills: Text;
+};
+
+export type JobFields = PostingFields & DetailFields & { source: string };
+export type JobParams = JobFields & { seen: string };
 
 /** Maps a job and fetch metadata to the named parameters an upsert stores. */
 export function toParams(job: Job, seen: string, source: string): JobParams {
@@ -78,7 +105,7 @@ export function toParams(job: Job, seen: string, source: string): JobParams {
 }
 
 /** Maps the fields that identify a posting and where it lives to their stored values. */
-function postingParams(job: Job): JobParams {
+function postingParams(job: Job): PostingFields {
     return {
         ats: job.ats,
         job_id: job.jobId,
@@ -92,7 +119,7 @@ function postingParams(job: Job): JobParams {
 }
 
 /** Maps the fields that describe the role itself to their stored values. */
-function detailParams(job: Job): JobParams {
+function detailParams(job: Job): DetailFields {
     return {
         location: job.location,
         department: job.department,

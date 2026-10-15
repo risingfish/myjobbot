@@ -1,11 +1,4 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { expect, test } from "vitest";
-import { SqliteJobStore } from "../src/db/jobStore.js";
-import { SqliteJobViews } from "../src/db/jobViews.js";
-import { openDatabase } from "../src/db/open.js";
-import { makeJob } from "../src/jobs/job.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
@@ -44,15 +37,4 @@ test("pruning a job removes its verdict history", async () => {
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10 }] });
     await context.store.pruneLastSeenBefore("2099-01-01T00:00:00.000Z");
     expect(await views.countVerdicts()).toBe(0);
-});
-
-test("openDatabase backfills verdict history from already-scored jobs", async () => {
-    const path = join(mkdtempSync(join(tmpdir(), "myjobbot-db-")), "jobs.db");
-    const db = openDatabase(path);
-    const job = makeJob({ ats: "lever", jobId: "old-1", company: "Acme", title: "Backend Engineer", url: "https://example.com/1" }, {});
-    await new SqliteJobStore(db).upsertAll([job], "2026-10-01T00:00:00.000Z", "Acme");
-    db.exec(`UPDATE jobs SET score = 70, reasons = '["fits"]', gaps = '[]', scored_at = '2026-10-01T01:00:00.000Z'`);
-    db.close();
-    const history = await new SqliteJobViews(openDatabase(path)).verdictHistory(FIRST_PAGE);
-    expect(history).toMatchObject([{ run_id: null, score: 70, reasons: ["fits"], gaps: [], title: "Backend Engineer" }]);
 });

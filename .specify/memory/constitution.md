@@ -26,8 +26,9 @@ Rationale: small, checked units keep an autonomous agent's code reviewable.
 ### II. Test-first, checked before done
 
 Tests MUST be written before the code they cover and MUST live in `tests/`. `npm run check`
-(typecheck, tests, habit-hooks) MUST pass before any sitting is called done. Within a sitting,
-each task runs the tests it touches.
+(typecheck, unit and UI tests, habit-hooks) and `npm run check:db` (the integration tests against
+the test database) MUST both pass before any sitting is called done, and before any commit or
+PR. Within a sitting, each task runs the tests it touches.
 
 New tests MUST keep the suite moving toward a mix, by count, of **95% unit, 4% integration and
 1% UI** (owner decision, 2026-10-14):
@@ -111,7 +112,8 @@ Rationale: one documentation root for the project.
 
   `/speckit-analyze` checks every sitting boundary against Principle I. The project's tasks
   template (`.specify/templates/overrides/tasks-template.md`) carries these rules.
-- `npm run check` is the gate before any sitting is called done (Principle II).
+- `npm run check` and `npm run check:db` are the gate before any sitting is called done
+  (Principle II).
 - habit-hooks output is a direct instruction from the owner, with the highest priority: each
   reported item becomes a task and is completed before other work continues.
 
@@ -123,4 +125,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 2.2.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14

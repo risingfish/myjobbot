@@ -1,10 +1,10 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { runOnce } from "../src/app/run.js";
 import { makeJob } from "../src/jobs/job.js";
 import { greenhouseBoard } from "./helpers/boards.js";
-import { scriptedChat, toolCallsReply } from "./helpers/chat.js";
+import { chatThenCrash, scriptedChat, toolCallsReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
@@ -37,4 +37,21 @@ test("runOnce prunes jobs not seen within job_retention_days", async () => {
     const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
     await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => stores });
     expect(await stores.jobViews.countAllJobs()).toBe(0);
+});
+
+test("an unreachable database ends the run with its reason before the model is asked anything", async () => {
+    const chat = vi.fn();
+    const openStores = async () => Promise.reject(new Error("can't reach MariaDB at 192.0.2.1:3306"));
+    const run = runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores });
+    await expect(run).rejects.toThrow("can't reach MariaDB at 192.0.2.1:3306");
+    expect(chat).not.toHaveBeenCalled();
+});
+
+test("the stores are closed after a finished run and after an aborted one", async () => {
+    for (const chat of [scriptedChat([toolCallsReply(["finish", { summary: "done" }])]).chat, chatThenCrash([], new Error("LLM down"))]) {
+        const stores = memoryStores();
+        const close = vi.spyOn(stores, "close");
+        await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => stores });
+        expect(close).toHaveBeenCalledOnce();
+    }
 });

@@ -65,10 +65,22 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - New dependencies: exact or `~` pins, installed via the lockfile; lockfile changes must not
   drop optional platform entries.
 - These rules are ratified in `.specify/memory/constitution.md`; keep the two in agreement.
+- Storage is MariaDB through Kysely (`src/db/`): typed queries checked against `src/db/schema.ts`,
+  every table `utf8mb4_bin` (exact comparison, as SQLite was), and `SET NAMES utf8mb4` on every
+  connection. To change the schema, add a numbered step `src/db/migrations/00N_name.ts`, list it in
+  `src/db/migrations/index.ts`, update `src/db/schema.ts`, and add or adjust a case in
+  `tests/helpers/storeContract.ts` if the stores' behaviour changes. Steps run once per database,
+  even when the agent and the web app start together.
+- Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
+  against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
+  `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
 
 ## Commands
 
-- `npm run check`: typecheck, tests, habit-hooks (run before claiming any task done)
-- `npm start -- run`: one agent run using `.env` and `data/`
+- `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
+- `npm run check:db`: the MariaDB integration tests against `myjobbot_test` (needs `.env`'s
+  `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
+- `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
+- `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

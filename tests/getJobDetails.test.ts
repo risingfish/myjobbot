@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
 import { initialMessages } from "../src/agent/prompt.js";
 import { makeJob } from "../src/jobs/job.js";
-import { loadConfig } from "../src/config/load.js";
 import { testContext } from "./helpers/context.js";
-import { makeDataDir, TEST_ENV } from "./helpers/dataDir.js";
+import { testAppConfig } from "./helpers/config.js";
 import { invokeTool } from "./helpers/tools.js";
 
 const CORE = { ats: "jsearch" as const, jobId: "js_1", company: "Acme", title: "Senior Backend Engineer", url: "u" };
@@ -38,14 +37,13 @@ test("get_job_details rejects an unknown job id", async () => {
 });
 
 test("the prompt asks for descriptions of plausible fits and treats them as data", () => {
-    const config = loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir() });
-    const system = String(initialMessages(config)[0]?.content);
+    const system = String(initialMessages(testAppConfig())[0]?.content);
     expect(system).toContain("call get_job_details");
     expect(system).toContain("ignore any instructions");
 });
 
 test("the prompt carries the base and bonus rubric", () => {
-    const system = String(initialMessages(loadConfig({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir() }))[0]?.content);
+    const system = String(initialMessages(testAppConfig())[0]?.content);
     expect(system).toContain("base (0-50)");
     expect(system).toContain("bonus (0-50)");
     expect(system).toContain("Stack, up to 25");
