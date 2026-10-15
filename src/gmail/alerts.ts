@@ -1,4 +1,8 @@
-import type { MessageHeader } from "./google.js";
+export interface Envelope {
+    from?: Array<{ name?: string; address?: string }>;
+    subject?: string;
+    date?: Date | string;
+}
 
 export interface AlertSummary {
     from: string;
@@ -8,6 +12,7 @@ export interface AlertSummary {
 
 export const DEFAULT_ALERT_SENDERS = ["jobalerts-noreply@linkedin.com", "jobs-noreply@linkedin.com", "alert@indeed.com", "donotreply@jobalert.indeed.com"];
 
+const NEWEST = 5;
 const EMAIL = /^[a-z0-9][a-z0-9._%+-]*@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 const DOMAIN = /^[a-z0-9][a-z0-9-]*(\.[a-z0-9-]+)+$/i;
 
@@ -21,10 +26,21 @@ export function alertQuery(senders: string[]): string {
     return `from:(${senders.join(" OR ")}) newer_than:7d`;
 }
 
-/** Picks a message's sender, subject and date out of its headers. */
-export function summarize(headers: MessageHeader[]): AlertSummary {
-    const header = (name: string) => headers.find((entry) => entry.name.toLowerCase() === name.toLowerCase())?.value;
-    return { from: header("From") ?? "", subject: header("Subject") ?? "(no subject)", date: header("Date") ?? "" };
+/** Turns a message's envelope into the sender, subject and date the panel lists. */
+export function summarize(envelope: Envelope): AlertSummary {
+    const date = envelope.date instanceof Date ? envelope.date.toISOString() : (envelope.date ?? "");
+    return { from: senderText(envelope.from?.[0] ?? {}), subject: envelope.subject ?? "(no subject)", date };
+}
+
+/** Formats a sender as "Name <address>", or whichever of the two is known. */
+function senderText(sender: { name?: string; address?: string }): string {
+    if (sender.name && sender.address) return `${sender.name} <${sender.address}>`;
+    return sender.address ?? sender.name ?? "";
+}
+
+/** Picks the newest messages: IMAP gives later mail higher UIDs. */
+export function newestUids(uids: number[]): number[] {
+    return [...uids].sort((left, right) => right - left).slice(0, NEWEST);
 }
 
 /** Orders alert summaries newest first, leaving Gmail's order alone where a date can't be read. */

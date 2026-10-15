@@ -66,34 +66,21 @@ export interface ApiCallLog {
 export type GmailStatus = "none" | "connected" | "needs_reconnect";
 
 export interface GmailConnectionRow {
-    client_id: string | null;
-    client_secret: string | null;
-    credentials_saved_at: string | null;
-    refresh_token: string | null;
     email: string | null;
+    app_password: string | null;
     connected_at: string | null;
     status: GmailStatus;
     reason: string | null;
 }
 
-export interface GmailGrant {
-    sealedToken: string;
+export interface GmailLogin {
     email: string;
-}
-
-export interface ConnectRequest {
-    sealedVerifier: string;
-    createdAt: string;
+    sealedPassword: string;
 }
 
 export interface GmailStore {
     connection(): Promise<GmailConnectionRow | null>;
-    saveCredentials(clientId: string, sealedSecret: string, at: string): Promise<void>;
-    clearCredentials(): Promise<void>;
-    connected(grant: GmailGrant, at: string): Promise<void>;
-    addConnectRequest(state: string, sealedVerifier: string, at: string): Promise<void>;
-    takeConnectRequest(state: string): Promise<ConnectRequest | null>;
-    pruneConnectRequests(before: string): Promise<void>;
+    connected(login: GmailLogin, at: string): Promise<void>;
     needsReconnect(reason: string): Promise<void>;
     disconnect(): Promise<void>;
 }

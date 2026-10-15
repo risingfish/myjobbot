@@ -1,143 +1,122 @@
 # Research: Gmail connection panel
 
-## R1. OAuth and Gmail client library (owner decision)
+Revised 2026-10-15: the owner switched from Google sign-in (OAuth) to a Gmail app password over
+IMAP, which needs no Google Cloud project. The OAuth version, sittings S1–S4, is in git history
+on this branch; R8 lists what the rework removes.
 
-- **Decision**: `google-auth-library@11.3.0`, exact pin. It is installed with the lockfile splice
-  (npm/cli#4828), keeping the 15 `@rolldown/binding-*` entries. We use only `OAuth2Client`:
-  - `generateAuthUrl` (`access_type: "offline"`, `prompt: "consent"`, PKCE S256)
-  - `getToken({ code, codeVerifier, redirect_uri })`
-  - `setCredentials({ refresh_token })`
-  - `request()` for Gmail REST calls, which refreshes the access token itself
-  - `revokeToken()`
-- **Rationale**: the owner chose it on 2026-10-15 from three options. It is Google's maintained
-  client, handles refresh and PKCE, and is much smaller than `googleapis`.
-- **Alternatives**:
-  - Plain `fetch` (recommended, not chosen): no dependency, about 150 lines of our own.
-  - `googleapis`: about 100 MB, far more than needed.
-- **Risk, dependencies**: it pulls in `gaxios`, `gcp-metadata` and `jws`. We never call the
-  metadata server (no ADC). The Next.js bundling of this package is checked in sitting S2 (as
-  mysql2 was in 004).
-- **Risk, error contents**: the library's HTTP errors (`GaxiosError`) carry the request config,
-  and for the token exchange that includes `client_secret`, `code` and `code_verifier`.
-  - Every call in `src/gmail/google.ts` therefore catches and rethrows `GoogleError(code)`. A
-    pure `googleErrorCode(err)` takes only the response body's string `error` field
-    (`invalid_grant`, `invalid_client`, `access_denied`, …). An HTTP 401 without one (Gmail's
-    `{ error: { code: 401 } }`) maps to `invalid_grant`, a network failure to `network`, and
-    anything else to `unknown`.
-  - Neither the original error nor its message is logged or rethrown.
+## R1. IMAP client library (owner decision)
 
-## R2. OAuth client type and redirect
+- **Decision**: `imapflow@2.3.0`, exact pin, MIT. Its own dependencies are exact pins too (pino,
+  libmime, libqp, libbase64, iconv-lite, encoding-japanese, socks, @zone-eu/mailsplit). It needs
+  Node ≥ 20 (we run 24).
+- **Why 2.3.0**: 2.4.3 was published the same day as the choice, 2.4.1 and 2.4.2 the day before.
+  2.3.0 (2026-10-08) is a week old, outside the riskiest window for a compromised release.
+- **Alternatives presented**:
+  - `imap` / `node-imap`: callback style, last released in 2022, floor-only transitive pins.
+  - Our own IMAP over `node:tls`: no dependency, but we'd own a parser for untrusted server
+    responses.
+- **Logging**: imapflow logs through pino by default, and its debug output can include protocol
+  lines. It is always created with `logger: false`, so nothing it sees reaches a log.
 
-- **Decision**: the owner creates a **Desktop app** OAuth client. The redirect URI is
-  `http://localhost:<port>/settings/gmail/callback` (or `127.0.0.1`), taken from the request's
-  host, and connecting is allowed only when that host is loopback.
-- **Rationale**: Google accepts loopback redirects on any port for Desktop clients without
-  registering them. Private LAN addresses are never accepted, so the panel must tell the owner to
-  connect through `localhost` (SSH tunnel `-L 8080:localhost:8080`).
-- **Note**: the loopback check is a usability guard, not a security control. It reads the `Host`
-  header, which a LAN client can set to `localhost:8080` (when `MYJOBBOT_HOSTS` lists it, as it must for the tunnel). Doing so
-  only connects whichever Google account *they* approve, which falls under the LAN risk the owner
-  accepted in the spec.
-- **Alternatives**:
-  - A "Web application" client: also works with a registered `http://localhost:8080/...`, but must
-    be registered exactly.
-  - The device flow: Gmail scopes aren't allowed in it.
+## R2. Reading the mailbox
 
-## R3. Scope
+- **Server**: `imap.gmail.com:993`, TLS (`secure: true`), `auth: { user, pass }`.
+- **Mailbox**:
+  - The folder with the special-use flag `\All` (Gmail's "All Mail", whose name depends on the
+    account's language), found with `list()`. Using it means alerts that were archived or
+    labelled still count.
+  - If no folder has `\All`, `INBOX` is used.
+  - It is opened with `getMailboxLock(path, { readOnly: true })` (IMAP `EXAMINE`), so nothing can
+    be flagged, moved or deleted.
+- **Search**: Gmail's own search through IMAP's `X-GM-RAW` (imapflow's `gmraw` key), with the same
+  query as the web search: `from:(a OR b …) newer_than:7d`. The search returns every matching UID
+  in one reply, so there is no paging; the count is its length (SC-004).
+- **Newest five**: the five highest UIDs, fetched with `envelope: true` (from, subject, date only;
+  no bodies), then ordered by date, newest first.
+- **Sign-out**: `logout()` in `finally`, so a failed check never leaves a session open.
 
-- **Decision**: `https://www.googleapis.com/auth/gmail.readonly` only.
-- **Where it lives**: in `authUrlOptions()` in `src/gmail/connectRequest.ts`, which is
-  unit-tested (FR-003). `authUrlOptions` returns the plain string `"S256"`. `google.ts` passes the result to
-  `generateAuthUrl`, swapping in the library's `CodeChallengeMethod.S256` enum, which is what its
-  types require; `connectRequest.ts` stays free of library imports.
-- **Rationale**: the narrowest scope that allows the `q` search. `gmail.metadata` forbids `q`. The
-  address comes from `users/me/profile` under the same scope, so `openid`/`email` aren't needed.
-- **Note**: `gmail.readonly` is a restricted scope. An unverified personal app works, with a
-  warning. In "Testing" status, refresh tokens expire after 7 days (spec assumption).
+## R3. Connecting is a verified sign-in
+
+- **Decision**: Connect signs in (connect, then logout) with the typed address and app password.
+  Only if that succeeds is the pair stored, sealed, with status `connected`. A failure stores
+  nothing.
+- **Spaces**: the app password has every space removed first, since Google displays it in groups
+  of four.
+- **Validation**: the address is 3–320 characters and must contain `@`; the app password, after
+  removing spaces, is 1–64 characters.
 
 ## R4. Sealing secrets
 
-- **Decision**: AES-256-GCM with `node:crypto`.
-  - The key comes from `MYJOBBOT_SECRET_KEY`: 32 bytes, base64. Generate it with
-    `openssl rand -base64 32`.
-  - The stored form is `v1.<base64url(iv 12 bytes)>.<base64url(ciphertext)>.<base64url(tag)>`.
-  - The AAD is the field's name (`client_secret`, `refresh_token`, `code_verifier`), so a sealed
-    value can't be moved to another field.
-  - If opening fails, it is reported as "key changed or data damaged", never with any part of the
-    value.
-- **Rationale**: built-in, authenticated, no dependency. GCM detects a wrong key.
-- **Alternatives**: libsodium (a new dependency); MariaDB `AES_ENCRYPT` (the key would travel in
-  SQL and could appear in the server's logs).
+- **Decision**: unchanged from the OAuth version. AES-256-GCM with `node:crypto`, key
+  `MYJOBBOT_SECRET_KEY` (32 bytes, base64), stored as `v1.<iv>.<ct>.<tag>`. The AAD is the field
+  name; the only sealed field is now `app_password`. Opening with the wrong key throws `SealError`,
+  which never includes the value.
 
-## R5. Connect request (state + PKCE)
+## R5. Errors from Gmail
 
-- **Decision**:
-  - `startConnect` creates `state` (32 random bytes, base64url) and a PKCE verifier. It stores
-    `{ state, sealed verifier, created_at }` and returns Google's URL.
-  - The callback route calls `takeConnectRequest(state)`, which reads it with `SELECT … FOR UPDATE`
-    and deletes it, in one transaction. A missing request, or one older than 10 minutes, is
-    refused.
-  - Requests older than 10 minutes are pruned on every start.
-- **Rationale**: single-use and time-boxed (FR-006). It works across tabs. The verifier never
-  leaves the server.
+- **Decision**: every IMAP call goes through `guarded()`, which rethrows `GmailError(code)`. The
+  code comes from a pure `imapErrorCode(err)`:
+  - `bad_login`: imapflow sets `authenticationFailed`
+  - `unreachable`: a network error code (`ECONNREFUSED`, `ENOTFOUND`, `ETIMEDOUT`,
+    `ECONNRESET`, `EAI_AGAIN`), or a connection that closed before sign-in
+  - `unknown`: anything else
+- **Why**: imapflow's errors carry `responseText` and the server's reply, which can echo the
+  username. Only the code ever leaves `src/gmail/`.
+- **Messages**:
+  - `bad_login`: "Gmail rejected the address or app password."
+  - `unreachable`: "Gmail couldn't be reached; try again."
+  - `unknown`: "Gmail sign-in failed; try again."
 
-## R6. "Check now" counting
-
-- **Decision**:
-  - The query is `from:(a OR b OR …) newer_than:7d`, built from `gmail.alert_senders`. Senders are
-    validated as email addresses or domains, and quotes are refused.
-  - The count comes from paging `users/me/messages?q=…&maxResults=500` (ids only) until there is
-    no `nextPageToken`. `resultSizeEstimate` isn't used, because it's an estimate (SC-004).
-  - The newest 5 are fetched with `format=metadata&metadataHeaders=From,Subject,Date`.
-- **Default senders**: `jobalerts-noreply@linkedin.com`, `jobs-noreply@linkedin.com`,
-  `alert@indeed.com`, `donotreply@jobalert.indeed.com`.
-
-## R7. Connection state transitions
+## R6. Connection state transitions
 
 | From | Event | To |
 |---|---|---|
-| none / needs_reconnect | callback succeeds | connected |
-| connected | Google returns `invalid_grant` (including a 401) | needs_reconnect (reason: revoked or expired; the sealed token is kept so a later disconnect can still try to revoke) |
-| connected / needs_reconnect | key can't open the sealed token | needs_reconnect (reason: server key changed) |
-| any | disconnect | none (token deleted; revoke attempted, and skipped when the token won't open) |
-| any | clear credentials | none (disconnect first whenever a token is stored, then credentials deleted) |
-| any | replace credentials | none (disconnect first whenever a token is stored, then the new credentials saved) |
-| any (key set) | the stored client secret won't open (checked on every Settings load) | key_changed in the view; the owner enters the secret again |
+| none / needs_reconnect | Connect with a working pair | connected (new address and password, `connected_at` now) |
+| any | Connect with a pair Gmail rejects or can't check | unchanged (nothing stored) |
+| connected | Check now and Gmail rejects the password | needs_reconnect (reason "app password rejected; create a new one") |
+| connected | the stored password won't open (checked on every Settings load and on Check now) | key_changed in the view; on Check now, needs_reconnect (reason "server key changed") |
+| any | Disconnect | none (address and password deleted) |
 
-## R8. Where the web layer calls it
+## R7. Schema and rollback
 
-- **Decision**:
-  - Server actions in `web/lib/gmailActions.ts` call `src/gmail/connection.ts` with the cached
-    stores from `uiState`.
-  - `startConnect` returns the URL, and the action calls `redirect(url)`.
-  - The callback is a route handler (`GET /settings/gmail/callback`) that redirects to
-    `/settings?gmail=<outcome>`. The outcome is one of `connected`, `denied`, `refused`,
-    `bad_client`, `key_changed` or `failed`; it is a code, never a message from Google.
-- **Plain messages**: the panel maps each code to a fixed phrase:
-  - `connected`: "Connected."
-  - `denied`: "Access was not granted."
-  - `refused`: "That sign-in link expired or was already used; try again."
-  - `bad_client`: "Google rejected the client ID or secret."
-  - `failed`: "Google sign-in failed; try again."
-  - `key_changed`: "Server key changed; enter the client secret again."
-  - `key_not_set`: "Set MYJOBBOT_SECRET_KEY first."
-  - `not_loopback`: "Open Settings at http://localhost:8080 to connect."
-  - `no_credentials`: "Save the client ID and secret first."
+- **Rewriting the step**: `002_gmail` never reached production, so it is rewritten in place:
+  one table, `gmail_connection`. `myjobbot_test` ran the OAuth version, so S5 resets it by
+  dropping `gmail_connection`, `gmail_connect_requests` and the `002_gmail` row in
+  `kysely_migration`. The migrate test then recreates it.
+- **Rollback after the merge**: as before. A plain revert fails at startup with Kysely's
+  "corrupted migrations: previously executed migration 002_gmail is missing". Either keep
+  `002_gmail.ts` and its `index.ts` entry, or delete its `kysely_migration` row and run
+  `DROP TABLE gmail_connection`.
 
-  The last three come from `connectGmail` refusing before Google is involved. It's a plain form
-  action with no return value to show, so it redirects with a code like the callback does.
+## R8. What the rework removes
 
-  `bad_client` comes from `invalid_client` / `unauthorized_client`.
-- **Rationale**: matches the existing actions pattern; no client JavaScript holds secrets.
+- the `google-auth-library` dependency
+- `src/gmail/google.ts`, `src/gmail/googleErrors.ts`, `src/gmail/access.ts` and
+  `src/gmail/connectRequest.ts` (PKCE, the loopback check)
+- `web/lib/gmailConnect.ts`
+- the callback route `web/app/settings/gmail/callback/route.ts` and its `knip.json` entry
+- `src/web/gmailOutcomes.ts`, the `?gmail=` codes
+- the `gmail_connect_requests` table
+- the client-ID fields
 
-## R9. Rollback and the schema step
+The SSH tunnel is no longer needed: IMAP works from any address.
 
-- **Finding** (checked in `node_modules/kysely/dist/migration/migrator.js`): the migrator throws
-  `corrupted migrations: previously executed migration 002_gmail is missing` when the database
-  records a step the code doesn't have. Reverting the merge alone would therefore stop both the
-  agent and the web app from starting.
-- **Decision**: there are two ways to roll back:
-  - Revert the code but keep `src/db/migrations/002_gmail.ts` and its `index.ts` entry. The
-    tables are harmless.
-  - Or revert everything, then run `DELETE FROM kysely_migration WHERE name = '002_gmail'` and
-    `DROP TABLE gmail_connect_requests, gmail_connection` on `myjobbot`.
+## R9. Web layer
+
+- **Actions** (`web/lib/gmailActions.ts`):
+  - `connectGmail(previous, form)`: `useActionState`; verifies, then saves, and returns
+    `{ ok, error }`.
+  - `checkGmail()`: the count and the newest five, or a reason.
+  - `disconnectGmail()`.
+
+  Every action first refuses unless the key status is ok.
+- **Panel**: a server component that renders the view's `message` and `offers`, with client
+  components for the form (`ConnectForm.tsx`), Check now (`CheckNow.tsx`) and Disconnect
+  (`DisconnectButton.tsx`).
+
+## R10. Default alert senders
+
+`jobalerts-noreply@linkedin.com`, `jobs-noreply@linkedin.com`, `alert@indeed.com` and
+`donotreply@jobalert.indeed.com`, in `config.json` under `gmail.alert_senders`. Each entry must be
+an email address or a domain (no quotes, spaces, brackets or leading `-`), so it can't change the
+meaning of the search.

@@ -1,20 +1,26 @@
 # Implementation Plan: Gmail connection panel
 
-**Branch**: `006-gmail-connection` | **Date**: 2026-10-15 | **Spec**: [spec.md](spec.md)
+**Branch**: `006-gmail-connection` | **Date**: 2026-10-15 (revised the same day for IMAP) | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `docs/specs/006-gmail-connection/spec.md`
 
 ## Summary
 
-Add a Gmail panel to Settings. The owner saves a Google OAuth client (ID and secret), connects
-through Google's consent screen (authorization code + PKCE, `gmail.readonly`), and the panel shows
-the connected address. "Check now" counts job-alert emails from the last 7 days, and "Disconnect"
-revokes. Secrets are sealed with AES-256-GCM under `MYJOBBOT_SECRET_KEY` from `.env` and stored in
-MariaDB through a new `GmailStore`. OAuth runs through **google-auth-library 11.3.0**
-(owner-approved 2026-10-15, exact pin). Decisions (sealing, request validation, query building,
-message summaries, state transitions, the panel's view) are plain functions with unit tests. The
-Google client sits behind a small interface with a fake in tests. The agent and scheduled runs
-don't change.
+Settings gets a Gmail panel. The owner enters their Gmail address and an app password and
+presses Connect; myjobbot signs in to `imap.gmail.com` over TLS to prove the pair works, then
+stores it with the password sealed (AES-256-GCM under `MYJOBBOT_SECRET_KEY`) in MariaDB.
+
+- **Check now**: opens All Mail read-only, runs Gmail's own search (`X-GM-RAW`) for the
+  configured alert senders over 7 days, and reports the count and the newest five envelopes.
+- **Disconnect**: forgets the pair and points the owner to Google's app-passwords page.
+- **IMAP library**: imapflow 2.3.0 (owner-approved, exact pin, `logger: false`).
+- **Shape of the code**: decisions live in plain functions with unit tests, and IMAP sits behind
+  a small interface with a fake.
+- **Agent**: unchanged.
+
+This revision replaces the Google sign-in version built in S1–S4 (research R8 lists what goes).
+The encryption, the store pattern, the panel view, the alert senders and the Check now design
+carry over.
 
 ## Technical Context
 
@@ -22,30 +28,30 @@ don't change.
 
 **Primary Dependencies**:
 - Existing: Next.js 16, React 19, Kysely 0.29.6, mysql2 3.24.6, zod
-- **New**: `google-auth-library@11.3.0`, exact pin, in the lockfile. It processes untrusted input
-  (Google's responses); we use only `OAuth2Client`.
+- **New**: `imapflow@2.3.0`, exact pin, in the lockfile. It processes untrusted input (IMAP
+  server replies).
+- **Removed**: `google-auth-library`.
 
-**Storage**: MariaDB. Migration step `002_gmail` adds `gmail_connection` (one row) and
-`gmail_connect_requests`.
+**Storage**: MariaDB. Migration step `002_gmail` (rewritten, never applied to production) creates
+`gmail_connection`.
 
 **Testing**: vitest. Unit (`node`), UI (`dom`), integration (`integration`, `myjobbot_test`).
 
-**Target Platform**: the web container (Next.js dev server) on the owner's server, reached over
-the LAN; connecting is done through `localhost` (an SSH tunnel).
+**Target Platform**: the web container (Next.js dev server) on the owner's server. IMAP is
+reached from the server, so Settings works from any LAN address.
 
 **Project Type**: web UI plus a shared library in `src/`
 
-**Performance Goals**: "Check now" within 5 s for ≤ 500 alert emails in 7 days. The panel
-renders with Settings in under 1 s.
+**Performance Goals**: Connect (one sign-in) and Check now each within 5 s on the owner's mailbox.
 
 **Constraints**:
-- No secret reaches the browser, logs, traces or errors (FR-005, SC-003).
-- The redirect URI must be loopback.
+- The app password never reaches the browser, logs, traces or errors (FR-005, SC-003).
+- Mail is opened read-only (FR-003).
 - Habit-hooks limits.
 - `src/` must not import `web/` or `next`.
 
-**Scale/Scope**: one owner, one connection; about 8 new modules, 1 migration, 1 route, 5 server
-actions
+**Scale/Scope**: one owner, one connection. About 6 modules change, 4 are removed, and there are
+3 server actions and no route.
 
 ## Constitution Check
 
@@ -53,39 +59,30 @@ actions
 
 | Principle | Status |
 |---|---|
-| I. Habit-hooks clean at every sitting boundary | Pass: decisions split into small pure modules; each sitting wires what it builds (see tasks) |
-| II. Test-first; `check` and `check:db` | Pass: split below; the store contract grows by 5 cases and runs against the fake and MariaDB |
+| I. Habit-hooks clean at every sitting boundary | Pass: each sitting wires what it builds; removed modules leave with their last caller |
+| II. Test-first; `check` and `check:db` | Pass: split below; the Gmail store contract is rewritten for the new methods |
 | III. Purpose comments only | Pass |
-| IV. Bounded, locked dependencies | Pass: `google-auth-library` owner-approved after the options were presented (fetch-only, google-auth-library, googleapis); pinned exactly `11.3.0`, installed via the lockfile with optional platform entries kept |
+| IV. Bounded, locked dependencies | Pass: imapflow owner-approved after the options were presented (imapflow, imap/node-imap, no library); pinned exactly to `2.3.0`, a week old rather than the day-old 2.4.3; installed via the lockfile with the optional platform entries kept. google-auth-library is uninstalled |
 | V. Specs live in `docs/specs` | Pass |
-| Storage rules (CLAUDE.md) | Pass: numbered step `002_gmail.ts`, listed in `migrations/index.ts`, `schema.ts` updated, contract cases added in a new per-store file `tests/helpers/gmailStoreContract.ts` (`storeContract.ts` is at 181 of 200 lines; CLAUDE.md updated in T029 to allow a contract file per store), `utf8mb4_bin` |
-| Workflow: sittings, main checkout, Docker stopped | Pass: S0 stops the stack (production; scheduled runs pause until merge) |
+| Storage rules (CLAUDE.md) | Pass: step `002_gmail.ts` rewritten before reaching production (research R7), `schema.ts` updated, contract cases in `tests/helpers/gmailStoreContract.ts`, `utf8mb4_bin` |
+| Workflow: sittings, main checkout, Docker stopped | Pass: the stack stays stopped until the merge |
 
-Rollback has a catch: reverting the code alone fails at startup, so either keep the `002_gmail`
-step file or remove its migration record (research R9).
+**Tests after the rework (Principle II)**, measured in each sitting against the S4 counts (node
+258, dom 31, integration 25):
+- **Removed**: the OAuth tests. That is connect request (5), Google errors (1), the
+  start/finish connection tests (3) and contract cases for requests (2). The OAuth UI assertions
+  are rewritten in place.
+- **Added (unit)**:
+  - IMAP error codes: 1
+  - connect, verify then save: 2
+  - check with the fake IMAP: 2
+  - disconnect: 1
+  - panel view, rewritten in place: 0 net
+- **Contract**: 3 cases instead of 5, each run on the memory fake (unit) and on MariaDB
+  (integration).
+- **UI**: the panel file keeps one test per story, rewritten in place.
 
-**New tests' split (Principle II)**, matching the ledger in tasks.md:
-- **Unit**: 26.
-  - sealing: 4
-  - settings key: 1
-  - loopback: 1
-  - panel view: 3
-  - connect request (state and PKCE, redirect, expiry, auth URL options): 4
-  - Google error codes: 1
-  - connection service: 8 (S1: save, key changed; S2: start, finish, outcomes; S3: check, check
-    failures, disconnect)
-  - alert query and summaries: 4
-- **Contract**: 5 cases, which count once as unit (memory fake) and once as integration
-  (MariaDB). The migration test's two assertions are updated in place.
-- **UI**: 3 new tests in the panel's file (one per sitting). The settings page test is updated in
-  place.
-
-That is 31 unit, 5 integration and 3 UI, ending at 258 / 25 / 30. The mix holds steady rather
-than moving toward the target: unit stays at about 82.8%, and integration rises from 7.3% to
-8.0%, because each contract case also runs on MariaDB (the project's contract rule).
-
-**Signatures**: each service function takes `GmailDeps` first (data-model.md), which keeps it
-within eslint's `max-params: 3`.
+The ledger in tasks.md records the actual counts.
 
 Post-design re-check: pass. No Complexity Tracking needed.
 
@@ -96,48 +93,44 @@ Post-design re-check: pass. No Complexity Tracking needed.
 ```text
 docs/specs/006-gmail-connection/
 ├── plan.md  research.md  data-model.md  quickstart.md
-├── contracts/gmail-panel.md   # panel states, actions, callback route
+├── contracts/gmail-panel.md   # panel states and actions
 ├── checklists/requirements.md
-└── tasks.md                   # /speckit-tasks
+└── tasks.md
 ```
 
 ### Source Code (repository root)
 
 ```text
 src/gmail/
-├── seal.ts          # seal/open with AES-256-GCM, key from MYJOBBOT_SECRET_KEY (pure, node:crypto)
-├── secretKey.ts     # key status: missing / invalid / ok; never exposes the value
-├── connectRequest.ts# loopback check, state + PKCE, auth URL options, callback validation (pure)
-├── googleErrors.ts  # library error → fixed code; GoogleError never carries request data
-├── alerts.ts        # Gmail search query from sender list; message header → summary (pure)
-├── google.ts        # GoogleApi interface + the google-auth-library implementation
-├── check.ts         # Check now: paging the ids, the newest five's headers (S3)
-└── connection.ts    # GmailDeps; saveCredentials, clearCredentials, keyChanged, startConnect,
-                     # finishConnect, disconnect
+├── seal.ts          # AES-256-GCM seal/open, field app_password (kept)
+├── secretKey.ts     # key status: missing / invalid / ok (kept)
+├── imapErrors.ts    # imapflow error → fixed code; GmailError; guarded() (new)
+├── imap.ts          # ImapApi interface + the imapflow implementation (logger off, read-only) (new)
+├── alerts.ts        # Gmail query from the sender list; envelope → summary; newest first (kept)
+├── check.ts         # Check now (rewritten for ImapApi)
+└── connection.ts    # GmailDeps; connect (verify, then save), keyChanged, disconnect (rewritten)
+   removed: google.ts, googleErrors.ts, access.ts, connectRequest.ts
 src/db/
-├── migrations/002_gmail.ts, migrations/index.ts, schema.ts
-├── store.ts         # + GmailStore interface, Stores.gmail
+├── migrations/002_gmail.ts (rewritten), schema.ts
+├── store.ts         # GmailStore: connection, connected, needsReconnect, disconnect
 └── kysely/gmailStore.ts
-src/web/gmailPanel.ts  # connection row + env → panel view (pure)
-src/config/schema.ts   # + gmail.alert_senders (defaults: LinkedIn and Indeed alert senders)
-web/app/settings/page.tsx                 # renders <GmailPanel>
-web/app/settings/gmail/callback/route.ts  # GET: finishes the connection, redirects to /settings
-web/components/settings/GmailPanel.tsx    # server component: renders the view's message and offers
-web/components/settings/CredentialsForm.tsx  # client ID and secret fields, Save
-web/components/settings/CheckNow.tsx      # "use client": Check now with useTransition (S3)
-web/components/settings/DisconnectButton.tsx # "use client": window.confirm, then the action (S3)
-web/lib/gmailActions.ts                   # server actions
+src/web/gmailPanel.ts          # row + key → panel view (rewritten); gmailOutcomes.ts removed
+src/config/schema.ts           # gmail.alert_senders (kept)
+web/app/settings/page.tsx      # renders <GmailPanel>; no searchParams
+web/components/settings/GmailPanel.tsx, ConnectForm.tsx (was CredentialsForm.tsx), CheckNow.tsx,
+                        DisconnectButton.tsx
+web/lib/gmailActions.ts, gmailDeps.ts, uiState.ts
+   removed: web/lib/gmailConnect.ts, web/app/settings/gmail/callback/route.ts
 tests/
-├── seal.test.ts, secretKey.test.ts, connectRequest.test.ts, googleErrors.test.ts,
-│   gmailAlerts.test.ts, gmailConnection.test.ts, gmailPanel.test.ts      (unit)
-├── storeContract.test.ts                    (runs the Gmail contract on the fake)
-├── helpers/gmailStoreContract.ts, helpers/memoryGmailStore.ts, helpers/fakeGoogle.ts,
-│   helpers/memoryStore.ts, helpers/testDb.ts (TABLES)
+├── seal.test.ts, secretKey.test.ts, gmailAlerts.test.ts, imapErrors.test.ts (new),
+│   gmailConnection.test.ts (rewritten), gmailPanel.test.ts (rewritten)          (unit)
+├── helpers/fakeImap.ts (replaces fakeGoogle.ts), gmailStoreContract.ts, memoryGmailStore.ts,
+│   gmailRows.ts, testDb.ts (TABLES)
 ├── integration/storeContract.test.ts, integration/migrate.test.ts (updated)
-├── webBuild.test.ts                         (+ callback route)
-└── client/gmailPanel.test.tsx (new), client/settings.test.tsx (async page)   (UI)
-knip.json                                    # + web/app/**/route.ts as a Next.js entry
+├── webBuild.test.ts                         (callback route removed from ROUTES)
+└── client/gmailPanel.test.tsx, client/settings.test.tsx  (UI, rewritten)
+knip.json                                    # route.ts entry removed again
 ```
 
-**Structure Decision**: Gmail logic gets its own `src/gmail/` folder. It is reused later when
-alert reading reaches the agent. The web layer stays thin.
+**Structure Decision**: Gmail logic stays in `src/gmail/`, to be reused when the agent reads
+alerts. The web layer stays thin.

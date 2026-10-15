@@ -34,8 +34,7 @@ Enforcement in this repo:
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
 - `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
   `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,
-  `web/proxy.ts`, the `page`/`layout`/`not-found`/`error` files under `web/app/`, and route
-  handlers, `web/app/**/route.ts`). When
+  `web/proxy.ts` and the `page`/`layout`/`not-found`/`error` files under `web/app/`). When
   upgrading habit-hooks, diff it against the shipped `habit_hooks_typescript/knip.json` and carry
   over changes.
 - `eslint.config.mjs` replaces habit-hooks' shipped eslint config (copied 2026-10-14 from 1.5.0)
@@ -76,10 +75,11 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
   against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
   `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
-- Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006). The client secret, the
-  refresh token and PKCE verifiers are sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`)
-  before they reach the database. Every Google call goes through `guarded()`, so only a fixed
-  error code ever leaves it. Never print `.env`, sealed columns or Google tokens.
+- Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006): IMAP with an app
+  password, through imapflow created with `logger: false` and mailboxes opened read-only. The app
+  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
+  database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
+  Never print `.env`, sealed columns or app passwords.
 
 ## Commands
 

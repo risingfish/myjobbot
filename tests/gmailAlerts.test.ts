@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { alertQuery, newestFirst, summarize } from "../src/gmail/alerts.js";
+import { alertQuery, newestFirst, newestUids, summarize } from "../src/gmail/alerts.js";
 import { testFileConfig } from "./helpers/config.js";
 
 test("the alert search names every sender and looks back 7 days", () => {
@@ -14,16 +14,15 @@ test("alert senders are emails or domains, defaulting to LinkedIn and Indeed ale
     }
 });
 
-test("a message's headers become its sender, subject and date", () => {
-    const headers = [
-        { name: "From", value: "LinkedIn <jobalerts-noreply@linkedin.com>" },
-        { name: "Date", value: "Wed, 15 Oct 2026 09:00:00 -0700" },
-    ];
-    expect(summarize(headers)).toEqual({ from: "LinkedIn <jobalerts-noreply@linkedin.com>", subject: "(no subject)", date: "Wed, 15 Oct 2026 09:00:00 -0700" });
+test("a message's envelope becomes its sender, subject and date", () => {
+    const envelope = { from: [{ name: "LinkedIn", address: "jobalerts-noreply@linkedin.com" }], date: new Date("2026-10-15T16:00:00.000Z") };
+    expect(summarize(envelope)).toEqual({ from: "LinkedIn <jobalerts-noreply@linkedin.com>", subject: "(no subject)", date: "2026-10-15T16:00:00.000Z" });
+    expect(summarize({ from: [{ address: "a@x.com" }], subject: "Jobs", date: "garbage" })).toEqual({ from: "a@x.com", subject: "Jobs", date: "garbage" });
 });
 
-test("alerts are listed newest first, keeping Gmail's order when a date can't be read", () => {
+test("the newest messages are the highest UIDs, and alerts are listed newest first", () => {
+    expect(newestUids([3, 9, 1, 12, 7, 5, 11])).toEqual([12, 11, 9, 7, 5]);
     const at = (subject: string, date: string) => ({ from: "x", subject, date });
-    expect(newestFirst([at("old", "Mon, 13 Oct 2026 09:00:00 +0000"), at("new", "Wed, 15 Oct 2026 09:00:00 +0000")]).map((alert) => alert.subject)).toEqual(["new", "old"]);
+    expect(newestFirst([at("old", "2026-10-13T09:00:00Z"), at("new", "2026-10-15T09:00:00Z")]).map((alert) => alert.subject)).toEqual(["new", "old"]);
     expect(newestFirst([at("first", "garbage"), at("second", "also garbage")]).map((alert) => alert.subject)).toEqual(["first", "second"]);
 });

@@ -1,53 +1,37 @@
 "use server";
 
 import { revalidatePath } from "next/cache.js";
-import { headers } from "next/headers.js";
-import { redirect } from "next/navigation.js";
 import { check, type CheckResult } from "../../src/gmail/check.js";
-import { clearCredentials, disconnect, saveCredentials, type SaveResult } from "../../src/gmail/connection.js";
-import { connectTarget } from "./gmailConnect.js";
+import { connect, disconnect, type ConnectResult } from "../../src/gmail/connection.js";
 import { gmailDeps } from "./gmailDeps.js";
 import { getUiState } from "./uiState.js";
 
-const KEY_NOT_SET: SaveResult = { ok: false, error: "Set MYJOBBOT_SECRET_KEY first." };
+const KEY_NOT_SET = "Set MYJOBBOT_SECRET_KEY first.";
 
-/** Saves the owner's Google OAuth client from the Settings form, reporting a field problem if it is refused. */
-export async function saveGmailCredentials(_previous: SaveResult, form: FormData): Promise<SaveResult> {
+/** Connects Gmail from the Settings form: signs in with the address and app password, then saves them sealed. */
+export async function connectGmail(_previous: ConnectResult, form: FormData): Promise<ConnectResult> {
     const deps = await gmailDeps();
-    if (deps === null) return KEY_NOT_SET;
-    const input = { clientId: String(form.get("client_id") ?? ""), clientSecret: String(form.get("client_secret") ?? "") };
-    const result = await saveCredentials(deps, input, new Date());
+    if (deps === null) return { ok: false, error: KEY_NOT_SET };
+    const input = { email: String(form.get("email") ?? ""), appPassword: String(form.get("app_password") ?? "") };
+    const result = await connect(deps, input, new Date());
     if (result.ok) revalidatePath("/settings");
     return result;
-}
-
-/** Forgets the owner's Google OAuth client from the Settings form. */
-export async function clearGmailCredentials(): Promise<void> {
-    const deps = await gmailDeps();
-    if (deps === null) return;
-    await clearCredentials(deps);
-    revalidatePath("/settings");
-}
-
-/** Starts connecting Gmail: sends the owner to Google's consent screen, or back to Settings saying why it can't. */
-export async function connectGmail(): Promise<void> {
-    redirect(await connectTarget((await headers()).get("host") ?? ""));
 }
 
 /** Counts recent job-alert emails for the Check now button. */
 export async function checkGmail(): Promise<CheckResult> {
     const deps = await gmailDeps();
-    if (deps === null) return { ok: false, reason: "Set MYJOBBOT_SECRET_KEY first." };
+    if (deps === null) return { ok: false, reason: KEY_NOT_SET };
     const result = await check(deps, (await getUiState()).config.gmail.alert_senders);
     if (!result.ok) revalidatePath("/settings");
     return result;
 }
 
-/** Disconnects Gmail for the Disconnect button, saying whether Google confirmed the revoke. */
-export async function disconnectGmail(): Promise<{ revoked: boolean }> {
+/** Forgets the Gmail address and app password for the Disconnect button. */
+export async function disconnectGmail(): Promise<{ ok: boolean }> {
     const deps = await gmailDeps();
-    if (deps === null) return { revoked: false };
-    const result = await disconnect(deps);
+    if (deps === null) return { ok: false };
+    await disconnect(deps);
     revalidatePath("/settings");
-    return result;
+    return { ok: true };
 }

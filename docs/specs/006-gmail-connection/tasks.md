@@ -471,7 +471,7 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
   through `guarded()`, and only the synchronous `generateAuthUrl` doesn't. The `reason` column
   only ever holds the two fixed phrases. The lockfile still has its 15 bindings. No logging
   switch is set anywhere.
-- [ ] T031 Live check with the owner, against `myjobbot_test`, so production isn't migrated before
+- [ ] ~~T031~~ (superseded by the IMAP rework; see R009) Live check with the owner, against `myjobbot_test`, so production isn't migrated before
   the merge. Production's `main` stack fails to start once `002_gmail` is applied without the new
   code (research R9).
   - **Setup**: the owner adds `MYJOBBOT_SECRET_KEY` to `.env`, checks that `MYJOBBOT_HOSTS`
@@ -494,10 +494,10 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
   Deferred 2026-10-15: the owner asked to commit and open the PR first. The live check needs the
   owner's Google app, `MYJOBBOT_SECRET_KEY` in `.env` and the SSH tunnel; run it on the PR branch
   before merging, or as T034 on production after merging.
-- [ ] T032 Fix anything T031 finds (test-first), or record it as follow-up.
+- [ ] ~~T032~~ (superseded; see R010) Fix anything T031 finds (test-first), or record it as follow-up.
 - [X] T033 Close S4: both checks green; delete the marker; commit ("Document and verify the Gmail
   panel (006 S4)"); with the owner's OK, push and open the PR.
-- [ ] T034 After the owner merges:
+- [ ] ~~T034~~ (superseded; see R012) After the owner merges:
   1. Update `main` (pull before switching), then run `npm run docker:up`, which rebuilds for the
      new dependency and migrates production to `002_gmail`.
   2. Save the credentials and connect once on production through the tunnel; production's
@@ -507,6 +507,143 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
   4. Record the result in Notes.
 
 ---
+
+## Phase 6: Rework, IMAP with an app password (revised 2026-10-15)
+
+The owner switched from Google sign-in to a Gmail app password over IMAP (spec Clarifications,
+research R1–R10), on the same branch and PR #11. The OAuth tasks above stay as history.
+
+### Sitting S5: replace OAuth with IMAP (R001–R008)
+
+- [X] R001 Create `.specify/sitting-in-progress` naming S5. Confirm the stack is still stopped.
+  Reset `myjobbot_test` for the rewritten step (research R7): with a one-off script using
+  `tests/helpers/testDb.ts`, drop `gmail_connect_requests` and `gmail_connection`, and delete the
+  `002_gmail` row from `kysely_migration`. It never touches `myjobbot`.
+- [X] R002 Swap the dependency, keeping the lockfile's optional platform entries:
+  - Uninstall `google-auth-library` and install `imapflow@2.3.0` with `--save-exact`.
+  - Compare the 15 `@rolldown/binding-*` entries, the `lightningcss` entries and the 189
+    optional entries before and after, and splice them back if npm dropped any (npm/cli#4828).
+- [X] R003 **Tests first** (rewritten, red until R004–R007):
+  - **Unit**, `tests/imapErrors.test.ts` (1 test): through `guarded()`:
+    - an error with `authenticationFailed: true` and a `responseText` naming the user gives
+      `bad_login`
+    - `ECONNREFUSED` gives `unreachable`
+    - anything else gives `unknown`
+    - the `GmailError`'s string, JSON and stack never contain the username or the password
+  - **Unit and integration**, `tests/helpers/gmailStoreContract.ts`, 3 cases (data-model.md):
+    - connecting twice leaves one row with the second address
+    - `needsReconnect` keeps the address and password
+    - `disconnect` clears them
+  - **Unit**, `tests/gmailConnection.test.ts`, with `tests/helpers/fakeImap.ts` (scripted
+    `verify`, `search`, `envelopes`):
+    1. Connect verifies, then stores a sealed password with spaces removed. A rejected or
+       unreachable sign-in stores nothing and returns the fixed message. Bad lengths are
+       refused before any sign-in.
+    2. `keyChanged` (kept).
+    3. Check counts every match and summarises the 5 highest UIDs, gives 0 for no match, and
+       refuses when not connected.
+    4. `bad_login` during Check gives needs_reconnect "app password rejected; create a new
+       one"; an unopenable password gives "server key changed".
+    5. Disconnect clears the row.
+  - **Unit**, `tests/gmailPanel.test.ts` (3 tests, rewritten): the offers for each key state;
+    not connected offers only `connect`; connected offers `check`, `disconnect` and `replace`;
+    a key change asks for the password again.
+  - **UI**, `tests/client/gmailPanel.test.tsx` (3 tests, rewritten):
+    - the form's password field is empty, the sealed and plain password never appear, and a
+      refused connect shows its message
+    - connected shows the address and time
+    - Check now and Disconnect (the confirm stubbed both ways, plus the app-passwords reminder)
+  - **UI**, `tests/client/settings.test.tsx`: no `searchParams`; drop the outcome test.
+- [X] R004 Storage:
+  - Rewrite `src/db/migrations/002_gmail.ts` for one table: `gmail_connection` with `id TINYINT
+    PK`, `email VARCHAR(320) NULL`, `app_password TEXT NULL`, `connected_at VARCHAR(32) NULL`,
+    `status VARCHAR(20) NOT NULL DEFAULT 'none'` and `reason VARCHAR(200) NULL`, `utf8mb4_bin`.
+  - Update `src/db/schema.ts`, `GmailStore` in `src/db/store.ts`
+    (`connection`, `connected`, `needsReconnect`, `disconnect`),
+    `src/db/kysely/gmailStore.ts` and `tests/helpers/memoryGmailStore.ts`.
+  - Update `TABLES` in `tests/helpers/testDb.ts`, and the migrate test's collation list (4
+    tables).
+- [X] R005 IMAP:
+  - **`src/gmail/imapErrors.ts`**: `imapErrorCode` (private), `GmailError` and `guarded`.
+  - **`src/gmail/imap.ts`**: `ImapApi` (`verify()`, `search(query)` returning UIDs,
+    `envelopes(uids)`), `ImapFactory`, and `imapApi({ email, password })` over `ImapFlow`:
+    - created with `{ host: "imap.gmail.com", port: 993, secure: true, logger: false }`
+    - each call connects, opens the `\All` folder (else `INBOX`) with `readOnly: true`, and
+      searches with `gmraw`
+    - each call logs out in `finally`, and is wrapped in `guarded()`
+  - **`src/gmail/check.ts`**: rewritten over `ImapApi`.
+  - **`src/gmail/connection.ts`**: rewritten, with `GmailDeps`, `connect(deps, { email,
+    appPassword }, now)`, `keyChanged`, `disconnect`.
+  - Delete `google.ts`, `googleErrors.ts`, `access.ts` and `connectRequest.ts`.
+- [X] R006 View and web:
+  - Rewrite `src/web/gmailPanel.ts` and delete `src/web/gmailOutcomes.ts`.
+  - **`web/lib/gmailActions.ts`**: `connectGmail(previous, form)` (`useActionState`),
+    `checkGmail` and `disconnectGmail`, each with the key guard.
+  - Delete `web/lib/gmailConnect.ts` and `web/app/settings/gmail/callback/route.ts`.
+  - **`web/components/settings/`**: rename `CredentialsForm.tsx` to `ConnectForm.tsx` (address
+    and app password), and update `GmailPanel.tsx` and `DisconnectButton.tsx` (it shows the
+    app-passwords reminder).
+  - **`web/app/settings/page.tsx`**: drop `searchParams`.
+  - **`knip.json`**: drop the `route.ts` entry. **`tests/webBuild.test.ts`**: drop the callback
+    route.
+  - **`CLAUDE.md`**: restore the knip paragraph, and reword the Gmail note for IMAP.
+  - **`.env.example`**: the key's comment names the app password.
+- [X] R007 Run `npm run check` and `npm run check:db`. Fix findings, and update the ledger below.
+- [X] R008 Close S5: delete the marker and commit ("Switch the Gmail panel to IMAP with an app
+  password (006 S5)").
+
+S5 notes (2026-10-15):
+- **Results**: node 248, dom 30, integration 23 (from 258 / 31 / 25 at S4).
+- **Test database**: `myjobbot_test` was reset first (old tables and the `002_gmail` row
+  removed).
+- **Dependencies**: removing google-auth-library and adding imapflow 2.3.0 kept 15 rolldown,
+  12 lightningcss and 189 optional lockfile entries, so no splice was needed.
+- **Live probe**: one sign-in to `imap.gmail.com` with a made-up address returned `GmailError
+  bad_login` in 374 ms, with nothing logged.
+- **Design notes**:
+  - Each IMAP call is one session: connect, read-only lock on the `\All` folder, `gmraw`
+    search, envelope fetch for the picked UIDs, logout, and `close()` in `finally`.
+  - `ImapApi.lookup(query, pick)` takes `newestUids` from `alerts.ts`, so choosing the newest
+    five stays a tested pure function.
+  - `openSealed` and `SealError` became private, with production and tests using `openOrNull`.
+    With one sealed field the AAD-across-fields test no longer applies and was dropped.
+  - The reminder to delete the app password is in the Disconnect confirmation and in the
+    not-connected message, since the panel re-renders without the button after a disconnect.
+- **Generated types**: Next.js's stale types for the removed callback route (in `web/.next*`,
+  gitignored) were deleted.
+
+### Sitting S6: docs, review, live check, PR (R009–R012)
+
+- [ ] R009 Docs:
+  - **`README.md`** "Gmail" section: 2-step verification, the app password,
+    `MYJOBBOT_SECRET_KEY`, no tunnel, read-only use, deleting the app password to revoke, and
+    no login.
+  - **`docs/react-walkthrough.md`**: if it names the renamed components.
+
+  Then run a read-only review agent over `git diff main`. It checks:
+  - no app password in any page, action result, log, trace or error
+  - imapflow created with `logger: false`
+  - the mailbox opened read-only
+  - `gmraw` built only from validated senders
+  - `src/` never imports `web/` or `next`
+  - imapflow pinned exactly, with the lockfile intact
+
+  Fix confirmed findings test-first.
+- [ ] R010 Live check with the owner, against `myjobbot_test`
+  (`MYJOBBOT_DB_NAME=myjobbot_test npm run web`, after the last `npm run check:db`):
+  - the quickstart's setup steps 1–3 and Manual steps 1–8
+  - time Connect and Check now (each ≤ 5 s)
+  - record the results in Notes, fixing anything found test-first
+- [ ] R011 Close S6: both checks green; delete the marker; commit; push to update PR #11, and
+  rewrite its description for IMAP.
+- [ ] R012 After the owner merges:
+  1. Update `main` (pull before switching), then run `npm run docker:up`, which rebuilds for
+     imapflow and migrates production to `002_gmail`.
+  2. Add `MYJOBBOT_SECRET_KEY` to `.env` and run `docker compose up -d`.
+  3. Connect on production.
+  4. **SC-002**: run `docker compose up -d --force-recreate`; the panel is still connected, and
+     Check now works.
+  5. Record the result in Notes.
 
 ## Dependencies & Execution Order
 

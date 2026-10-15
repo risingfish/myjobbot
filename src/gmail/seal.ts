@@ -1,11 +1,11 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-export type SealedField = "client_secret" | "refresh_token" | "code_verifier";
+export type SealedField = "app_password";
 
 const VERSION = "v1";
 const CIPHER = "aes-256-gcm";
 
-export class SealError extends Error {
+class SealError extends Error {
     /** Reports that a stored secret could not be opened, without saying anything about its contents. */
     constructor() {
         super("key changed or data damaged");
@@ -22,7 +22,7 @@ export function seal(value: string, field: SealedField, key: Buffer): string {
 }
 
 /** Decrypts a stored secret, throwing SealError if the key, the field or the stored text is wrong. */
-export function openSealed(sealed: string, field: SealedField, key: Buffer): string {
+function openSealed(sealed: string, field: SealedField, key: Buffer): string {
     const [version, iv, body, tag, ...rest] = sealed.split(".");
     if (version !== VERSION || iv === undefined || body === undefined || tag === undefined || rest.length > 0) throw new SealError();
     try {
@@ -31,5 +31,15 @@ export function openSealed(sealed: string, field: SealedField, key: Buffer): str
         return Buffer.concat([decipher.update(Buffer.from(body, "base64url")), decipher.final()]).toString("utf8");
     } catch {
         throw new SealError();
+    }
+}
+
+/** Opens a sealed value, or returns null when the key can no longer open it. */
+export function openOrNull(sealed: string, field: SealedField, key: Buffer): string | null {
+    try {
+        return openSealed(sealed, field, key);
+    } catch (error) {
+        if (error instanceof SealError) return null;
+        throw error;
     }
 }

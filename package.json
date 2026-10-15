@@ -28,7 +28,7 @@
     "dependencies": {
         "@types/node": "26.6.4",
         "@types/react": "19.3.0",
-        "google-auth-library": "11.3.0",
+        "imapflow": "2.3.0",
         "kysely": "0.29.6",
         "mysql2": "3.24.6",
         "next": "16.4.0",
