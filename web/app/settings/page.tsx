@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 export default function SettingsPage() {
     return (
         <main aria-label="Settings">
-            <Panel />
+            <Panel title="Scoring" actions={<button>Save</button>}>
+                <p>Match threshold: 70</p>
+            </Panel>
         </main>
     );
 }
