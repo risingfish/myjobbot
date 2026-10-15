@@ -76,6 +76,10 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
   against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
   `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
+- Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006). The client secret, the
+  refresh token and PKCE verifiers are sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`)
+  before they reach the database. Every Google call goes through `guarded()`, so only a fixed
+  error code ever leaves it. Never print `.env`, sealed columns or Google tokens.
 
 ## Commands
 

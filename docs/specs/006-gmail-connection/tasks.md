@@ -439,7 +439,7 @@ S3 notes (2026-10-15):
 
 Create `.specify/sitting-in-progress` naming S4 before T029.
 
-- [ ] T029 [P] Docs:
+- [X] T029 [P] Docs:
   - **`README.md`**:
     - Add a "Gmail" subsection under Settings: the one-time Google setup (the quickstart's setup
       steps), `MYJOBBOT_SECRET_KEY`, the SSH-tunnel connect, the testing-mode 7-day expiry, and
@@ -456,7 +456,7 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
     mocked in `settings.test.tsx`), so replace it with a new exercise. Name the settings
     components where the doc lists components. If a **Where:** line names `useTransition`, add it
     to `PLATFORM` in `tests/walkthrough.test.ts`.
-- [ ] T030 Run a read-only review agent over `git diff main`. It checks:
+- [X] T030 Run a read-only review agent over `git diff main`. It checks:
   - no secret, token or verifier in any page payload, server-action response, log, trace or
     error
   - FR-006 state handling (single use, 10 minutes, loopback only)
@@ -467,6 +467,10 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
     and the Dockerfile, so the library can't log request bodies
 
   Fix confirmed findings test-first.
+  Done 2026-10-15: all 9 checks were clean, with no findings. Every network call to Google goes
+  through `guarded()`, and only the synchronous `generateAuthUrl` doesn't. The `reason` column
+  only ever holds the two fixed phrases. The lockfile still has its 15 bindings. No logging
+  switch is set anywhere.
 - [ ] T031 Live check with the owner, against `myjobbot_test`, so production isn't migrated before
   the merge. Production's `main` stack fails to start once `002_gmail` is applied without the new
   code (research R9).
@@ -487,8 +491,11 @@ Create `.specify/sitting-in-progress` naming S4 before T029.
   - **SC-004**: compare Check now's count with Gmail's search with conversation view off, since
     the API counts messages and conversation view counts threads.
   - Record everything in Notes.
+  Deferred 2026-10-15: the owner asked to commit and open the PR first. The live check needs the
+  owner's Google app, `MYJOBBOT_SECRET_KEY` in `.env` and the SSH tunnel; run it on the PR branch
+  before merging, or as T034 on production after merging.
 - [ ] T032 Fix anything T031 finds (test-first), or record it as follow-up.
-- [ ] T033 Close S4: both checks green; delete the marker; commit ("Document and verify the Gmail
+- [X] T033 Close S4: both checks green; delete the marker; commit ("Document and verify the Gmail
   panel (006 S4)"); with the owner's OK, push and open the PR.
 - [ ] T034 After the owner merges:
   1. Update `main` (pull before switching), then run `npm run docker:up`, which rebuilds for the

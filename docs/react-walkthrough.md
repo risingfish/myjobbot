@@ -256,12 +256,13 @@ the typed text.
 
 ### Exercise 3: Show the match threshold on Settings
 
-**Goal:** the Settings page shows "Match threshold: 70" (your configured value).
+**Goal:** the Scoring panel shows your configured `match_threshold` instead of the fixed "70".
 
-- **Files:** only `web/app/settings/page.tsx`. Call `getUiState()` from `web/lib/uiState.ts` and
-  render `config.match_threshold` inside the `<main>`.
-- **Test:** in `tests/client/settings.test.tsx`, mock `web/lib/uiState.js` with `vi.mock` so it
-  returns a config with a threshold of 70, and expect the text.
+- **Files:** only `web/app/settings/page.tsx`. It already calls `getUiState()` from
+  `web/lib/uiState.ts` (for the Gmail panel); read `config.match_threshold` from the same call
+  and render it in the Scoring panel.
+- **Test:** `tests/client/settings.test.tsx` already mocks `web/lib/uiState.js`. Add a `config`
+  with a threshold of 55 to the mocked state, and expect "Match threshold: 55".
 - **Check:** compare this with feature 002, where the same change needed a new API field, a
   server change and a fetch. A server component reads the value directly.
 

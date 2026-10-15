@@ -71,7 +71,7 @@ npm run web          # development server, http://localhost:8080
 npm run web:build && npm run web:start   # production build and server
 ```
 
-A Next.js app for browsing the database, with three tabs and a (for now empty) Settings page:
+A Next.js app for browsing the database, with three tabs and a Settings page (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
@@ -81,8 +81,8 @@ A Next.js app for browsing the database, with three tabs and a (for now empty) S
 
 Each job row has a **Hide** button. Hiding sets the job's `hidden` flag: it disappears from
 Recommended at once and stays hidden when the posting is fetched again. All jobs still lists it,
-dimmed, with an **Unhide** button. Hiding is the UI's only write; it accepts requests from its own
-pages only.
+dimmed, with an **Unhide** button. Hiding, and the Gmail panel on Settings, are the UI's only
+writes; they accept requests from its own pages only.
 
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
 bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
@@ -98,10 +98,45 @@ stops other websites reaching it through DNS tricks. By default that's `localhos
 `127.0.0.1` on `MYJOBBOT_PORT`. To open it from another machine, list every `host:port` you use
 in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:8080`.
 
+### Gmail
+
+Settings has a Gmail panel that connects your inbox, read-only, so a later feature can read
+LinkedIn and Indeed job-alert emails. For now it connects, checks and disconnects; runs don't
+read mail yet.
+
+One-time setup:
+1. **Create a Google app.** In Google Cloud Console, create a project and enable the **Gmail API**.
+   On the OAuth consent screen choose External, add yourself as a test user, then **Publish
+   app**. Left in testing mode, Google expires the access after 7 days. Google will show an
+   "unverified app" warning; that's expected for personal use.
+2. **Create the client.** Under Credentials, create an OAuth client ID of type **Desktop app**, and
+   keep its client ID and secret.
+3. **Set the server key** in `.env`: `MYJOBBOT_SECRET_KEY=` followed by the output of
+   `openssl rand -base64 32`. It seals the client secret and Google's token in the database. If it
+   changes, the panel asks for the client secret again. It takes effect after
+   `docker compose up -d` (not `restart`) or restarting `npm run web`.
+4. **Allow localhost.** If `MYJOBBOT_HOSTS` is set, it must include `localhost:8080`.
+
+To connect:
+1. Google only sends you back to `localhost` (or public HTTPS), not a LAN address. From your
+   laptop, run `ssh -L 8080:localhost:8080 <server>` and open `http://localhost:8080/settings`.
+2. Save the client ID and secret, press **Connect Gmail**, and approve on Google's screens.
+
+After that the panel works from any address:
+- **Check now** counts the job-alert emails of the last 7 days and lists the newest five.
+- **Disconnect** asks Google to revoke the access and forgets it.
+- **Replace credentials** and **Clear credentials** disconnect first.
+
+The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`.
+
+The web UI has no login, so anyone on your LAN can connect or disconnect. Stored secrets can't be
+read back through it.
+
 How it's built:
 - **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
-  server, so its first rows are in the HTML. Only scrolling and Hide run in the browser, and they
-  call server functions in `web/lib/actions.ts`.
+  server, so its first rows are in the HTML. Scrolling, Hide and the Gmail panel's buttons run in
+  the browser, and they call server functions in `web/lib/actions.ts` and
+  `web/lib/gmailActions.ts`.
 - **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
   the agent in `src/web/`, so the browser only lays them out.
 - **`myjobbot serve` is gone.** `myjobbot` only runs the agent; the UI is started with the npm
@@ -478,6 +513,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
 | `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
+| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert in the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error |
 
 ### Saved searches (JSearch)
 
