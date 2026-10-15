@@ -402,7 +402,7 @@ run is refused, and an over-long row is reported with nothing written.
 
 ### Sitting S6: docs, review and quickstart (T036–T038; ends green, then commit with the owner's OK)
 
-- [ ] T036 [P] Update `README.md`:
+- [X] T036 [P] Update `README.md`:
   - **Storage section**: MariaDB, `MYJOBBOT_DB_*`, backups are the server's.
   - **Setup**: `.env` lines.
   - **The test mix** and the `integration` project.
@@ -410,7 +410,7 @@ run is refused, and an over-long row is reported with nothing written.
   - **`data/`** now holds config, resume, traces and the old SQLite backup.
 
   `CLAUDE.md`: commands (`import-sqlite`, the integration project needs `.env`).
-- [ ] T037 Run a read-only review agent over `git diff main`. It checks:
+- [X] T037 Run a read-only review agent over `git diff main`. It checks:
   - every query parameterised (no string-built SQL except the fixed DDL)
   - the password never logged
   - `SET NAMES` on every connection
@@ -419,9 +419,21 @@ run is refused, and an over-long row is reported with nothing written.
   - the agent never imports `web/` or `next`
 
   Fix confirmed findings test-first.
-- [ ] T038 Run the quickstart's automated table and check every row. Time the four pages and Hide
+
+  Done 2026-10-14: all eight checks passed with no code findings. Kysely's MySQL driver runs
+  `onCreateConnection` once per physical connection. The one note, that the README's `CREATE
+  DATABASE` collation read as if it governed comparisons, was fixed in the README wording.
+- [X] T038 Run the quickstart's automated table and check every row. Time the four pages and Hide
   against `myjobbot_test` seeded from a 1,000-job copy: first rows within 1 s, Hide within 0.5 s
   (SC-003).
+
+  Done 2026-10-14. The seed was a copy of live SQLite plus 300 duplicated jobs (1,072 jobs, 890
+  verdicts), imported in 3.4 s. Production build, first byte over 3 loads: /recommended
+  0.38–0.56 s, /jobs 0.22–0.25 s, /reasoning 0.04 s, /settings 0.01 s. Hide (`setHidden`) took
+  12 ms warm and 96 ms on the first call, including the connection; it was timed at the store
+  because there is no Playwright browser. The test tables were emptied afterwards. The automated
+  rows are covered by the contract, migrate, import and settings tests; the mix stands at the
+  owner-accepted 75/16/10.
 ### Sitting S7: switch-over, with the owner (T039)
 
 - [ ] T039 **Switch-over (with the owner, no run in progress, `docker:watch` stopped)**:
