@@ -1,4 +1,4 @@
-const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const GRAPHEMES = new Intl.Segmenter(undefined, {granularity: "grapheme"});
 
 /** Shortens a job title to a readable length for the job tables, ending a cut title with an ellipsis. */
 export function shortTitle(title: string, limit = 64): string {

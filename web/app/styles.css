@@ -42,6 +42,11 @@ nav a.current {
     color: var(--fg);
     border-bottom: 2px solid var(--accent);
 }
+
+header .main-title {
+    display: inline;
+}
+
 .table {
     overflow-x: auto;
     background: var(--card);
