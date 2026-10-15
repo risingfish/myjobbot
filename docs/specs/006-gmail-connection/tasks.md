@@ -614,7 +614,7 @@ S5 notes (2026-10-15):
 
 ### Sitting S6: docs, review, live check, PR (R009–R012)
 
-- [ ] R009 Docs:
+- [X] R009 Docs:
   - **`README.md`** "Gmail" section: 2-step verification, the app password,
     `MYJOBBOT_SECRET_KEY`, no tunnel, read-only use, deleting the app password to revoke, and
     no login.
@@ -629,6 +629,13 @@ S5 notes (2026-10-15):
   - imapflow pinned exactly, with the lockfile intact
 
   Fix confirmed findings test-first.
+  Done 2026-10-15: README rewritten for IMAP. The review was clean on all 8 checks. It confirmed
+  in imapflow's source:
+  - `readOnly` sends `EXAMINE`
+  - envelope fetches never set `\Seen`
+  - `logger: false` silences even errors
+  - `close()` and a failed `logout()` never throw
+  - `guarded()` never forwards `executedCommand`, `responseText` or `response`
 - [ ] R010 Live check with the owner, against `myjobbot_test`
   (`MYJOBBOT_DB_NAME=myjobbot_test npm run web`, after the last `npm run check:db`):
   - the quickstart's setup steps 1–3 and Manual steps 1–8

@@ -100,37 +100,31 @@ in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:
 
 ### Gmail
 
-Settings has a Gmail panel that connects your inbox, read-only, so a later feature can read
-LinkedIn and Indeed job-alert emails. For now it connects, checks and disconnects; runs don't
-read mail yet.
+Settings has a Gmail panel that connects your mailbox over IMAP with an app password, so a later
+feature can read LinkedIn and Indeed job-alert emails. For now it connects, checks and
+disconnects; runs don't read mail yet.
 
 One-time setup:
-1. **Create a Google app.** In Google Cloud Console, create a project and enable the **Gmail API**.
-   On the OAuth consent screen choose External, add yourself as a test user, then **Publish
-   app**. Left in testing mode, Google expires the access after 7 days. Google will show an
-   "unverified app" warning; that's expected for personal use.
-2. **Create the client.** Under Credentials, create an OAuth client ID of type **Desktop app**, and
-   keep its client ID and secret.
+1. **Turn on 2-step verification** for your Google account, if it isn't on already.
+2. **Create an app password** at https://myaccount.google.com/apppasswords (call it "myjobbot")
+   and keep the 16 letters Google shows.
 3. **Set the server key** in `.env`: `MYJOBBOT_SECRET_KEY=` followed by the output of
-   `openssl rand -base64 32`. It seals the client secret and Google's token in the database. If it
-   changes, the panel asks for the client secret again. It takes effect after
-   `docker compose up -d` (not `restart`) or restarting `npm run web`.
-4. **Allow localhost.** If `MYJOBBOT_HOSTS` is set, it must include `localhost:8080`.
+   `openssl rand -base64 32`. It seals the app password in the database. If it changes, the panel
+   asks for the app password again. It takes effect after `docker compose up -d` (not `restart`)
+   or restarting `npm run web`.
 
-To connect:
-1. Google only sends you back to `localhost` (or public HTTPS), not a LAN address. From your
-   laptop, run `ssh -L 8080:localhost:8080 <server>` and open `http://localhost:8080/settings`.
-2. Save the client ID and secret, press **Connect Gmail**, and approve on Google's screens.
+To connect, open Settings from any address, enter your Gmail address and the app password
+(spaces are fine), and press **Connect**. myjobbot signs in to `imap.gmail.com` first, and
+saves the pair only if that works. After that:
+- **Check now** counts the job-alert emails of the last 7 days in All Mail and lists the newest
+  five. It opens the mailbox read-only, so nothing is marked read, moved or deleted.
+- **Disconnect** forgets the address and app password. To revoke access, also delete the app
+  password at the same Google page.
 
-After that the panel works from any address:
-- **Check now** counts the job-alert emails of the last 7 days and lists the newest five.
-- **Disconnect** asks Google to revoke the access and forgets it.
-- **Replace credentials** and **Clear credentials** disconnect first.
-
-The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`.
-
-The web UI has no login, so anyone on your LAN can connect or disconnect. Stored secrets can't be
-read back through it.
+The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`. An app
+password gives full access to the mailbox (Google has no read-only kind), and myjobbot only ever
+reads it. The web UI has no login, so anyone on your LAN can connect or disconnect. The stored app
+password can't be read back through it.
 
 How it's built:
 - **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
