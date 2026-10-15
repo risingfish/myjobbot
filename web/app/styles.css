@@ -47,6 +47,21 @@ header .main-title {
     display: inline;
 }
 
+.panel {
+    overflow-x: auto;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.panel h2,
+.panel h3,
+.panel h4,
+.panel h5 {
+    margin-top: 0;
+}
+
 .table {
     overflow-x: auto;
     background: var(--card);
