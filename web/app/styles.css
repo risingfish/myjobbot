@@ -53,6 +53,7 @@ header .main-title {
     border: 1px solid var(--rule);
     border-radius: 8px;
     padding: 10px;
+    margin-bottom: 20px;
 }
 
 .panel h2,
