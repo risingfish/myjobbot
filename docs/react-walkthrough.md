@@ -52,8 +52,8 @@ syntax inside it. React turns JSX into calls that build the page, and **escapes 
 `{value}`**, so text from job postings can never inject markup.
 `tests/client/jobRow.test.tsx` checks that a `<script>` title shows up as plain text.
 
-**Where:** `JobRow` in `web/components/tables/JobRow.tsx`, built from `ScoreCell`, `TitleCell`,
-`WhereCells`, `SourceCell` and `WhenCells`.
+**Where:** `JobRow` in `web/components/tables/JobRow.tsx`, built from `ScoreTipCell`, `TitleCell`,
+`WhereCells`, `SourceCell` and `WhenCell`.
 
 Notice how small each component is: habit-hooks allows 20 lines per function, so a table row is
 split into cells. That is also how React code is usually written. When a component grows, you
@@ -61,11 +61,11 @@ pull out a smaller one with a clear name.
 
 ## 2. Props
 
-**Props** are a component's inputs, passed like HTML attributes (`<ScoreCell score={job.score} />`)
+**Props** are a component's inputs, passed like HTML attributes (`<ScoreTipCell score={job.score} />`)
 and received as one typed object. They flow one way, from parent to child.
 
-**Where:** `ScoreCell` in `web/components/tables/ScoreCell.tsx` takes a `score` typed from
-`src/web/api.ts`. `ExternalLink` in `web/components/common/ExternalLink.tsx` takes `url` and
+**Where:** `ScoreTipCell` in `web/components/tables/ScoreTipCell.tsx` takes a `score` typed from
+`src/web/api.ts` (the Reasoning page's `ScoreCell` takes the same prop). `ExternalLink` in `web/components/common/ExternalLink.tsx` takes `url` and
 `children`. `Footer` in `web/components/sections/Footer.tsx` takes the database path and time
 from the layout.
 

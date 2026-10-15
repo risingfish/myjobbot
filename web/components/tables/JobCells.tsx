@@ -26,23 +26,20 @@ export function SourceCell({ job }: { job: JobRowView }) {
     );
 }
 
-/** Renders the cells saying when a job was posted, how long it has been open, and when it was scored. */
-export function WhenCells({ job }: { job: JobRowView }) {
+/** Renders the cell saying when a job was posted and how long it has been open. */
+export function WhenCell({ job }: { job: JobRowView }) {
     const { date, daysOpen, ghost } = job.posted;
     return (
-        <>
-            <td>
-                {date}
-                <br />
-                <small>{daysOpen} days open</small>
-                {ghost && (
-                    <>
-                        {" "}
-                        <span className="ghost">⚠ possible ghost</span>
-                    </>
-                )}
-            </td>
-            <td>{job.scoredDate}</td>
-        </>
+        <td>
+            {date}
+            <br />
+            <small>{daysOpen} days open</small>
+            {ghost && (
+                <>
+                    {" "}
+                    <span className="ghost">⚠ possible ghost</span>
+                </>
+            )}
+        </td>
     );
 }

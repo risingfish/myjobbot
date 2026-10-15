@@ -5,8 +5,10 @@ import { Why } from "./Why.js";
 /** Renders a job's title cell: the posting link, any filter or hidden notes, and the reasoning behind its score. */
 export function TitleCell({ job }: { job: JobRowView }) {
     return (
-        <td>
-            <ExternalLink url={job.url}>{job.title}</ExternalLink>
+        <td className="title-cell">
+            <ExternalLink url={job.url} title={job.shortTitle === job.title ? undefined : job.title}>
+                {job.shortTitle}
+            </ExternalLink>
             {job.filterNote && (
                 <>
                     {" "}

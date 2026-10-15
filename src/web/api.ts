@@ -9,6 +9,7 @@ export interface JobRowView {
     ats: string;
     jobId: string;
     title: string;
+    shortTitle: string;
     url: string | null;
     company: string;
     location: string;
@@ -16,7 +17,6 @@ export interface JobRowView {
     source: string;
     via: string | null;
     posted: { date: string; daysOpen: number; ghost: boolean };
-    scoredDate: string;
     score: Score | null;
     filterNote: string | null;
     hidden: boolean;

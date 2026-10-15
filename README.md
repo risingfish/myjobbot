@@ -84,7 +84,9 @@ Recommended at once and stays hidden when the posting is fetched again. All jobs
 dimmed, with an **Unhide** button. Hiding is the UI's only write; it accepts requests from its own
 pages only.
 
-Scores show their breakdown ("base 38 + bonus 40", plus any boost). See
+On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
+bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
+"…", with the full title on hover. See
 [How scoring works](#how-scoring-works) for what the numbers mean.
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to

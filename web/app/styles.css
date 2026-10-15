@@ -81,6 +81,39 @@ footer {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
+.score-col {
+    width: 1%;
+    white-space: nowrap;
+}
+.score-col .score {
+    position: relative;
+}
+.tip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1;
+    margin-top: 4px;
+    padding: 4px 8px;
+    width: max-content;
+    max-width: 24em;
+    white-space: normal;
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+}
+.score:hover .tip,
+.score:focus .tip {
+    display: block;
+}
+.title-cell {
+    min-width: 16em;
+    overflow-wrap: anywhere;
+}
 ul {
     margin: 4px 0;
     padding-left: 18px;

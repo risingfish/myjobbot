@@ -4,6 +4,7 @@ const BASE_JOB_ROW: JobRowView = {
     ats: "greenhouse",
     jobId: "a",
     title: "Software Engineer a",
+    shortTitle: "Software Engineer a",
     url: "https://example.com/a",
     company: "Acme",
     location: "Remote",
@@ -11,7 +12,6 @@ const BASE_JOB_ROW: JobRowView = {
     source: "Stripe",
     via: null,
     posted: { date: "2026-09-30", daysOpen: 3, ghost: false },
-    scoredDate: "2026-10-02",
     score: { value: 90, note: "" },
     filterNote: null,
     hidden: false,
@@ -20,7 +20,8 @@ const BASE_JOB_ROW: JobRowView = {
 };
 
 export function jobRowView(overrides: Partial<JobRowView> = {}): JobRowView {
-    return { ...BASE_JOB_ROW, ...overrides };
+    const title = overrides.title ?? BASE_JOB_ROW.title;
+    return { ...BASE_JOB_ROW, title, shortTitle: title, ...overrides };
 }
 
 export function verdictRowView(overrides: Partial<VerdictRowView> = {}): VerdictRowView {
