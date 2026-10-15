@@ -1,5 +1,5 @@
 import type { FileConfig } from "../config/schema.js";
-import type { JobView, VerdictView } from "../db/jobViews.js";
+import type { JobView, VerdictView } from "../db/store.js";
 import { daysBetween } from "../jobs/age.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, type Boost } from "../jobs/titleBoost.js";

@@ -1,10 +1,10 @@
-import type { JobRow } from "../db/jobStore.js";
+import type { JobRow } from "../db/store.js";
 import { daysBetween } from "../jobs/age.js";
 import type { ToolContext } from "./context.js";
 
 /** Builds the compact job fields (title, location, age, possible-ghost flag, etc.) shown to the model. */
-export function summarizeJob(context: ToolContext, row: JobRow): Record<string, unknown> {
-    const daysOpen = daysBetween(context.store.earliestSeen(row.company, row.normalized_title), context.now());
+export async function summarizeJob(context: ToolContext, row: JobRow): Promise<Record<string, unknown>> {
+    const daysOpen = daysBetween(await context.store.earliestSeen(row.company, row.normalized_title), context.now());
     return withoutNulls({
         job_id: row.job_id,
         title: row.title,

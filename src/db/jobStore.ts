@@ -1,34 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import type { Job } from "../jobs/job.js";
-import { normalizeTitle } from "../jobs/normalize.js";
-import { jsonList } from "./columns.js";
-
-const nullableText = z.string().nullable();
-const jobRow = z.object({
-    ats: z.string(),
-    job_id: z.string(),
-    company: z.string(),
-    title: z.string(),
-    normalized_title: z.string(),
-    location: nullableText,
-    department: nullableText,
-    team: nullableText,
-    workplace_type: nullableText,
-    is_remote: z.number().nullable(),
-    compensation: nullableText,
-    url: z.string(),
-    posted_at: nullableText,
-    first_seen: z.string(),
-    last_seen: z.string(),
-    scored_at: nullableText,
-    score: z.number().nullable(),
-    description: nullableText,
-    requirements: jsonList,
-    skills: jsonList,
-    preferred_skills: jsonList,
-});
-export type JobRow = z.infer<typeof jobRow>;
+import { jobRowSchema, toParams } from "./rows.js";
+import type { JobRow, JobStore, Verdict, VerdictStamp } from "./store.js";
 
 const UPSERT = `
 INSERT INTO jobs (ats, job_id, company, source, title, normalized_title, location, department, team,
@@ -60,25 +34,11 @@ const UNSCORED_FOR_SOURCE = "SELECT * FROM jobs WHERE source = ? AND scored_at I
 const BOARD_COMPANIES_WITH_TITLE = "SELECT DISTINCT company FROM jobs WHERE ats != 'jsearch' AND normalized_title = ?";
 const FIND_JOB = "SELECT * FROM jobs WHERE job_id = ? LIMIT 1";
 
-interface VerdictStamp {
-    scoredAt: string;
-    runId: string | null;
-}
-
-interface Verdict {
-    job_id: string;
-    score: number;
-    base?: number;
-    bonus?: number;
-    reasons: string[];
-    gaps: string[];
-}
-
-export class JobStore {
+export class SqliteJobStore implements JobStore {
     constructor(private readonly db: DatabaseSync) {}
 
     /** Inserts or refreshes jobs from a fetch, marking them seen now so stale postings age out later. */
-    upsertAll(jobs: Job[], seen: string, source: string): void {
+    async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
         const statement = this.db.prepare(UPSERT);
         this.transaction(() => {
             for (const job of jobs) statement.run(toParams(job, seen, source));
@@ -86,17 +46,17 @@ export class JobStore {
     }
 
     /** Returns jobs from a source that were last seen in a given fetch and still need scoring. */
-    unscoredSince(source: string, seen: string): JobRow[] {
-        return z.array(jobRow).parse(this.db.prepare(UNSCORED).all(source, seen));
+    async unscoredSince(source: string, seen: string): Promise<JobRow[]> {
+        return z.array(jobRowSchema).parse(this.db.prepare(UNSCORED).all(source, seen));
     }
 
     /** Returns every unscored job for a source, regardless of when it was last seen. */
-    unscoredForSource(source: string): JobRow[] {
-        return z.array(jobRow).parse(this.db.prepare(UNSCORED_FOR_SOURCE).all(source));
+    async unscoredForSource(source: string): Promise<JobRow[]> {
+        return z.array(jobRowSchema).parse(this.db.prepare(UNSCORED_FOR_SOURCE).all(source));
     }
 
     /** Lists company names with company-board postings for a title, so JSearch duplicates can be skipped. */
-    boardCompaniesWithTitle(normalizedTitle: string): string[] {
+    async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
         const rows = this.db.prepare(BOARD_COMPANIES_WITH_TITLE).all(normalizedTitle);
         return z
             .array(z.object({ company: z.string() }))
@@ -105,7 +65,7 @@ export class JobStore {
     }
 
     /** Stores a job's score on the job row and appends it to the verdict history; reports whether the job existed. */
-    recordVerdict(verdict: Verdict, stamp: VerdictStamp): boolean {
+    async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {
         const parts = [verdict.score, verdict.base ?? null, verdict.bonus ?? null] as const;
         const notes = [JSON.stringify(verdict.reasons), JSON.stringify(verdict.gaps)] as const;
         return this.transaction(() => {
@@ -117,22 +77,22 @@ export class JobStore {
     }
 
     /** Returns the oldest date seen for a company and title across reposts, so ghost detection counts true age. */
-    earliestSeen(company: string, normalizedTitle: string): string {
+    async earliestSeen(company: string, normalizedTitle: string): Promise<string> {
         const row = this.db.prepare(EARLIEST_SEEN).get(company, normalizedTitle);
         return z.object({ earliest: z.string() }).parse(row).earliest;
     }
 
     /** Deletes jobs not seen since a cutoff and their now-orphaned verdicts; returns the number of jobs removed. */
-    pruneLastSeenBefore(cutoff: string): number {
+    async pruneLastSeenBefore(cutoff: string): Promise<number> {
         const pruned = Number(this.db.prepare(PRUNE).run(cutoff).changes);
         this.db.exec(PRUNE_ORPHAN_VERDICTS);
         return pruned;
     }
 
     /** Looks up a single job by its id, or null if no such job is stored. */
-    findJob(jobId: string): JobRow | null {
+    async findJob(jobId: string): Promise<JobRow | null> {
         const row = this.db.prepare(FIND_JOB).get(jobId);
-        return row === undefined ? null : jobRow.parse(row);
+        return row === undefined ? null : jobRowSchema.parse(row);
     }
 
     /** Runs a block of writes atomically, rolling back if any step throws. */
@@ -147,51 +107,4 @@ export class JobStore {
             throw error;
         }
     }
-}
-
-type Params = Record<string, string | number | null>;
-
-/** Maps a job and fetch metadata to the named parameters the upsert statement expects. */
-function toParams(job: Job, seen: string, source: string): Params {
-    return { ...postingParams(job), ...detailParams(job), source, seen };
-}
-
-/** Maps the fields that identify a posting and where it lives to their upsert parameters. */
-function postingParams(job: Job): Params {
-    return {
-        ats: job.ats,
-        job_id: job.jobId,
-        company: job.company,
-        title: job.title,
-        normalized_title: normalizeTitle(job.title),
-        url: job.url,
-        posted_at: job.postedAt,
-        publisher: job.publisher,
-    };
-}
-
-/** Maps the fields that describe the role itself to their upsert parameters. */
-function detailParams(job: Job): Params {
-    return {
-        location: job.location,
-        department: job.department,
-        team: job.team,
-        workplace_type: job.workplaceType,
-        is_remote: toFlag(job.isRemote),
-        compensation: job.compensation,
-        description: job.description,
-        requirements: listParam(job.requirements),
-        skills: listParam(job.skills),
-        preferred_skills: listParam(job.preferredSkills),
-    };
-}
-
-/** Encodes a string list as JSON for storage, or null when the list is empty. */
-function listParam(items: string[]): string | null {
-    return items.length === 0 ? null : JSON.stringify(items);
-}
-
-/** Converts a nullable boolean to the 0/1 encoding the is_remote column stores. */
-function toFlag(value: boolean | null): number | null {
-    return value === null ? null : Number(value);
 }

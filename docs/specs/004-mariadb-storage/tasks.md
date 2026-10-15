@@ -17,18 +17,18 @@ processes) or **UI**.
 
 ## Rules for every task
 
-- **Work in the worktree** `../myjobbot-mariadb` on branch `mariadb-storage`, never in the main
-  checkout. Docker mounts the main checkout's `src/` live, so an edit there would change the
-  scheduled agent mid-feature.
-  - **Sittings (constitution v2.0.0)**: tasks are grouped into sittings S1–S7. A sitting may span
+- **Work in the main checkout** (`/home/zac/code/myjobbot`) on branch `mariadb-storage`, with the
+  Docker stack **stopped** (`docker compose stop`, no `docker:watch`). The stack mounts this
+  checkout's `src/` and `web/` live, so it stays stopped until the switch-over (T039). Owner
+  decision, 2026-10-14.
+  - **Sittings (constitution v2.1.0)**: tasks are grouped into sittings S0–S7. A sitting may span
     turns; it ends with `npm run check` green, and is the only commit point. Within a sitting, each
     task runs the tests it touches, and `habit-hooks` findings are tracked and must be gone at the
     sitting's end.
-    The main checkout's hooks don't see the worktree.
 - **habit-hooks limits**: functions at most 20 lines, at most 3 parameters, files at most 200
   lines, knip clean, a one-line purpose comment on every function in `src/` and `web/`, and no
   other comments.
-- **Credentials**: the test password goes only into the worktree's `.env` (gitignored). Never
+- **Credentials**: the password goes only into `.env` (gitignored). Never
   print it, never put it on a command line (use `MYSQL_PWD`), never commit it.
 - **Integration tests** connect only through `tests/helpers/testDb.ts`, which refuses any database
   name not ending in `_test`.
@@ -41,9 +41,9 @@ Fill this in at the end of each phase:
 
 | Kind | Start | After S1 | After S2 | After S5 | Target (spec) |
 |---|---|---|---|---|---|
-| Unit | 72 | | | | ≥ 80% |
-| Integration | 135 | | | | ≤ 10% |
-| UI | 29 | | | | ≤ 10% |
+| Unit | 72 | 92 (37%) | | | ≥ 80% |
+| Integration | 135 | 128 (51%) | | | ≤ 10% |
+| UI | 29 | 29 (12%) | | | ≤ 10% |
 
 **How to count** (the same way every time):
 - **Tests**: lines matching `^\s*test\(` in `tests/**/*.test.ts(x)`, plus `test.each` rows. Compare
@@ -61,9 +61,9 @@ column.
 
 ## Phase 1: Setup
 
-### Sitting S0: worktree and baseline (T001–T003; ends green with T001's baseline check, the only commit is T001's docs commit)
+### Sitting S0: branch, baseline and settings (T001–T003; ends green with T001's baseline check, the only commit is T001's docs commit)
 
-- [ ] T001 Get ready to work:
+- [X] T001 Get ready to work:
   1. Commit the spec documents and constitution v1.4.0 on `mariadb-storage` (ask the owner first).
   2. Run `git switch main` in the main checkout. Only docs and `CLAUDE.md` differ, so
      `docker:watch` sees nothing.
@@ -74,9 +74,9 @@ column.
   2026-10-14 (research R1). Don't install anything yet: a dependency that nothing
   imports fails knip, so `kysely` and `mysql2` are installed in T019, the task that first imports
   them.
-- [ ] T003 Write the worktree's `.env` with `MYJOBBOT_DB_HOST=192.168.3.10`,
+- [X] T003 Write `.env` with `MYJOBBOT_DB_HOST=192.168.3.10`,
   `MYJOBBOT_DB_USER=myjobbot`, `MYJOBBOT_DB_PASSWORD` (from the owner) and
-  **`MYJOBBOT_DB_NAME=myjobbot_test`**. That way nothing run in the worktree (an agent run, `npm
+  **`MYJOBBOT_DB_NAME=myjobbot_test`**. That way nothing run during the feature (an agent run, `npm
   run web`) can touch the production `myjobbot` database before the switch-over. Only T039's import
   names `myjobbot`, explicitly. Add the
   `MYJOBBOT_DB_*` and `MYJOBBOT_TEST_DB_NAME` lines to `.env.example`, commented and without
@@ -95,7 +95,7 @@ stays clean (constitution I), and the later switch to MariaDB is one small step.
 
 #### Tests first
 
-- [ ] T004 [P] **Unit** `tests/storeContract.test.ts`, which runs `storeContract(makeStores)` from
+- [X] T004 [P] **Unit** `tests/storeContract.test.ts`, which runs `storeContract(makeStores)` from
   `tests/helpers/storeContract.ts` against `memoryStores()`. The contract has about 12 cases, each
   covering several methods, ported from `jobStore.test.ts` (5), `jobViews.test.ts` (6),
   `apiCalls.test.ts` (2) and `verdicts.test.ts` (4), which are then deleted:
@@ -119,23 +119,23 @@ stays clean (constitution I), and the later switch to MariaDB is one small step.
 
   `storeContract.ts` exports one function that registers the cases, so knip sees every suite
   using it.
-- [ ] T005 [P] **Integration (temporary)** `tests/sqliteStoreContract.test.ts`: the same contract
+- [X] T005 [P] **Integration (temporary)** `tests/sqliteStoreContract.test.ts`: the same contract
   against the SQLite classes on `:memory:`, proving they still match the interfaces. T023 deletes
   it with SQLite.
 
 #### Implementation
 
-- [ ] T006 `src/db/store.ts`: the `JobStore`, `JobViews` and `ApiCallLog` interfaces (async, the
+- [X] T006 `src/db/store.ts`: the `JobStore`, `JobViews` and `ApiCallLog` interfaces (async, the
   methods from contracts/storage.md) and the row types `JobRow`, `JobView` and `VerdictView`,
   moved here from the SQLite classes. `src/db/rows.ts` gets the pure mappers moved from
   `src/db/jobStore.ts`: `toParams`, `postingParams`, `detailParams`, `listParam`, `toFlag`, and the
   JSON decoding with `jsonList` from `columns.ts`.
-- [ ] T007 `tests/helpers/memoryStore.ts`: `memoryStores()` returns `{ jobStore, jobViews,
+- [X] T007 `tests/helpers/memoryStore.ts`: `memoryStores()` returns `{ jobStore, jobViews,
   apiCalls }` over shared arrays, implementing every contract rule. Split it by interface if it
   passes 200 lines (`memoryJobs.ts`, `memoryViews.ts`). T004 passes.
-- [ ] T008 The SQLite classes (`src/db/jobStore.ts`, `jobViews.ts`, `apiCalls.ts`) implement the
+- [X] T008 The SQLite classes (`src/db/jobStore.ts`, `jobViews.ts`, `apiCalls.ts`) implement the
   interfaces: same SQL, `async` methods, mapping rows through `src/db/rows.ts`. T005 passes.
-- [ ] T009 Make the tools async: `src/tools/{boardFetch,searchFetch,searchBudget,recordMatches,
+- [X] T009 Make the tools async: `src/tools/{boardFetch,searchFetch,searchBudget,recordMatches,
   jobSummary,getJobDetails,fetchJobs}.ts` await their store calls. `ToolContext` in
   `src/tools/context.ts` types `store: JobStore` and `apiCalls: ApiCallLog` from
   `src/db/store.ts`. Follow `await` through the agent loop wherever a tool result is now a promise.
@@ -147,11 +147,11 @@ stays clean (constitution I), and the later switch to MariaDB is one small step.
   - **`runOnce`** awaits it in `buildContext` and calls `close()` in `finally`.
 
   T021 only swaps the default for MariaDB's `openStores`.
-- [ ] T010 `src/web/pageData.ts`: `loadPageData` and the three loaders become async.
+- [X] T010 `src/web/pageData.ts`: `loadPageData` and the three loaders become async.
   `web/lib/rows.ts` (`loadRows`, `setHiddenFor`), `web/lib/actions.ts` and `web/lib/uiState.ts`
   (`getUiState` returns the interfaces) await them. `web/components/pages/DataPage.tsx` becomes an
   `async` server component.
-- [ ] T011 Tests on the fake:
+- [X] T011 Tests on the fake:
   - **Helpers**: `tests/helpers/context.ts` builds `testContext()` from `memoryStores()`, and
     `tests/helpers/views.ts`'s `seededViews` becomes `async seededStores(entries)`, seeding through
     the fake.
@@ -167,7 +167,7 @@ stays clean (constitution I), and the later switch to MariaDB is one small step.
     contract case 1 too).
   - **Removed**: `tests/jobStore.test.ts`, `jobViews.test.ts`, `apiCalls.test.ts` and
     `verdicts.test.ts`, now ported into the contract.
-- [ ] T012 Close S1: `npm run check` is green, with no knip entries or snoozes. The app still
+- [X] T012 Close S1: `npm run check` is green, with no knip entries or snoozes. The app still
   runs on SQLite. Fill in the ledger's "After S1" column, and record `time npm run check` in
   Notes next to T001's baseline.
 
@@ -297,12 +297,13 @@ the seeded rows.
 - [ ] T024 [US1] Docker: `compose.yaml` needs no changes, because `env_file` already supplies
   `MYJOBBOT_DB_*`. Check that `tests/docker.sh` serve and run cases still pass when given
   `MYJOBBOT_DB_*` pointing at `myjobbot_test`. The script writes a temporary env file holding only
-  the `MYJOBBOT_DB_*` lines from the worktree `.env`, plus `MYJOBBOT_DB_NAME=myjobbot_test`, using
+  the `MYJOBBOT_DB_*` lines from `.env`, plus `MYJOBBOT_DB_NAME=myjobbot_test`, using
   `grep '^MYJOBBOT_DB_'` and never printing it. It passes that file with `--env-file` and deletes
   it in an `EXIT` trap. So the script's deliberately bad `LLM_*` values still win, and the real
   `.env`'s LLM settings never reach the test containers.
 - [ ] T025 [US1] Fill in the ledger's "After S2" column.
-**Checkpoint (MVP)**: the whole app runs on MariaDB in the worktree; SQLite is unused.
+**Checkpoint (MVP)**: the whole app runs on MariaDB in this checkout (stack still stopped); SQLite
+is unused.
 
 ---
 
@@ -345,7 +346,7 @@ run is refused, and an over-long row is reported with nothing written.
   recording the counts. Compare with `sqlite3 -readonly` counts: about 754 jobs, 720 verdicts, 45
   API calls and 196 hidden. Then empty the test tables.
 
-- [ ] T030 [US1] Manual check: `npm run web` (the worktree `.env` already names `myjobbot_test`), after seeding
+- [ ] T030 [US1] Manual check: `npm run web` (`.env` already names `myjobbot_test`), after seeding
   `myjobbot_test` with the importer (T028) from a copy of `data/myjobbot.db`. The four pages
   render, and Hide works. Then empty the test tables. This closes S4.
 
@@ -409,7 +410,7 @@ run is refused, and an over-long row is reported with nothing written.
   - **`data/`** now holds config, resume, traces and the old SQLite backup.
 
   `CLAUDE.md`: commands (`import-sqlite`, the integration project needs `.env`).
-- [ ] T037 Run a read-only review agent over `git diff main` in the worktree. It checks:
+- [ ] T037 Run a read-only review agent over `git diff main`. It checks:
   - every query parameterised (no string-built SQL except the fixed DDL)
   - the password never logged
   - `SET NAMES` on every connection
@@ -432,8 +433,8 @@ run is refused, and an over-long row is reported with nothing written.
      text, which change at midnight, so a switch-over that spans midnight compares cleanly.
   3. Back up SQLite to `data/myjobbot-pre-mariadb.db`.
   4. Add `MYJOBBOT_DB_*` to the main `.env`.
-  5. From the worktree, run `MYJOBBOT_DB_NAME=myjobbot npm start -- import-sqlite <backup>`. This
-     is the only command that names the production database explicitly; it overrides the worktree
+  5. Run `MYJOBBOT_DB_NAME=myjobbot npm start -- import-sqlite <backup>`. This
+     is the only command that names the production database explicitly; it overrides
      `.env`'s `myjobbot_test`. Record the counts.
   6. With the owner's OK, merge or PR. Then in the main checkout, `git switch -C main origin/main`
      (pull first; memory note), and run `npm run docker:up`.
@@ -441,7 +442,7 @@ run is refused, and an over-long row is reported with nothing written.
      `<main>` against step 2's. They must be identical; record the result in Notes. (Do this
      before any run adds jobs.)
   8. Check Hide, then one `docker compose run --rm myjobbot run`.
-  9. Remove the worktree.
+  9. Set `MYJOBBOT_DB_NAME=myjobbot` in `.env`; `docker compose up -d` (or restart `docker:watch`).
 
   The rollback is the previous `main` plus `docker:up`; the SQLite file is untouched.
 
@@ -449,14 +450,41 @@ run is refused, and an over-long row is reported with nothing written.
 
 ## Notes
 
-(Filled in during implementation: baseline counts, the ledger, import timings and counts,
-speed measurements, and what's left for 95/4/1.)
+- **S0 / T001** (2026-10-14): planning committed as `a04c5d9`. Started in a worktree; the owner then
+  moved spec work to the main checkout. The worktree was removed, this checkout switched to
+  `mariadb-storage`, and the Docker stack was stopped (no run in progress). Baseline: `npm run check` green, 239 tests in 51 files,
+  habit-hooks clean, **9.61 s** (SC-004 baseline).
+- **T002**: mysql2 approved by the owner (2026-10-14).
+- **T003**: `.env` (gitignored) gained `MYJOBBOT_DB_HOST`, `_USER`, `_PASSWORD` and
+  `MYJOBBOT_DB_NAME=myjobbot_test`; `.env.example` lists the `MYJOBBOT_DB_*` and
+  `MYJOBBOT_TEST_DB_NAME` settings without values.
+- **Workflow change (owner, 2026-10-14)**: spec work moved from the worktree to the main checkout,
+  with the Docker stack stopped (`docker compose stop`; no agent run was in progress). Constitution
+  v2.1.0, `CLAUDE.md` and the tasks template say so. The Stop hook now reports instead of blocking
+  while `.specify/sitting-in-progress` names a sitting; the pre-commit hook still blocks.
+- **S1 (T004–T012), green**: `npm run check` passes, with 252 tests and habit-hooks clean, in
+  **7.22 s** (baseline 9.61 s; the SQLite store tests went into the contract).
+  - **Contract**: `tests/helpers/storeContract.ts` has 13 cases. It passes against
+    `memoryStores()` (`tests/storeContract.test.ts`) and the SQLite classes on `:memory:`
+    (`tests/sqliteStoreContract.test.ts`, deleted in S2).
+  - **Store interfaces** in `src/db/store.ts`, row schemas and mappers in `src/db/rows.ts`, and
+    `openSqliteStores` in `src/db/sqliteStores.ts`. The SQLite classes are now
+    `SqliteJobStore`, `SqliteJobViews` and `SqliteApiCallLog`.
+  - **`runOnce`** takes `RunSeams.openStores` (default: SQLite) and closes the stores in
+    `finally`. Every `runOnce` test passes the fake.
+  - **Async all the way**: tools, `pageData`, `web/lib/rows.ts` and `DataPage`.
+  - **`verdicts.test.ts`**: keeps its SQLite backfill test until S2 deletes `open.ts`; its tool
+    tests use the fake.
+  - **Ledger caveat**: about 60 in-memory tests still count as integration under the counting
+    rules, because they import helpers that touch files when loaded (`helpers/dataDir.ts` makes
+    a temp folder at import; `helpers/trace.ts` has a file reader). Splitting those helpers is
+    S5's job (T035).
 
 ## Dependencies & Execution Order
 
 Each sitting ends green. They run in order:
 
-- **S0 (T001–T003, setup)**: the worktree and the baseline. T002 (mysql2 approved) is done; the
+- **S0 (T001–T003, setup)**: the branch, the baseline and the settings. T002 (mysql2 approved) is done; the
   install happens in T019.
 - **S1 (T004–T012, foundational)**: async interfaces on SQLite. Blocks everything else.
 - **S2 (T013–T023, US1)**: tests first, then MariaDB and the switch. The MVP is complete at
@@ -484,7 +512,7 @@ Same-file order:
 
 ## Implementation Strategy
 
-1. **Phases 1–2**: the worktree, and every caller async behind interfaces, still on SQLite and
+1. **Phases 1–2**: the branch, a stopped stack, and every caller async behind interfaces, still on SQLite and
    green. Most tests now run on the in-memory fake.
 2. **US1 (MVP)**: in one sitting, add MariaDB under the same interfaces, switch the agent and the
    web app, and delete SQLite. It's green before and after.

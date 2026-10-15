@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
-import { JobViews } from "../src/db/jobViews.js";
-import { openDatabase } from "../src/db/open.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
+import { memoryStores } from "./helpers/memoryStore.js";
 import { fetchPage, invokeTool } from "./helpers/tools.js";
 
 function boardContext() {
@@ -39,11 +38,10 @@ test("record_matches requires the base and bonus, not a single score", async () 
 });
 
 test("record_matches stores the sum as the score and keeps the breakdown", async () => {
-    const db = openDatabase(":memory:");
-    const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer"])) }, db);
+    const stores = memoryStores();
+    const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer"])) }, stores);
     await fetchPage(context, "Stripe");
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 38, bonus: 40 }] });
-    const views = new JobViews(db);
-    expect(views.allJobs({ offset: 0, limit: 10 })[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
-    expect(views.verdictHistory({ offset: 0, limit: 10 })[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
+    expect((await stores.jobViews.allJobs({ offset: 0, limit: 10 }))[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
+    expect((await stores.jobViews.verdictHistory({ offset: 0, limit: 10 }))[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
 });

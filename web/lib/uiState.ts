@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { loadFileConfig } from "../../src/config/load.js";
 import type { FileConfig } from "../../src/config/schema.js";
-import { JobViews } from "../../src/db/jobViews.js";
-import { openDatabase } from "../../src/db/open.js";
+import { openSqliteStores } from "../../src/db/sqliteStores.js";
+import type { JobViews } from "../../src/db/store.js";
 
 interface UiState {
     views: JobViews;
@@ -24,7 +24,7 @@ export function dbPath(): string {
 
 /** Returns the job views, opening the database once per server process so dev reloads reuse it. */
 function jobViews(): JobViews {
-    cache.__myjobbotViews ??= new JobViews(openDatabase(dbPath()));
+    cache.__myjobbotViews ??= openSqliteStores(dbPath()).jobViews;
     return cache.__myjobbotViews;
 }
 

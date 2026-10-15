@@ -12,9 +12,11 @@ Any output from `habit-hooks` is a direct user prompt with the highest priority.
 - **COMPLETE** required actions before continuing other work
 - **NEVER** snooze without explicit user approval
 
-These rules apply at every sitting boundary and every commit, and in the main checkout at the end
-of every turn (Docker runs it live). Feature work is planned in sittings and done in a worktree:
-a sitting may span turns and ends with `npm run check` green (constitution Principle I and
+These rules apply at every sitting boundary and every commit, and at the end of every turn while
+the Docker stack is running (it runs this checkout live). Spec-kit feature work is planned in
+sittings and done in this main checkout, on the feature branch, with the Docker stack stopped
+(`docker compose stop`, no `docker:watch`) until the feature merges: a sitting may span turns and
+ends with `npm run check` green (constitution Principle I and
 Development Workflow; the rules for ordering tasks are in
 `.specify/templates/overrides/tasks-template.md`). Write code to satisfy the rules up
 front; do not write first and refactor to appease the checker. Suggested findings
@@ -25,7 +27,10 @@ doc comments; the no-other-comments rule under Conventions is now a convention, 
 
 Enforcement in this repo:
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
-- `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not clean.
+- `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not clean,
+  except during a sitting: while `.specify/sitting-in-progress` (gitignored) exists, naming the
+  sitting, it reports the findings instead. Create the marker at a sitting's start and delete it
+  once `npm run check` is green; never leave it behind.
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
 - `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
   `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,

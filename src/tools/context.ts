@@ -1,7 +1,6 @@
 import type { Trace } from "../agent/trace.js";
 import type { FileConfig } from "../config/schema.js";
-import type { ApiCallLog } from "../db/apiCalls.js";
-import type { JobStore } from "../db/jobStore.js";
+import type { ApiCallLog, JobStore } from "../db/store.js";
 import type { JsonGetter } from "../http/client.js";
 import type { FetchOutcome } from "./sources.js";
 

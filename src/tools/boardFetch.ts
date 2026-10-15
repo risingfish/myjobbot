@@ -9,7 +9,7 @@ export async function fetchBoard(context: ToolContext, company: Company): Promis
     const jobs = await fetcherFor(company.ats)(company, context.http);
     logBoardFetch(context, company, jobs);
     const seen = context.now().toISOString();
-    context.store.upsertAll(jobs, seen, company.name);
+    await context.store.upsertAll(jobs, seen, company.name);
     return { seen, note: null };
 }
 

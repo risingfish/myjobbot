@@ -6,9 +6,8 @@ import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
-import { ApiCallLog } from "../db/apiCalls.js";
-import { JobStore } from "../db/jobStore.js";
-import { openDatabase } from "../db/open.js";
+import { openSqliteStores } from "../db/sqliteStores.js";
+import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
 import { HttpClient, type JsonGetter } from "../http/client.js";
@@ -18,6 +17,12 @@ import { buildTools } from "../tools/registry.js";
 interface RunSeams {
     chat?: ChatFn;
     http?: JsonGetter;
+    openStores?: (config: AppConfig) => Promise<Stores>;
+}
+
+interface RunParts {
+    logs: RunLogs;
+    stores: Stores;
 }
 
 interface RunLogs {
@@ -38,29 +43,43 @@ const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 export async function runOnce(environment: Environment, seams: RunSeams = {}): Promise<RunReport> {
     const config = loadConfig(environment);
     const logs = openRunLogs(config);
-    const context = buildContext(config, seams, logs);
-    const chat = seams.chat ?? createChat(config.env, logs.llm);
-    const result = await runAgent(agentDeps(config, context, { chat, trace: logs.trace }), initialMessages(config));
-    pruneOldJobs(context);
-    return { ...result, runId: logs.runId, summary: context.run.summary };
+    const stores = await (seams.openStores ?? openDefaultStores)(config);
+    try {
+        return await runWithStores(config, seams, { logs, stores });
+    } finally {
+        await stores.close();
+    }
+}
+
+/** Runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
+async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
+    const context = buildContext(config, seams, parts);
+    const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
+    const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
+    await pruneOldJobs(context);
+    return { ...result, runId: parts.logs.runId, summary: context.run.summary };
+}
+
+/** Opens the stores a run uses by default: the SQLite file in the data directory. */
+async function openDefaultStores(config: AppConfig): Promise<Stores> {
+    return openSqliteStores(join(config.dataDir, "myjobbot.db"));
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */
-function pruneOldJobs(context: ToolContext): void {
+async function pruneOldJobs(context: ToolContext): Promise<void> {
     const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
-    context.store.pruneLastSeenBefore(cutoff);
-    context.apiCalls.pruneBefore(cutoff);
+    await context.store.pruneLastSeenBefore(cutoff);
+    await context.apiCalls.pruneBefore(cutoff);
 }
 
-/** Assembles the tool context (database, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, logs: RunLogs): ToolContext {
-    const db = openDatabase(join(config.dataDir, "myjobbot.db"));
+/** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores }: RunParts): ToolContext {
     return {
         config: config.file,
         run: newRunState(),
         runId: logs.runId,
-        store: new JobStore(db),
-        apiCalls: new ApiCallLog(db),
+        store: stores.jobStore,
+        apiCalls: stores.apiCalls,
         http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
         now: () => new Date(),
         jobLog: logs.jobs,

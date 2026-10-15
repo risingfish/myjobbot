@@ -31,8 +31,8 @@ description: "Task list template for feature implementation"
 Work is planned in **sittings**, not phases alone. A sitting is a numbered group of tasks
 (`### Sitting S1: <goal>` headings inside the phases) that:
 
-- **may span several turns**, and is done in a **worktree**, never in the main checkout (Docker runs
-  the main checkout's `src/` and `web/` live)
+- **may span several turns**, and is done in the **main checkout** on the feature branch, with the
+  Docker stack stopped (it runs this checkout's `src/` and `web/` live) until the feature merges
 - **ends green**: `npm run check` (typecheck, tests, habit-hooks) passes with no exemptions, and its
   last task says so
 - **is the only commit point**: commit only at the end of a sitting, and only when the owner asks

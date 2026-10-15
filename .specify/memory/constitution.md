@@ -6,8 +6,9 @@
 
 All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings:
 - at the end of every **sitting** (see Development Workflow) and at every commit
-- in the **main checkout**, at the end of every turn too, because Docker runs its `src/` and `web/`
-  live; feature work therefore happens in a worktree
+- at the end of every turn whenever the Docker stack is running, because it runs this checkout's
+  `src/` and `web/` live. Feature work is done in this checkout with the stack stopped (see
+  Development Workflow).
 
 The limits:
 - functions at most 20 lines, at most 3 parameters, complexity at most 10, nesting at most 4
@@ -76,7 +77,8 @@ Rationale: one documentation root for the project.
 
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
 - `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not
-  clean.
+  clean. While a sitting is in progress (`.specify/sitting-in-progress` exists), it reports instead;
+  the marker is removed when the sitting ends green.
 - `.githooks/pre-commit` blocks commits with enforced findings
   (`git config core.hooksPath .githooks`).
 - `knip.json` and `eslint.config.mjs` replace habit-hooks' shipped configs (the ESLint copy raises
@@ -94,7 +96,9 @@ Rationale: one documentation root for the project.
   has a Constitution Check against Principles I–V.
 - **Sittings.** A task list groups its tasks into numbered sittings. A sitting:
   - may span several turns
-  - is worked in a git worktree, never the main checkout
+  - is worked in the main checkout, on the feature branch, with the Docker stack stopped
+    (`docker compose stop`, and `docker:watch` not running) from the first code change until the
+    feature is merged and the stack is rebuilt
   - ends with `npm run check` green
   - is the only point where work may be committed (when the owner asks)
 
@@ -119,4 +123,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 2.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14

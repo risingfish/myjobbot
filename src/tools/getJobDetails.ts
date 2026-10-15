@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JobRow } from "../db/jobStore.js";
+import type { JobRow } from "../db/store.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
 import { defineTool, type Tool } from "./tool.js";
@@ -18,10 +18,10 @@ export function getJobDetailsTool(context: ToolContext): Tool {
 }
 
 /** Looks up a job by id and assembles its summary, description, and list fields for the model. */
-function details(context: ToolContext, jobId: string): Record<string, unknown> {
-    const row = context.store.findJob(jobId);
+async function details(context: ToolContext, jobId: string): Promise<Record<string, unknown>> {
+    const row = await context.store.findJob(jobId);
     if (!row) throw new Error(`unknown job_id "${jobId}"`);
-    return { ...summarizeJob(context, row), ...descriptionFields(row.description), ...listFields(row) };
+    return { ...(await summarizeJob(context, row)), ...descriptionFields(row.description), ...listFields(row) };
 }
 
 /** Returns the job's description, truncated to the limit when needed, or a placeholder when absent. */

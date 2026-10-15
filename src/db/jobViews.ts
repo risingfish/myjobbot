@@ -1,66 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
-import { jsonList as list } from "./columns.js";
-
-const text = z.string().nullable();
-
-const jobView = z.object({
-    ats: z.string(),
-    job_id: z.string(),
-    source: z.string(),
-    company: z.string(),
-    title: z.string(),
-    url: z.string(),
-    location: text,
-    workplace_type: text,
-    is_remote: z.number().nullable(),
-    compensation: text,
-    posted_at: text,
-    first_seen: z.string(),
-    last_seen: z.string(),
-    publisher: text,
-    score: z.number().nullable(),
-    reasons: list,
-    gaps: list,
-    scored_at: text,
-    hidden: z.number().transform((flag) => flag === 1),
-    description: text,
-    base_score: z.number().nullable(),
-    bonus_score: z.number().nullable(),
-});
-export type JobView = z.infer<typeof jobView>;
-
-const verdictView = z.object({
-    id: z.number(),
-    run_id: text,
-    scored_at: z.string(),
-    score: z.number(),
-    base_score: z.number().nullable(),
-    bonus_score: z.number().nullable(),
-    reasons: list,
-    gaps: list,
-    title: text,
-    company: text,
-    url: text,
-    source: text,
-});
-export type VerdictView = z.infer<typeof verdictView>;
-
-export interface Page {
-    offset: number;
-    limit: number;
-}
-
-export interface HiddenFlag {
-    ats: string;
-    jobId: string;
-    hidden: boolean;
-}
-
-export interface ScoreFilter {
-    sources: string[];
-    minScore: number;
-}
+import { jobViewSchema, verdictViewSchema } from "./rows.js";
+import type { HiddenFlag, JobView, JobViews, Page, ScoreFilter, VerdictView } from "./store.js";
 
 const JOB_COLUMNS = `ats, job_id, source, company, title, url, location, workplace_type, is_remote, compensation,
   posted_at, first_seen, last_seen, publisher, score, reasons, gaps, scored_at, hidden,
@@ -74,39 +15,39 @@ ORDER BY v.scored_at DESC, v.rowid DESC LIMIT ? OFFSET ?`;
 const SET_HIDDEN = "UPDATE jobs SET hidden = ? WHERE ats = ? AND job_id = ?";
 const count = z.object({ count: z.number() });
 
-export class JobViews {
+export class SqliteJobViews implements JobViews {
     constructor(private readonly db: DatabaseSync) {}
 
     /** Returns the visible, newest-first jobs from the given sources that meet a minimum score, for the recommended tab. */
-    scoredFrom(filter: ScoreFilter): JobView[] {
+    async scoredFrom(filter: ScoreFilter): Promise<JobView[]> {
         const placeholders = filter.sources.map(() => "?").join(", ");
         const sql = `SELECT ${JOB_COLUMNS} FROM jobs WHERE hidden = 0 AND score >= ? AND source IN (${placeholders}) ${NEWEST_FIRST}`;
-        return z.array(jobView).parse(this.db.prepare(sql).all(filter.minScore, ...filter.sources));
+        return z.array(jobViewSchema).parse(this.db.prepare(sql).all(filter.minScore, ...filter.sources));
     }
 
     /** Sets whether a job is hidden from the recommended tab; reports whether the job existed. */
-    setHidden(flag: HiddenFlag): boolean {
+    async setHidden(flag: HiddenFlag): Promise<boolean> {
         const result = this.db.prepare(SET_HIDDEN).run(Number(flag.hidden), flag.ats, flag.jobId);
         return Number(result.changes) > 0;
     }
 
     /** Returns one newest-first page of every stored job, hidden or not, for the all-jobs tab. */
-    allJobs(page: Page): JobView[] {
-        return z.array(jobView).parse(this.db.prepare(ALL_JOBS).all(page.limit, page.offset));
+    async allJobs(page: Page): Promise<JobView[]> {
+        return z.array(jobViewSchema).parse(this.db.prepare(ALL_JOBS).all(page.limit, page.offset));
     }
 
     /** Counts every stored job, for paginating the all-jobs tab. */
-    countAllJobs(): number {
+    async countAllJobs(): Promise<number> {
         return count.parse(this.db.prepare("SELECT COUNT(*) AS count FROM jobs").get()).count;
     }
 
     /** Returns one page of past scoring verdicts, newest first, joined with their job's details. */
-    verdictHistory(page: Page): VerdictView[] {
-        return z.array(verdictView).parse(this.db.prepare(VERDICT_HISTORY).all(page.limit, page.offset));
+    async verdictHistory(page: Page): Promise<VerdictView[]> {
+        return z.array(verdictViewSchema).parse(this.db.prepare(VERDICT_HISTORY).all(page.limit, page.offset));
     }
 
     /** Counts every recorded verdict, for paginating the verdict history tab. */
-    countVerdicts(): number {
+    async countVerdicts(): Promise<number> {
         return count.parse(this.db.prepare("SELECT COUNT(*) AS count FROM verdicts").get()).count;
     }
 }

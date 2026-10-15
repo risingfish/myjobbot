@@ -136,11 +136,11 @@ README.md, CLAUDE.md          # storage, setup, test mix
 
 ## Rollout
 
-1. **Branch**: `mariadb-storage`, which already holds the spec and constitution v2.0.0.
-2. **Build and test in a worktree** (`../myjobbot-mariadb`), against `myjobbot_test` only. The
-   main checkout goes back to `main`, because Docker mounts its `src/` live, and editing there
-   would change the scheduled agent mid-feature. The live stack keeps running on SQLite until the
-   switch.
+1. **Branch**: `mariadb-storage`, which already holds the spec and constitution v2.1.0.
+2. **Build and test in the main checkout**, against `myjobbot_test` only, with the Docker stack
+   **stopped** (owner decision, 2026-10-14). The stack mounts this checkout's `src/` and `web/`
+   live, so it stays stopped, with no scheduled runs and no UI, until the switch-over. Runs missed
+   in between are harmless; the next run after the switch picks up where they left off.
 
    The work goes in two green steps, so habit-hooks is never unclean (constitution I):
    1. Every caller goes async behind the store interfaces while still on SQLite, with the
@@ -156,8 +156,8 @@ README.md, CLAUDE.md          # storage, setup, test mix
 
    Rolling back means checking out the previous `main` and rebuilding; the SQLite file is
    untouched.
-4. **`docker:watch` caution** (from memory): pull before switching branches, so it never rebuilds
-   from stale files. Or stop the watcher during the switch.
+4. **`docker:watch` stays off** during the feature, so a `package.json` change can't rebuild and
+   restart the stack on half-finished code. Restart it after the switch-over.
 
 ## Complexity Tracking
 
