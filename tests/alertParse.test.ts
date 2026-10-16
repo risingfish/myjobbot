@@ -44,3 +44,9 @@ test("encoded characters in titles and companies are decoded", () => {
     const html = searchAlert(jobs, "x").replace("A=B", "A&#61;B").replace("é", "&#233;");
     expect(parseAlert(alertEmail(1, SEARCH_SENDER, html)).jobs[0]).toMatchObject({ title: "Engineer – Café O'Neil", company: "A=B Labs", location: "Zürich" });
 });
+
+test("an out-of-range character reference or a relative search link never stops parsing", () => {
+    const html = searchAlert([{ ...FIRST, title: "Engineer &#9999999999; Lead" }], "x").replace(/href="https:\/\/www\.linkedin\.com\/comm\/jobs\/search-results\//, 'href="/comm/jobs/search-results/');
+    const parsed = parseAlert(alertEmail(1, SEARCH_SENDER, html));
+    expect([parsed.layout, parsed.keywords, parsed.jobs[0]?.title]).toEqual(["linkedin_digest", null, "Engineer &#9999999999; Lead"]);
+});

@@ -1,6 +1,6 @@
 import type { Trace } from "../agent/trace.js";
 import type { AlertStateRow, AlertStore, GmailStore, JobStore } from "../db/store.js";
-import { parseAlert, type AlertEmail } from "./alertJobs/parse.js";
+import { parseAlert, type AlertEmail, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
@@ -51,10 +51,10 @@ const MAX_EMAILS = 50;
 export async function fetchAlerts(deps: AlertDeps): Promise<AlertSummary> {
     const marker = await deps.alerts.state();
     const mail = await readMail(deps, marker);
-    const read = mail.emails.map((email) => ({ email, alert: parseAlert(email) }));
+    const read = mail.emails.map((email) => ({ email, alert: safeParse(email) }));
     const summary = summarize(read, await storeRead(deps, read));
     await deps.alerts.recordRead({ uidValidity: mail.uidValidity, lastUid: lastUid(mail, marker), emails: summary.emails, jobs: summary.jobs_found, notUnderstood: summary.not_understood }, deps.now.toISOString());
-    deps.trace.write({ type: "alerts", ...summary, not_understood: notUnderstood(read).map(({ email }) => ({ from: email.from, subject: email.subject })) });
+    deps.trace.write({ type: "alerts", ...summary, not_understood: notUnderstood(read).map(({ email, alert }) => ({ from: email.from, subject: email.subject, ...(alert.failure === undefined ? {} : { failure: alert.failure }) })) });
     return summary;
 }
 
@@ -107,4 +107,13 @@ function isLinkedIn(email: AlertEmail): boolean {
 function lastUid(mail: AlertMail, marker: AlertStateRow | null): number | null {
     const previous = marker?.uid_validity === mail.uidValidity ? marker.last_uid : null;
     return Math.max(previous ?? 0, ...mail.emails.map((email) => email.uid)) || previous;
+}
+
+/** Parses one email, treating any failure as an email that yielded no jobs, so one odd email can't stall alert reading for good. */
+function safeParse(email: AlertEmail): ParsedAlert {
+    try {
+        return parseAlert(email);
+    } catch (error) {
+        return { layout: null, keywords: null, jobs: [], failure: error instanceof Error ? error.name : "unknown" };
+    }
 }

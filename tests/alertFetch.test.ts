@@ -9,6 +9,7 @@ import { routedHttp } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
 const SEARCH = fixtureJobs(3, 4100000000);
+const POISON = { toString: () => "unused" } as unknown as string;
 const DIGEST = fixtureJobs(2, 4200000000);
 
 function twoEmails() {
@@ -50,11 +51,16 @@ test("repeats are stored once, stored alert jobs keep their details, and other s
 });
 
 test("mail that yields no jobs is counted, with sender and subject only in the trace", async () => {
-    const emails = [alertEmail(10, DIGEST_SENDER, notification()), alertEmail(11, "alert@indeed.com", digest(DIGEST))];
+    const emails = [alertEmail(10, DIGEST_SENDER, notification()), alertEmail(11, "alert@indeed.com", digest(DIGEST)), alertEmail(12, DIGEST_SENDER, POISON)];
     const { deps, stores, trace } = await alertSetup(emails);
-    expect(await fetchAlerts(deps)).toMatchObject({ emails: 2, jobs_found: 0, not_understood: 1, unsupported: 1 });
-    expect(trace.events[0]).toMatchObject({ not_understood: [{ from: DIGEST_SENDER, subject: "subject 10" }] });
-    expect(await stores.alerts.state()).toMatchObject({ emails_read: 2, jobs_found: 0, not_understood: 1 });
+    expect(await fetchAlerts(deps)).toMatchObject({ emails: 3, jobs_found: 0, not_understood: 2, unsupported: 1 });
+    expect(trace.events[0]).toMatchObject({
+        not_understood: [
+            { from: DIGEST_SENDER, subject: "subject 10" },
+            { from: DIGEST_SENDER, subject: "subject 12" },
+        ],
+    });
+    expect(await stores.alerts.state()).toMatchObject({ emails_read: 3, jobs_found: 0, not_understood: 2, last_uid: 12 });
 });
 
 test("unusable Gmail stops the fetch with a fixed note, and a rejected password needs reconnecting", async () => {

@@ -21,6 +21,7 @@ export interface ParsedAlert {
     layout: AlertLayout | null;
     keywords: string | null;
     jobs: AlertJob[];
+    failure?: string;
 }
 
 const NOTHING: ParsedAlert = { layout: null, keywords: null, jobs: [] };
@@ -62,6 +63,6 @@ function toJob(linkedinId: string, title: string, following: string): AlertJob {
 /** Returns the saved search's keywords from the alert's "see all results" link, or null for a digest. */
 function searchKeywords(html: string): string | null {
     const href = SEARCH_LINK.exec(html)?.[1];
-    if (href === undefined) return null;
+    if (href === undefined || !URL.canParse(htmlText(href))) return null;
     return new URL(htmlText(href)).searchParams.get("keywords");
 }

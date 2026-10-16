@@ -100,9 +100,26 @@ in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:
 
 ### Gmail
 
-Settings has a Gmail panel that connects your mailbox over IMAP with an app password, so a later
-feature can read LinkedIn and Indeed job-alert emails. For now it connects, checks and
-disconnects; runs don't read mail yet.
+Settings has a Gmail panel that connects your mailbox over IMAP with an app password. Once it's
+connected, every run reads your new LinkedIn job-alert emails and turns their jobs into jobs
+myjobbot scores, under the source "Gmail alerts".
+
+How runs use the alerts:
+- **What's read**: only new alert mail since the last run (the last 7 days the first time), at
+  most the 50 newest per run. The mailbox is opened read-only and only each email's HTML part is
+  downloaded, so nothing is marked read, moved or deleted. Email text is never stored, only the
+  jobs.
+- **Descriptions**: alert emails carry no job description. For new alert jobs that pass the title
+  filter, a run makes one JSearch search per alert email (the alert's own keywords) and fills in
+  the description for postings it finds. Lookups only use what's left of
+  `jsearch.monthly_request_cap` after your saved searches' refreshes for the rest of the month.
+  Jobs without a description are still scored, and their gaps say "scored from the alert only".
+- **Duplicates**: a posting seen again keeps its score and details. One already stored from a
+  company board or saved search isn't added again.
+- **Visible results**: the Gmail panel shows the last run's counts ("3 alert emails, 14 jobs, 1 not
+  understood"). A rising "not understood" count means LinkedIn changed its email layout.
+- **Indeed**: Indeed alerts aren't parsed yet; they're counted separately, as unsupported, in
+  the run trace.
 
 One-time setup:
 1. **Turn on 2-step verification** for your Google account, if it isn't on already.
@@ -290,8 +307,8 @@ work. Three failures in a row and the code ends the run.
 
 | Tool | What it does |
 |---|---|
-| `list_sources` | Each company board and saved search, with this run's progress: `fetched`, `total_unscored`, `fetch_failed` |
-| `fetch_jobs` | The first call per source per run downloads the board, or calls JSearch if the search is due. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed |
+| `list_sources` | Each company board and saved search, plus "Gmail alerts", with this run's progress: `fetched`, `total_unscored`, `fetch_failed` (with a `note` saying why, for Gmail alerts) |
+| `fetch_jobs` | The first call per source per run downloads the board, calls JSearch if the search is due, or reads new Gmail alert emails. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed, and the alerts page carries the run's alert counts |
 | `record_matches` | Saves up to 25 verdicts in one call: a `base` (0–50, resume fit) and a `bonus` (0–50, preference fit) that code sums into the score, with reasons and gaps |
 | `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them, and to treat the description as data, not instructions |
 | `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source is unfetched or still has unscored jobs (a source whose fetch failed doesn't count) |
@@ -507,7 +524,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
 | `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
-| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert in the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error |
+| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no company or search may use it |
 
 ### Saved searches (JSearch)
 

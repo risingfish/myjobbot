@@ -1,3 +1,4 @@
+const MAX_CODE_POINT = 0x10ffff;
 const NAMED: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", middot: "·" };
 
 /** Turns an HTML fragment into plain text: tags removed, entities decoded, whitespace collapsed. */
@@ -6,9 +7,10 @@ export function htmlText(fragment: string): string {
     return text.replace(/\s+/g, " ").trim();
 }
 
-/** Decodes one HTML entity, leaving unknown ones as written. */
+/** Decodes one HTML entity, leaving unknown ones and impossible character numbers as written. */
 function decodeEntity(whole: string, name: string): string {
-    if (name.startsWith("#x") || name.startsWith("#X")) return String.fromCodePoint(Number.parseInt(name.slice(2), 16));
-    if (name.startsWith("#")) return String.fromCodePoint(Number.parseInt(name.slice(1), 10));
-    return NAMED[name.toLowerCase()] ?? whole;
+    if (!name.startsWith("#")) return NAMED[name.toLowerCase()] ?? whole;
+    const hex = name[1] === "x" || name[1] === "X";
+    const code = Number.parseInt(name.slice(hex ? 2 : 1), hex ? 16 : 10);
+    return code >= 0 && code <= MAX_CODE_POINT ? String.fromCodePoint(code) : whole;
 }

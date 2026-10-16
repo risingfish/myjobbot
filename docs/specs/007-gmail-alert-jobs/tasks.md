@@ -406,7 +406,7 @@ Create `.specify/sitting-in-progress` naming S3 before T024.
 
 Create `.specify/sitting-in-progress` naming S4 before T028.
 
-- [ ] T028 [P] Docs:
+- [X] T028 [P] Docs:
   - **`README.md`**:
     - the Gmail section says runs now read LinkedIn alerts into jobs
     - "Gmail alerts" is added to "The five tools" and "One run, start to finish"
@@ -415,7 +415,7 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
       as by Check now, and that "Gmail alerts" is a reserved source name
   - **`CLAUDE.md`**: the Gmail note gains `src/gmail/alertJobs/` and the read-only, plain-part-only
     rule.
-- [ ] T029 Run a read-only review agent over `git diff main`. It checks:
+- [X] T029 Run a read-only review agent over `git diff main`. It checks:
   - no email text stored (only job fields), and subjects only in trace files
   - mail opened read-only, with plain parts fetched with PEEK
   - at most one JSearch request per email, within the allowance
@@ -425,6 +425,22 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
   - the key comes from the raw environment
 
   Fix confirmed findings test-first.
+  Done 2026-10-16. The review confirmed:
+  - read-only `EXAMINE` and `BODY.PEEK` (checked in imapflow's source), and `logger: false`
+  - at most one logged JSearch request per email, within the allowance
+  - the read marker advances only after storing; deduplication and the `li_` prefix
+  - the wiring, and no `web/` imports
+
+  It found one real problem: a single malformed email could stall alert reading for good. An
+  out-of-range numeric entity (`&#9999999999;`) threw in `String.fromCodePoint`, and a relative
+  "see all results" link threw in `new URL()`. Either aborted `fetchAlerts` before the marker
+  advanced, so every later run would hit the same email again. Fixed test-first:
+  - entities outside `0..0x10FFFF` are left as written
+  - a link that can't be parsed means no keywords (digest)
+  - each email is parsed inside `safeParse`, so a failure counts that email as "not understood",
+    with the error's name in the trace, and the marker still advances
+
+  Results: node 283 (+1), integration 29.
 - [ ] T030 Live run with the owner on `myjobbot_test`, with production untouched, after the last
   `npm run check:db` (which empties the test tables):
   1. Connect Gmail on the test database: `MYJOBBOT_DB_NAME=myjobbot_test npm run web`, then
@@ -436,8 +452,11 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
      disconnect step (SC-004).
   5. Record only counts in Notes: emails, jobs found, stored, looked up, with description (the
      SC-003 ratio), not understood. Never job or email text (owner rule, 006).
+  Deferred 2026-10-16: the owner chose to commit and open the PR without the test-database run,
+  since the app password wasn't at hand. The live check moves to T033, on production after the
+  merge.
 - [ ] T031 Fix anything T030 finds (test-first), or record it as follow-up.
-- [ ] T032 Close S4: both checks green; delete the marker; commit; push; open the PR with the
+- [X] T032 Close S4: both checks green; delete the marker; commit; push; open the PR with the
   owner's OK.
 - [ ] T033 After the owner merges:
   1. Update `main` and run `npm run docker:up` (which migrates production to `003`).
