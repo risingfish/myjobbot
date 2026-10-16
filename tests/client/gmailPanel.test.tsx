@@ -21,8 +21,10 @@ beforeEach(() => {
     actions.disconnectGmail.mockReset().mockResolvedValue({ ok: true });
 });
 
+const LAST_RUN = { uid_validity: 7, last_uid: 9, last_run_at: "2026-10-16T08:05:00.000Z", emails_read: 3, jobs_found: 14, not_understood: 1 };
+
 function renderPanel(row: GmailConnectionRow | null) {
-    return render(<GmailPanel view={gmailPanelView(row, { keyStatus: "ok", keyChanged: false })} />).container;
+    return render(<GmailPanel view={gmailPanelView(row, { keyStatus: "ok", keyChanged: false, alertState: LAST_RUN })} />).container;
 }
 
 async function disconnectAnswering(answer: boolean, panel: HTMLElement) {
@@ -45,6 +47,7 @@ test("the connect form never shows the app password, and a refused connect says 
 test("a connected panel names the address and time, and one needing to reconnect says why", () => {
     const connected = renderPanel(gmailRow());
     expect(within(connected).getByText(/Connected as me@example.com since 2026-10-1[56]/)).toBeTruthy();
+    expect(within(connected).getByText(/3 alert emails, 14 jobs, 1 not understood/)).toBeTruthy();
     expect(within(connected).getByText("Use a different account or app password")).toBeTruthy();
     const stale = renderPanel(gmailRow({ status: "needs_reconnect", reason: "app password rejected; create a new one" }));
     expect(within(stale).getByText(/Needs reconnecting: app password rejected; create a new one/)).toBeTruthy();

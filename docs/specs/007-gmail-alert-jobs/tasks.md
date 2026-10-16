@@ -381,13 +381,13 @@ S2 notes (2026-10-16):
 
 Create `.specify/sitting-in-progress` naming S3 before T024.
 
-- [ ] T024 [P] [US3] **Unit, changed in place (+0)**: in `tests/gmailPanel.test.ts`, the connected
+- [X] T024 [P] [US3] **Unit, changed in place (+0)**: in `tests/gmailPanel.test.ts`, the connected
   test asserts that, with an alert state, the view's `lastRun` matches the contract's string
   ("Last run <YYYY-MM-DD HH:mm>: 3 alert emails, 14 jobs, 1 not understood", time loosely
   matched), and that singulars read "1 alert email, 1 job". With no state, or when not connected, it is null.
-- [ ] T025 [P] [US3] **UI, changed in place (+0)**: in `tests/client/gmailPanel.test.tsx`, the
+- [X] T025 [P] [US3] **UI, changed in place (+0)**: in `tests/client/gmailPanel.test.tsx`, the
   connected test asserts the last-run line is shown.
-- [ ] T026 [US3] Changes:
+- [X] T026 [US3] Changes:
   - **`src/web/gmailPanel.ts`**: `gmailPanelView(row, context)` takes the alert state through
     `context` and returns `lastRun`.
   - **`web/app/settings/page.tsx`**: reads `alerts.state()` through `getUiState()`.
@@ -395,7 +395,7 @@ Create `.specify/sitting-in-progress` naming S3 before T024.
   - **`tests/client/settings.test.tsx`**: the mock gains `alerts`.
 
   T024 and T025 pass.
-- [ ] T027 [US3] Run both checks; update the ledger. Close S3: delete the marker and commit
+- [X] T027 [US3] Run both checks; update the ledger. Close S3: delete the marker and commit
   ("Show the last alert run in the Gmail panel (007 S3)").
 
 ---

@@ -1,4 +1,4 @@
-import type { GmailConnectionRow, GmailStatus } from "../db/store.js";
+import type { AlertStateRow, GmailConnectionRow, GmailStatus } from "../db/store.js";
 
 type GmailOffer = "connect" | "check" | "disconnect" | "replace";
 type KeyStatus = "missing" | "invalid" | "ok";
@@ -6,6 +6,7 @@ type KeyStatus = "missing" | "invalid" | "ok";
 interface PanelContext {
     keyStatus: KeyStatus;
     keyChanged: boolean;
+    alertState?: AlertStateRow | null;
 }
 
 export interface GmailPanelView {
@@ -16,6 +17,7 @@ export interface GmailPanelView {
     email: string | null;
     connectedAt: string | null;
     reason: string | null;
+    lastRun: string | null;
 }
 
 const RESTART = "then recreate the containers (docker compose up -d) or restart the dev server";
@@ -36,7 +38,7 @@ const OFFERS: Record<GmailStatus, GmailOffer[]> = {
 export function gmailPanelView(row: GmailConnectionRow | null, context: PanelContext): GmailPanelView {
     const stored = row ?? NOTHING_SAVED;
     const state = stored.status;
-    const view: GmailPanelView = { keyStatus: context.keyStatus, state, message: null, offers: OFFERS[state], email: stored.email, connectedAt: localTime(stored.connected_at), reason: stored.reason };
+    const view: GmailPanelView = { keyStatus: context.keyStatus, state, message: null, offers: OFFERS[state], email: stored.email, connectedAt: localTime(stored.connected_at), reason: stored.reason, lastRun: state === "connected" ? lastRun(context.alertState ?? null) : null };
     if (context.keyStatus !== "ok") return { ...view, message: KEY_MESSAGES[context.keyStatus], offers: [] };
     if (context.keyChanged) return { ...view, state: "key_changed", message: KEY_CHANGED, offers: ["connect"] };
     return state === "none" ? { ...view, message: NOT_CONNECTED } : view;
@@ -45,4 +47,11 @@ export function gmailPanelView(row: GmailConnectionRow | null, context: PanelCon
 /** Shows a stored UTC time as YYYY-MM-DD HH:mm in the server's time zone, or null when there is none. */
 function localTime(iso: string | null): string | null {
     return iso === null ? null : new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+}
+
+/** Describes the last run's alert reading for the panel, or null before any run read alerts. */
+function lastRun(state: AlertStateRow | null): string | null {
+    if (state?.last_run_at === null || state === null) return null;
+    const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+    return `Last run ${localTime(state.last_run_at) ?? ""}: ${plural(state.emails_read, "alert email")}, ${plural(state.jobs_found, "job")}, ${state.not_understood} not understood`;
 }

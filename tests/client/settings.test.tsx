@@ -5,7 +5,7 @@ import { expect, test, vi } from "vitest";
 import SettingsPage, { metadata } from "../../web/app/settings/page.js";
 import { memoryStores } from "../helpers/memoryStore.js";
 
-vi.mock("../../web/lib/uiState.js", () => ({ getUiState: async () => ({ gmail: memoryStores().gmail, key: { status: "ok", key: randomBytes(32) } }) }));
+vi.mock("../../web/lib/uiState.js", () => ({ getUiState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) } }) }));
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 
 test("the settings page holds the Scoring and Gmail panels and is labelled", async () => {
