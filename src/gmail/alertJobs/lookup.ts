@@ -13,18 +13,44 @@ export function planQuery(request: { alert: ParsedAlert; pending: AlertJob[] }):
     return location === null ? subject : `${subject} in ${location}`;
 }
 
-/** Pairs JSearch results with alert jobs, by LinkedIn id first and then by company and title, each result used once. */
-export function matchResults(jobs: AlertJob[], results: Job[]): Map<string, Job> {
+export interface MatchStats {
+    results: number;
+    linkedin_links: number;
+    by_id: number;
+    by_title: number;
+    hosts: Record<string, number>;
+}
+
+/** Pairs JSearch results with alert jobs, by LinkedIn id first and then by company and title, each result used once, and counts how. */
+export function matchResults(jobs: AlertJob[], results: Job[]): { matches: Map<string, Job>; stats: MatchStats } {
     const matches = new Map<string, Job>();
     const unused = [...results];
-    for (const pass of [byLinkedinId, byCompanyAndTitle]) {
-        for (const job of jobs.filter((candidate) => !matches.has(candidate.linkedinId))) {
-            const index = unused.findIndex((resultJob) => pass(job, resultJob));
-            const [found] = index >= 0 ? unused.splice(index, 1) : [];
-            if (found !== undefined) matches.set(job.linkedinId, found);
-        }
+    const [byId, byTitle] = [byLinkedinId, byCompanyAndTitle].map((pass) => matchPass(jobs, { unused, matches, pass }));
+    const stats = { results: results.length, linkedin_links: results.filter((result) => LINKEDIN_ID.test(result.url)).length, by_id: byId ?? 0, by_title: byTitle ?? 0, hosts: hostCounts(results) };
+    return { matches, stats };
+}
+
+/** Matches still-unmatched jobs with one rule, taking each matched result out of the pool, and returns how many matched. */
+function matchPass(jobs: AlertJob[], state: { unused: Job[]; matches: Map<string, Job>; pass: (job: AlertJob, result: Job) => boolean }): number {
+    let matched = 0;
+    for (const job of jobs.filter((candidate) => !state.matches.has(candidate.linkedinId))) {
+        const index = state.unused.findIndex((result) => state.pass(job, result));
+        const [found] = index >= 0 ? state.unused.splice(index, 1) : [];
+        if (found === undefined) continue;
+        state.matches.set(job.linkedinId, found);
+        matched += 1;
     }
-    return matches;
+    return matched;
+}
+
+/** Counts the results' link hosts, so a run's trace shows where JSearch sends applicants without naming any job. */
+function hostCounts(results: Job[]): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const result of results) {
+        const host = URL.canParse(result.url) ? new URL(result.url).host : "(no link)";
+        counts[host] = (counts[host] ?? 0) + 1;
+    }
+    return counts;
 }
 
 /** Tells whether a result's link carries the alert job's LinkedIn id, with or without a slug before it. */

@@ -6,7 +6,7 @@ import type { Job } from "../jobs/job.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { fetchJsearch } from "../sources/jsearch.js";
 import { lookupAllowance } from "./alertJobs/budget.js";
-import { matchResults, planQuery } from "./alertJobs/lookup.js";
+import { matchResults, planQuery, type MatchStats } from "./alertJobs/lookup.js";
 import type { AlertEmail, AlertJob, ParsedAlert } from "./alertJobs/parse.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
 
@@ -29,6 +29,7 @@ export interface Looked {
     matches: Map<string, Job>;
     searches: number;
     lookedUp: number;
+    stats: MatchStats[];
 }
 
 interface Planned {
@@ -38,12 +39,14 @@ interface Planned {
 
 /** Looks up descriptions for new alert jobs with at most one JSearch search per email, within the month's allowance. */
 export async function lookUpDescriptions(deps: LookupDeps | undefined, work: { read: ReadEmail[]; fresh: AlertJob[]; now: Date }): Promise<Looked> {
-    const looked: Looked = { matches: new Map(), searches: 0, lookedUp: 0 };
+    const looked: Looked = { matches: new Map(), searches: 0, lookedUp: 0, stats: [] };
     if (deps === undefined || deps.apiKey === null) return looked;
     const allowance = lookupAllowance({ cap: deps.settings.monthly_request_cap, usedThisMonth: deps.usedThisMonth, searches: deps.searches, refreshHours: deps.settings.refresh_hours, now: work.now });
     for (const plan of plans(deps, work).slice(0, allowance)) {
         const results = await search(deps, { query: plan.query, apiKey: deps.apiKey, now: work.now });
-        for (const [id, match] of matchResults(plan.pending, results)) looked.matches.set(id, match);
+        const matched = matchResults(plan.pending, results);
+        for (const [id, match] of matched.matches) looked.matches.set(id, match);
+        looked.stats.push(matched.stats);
         looked.searches += 1;
         looked.lookedUp += plan.pending.length;
     }

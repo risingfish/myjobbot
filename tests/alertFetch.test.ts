@@ -21,7 +21,7 @@ test("new alert emails become stored jobs, counted and traced", async () => {
     const summary = await fetchAlerts(deps);
     expect(summary).toEqual({ emails: 2, jobs_found: 5, stored: 5, seen_again: 0, searches: 0, looked_up: 0, with_description: 0, alert_only: 5, not_understood: 0, unsupported: 0 });
     expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ ats: "linkedin", url: "https://www.linkedin.com/jobs/view/4100000000/", compensation: "$140K/yr", company: "Company 0", location: "Boise, ID" });
-    expect(trace.events).toEqual([{ type: "alerts", ...summary, not_understood: [] }]);
+    expect(trace.events).toEqual([{ type: "alerts", ...summary, lookups: [], not_understood: [] }]);
 });
 
 test("the read marker advances only after storing, and is kept when nothing is new", async () => {
@@ -99,9 +99,10 @@ function jsearchResults(ids: string[]) {
 test("each alert email is looked up with one JSearch request, filling in the descriptions it finds", async () => {
     const emails = [alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(2, 4100000000), "senior engineer")), alertEmail(11, SEARCH_SENDER, searchAlert([{ ...fixtureJob(0, 4300000000), title: "Account Executive" }], "sales"))];
     const http = routedHttp(jsearchResults(["4100000000"]));
-    const { deps, stores } = await alertSetup(emails);
+    const { deps, stores, trace } = await alertSetup(emails);
     const summary = await fetchAlerts({ ...deps, lookup: lookupDeps(http, stores) });
     expect(summary).toMatchObject({ stored: 3, searches: 1, looked_up: 2, with_description: 1, alert_only: 2 });
+    expect(trace.events[0]?.lookups).toEqual([{ results: 1, linkedin_links: 1, by_id: 1, by_title: 0, hosts: { "www.linkedin.com": 1 } }]);
     expect([http.requests.length, await stores.apiCalls.countSince("jsearch", "2026-10-01T00:00:00.000Z")]).toEqual([1, 1]);
     expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ description: "full description 4100000000", skills: ["Go"] });
 });

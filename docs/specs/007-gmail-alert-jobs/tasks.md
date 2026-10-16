@@ -458,6 +458,17 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
 - [ ] T031 Fix anything T030 finds (test-first), or record it as follow-up.
 - [X] T032 Close S4: both checks green; delete the marker; commit; push; open the PR with the
   owner's OK.
+Follow-ups on #12 (2026-10-16):
+- **Early production run**: production received `003` early, when the owner started the stack on
+  this branch. A manual production run (`docker compose run --rm myjobbot run`) then gave 3 emails,
+  11 jobs found, 10 stored, 3 searches, 8 looked up, **0 with a description**. Reading and storing
+  work, but the batched lookups matched nothing, which misses SC-003.
+- **Lookup counts in the trace**: so the next run shows why, each `alerts` trace event now has
+  `lookups`, one entry per search: `{ results, linkedin_links, by_id, by_title, hosts }`. These are
+  counts and link host names only, no job text.
+- **Live reload**: `web/next.config.ts` sets `allowedDevOrigins` from `MYJOBBOT_HOSTS` (host names
+  without ports), so live reload works from LAN addresses, not only `localhost`.
+
 - [ ] T033 After the owner merges:
   1. Update `main` and run `npm run docker:up` (which migrates production to `003`).
   2. The next scheduled run reads the alerts.

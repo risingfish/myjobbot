@@ -32,12 +32,15 @@ test("an email with nothing left to look up gets no search", () => {
 test("results match alert jobs by the LinkedIn id in their link first, with or without a slug", () => {
     const jobs = [alertJob("4100000001", "Platform Engineer", { company: "Acme" }), alertJob("4100000002", "Data Engineer", { company: "Beta" })];
     const results = [result("r1", "https://www.linkedin.com/jobs/view/4100000001/", { company: "Acme Inc", title: "Platform Eng" }), result("r2", "https://www.linkedin.com/jobs/view/data-engineer-at-beta-4100000002?x=1", { company: "Beta", title: "Data Engineer II" })];
-    const matches = matchResults(jobs, results);
+    const { matches, stats } = matchResults(jobs, results);
     expect([matches.get("4100000001")?.jobId, matches.get("4100000002")?.jobId]).toEqual(["r1", "r2"]);
+    expect(stats).toEqual({ results: 2, linkedin_links: 2, by_id: 2, by_title: 0, hosts: { "www.linkedin.com": 2 } });
 });
 
 test("otherwise results match by company and title, each result at most once", () => {
     const jobs = [alertJob("1", "Senior Backend Engineer", { company: "Acme" }), alertJob("2", "Senior Backend Engineer", { company: "Acme" }), alertJob("3", "Designer", { company: "Gamma" })];
-    const matches = matchResults(jobs, [result("r1", "https://acme.example/jobs/1", { company: "ACME", title: "senior backend engineer" })]);
+    const results = [result("r1", "https://acme.example/jobs/1", { company: "ACME", title: "senior backend engineer" }), result("r2", "not a url", { company: "Delta", title: "Designer" })];
+    const { matches, stats } = matchResults(jobs, results);
     expect([matches.get("1")?.jobId, matches.has("2"), matches.has("3")]).toEqual(["r1", false, false]);
+    expect(stats).toEqual({ results: 2, linkedin_links: 0, by_id: 0, by_title: 1, hosts: { "acme.example": 1, "(no link)": 1 } });
 });

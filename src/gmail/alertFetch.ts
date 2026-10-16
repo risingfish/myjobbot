@@ -1,5 +1,6 @@
 import type { Trace } from "../agent/trace.js";
 import type { AlertStateRow, AlertStore, GmailStore, JobStore } from "../db/store.js";
+import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
@@ -43,6 +44,7 @@ interface Counts {
     searches: number;
     lookedUp: number;
     withDescription: number;
+    lookups: MatchStats[];
 }
 
 const MAX_EMAILS = 50;
@@ -52,9 +54,10 @@ export async function fetchAlerts(deps: AlertDeps): Promise<AlertSummary> {
     const marker = await deps.alerts.state();
     const mail = await readMail(deps, marker);
     const read = mail.emails.map((email) => ({ email, alert: safeParse(email) }));
-    const summary = summarize(read, await storeRead(deps, read));
+    const counts = await storeRead(deps, read);
+    const summary = summarize(read, counts);
     await deps.alerts.recordRead({ uidValidity: mail.uidValidity, lastUid: lastUid(mail, marker), emails: summary.emails, jobs: summary.jobs_found, notUnderstood: summary.not_understood }, deps.now.toISOString());
-    deps.trace.write({ type: "alerts", ...summary, not_understood: notUnderstood(read).map(({ email, alert }) => ({ from: email.from, subject: email.subject, ...(alert.failure === undefined ? {} : { failure: alert.failure }) })) });
+    deps.trace.write({ type: "alerts", ...summary, lookups: counts.lookups, not_understood: notUnderstood(read).map(({ email, alert }) => ({ from: email.from, subject: email.subject, ...(alert.failure === undefined ? {} : { failure: alert.failure }) })) });
     return summary;
 }
 
@@ -69,7 +72,7 @@ async function storeRead(deps: AlertDeps, read: ReadEmail[]): Promise<Counts> {
     const looked = await lookUpDescriptions(deps.lookup, { read, fresh: sorted.fresh, now: deps.now });
     const jobs = sorted.fresh.map((job) => alertJobRecord(job, looked.matches.get(job.linkedinId)));
     await deps.store.upsertAll(jobs, seen, ALERTS_SOURCE);
-    return { stored: jobs.length, seenAgain: sorted.seenAgain, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length };
+    return { stored: jobs.length, seenAgain: sorted.seenAgain, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length, lookups: looked.stats };
 }
 
 /** Reads unread alert mail, turning an unusable connection or a Gmail failure into a fixed note. */
