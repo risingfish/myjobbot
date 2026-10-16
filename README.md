@@ -120,6 +120,8 @@ How runs use the alerts:
   understood"). A rising "not understood" count means LinkedIn changed its email layout.
 - **Indeed**: Indeed alerts aren't parsed yet; they're counted separately, as unsupported, in
   the run trace.
+- **Careers pages**: alert jobs JSearch couldn't describe get a [careers lookup](#careers-lookup)
+  when a SearXNG server is configured.
 
 One-time setup:
 1. **Turn on 2-step verification** for your Google account, if it isn't on already.
@@ -155,6 +157,47 @@ How it's built:
 - **To learn React and Next.js** from this code, see
   [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
   it and ends with exercises.
+
+### Careers lookup
+
+Alert jobs arrive with a title, company and location but no description, so the model has little
+to score. When `MYJOBBOT_SEARXNG_URL` is set, fetching the Gmail alerts source looks those jobs up
+on the employer's own careers page before the agent scores them:
+
+1. **Which jobs**: unscored alert jobs that pass the title filter, still have no description
+   after JSearch, and haven't been looked up before. At most `careers_lookup.max_per_run` a run,
+   and `careers_lookup.max_total_minutes` in total, one at a time.
+2. **How**: each job gets its own short conversation with the model, with three tools:
+   `search_careers` (SearXNG, "<company> careers"), `open_link` (opens a numbered link as a careers
+   page or as the job's own page, at most 3 per job) and `finish_lookup`. The model picks among
+   numbered links; it **never types an address**. The code only opens public `http(s)` addresses
+   on the default port, checks every redirect again, and refuses anything on your LAN.
+3. **Pages are trimmed** before the model sees them: scripts, styles, navigation, headers,
+   footers, forms and hidden elements go, leaving text and job links, at most
+   `careers_lookup.page_chars` (12,000) characters. A whole lookup stays near 54,000 characters
+   at most (about 14K tokens), so it fits a model served from a 16GB graphics card.
+4. **Results**: a found job page's text becomes the job's description (`get_job_details` says
+   `description_from: "careers page"`), and the agent scores it as usual. The careers page that
+   led to it is remembered for the company, so later jobs there skip the search.
+
+Careers sites that build their job list with JavaScript (many hosted job boards) can't be read
+this way; those lookups end with the reason `careers_page_unreadable`. Following a listing's next
+pages isn't done yet; the audit log notes when a page seems to continue.
+
+**SearXNG**: use your own server, or the bundled one: set `SEARXNG_SECRET` in `.env`, start it
+with `docker compose --profile search up -d searxng`, and set
+`MYJOBBOT_SEARXNG_URL=http://searxng:8080`. It has no published port. Either way, SearXNG must
+answer JSON: `search.formats` in its `settings.yml` must include `json` (the bundled
+`docker/searxng/settings.yml` does). Otherwise searches fail with HTTP 403, and the run notes it.
+
+**Audit log**: every step is a row in `careers_audit` (addresses and sizes, never page text).
+Every lookup that ends without a description has `warning = 1` and a fixed `reason`:
+
+```sql
+SELECT reason, COUNT(*) FROM careers_audit WHERE warning = 1 GROUP BY reason;
+SELECT at, company, step, outcome, reason, url FROM careers_audit ORDER BY id DESC LIMIT 50;
+SELECT * FROM careers_pages;
+```
 
 ## Develop
 
@@ -226,7 +269,9 @@ add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yam
 
 myjobbot is **an LLM in a loop with tools**. The model never touches the internet or the
 database directly. It can only ask to call one of five tools. The TypeScript code decides
-whether that's allowed, runs it, and hands the result back.
+whether that's allowed, runs it, and hands the result back. The [careers lookup](#careers-lookup)
+reuses the same loop for a short side conversation per job, with three tools of its own; even
+there the model only picks numbered links, and the code decides which addresses may be opened.
 
 - **The model** decides what to do next.
 - **The code** does the work and enforces every limit.
@@ -524,6 +569,11 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
 | `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
+| `careers_lookup.max_per_run` / `.max_total_minutes` | 10 / 30 | Careers lookups per run, and the total time they may take |
+| `careers_lookup.max_minutes` | 5 | Time budget for one job's lookup (checked between model turns) |
+| `careers_lookup.page_chars` | 12000 | Characters of trimmed page (or search results) handed to the model |
+| `careers_lookup.search_results` | 10 | SearXNG results offered per company |
+| `careers_lookup.max_download_kb` | 2048 | Bytes read from one page before it is cut |
 | `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no company or search may use it |
 
 ### Saved searches (JSearch)

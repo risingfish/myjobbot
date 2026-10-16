@@ -497,7 +497,7 @@ Create `.specify/sitting-in-progress` naming S4 before T039.
 
 Create `.specify/sitting-in-progress` naming S5 before T044.
 
-- [ ] T044 [P] Add an optional `searxng` service to `compose.yaml` under `profiles: ["search"]`:
+- [X] T044 [P] Add an optional `searxng` service to `compose.yaml` under `profiles: ["search"]`:
   - image `searxng/searxng` pinned to the newest dated tag at implementation time (never
     `latest`)
   - no published port (reachable as `http://searxng:8080` inside the stack)
@@ -512,7 +512,7 @@ Create `.specify/sitting-in-progress` naming S5 before T044.
   read-only mount, check whether the pinned image's entrypoint writes to `settings.yml`; if it
   does, mount the file without `:ro`, or mount it at the path the image documents for
   overrides.
-- [ ] T045 [P] Document `MYJOBBOT_SEARXNG_URL` and `SEARXNG_SECRET` in `.env.example` (commented,
+- [X] T045 [P] Document `MYJOBBOT_SEARXNG_URL` and `SEARXNG_SECRET` in `.env.example` (commented,
   no real values) and add a "Careers lookup" section to `README.md`:
   - what it does and when it runs
   - the `careers_lookup` config and its defaults
@@ -523,12 +523,12 @@ Create `.specify/sitting-in-progress` naming S5 before T044.
 
   Update the README's "big idea" paragraph and its tool count to mention the lookup
   conversation.
-- [ ] T046 [P] Add a careers note to `CLAUDE.md` next to the Gmail note:
+- [X] T046 [P] Add a careers note to `CLAUDE.md` next to the Gmail note:
   - the lookup lives in `src/careers/` and knows nothing about alerts
   - pages reach the model only through `trimPage`, with numbered links
   - addresses must be public `http(s)` and are re-checked on every redirect
   - no page text goes in `careers_audit`
-- [ ] T047 Run `npm run check` and `npm run check:db`. Update the ledger, delete the marker, and
+- [X] T047 Run `npm run check` and `npm run check:db`. Update the ledger, delete the marker, and
   commit S5 ("Bundle SearXNG and document careers lookup (008 S5)").
 
 ### Sitting S6: live validation (T048–T050)
