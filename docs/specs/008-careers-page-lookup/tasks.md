@@ -59,19 +59,19 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 **Purpose**: the schema for the whole feature, plus `description_source` written by the existing
 `upsertAll`. That makes the new columns reachable now. The tables are used from S2 on.
 
-- [ ] T003 **Unit and integration**: create `tests/helpers/descriptionContract.ts`
+- [X] T003 **Unit and integration**: create `tests/helpers/descriptionContract.ts`
   (`descriptionContract(make)`; `tests/helpers/storeContract.ts` is at 181 of 200 lines) and
   register it in `tests/storeContract.test.ts` (unit, memory store) and
   `tests/integration/storeContract.test.ts` (MariaDB). 1 case: `upsertAll` of a job with a description gives
   `description_source = "source"` and `description_url = null`. A job without a description
   gives `description_source = null`.
-- [ ] T004 **Integration**: add `"careers_audit"` and `"careers_pages"` to `TABLES` in
+- [X] T004 **Integration**: add `"careers_audit"` and `"careers_pages"` to `TABLES` in
   `tests/helpers/testDb.ts` (so `emptyTables` clears them and the migrate test drops them before
   re-migrating; without this, migration 004 fails with "table already exists"). In
   `tests/integration/migrate.test.ts`, the expected migrations gain `"004_careers_lookup"` and the
   expected collations become, in order: `api_calls`, `careers_audit`, `careers_pages`,
   `gmail_alert_state`, `gmail_connection`, `jobs`, `verdicts`, each `utf8mb4_bin`.
-- [ ] T005 Write `src/db/migrations/004_careers_lookup.ts` (export `careersLookup`) and list it
+- [X] T005 Write `src/db/migrations/004_careers_lookup.ts` (export `careersLookup`) and list it
   in `src/db/migrations/index.ts` as `"004_careers_lookup"`. The step:
   - **On `jobs`**: adds `description_source VARCHAR(16) NULL` and
     `description_url VARCHAR(2048) NULL`, then runs
@@ -101,16 +101,16 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     - indexes on (`ats`, `job_id`), `company`, `reason` and `at`
   - **Table options**: both tables `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
     in the style of `003_gmail_alerts.ts`.
-- [ ] T006 Mirror the schema in `src/db/schema.ts`: `JobsTable` gains `description_source: Text`
+- [X] T006 Mirror the schema in `src/db/schema.ts`: `JobsTable` gains `description_source: Text`
   and `description_url: Text`, and there are new `CareersPagesTable` and `CareersAuditTable`
   entries in `Database`. Add `description_source` and `description_url` to the job row schema in
   `src/db/rows.ts`, and set both in `toParams` there (`description_source` = `"source"` when the
   job has a description, else `null`; `description_url` = `null`), so the memory store's rows
   (built from `toParams`) parse too.
-- [ ] T007 Make `upsertAll` write `description_source` and `description_url` from `toParams` in
+- [X] T007 Make `upsertAll` write `description_source` and `description_url` from `toParams` in
   `src/db/kysely/jobStore.ts` (insert and the on-duplicate update), and check that
   `tests/helpers/memoryStore.ts` carries them through. T003 passes.
-- [ ] T008 Run `npm run check` and `npm run check:db` and fix every finding. Update the ledger,
+- [X] T008 Run `npm run check` and `npm run check:db` and fix every finding. Update the ledger,
   delete the marker, and commit S1 ("Add careers lookup schema and description provenance (008 S1)").
 
 **Checkpoint**: migration 004 applies cleanly to `myjobbot_test`. Production is untouched (the

@@ -5,7 +5,7 @@ import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
 import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
-const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "publisher", "requirements", "skills", "preferred_skills"];
+const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
 
 const jobRows = z.array(jobRowSchema);
 
