@@ -18,7 +18,11 @@ test("without a usable key nothing is offered, and with nothing saved only Conne
 
 test("a connection offers Check now, Disconnect and replacing it; needing to reconnect offers the form", () => {
     const connected = gmailPanelView(gmailRow(), OK);
-    expect([connected.state, connected.offers, connected.email, connected.message]).toEqual(["connected", ["check", "disconnect", "replace"], "me@example.com", null]);
+    expect([connected.state, connected.offers, connected.email, connected.message, connected.lastRun]).toEqual(["connected", ["check", "disconnect", "replace"], "me@example.com", null, null]);
+    const counts = { uid_validity: 7, last_uid: 9, last_run_at: "2026-10-16T08:05:00.000Z", emails_read: 3, jobs_found: 14, not_understood: 1 };
+    expect(gmailPanelView(gmailRow(), { ...OK, alertState: counts }).lastRun).toMatch(/^Last run 2026-10-1[56] \d\d:\d\d: 3 alert emails, 14 jobs, 1 not understood$/);
+    expect(gmailPanelView(gmailRow(), { ...OK, alertState: { ...counts, emails_read: 1, jobs_found: 1 } }).lastRun).toContain(": 1 alert email, 1 job, 1 not understood");
+    expect(gmailPanelView(null, { ...OK, alertState: counts }).lastRun).toBeNull();
     expect(connected.connectedAt).toMatch(/^2026-10-1[56] \d\d:\d\d$/);
     const stale = gmailPanelView(gmailRow({ status: "needs_reconnect", reason: "app password rejected; create a new one" }), OK);
     expect([stale.offers, stale.reason]).toEqual([["connect", "disconnect"], "app password rejected; create a new one"]);

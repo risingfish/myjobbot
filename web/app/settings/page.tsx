@@ -20,10 +20,10 @@ export default async function SettingsPage() {
     );
 }
 
-/** Builds the Gmail panel's view from the stored connection and the server key. */
+/** Builds the Gmail panel's view from the stored connection, the server key and the last alert run. */
 async function gmailView(): Promise<GmailPanelView> {
-    const { gmail, key } = await getUiState();
-    const row = await gmail.connection();
-    const changed = key.status === "ok" && keyChanged({ gmail, key: key.key }, row);
-    return gmailPanelView(row, { keyStatus: key.status, keyChanged: changed });
+    const { gmail, alerts, key } = await getUiState();
+    const [row, alertState] = await Promise.all([gmail.connection(), alerts.state()]);
+    const changed = key.status === "ok" && keyChanged({ key: key.key }, row);
+    return gmailPanelView(row, { keyStatus: key.status, keyChanged: changed, alertState });
 }

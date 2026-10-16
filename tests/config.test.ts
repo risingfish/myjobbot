@@ -123,3 +123,8 @@ test("the app config requires JSEARCH_API_KEY when searches are configured", () 
     expect(() => configFrom(LLM_ENV, config)).toThrow("JSEARCH_API_KEY is required when searches are configured");
     expect(configFrom({ ...LLM_ENV, JSEARCH_API_KEY: "k" }, config).file.searches).toHaveLength(1);
 });
+
+test("config refuses a company or search named like the Gmail alerts source", () => {
+    expect(() => testFileConfig({ companies: [{ name: "gmail ALERTS", ats: "greenhouse", slug: "x" }] })).toThrow(/reserved/);
+    expect(() => testFileConfig({ searches: [{ ...TEST_SEARCH, name: "Gmail alerts" }] })).toThrow(/reserved/);
+});

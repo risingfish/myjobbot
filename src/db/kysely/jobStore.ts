@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Job } from "../../jobs/job.js";
 import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
-import type { JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
+import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
 const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "publisher", "requirements", "skills", "preferred_skills"];
 
@@ -40,10 +40,21 @@ export class KyselyJobStore implements JobStore {
         return jobRows.parse(await this.unscoredQuery(source).execute());
     }
 
-    /** Lists company names with company-board postings for a title, so JSearch duplicates can be skipped. */
+    /** Lists company names with company-board postings for a title, so JSearch duplicates can be skipped; alert jobs don't count as board postings. */
     async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        const rows = await this.db.selectFrom("jobs").select("company").distinct().where("ats", "!=", "jsearch").where("normalized_title", "=", normalizedTitle).execute();
+        const rows = await this.db.selectFrom("jobs").select("company").distinct().where("ats", "not in", ["jsearch", "linkedin"]).where("normalized_title", "=", normalizedTitle).execute();
         return rows.map((row) => row.company);
+    }
+
+    /** Lists company names with a job of this title from any source but one, so alert copies of known jobs can be skipped. */
+    async companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]> {
+        const rows = await this.db.selectFrom("jobs").select("company").distinct().where("source", "!=", source).where("normalized_title", "=", normalizedTitle).execute();
+        return rows.map((row) => row.company);
+    }
+
+    /** Moves only the last-seen time of known jobs, so seeing them again never erases their details or score. */
+    async markSeen(keys: JobKey[], seen: string): Promise<void> {
+        for (const key of keys) await this.db.updateTable("jobs").set({ last_seen: seen }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
     }
 
     /** Stores a job's score on every job with that id and appends each to the verdict history; reports whether any existed. */

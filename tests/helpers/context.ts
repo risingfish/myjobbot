@@ -17,6 +17,8 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         now: () => TEST_NOW,
         jobLog: memoryTrace(),
         jsearchApiKey: "test-jsearch-key",
+        gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected" },
+        trace: memoryTrace(),
         ...overrides,
     };
 }

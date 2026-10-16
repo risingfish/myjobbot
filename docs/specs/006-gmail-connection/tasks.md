@@ -653,7 +653,7 @@ OAuth-shaped and empty, `gmail_connect_requests` and `gmail_connection` were dro
   Disconnect.
 - [ ] R011 Close S6: both checks green; delete the marker; commit; push to update PR #11, and
   rewrite its description for IMAP.
-- [ ] R012 After the owner merges:
+- [X] R012 After the owner merges:
   1. Update `main` (pull before switching), then run `npm run docker:up`, which rebuilds for
      imapflow and migrates production to `002_gmail`.
   2. Add `MYJOBBOT_SECRET_KEY` to `.env` and run `docker compose up -d`.
@@ -661,6 +661,10 @@ OAuth-shaped and empty, `gmail_connect_requests` and `gmail_connection` were dro
   4. **SC-002**: run `docker compose up -d --force-recreate`; the panel is still connected, and
      Check now works.
   5. Record the result in Notes.
+
+  Done 2026-10-15: after the merge, `npm run docker:up` rebuilt the stack with imapflow. Settings
+  still showed Connected after the containers were recreated, and the owner's Check now worked
+  (SC-002).
 
 ## Dependencies & Execution Order
 

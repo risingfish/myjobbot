@@ -76,7 +76,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
   `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
 - Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006): IMAP with an app
-  password, through imapflow created with `logger: false` and mailboxes opened read-only. The app
+  password, through imapflow created with `logger: false` and mailboxes opened read-only. Runs read
+  LinkedIn alert emails into jobs (feature 007): the pure logic is in `src/gmail/alertJobs/`, only
+  each email's HTML part is downloaded, and only job fields are stored, never email text. The app
   password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
   database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
   Never print `.env`, sealed columns or app passwords.

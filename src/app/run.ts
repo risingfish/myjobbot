@@ -13,6 +13,8 @@ import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
 import { HttpClient, type JsonGetter } from "../http/client.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
+import { alertsUsability } from "../gmail/alertJobs/usable.js";
+import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
 import { buildTools } from "../tools/registry.js";
 
 interface RunSeams {
@@ -24,6 +26,11 @@ interface RunSeams {
 interface RunParts {
     logs: RunLogs;
     stores: Stores;
+    key: SecretKeyStatus;
+}
+
+interface ContextParts extends RunParts {
+    usable: true | string;
 }
 
 interface RunLogs {
@@ -46,7 +53,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
     const logs = openRunLogs(config);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
-        return await runWithStores(config, seams, { logs, stores });
+        return await runWithStores(config, seams, { logs, stores, key: secretKeyStatus(environment) });
     } finally {
         await stores.close();
     }
@@ -54,7 +61,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 
 /** Runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
-    const context = buildContext(config, seams, parts);
+    const context = buildContext(config, seams, { ...parts, usable: await gmailUsable(parts) });
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
     await pruneOldJobs(context);
@@ -68,8 +75,14 @@ async function pruneOldJobs(context: ToolContext): Promise<void> {
     await context.apiCalls.pruneBefore(cutoff);
 }
 
+/** Settles once per run whether the Gmail alerts source can be read, or the fixed note saying why not. */
+async function gmailUsable({ stores, key }: RunParts): Promise<true | string> {
+    const usability = alertsUsability(await stores.gmail.connection(), key);
+    return usability.usable ? true : usability.note;
+}
+
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, { logs, stores }: RunParts): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable }: ContextParts): ToolContext {
     return {
         config: config.file,
         run: newRunState(),
@@ -80,6 +93,8 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores }: RunP
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
+        gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
+        trace: logs.trace,
     };
 }
 

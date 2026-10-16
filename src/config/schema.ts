@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_ALERT_SENDERS, isAlertSender } from "../gmail/alerts.js";
+import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import { ATS_NAMES } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import { isDomainEntry, isValidDomainEntry } from "../jobs/publisherDomain.js";
@@ -81,6 +82,7 @@ export const fileConfigSchema = z
     })
     .refine(hasAtLeastOneSource, { message: "configure at least one company or search" })
     .refine(hasUniqueSourceNames, { message: "company and search names must be unique" })
+    .refine(avoidsReservedName, { message: `"${ALERTS_SOURCE}" is a reserved source name; rename that company or search` })
     .refine(fitsJsearchBudget, {
         message: "too many searches for jsearch.monthly_request_cap at this jsearch.refresh_hours",
     })
@@ -110,6 +112,11 @@ function hasAtLeastOneSource(config: SourceLists): boolean {
 /** Validates that company and search names are unique across both lists, since names identify sources. */
 function hasUniqueSourceNames(config: SourceLists): boolean {
     return hasUniqueNames([...config.companies, ...config.searches]);
+}
+
+/** Validates that no company or search takes the name of the Gmail alerts source. */
+function avoidsReservedName(config: SourceLists): boolean {
+    return [...config.companies, ...config.searches].every((source) => source.name.trim().toLowerCase() !== ALERTS_SOURCE.toLowerCase());
 }
 
 /** Validates that refreshing all configured searches won't exceed the JSearch monthly request cap. */

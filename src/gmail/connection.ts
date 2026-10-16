@@ -1,10 +1,11 @@
-import type { GmailConnectionRow, GmailStore } from "../db/store.js";
+import type { AlertStore, GmailConnectionRow, GmailStore } from "../db/store.js";
 import { imapApi, type ImapFactory } from "./imap.js";
 import { GmailError } from "./imapErrors.js";
 import { openOrNull, seal } from "./seal.js";
 
 export interface GmailDeps {
     gmail: GmailStore;
+    alerts: AlertStore;
     key: Buffer;
     imap?: ImapFactory;
 }
@@ -38,13 +39,14 @@ export async function connect(deps: GmailDeps, input: GmailLoginInput, now: Date
     return { ok: true, error: null };
 }
 
-/** Forgets the Gmail address and app password; revoking the password is done in the Google account. */
+/** Forgets the Gmail address, the app password and where alert reading stopped; revoking the password is done in the Google account. */
 export async function disconnect(deps: GmailDeps): Promise<void> {
     await deps.gmail.disconnect();
+    await deps.alerts.clear();
 }
 
 /** Tells whether the saved app password no longer opens, which means the server key was changed. */
-export function keyChanged(deps: GmailDeps, row: GmailConnectionRow | null): boolean {
+export function keyChanged(deps: Pick<GmailDeps, "key">, row: GmailConnectionRow | null): boolean {
     return Boolean(row?.app_password) && openOrNull(row?.app_password ?? "", "app_password", deps.key) === null;
 }
 

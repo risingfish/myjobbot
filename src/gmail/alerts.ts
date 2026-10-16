@@ -23,7 +23,12 @@ export function isAlertSender(value: string): boolean {
 
 /** Builds the Gmail search for the last 7 days of mail from the configured alert senders. */
 export function alertQuery(senders: string[]): string {
-    return `from:(${senders.join(" OR ")}) newer_than:7d`;
+    return `${senderQuery(senders)} newer_than:7d`;
+}
+
+/** Builds the part of a Gmail search that matches mail from any of the alert senders. */
+export function senderQuery(senders: string[]): string {
+    return `from:(${senders.join(" OR ")})`;
 }
 
 /** Turns a message's envelope into the sender, subject and date the panel lists. */

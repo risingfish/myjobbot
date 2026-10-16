@@ -10,6 +10,7 @@ export function GmailPanel({ view }: { view: GmailPanelView }) {
     return (
         <Panel title="Gmail">
             <GmailStatus view={view} />
+            {view.lastRun && <p className="note">{view.lastRun}</p>}
             {view.message && <p className="note">{view.message}</p>}
             {offers.has("connect") && <ConnectForm />}
             {offers.has("check") && <CheckNow />}

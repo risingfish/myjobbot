@@ -1,6 +1,7 @@
 import { jobRowSchema, jobViewSchema, toParams, verdictViewSchema } from "../../src/db/rows.js";
-import type { ApiCallLog, HiddenFlag, JobRow, JobStore, JobView, JobViews, Page, ScoreFilter, Stores, Verdict, VerdictStamp, VerdictView } from "../../src/db/store.js";
+import type { ApiCallLog, HiddenFlag, JobKey, JobRow, JobStore, JobView, JobViews, Page, ScoreFilter, Stores, Verdict, VerdictStamp, VerdictView } from "../../src/db/store.js";
 import type { Job } from "../../src/jobs/job.js";
+import { MemoryAlertStore } from "./memoryAlertStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
 
 type Row = Record<string, string | number | null>;
@@ -12,6 +13,10 @@ interface Tables {
 }
 
 const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, emailed_at: null };
+
+function companies(rows: Row[]): string[] {
+    return [...new Set(rows.map((job) => String(job.company)))];
+}
 
 const asc = (left: unknown, right: unknown): number => (String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0);
 
@@ -44,8 +49,15 @@ class MemoryJobStore implements JobStore {
     }
 
     async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        const matches = this.tables.jobs.filter((job) => job.ats !== "jsearch" && job.normalized_title === normalizedTitle);
-        return [...new Set(matches.map((job) => String(job.company)))];
+        return companies(this.tables.jobs.filter((job) => job.ats !== "jsearch" && job.ats !== "linkedin" && job.normalized_title === normalizedTitle));
+    }
+
+    async companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]> {
+        return companies(this.tables.jobs.filter((job) => job.source !== source && job.normalized_title === normalizedTitle));
+    }
+
+    async markSeen(keys: JobKey[], seen: string): Promise<void> {
+        for (const job of this.tables.jobs) if (keys.some((key) => key.ats === job.ats && key.jobId === job.job_id)) job.last_seen = seen;
     }
 
     async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {
@@ -163,5 +175,5 @@ class MemoryApiCallLog implements ApiCallLog {
 export function memoryStores(): Stores {
     const tables: Tables = { jobs: [], verdicts: [], calls: [] };
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), close };
 }

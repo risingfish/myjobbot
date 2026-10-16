@@ -3,6 +3,7 @@ import type { JobView, JobViews, Page } from "../db/store.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
+import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
 
 export interface PageInput {
@@ -62,7 +63,7 @@ function nextOffset(page: Page, total: number): number | null {
 
 /** Returns the names of all configured company and search sources. */
 function sourceNames(config: FileConfig): string[] {
-    return [...config.companies, ...config.searches].map((source) => source.name);
+    return [...config.companies, ...config.searches].map((source) => source.name).concat(ALERTS_SOURCE);
 }
 
 /** Builds the context row views need from the current config and time. */

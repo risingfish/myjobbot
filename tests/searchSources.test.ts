@@ -120,5 +120,6 @@ test("list_sources shows saved searches next to boards", async () => {
     expect(await invokeTool(context, "list_sources", {})).toEqual([
         { name: "Stripe", kind: "board", ats: "greenhouse", fetched: false },
         { name: SEARCH_NAME, kind: "search", fetched: true, total_unscored: 2 },
+        { name: "Gmail alerts", kind: "alerts", fetched: false, fetch_failed: true, note: "Gmail not connected" },
     ]);
 });

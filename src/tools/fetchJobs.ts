@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
+import { AlertsUnavailable } from "../gmail/alertJobs/usable.js";
+import { alertSource } from "./alertSource.js";
 import { fetchBoard } from "./boardFetch.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
@@ -15,7 +17,7 @@ const schema = z.object({ source: z.string().describe("Source name exactly as re
 export function fetchJobsTool(context: ToolContext): Tool {
     return defineTool({
         name: "fetch_jobs",
-        description: `Return up to ${PAGE_SIZE} unscored jobs from a source (a company board or a saved search) plus total_unscored. Score them with record_matches, then call again until total_unscored is 0.`,
+        description: `Return up to ${PAGE_SIZE} unscored jobs from a source (a company board, a saved search or Gmail alerts) plus total_unscored. Score them with record_matches, then call again until total_unscored is 0.`,
         schema,
         run: ({ source }) => jobPage(context, findSource(context, source)),
     });
@@ -34,7 +36,8 @@ async function jobPage(context: ToolContext, source: Source) {
     const unscored = await unscoredJobs(context, source.name, outcome);
     const jobs = await Promise.all(unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row)));
     const page = { source: source.name, total_unscored: unscored.length, jobs };
-    return source.kind === "search" ? { ...page, ...refreshFields(outcome) } : page;
+    if (source.kind === "search") return { ...page, ...refreshFields(outcome) };
+    return outcome.alerts === undefined ? page : { ...page, alerts: outcome.alerts };
 }
 
 /** Reports, for a search source, whether JSearch was actually refreshed or skipped and why. */
@@ -46,17 +49,24 @@ function refreshFields(outcome: FetchOutcome) {
 function fetchOnce(context: ToolContext, source: Source): Promise<FetchOutcome> {
     const cached = context.run.fetches.get(source.name);
     if (cached) return cached;
-    const pending = source.kind === "board" ? fetchBoard(context, source.company) : refreshSearch(context, source.search);
+    const pending = startFetch(context, source);
     context.run.fetches.set(source.name, pending);
     pending.then(
         () => context.run.failedFetches.delete(source.name),
-        () => onFetchFailure(context, source),
+        (error: unknown) => onFetchFailure(context, source, error),
     );
     return pending;
 }
 
-/** Records that a source's fetch failed so later status checks and finish report it. */
-function onFetchFailure(context: ToolContext, source: Source): void {
+/** Starts the fetch that suits a source's kind: a company board, a saved search, or the Gmail alerts. */
+function startFetch(context: ToolContext, source: Source): Promise<FetchOutcome> {
+    if (source.kind === "board") return fetchBoard(context, source.company);
+    if (source.kind === "search") return refreshSearch(context, source.search);
+    return alertSource(context);
+}
+
+/** Records that a source's fetch failed, with its fixed note when it has one, so status checks and finish report it. */
+function onFetchFailure(context: ToolContext, source: Source, error: unknown): void {
     context.run.fetches.delete(source.name);
-    context.run.failedFetches.add(source.name);
+    context.run.failedFetches.set(source.name, error instanceof AlertsUnavailable ? error.note : null);
 }
