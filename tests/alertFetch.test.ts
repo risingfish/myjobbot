@@ -4,7 +4,8 @@ import { AlertsUnavailable, alertsUsability } from "../src/gmail/alertJobs/usabl
 import { GmailError } from "../src/gmail/imapErrors.js";
 import { makeJob } from "../src/jobs/job.js";
 import { alertEmail, digest, DIGEST_SENDER, fixtureJob, fixtureJobs, notification, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
-import { alertSetup, connectedStores, NOW } from "./helpers/alertFetchSetup.js";
+import { alertSetup, connectedStores, lookupDeps, NOW } from "./helpers/alertFetchSetup.js";
+import { routedHttp } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
 const SEARCH = fixtureJobs(3, 4100000000);
@@ -82,4 +83,32 @@ test("Gmail's usability is settled from the stored row and the key alone", async
     expect(alertsUsability(row, { status: "ok", key: Buffer.alloc(32) })).toEqual({ usable: false, note: "server key changed" });
     expect(alertsUsability(row && { ...row, status: "needs_reconnect" }, ok)).toEqual({ usable: false, note: "Gmail needs reconnecting" });
     expect(alertsUsability(null, ok)).toEqual({ usable: false, note: "Gmail not connected" });
+});
+
+function jsearchResults(ids: string[]) {
+    const jobs = ids.map((id, index) => ({ job_id: `raw-${id}`, employer_name: "Somewhere", job_title: `Role ${index}`, job_apply_link: `https://www.linkedin.com/jobs/view/${id}/`, job_description: `full description ${id}`, required_technologies: ["Go"] }));
+    return { "api.openwebninja.com": { data: { jobs } } };
+}
+
+test("each alert email is looked up with one JSearch request, filling in the descriptions it finds", async () => {
+    const emails = [alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(2, 4100000000), "senior engineer")), alertEmail(11, SEARCH_SENDER, searchAlert([{ ...fixtureJob(0, 4300000000), title: "Account Executive" }], "sales"))];
+    const http = routedHttp(jsearchResults(["4100000000"]));
+    const { deps, stores } = await alertSetup(emails);
+    const summary = await fetchAlerts({ ...deps, lookup: lookupDeps(http, stores) });
+    expect(summary).toMatchObject({ stored: 3, searches: 1, looked_up: 2, with_description: 1, alert_only: 2 });
+    expect([http.requests.length, await stores.apiCalls.countSince("jsearch", "2026-10-01T00:00:00.000Z")]).toEqual([1, 1]);
+    expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ description: "full description 4100000000", skills: ["Go"] });
+});
+
+test("lookups stop at the allowance, and a JSearch failure or missing key leaves jobs scored from the alert", async () => {
+    const emails = [alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(1, 4100000000), "a")), alertEmail(11, SEARCH_SENDER, searchAlert(fixtureJobs(1, 4200000000), "b"))];
+    const http = routedHttp(jsearchResults(["4200000000"]));
+    const limited = await alertSetup(emails);
+    expect(await fetchAlerts({ ...limited.deps, lookup: { ...lookupDeps(http, limited.stores), usedThisMonth: 189 } })).toMatchObject({ searches: 1, with_description: 1 });
+    expect(http.requests[0]?.url).toContain("query=b");
+    const failing = await alertSetup(emails);
+    const down = { getJson: () => Promise.reject(new Error("HTTP 500")) };
+    expect(await fetchAlerts({ ...failing.deps, lookup: lookupDeps(down, failing.stores) })).toMatchObject({ stored: 2, with_description: 0, alert_only: 2 });
+    const keyless = await alertSetup(emails);
+    expect(await fetchAlerts({ ...keyless.deps, lookup: { ...lookupDeps(http, keyless.stores), apiKey: null } })).toMatchObject({ searches: 0, alert_only: 2 });
 });

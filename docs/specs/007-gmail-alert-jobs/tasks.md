@@ -316,7 +316,7 @@ marked "alert only". With the allowance at 0, no lookup is made.
 
 Create `.specify/sitting-in-progress` naming S2 before T018.
 
-- [ ] T018 [P] [US2] **Unit**: write `tests/alertLookup.test.ts` for `src/gmail/alertJobs/lookup.ts`.
+- [X] T018 [P] [US2] **Unit**: write `tests/alertLookup.test.ts` for `src/gmail/alertJobs/lookup.ts`.
   5 tests:
   - `planQuery({ alert, pending })` (`pending` is the email's jobs still needing a description
     after de-duplication and filtering) for a search alert is its keywords, plus "in <location>"
@@ -330,12 +330,12 @@ Create `.specify/sitting-in-progress` naming S2 before T018.
     so both `/jobs/view/<id>` and `/jobs/view/<slug>-<id>` match
   - then by normalised company and title; a result never matches two jobs; unmatched jobs stay
     without a description, and a matched job's salary is used only when the email had none
-- [ ] T019 [P] [US2] **Unit**: write `tests/alertBudget.test.ts` for
+- [X] T019 [P] [US2] **Unit**: write `tests/alertBudget.test.ts` for
   `src/gmail/alertJobs/budget.ts`. 2 tests:
   - `lookupAllowance({ cap, usedThisMonth, searches, refreshHours, now })` is
     `cap − used − Σ ceil(hours left / (refresh_hours − REFRESH_GRACE_HOURS))`, floored at 0
   - with no saved searches the reserve is 0, and on the last hour of the month it is 1 per search
-- [ ] T020 [P] [US2] **Unit**: add 2 tests to `tests/alertFetch.test.ts`, using
+- [X] T020 [P] [US2] **Unit**: add 2 tests to `tests/alertFetch.test.ts`, using
   `tests/helpers/http.ts`'s `routedHttp` and the existing `jsearch.json` fixture shape (no new
   fake):
   - **One request per email**: 3 emails give at most 3 searches, each recorded in `api_calls` as
@@ -346,11 +346,11 @@ Create `.specify/sitting-in-progress` naming S2 before T018.
   - **Allowance and failures**: an allowance of 1 looks up only the newest email. A JSearch
     error, or a missing `JSEARCH_API_KEY`, leaves the jobs stored without a description, and the
     run carries on.
-- [ ] T021 [US2] Create `src/gmail/alertJobs/lookup.ts` and `src/gmail/alertJobs/budget.ts`.
+- [X] T021 [US2] Create `src/gmail/alertJobs/lookup.ts` and `src/gmail/alertJobs/budget.ts`.
   Lookups reuse `fetchJsearch` from `src/sources/jsearch.ts` with a synthetic search
   (`{ name: "Gmail alerts", query, remote_only: false, country: "us" }`) and
   `date_posted: "7days"`, adding no new HTTP code. T018 and T019 pass.
-- [ ] T022 [US2] In `src/gmail/alertFetch.ts`, add the lookup step between de-duplication and
+- [X] T022 [US2] In `src/gmail/alertFetch.ts`, add the lookup step between de-duplication and
   storing:
   - `AlertDeps` gains `jsearch` (`http`, `apiKey`, `settings`), `apiCalls`, `filters`
     (`title_filter`, `exclude_companies`), `searches` and `usedThisMonth`
@@ -360,8 +360,18 @@ Create `.specify/sitting-in-progress` naming S2 before T018.
     matches, then stores
 
   If `alertFetch.ts` nears 200 lines, this step goes in `src/gmail/alertLookupStep.ts`. T020 passes.
-- [ ] T023 [US2] Run both checks; fix findings; update the ledger. Close S2: delete the marker and
+- [X] T023 [US2] Run both checks; fix findings; update the ledger. Close S2: delete the marker and
   commit ("Look up alert jobs through JSearch in batches (007 S2)").
+
+S2 notes (2026-10-16):
+- **Results**: node 282 (+9), dom 30, integration 29, matching the ledger.
+- **Where the lookup lives**: `src/gmail/alertLookupStep.ts`, as planned. Storage is split into
+  `sortAlertJobs` (merge repeats, `markSeen` known jobs, drop copies), then the lookups, then
+  `alertJobRecord` and `upsertAll`.
+- **Failed searches**: a failed JSearch search counts as finding nothing (only a `TypeError`, a
+  programming error, is rethrown), and its request is still logged against the budget.
+- **Usage counting**: `alertSource.ts` computes this month's usage and passes it in, so
+  `src/gmail` never reads the tool context.
 
 ---
 

@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { Stores } from "../../src/db/store.js";
-import type { AlertDeps } from "../../src/gmail/alertFetch.js";
+import type { AlertDeps, LookupDeps } from "../../src/gmail/alertFetch.js";
+import type { JsonGetter } from "../../src/http/client.js";
+import { testFileConfig } from "./config.js";
 import type { AlertEmail } from "../../src/gmail/alertJobs/parse.js";
 import { seal } from "../../src/gmail/seal.js";
 import { fakeImap, type FakeImap, type FakeImapScript } from "./fakeImap.js";
@@ -29,4 +31,9 @@ export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = 
     const trace = memoryTrace();
     const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, store: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, trace, now: NOW };
     return { deps, stores: opened, fake, trace };
+}
+
+export function lookupDeps(http: JsonGetter, stores: Stores): LookupDeps {
+    const config = testFileConfig();
+    return { http, apiKey: "test-key", settings: config.jsearch, apiCalls: stores.apiCalls, filters: { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies }, searches: 0, usedThisMonth: 0 };
 }
