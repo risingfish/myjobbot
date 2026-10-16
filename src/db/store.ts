@@ -143,7 +143,25 @@ export interface AuditEntry {
     detail?: string | null;
 }
 
+export interface CareersPageRow {
+    company_key: string;
+    company: string;
+    url: string;
+    found_at: string;
+    last_used_at: string;
+}
+
+export interface RememberedPage {
+    companyKey: string;
+    company: string;
+    url: string;
+}
+
 export interface CareersStore {
+    rememberedPage(companyKey: string): Promise<CareersPageRow | null>;
+    rememberPage(page: RememberedPage, at: string): Promise<void>;
+    usePage(companyKey: string, at: string): Promise<void>;
+    forgetPage(companyKey: string): Promise<void>;
     audit(entry: AuditEntry): Promise<void>;
     attempted(keys: JobKey[]): Promise<JobKey[]>;
     pruneAuditBefore(cutoff: string): Promise<void>;

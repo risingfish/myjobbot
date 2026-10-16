@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AuditFailed, type StepRecord } from "./audit.js";
+import { StoreFailed, type StepRecord } from "./audit.js";
 import { defineTool, type Tool } from "../tools/tool.js";
 import { FetchRefused, FetchTimedOut } from "./fetchPage.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -12,6 +12,7 @@ export interface ToolPorts {
     search(): Promise<SearchResult[]>;
     open(url: string, kind: PageKind): Promise<TrimmedPage>;
     audit(record: StepRecord): Promise<void>;
+    forget(): Promise<void>;
 }
 
 const MAX_OPENS = 3;
@@ -29,7 +30,7 @@ async function stopOn<T>(session: LookupSession, step: () => Promise<T>): Promis
     try {
         return await step();
     } catch (error) {
-        if (error instanceof SearchUnavailable || error instanceof AuditFailed) session.stop = error;
+        if (error instanceof SearchUnavailable || error instanceof StoreFailed) session.stop = error;
         throw error;
     }
 }
@@ -49,12 +50,21 @@ async function openLink(session: LookupSession, ports: ToolPorts, request: z.inf
     const url = offeredUrl(session, request.link);
     session.opens += 1;
     const step = request.as === "careers_page" ? "open_careers" : "open_job";
-    const page = await remembered(session, () => ports.open(url, request.as)).catch(async (error: unknown) => {
-        await ports.audit({ step, url, outcome: "failed", reason: session.lastFailure });
+    const page = await tracked(session, () => ports.open(url, request.as)).catch(async (error: unknown) => {
+        await ports.audit({ step, url, outcome: "failed", reason: session.lastFailure, detail: await forgetIfRemembered(session, ports, url) });
         throw error;
     });
-    await ports.audit({ step, url: page.url, chars: page.chars, cut: page.cut, morePages: page.morePages, outcome: "ok", reason: null });
+    const stale = request.as === "careers_page" && page.links.length === 0 ? await forgetIfRemembered(session, ports, url) : null;
+    await ports.audit({ step, url: page.url, chars: page.chars, cut: page.cut, morePages: page.morePages, outcome: stale === null ? "ok" : "failed", reason: null, detail: stale });
     return request.as === "careers_page" ? careersResult(session, page) : jobResult(session, page);
+}
+
+/** Forgets the remembered careers page when it is the one that just failed, returning the audit detail saying so. */
+async function forgetIfRemembered(session: LookupSession, ports: ToolPorts, url: string): Promise<string | null> {
+    if (url !== session.remembered) return null;
+    session.remembered = null;
+    await ports.forget();
+    return "forgotten";
 }
 
 /** Returns the address behind a link number, refusing unknown numbers and opens past the limit. */
@@ -66,7 +76,7 @@ function offeredUrl(session: LookupSession, link: number): string {
 }
 
 /** Fetches a page, remembering whether the fetch was refused or timed out so the outcome can say so. */
-async function remembered(session: LookupSession, fetch: () => Promise<TrimmedPage>): Promise<TrimmedPage> {
+async function tracked(session: LookupSession, fetch: () => Promise<TrimmedPage>): Promise<TrimmedPage> {
     try {
         const page = await fetch();
         session.lastFailure = null;

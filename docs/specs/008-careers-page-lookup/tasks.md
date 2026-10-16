@@ -461,23 +461,23 @@ search follows.
 
 Create `.specify/sitting-in-progress` naming S4 before T039.
 
-- [ ] T039 [P] [US3] **Unit and integration**: add 2 cases to
+- [X] T039 [P] [US3] **Unit and integration**: add 2 cases to
   `tests/helpers/careersStoreContract.ts`:
   - `rememberPage` then `rememberedPage(companyKey)` returns it, and remembering again replaces
     the `url`; `usePage` updates `last_used_at` only
   - `forgetPage` deletes it
-- [ ] T040 [P] [US3] **Unit**: add 3 tests to `tests/careersLookup.test.ts`:
+- [X] T040 [P] [US3] **Unit**: add 3 tests to `tests/careersLookup.test.ts`:
   - with a remembered page, the first message offers `[1]`, the audit starts with a
     `remembered` row (`url`, `outcome = ok`), and no SearXNG request is made when the model
     opens link 1
   - when the remembered page fails to load, it is forgotten (`forgetPage`), its failed
     `open_careers` row has `detail: "forgotten"`, and `search_careers` still works
   - when the remembered page opens with zero job links, it is forgotten too
-- [ ] T041 [US3] Add `rememberedPage`, `rememberPage`, `usePage` and `forgetPage` to
+- [X] T041 [US3] Add `rememberedPage`, `rememberPage`, `usePage` and `forgetPage` to
   `CareersStore` in `src/db/store.ts`, `src/db/kysely/careersStore.ts` and
   `tests/helpers/memoryCareersStore.ts`. The key is `normalizeCompany(company)` from
   `src/jobs/company.ts`. T039 passes.
-- [ ] T042 [US3] In `src/careers/lookUpJob.ts`, `src/careers/prompt.ts` and
+- [X] T042 [US3] In `src/careers/lookUpJob.ts`, `src/careers/prompt.ts` and
   `src/careers/tools.ts`:
   - **Before the lookup**: offer the remembered page as link 1 (`usePage`) and write a
     `remembered` audit row (`url`, `outcome = ok`).
@@ -486,7 +486,7 @@ Create `.specify/sitting-in-progress` naming S4 before T039.
     and that `open_careers` row gets `outcome = failed` and `detail: "forgotten"`.
 
   T040 passes.
-- [ ] T043 [US3] Run `npm run check` and `npm run check:db` and fix every finding. Update the
+- [X] T043 [US3] Run `npm run check` and `npm run check:db` and fix every finding. Update the
   ledger, delete the marker, and commit S4 ("Remember careers pages (008 S4)").
 
 ---

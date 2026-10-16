@@ -1,12 +1,37 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../schema.js";
-import type { AuditEntry, CareersStore, JobKey } from "../store.js";
+import type { AuditEntry, CareersPageRow, CareersStore, JobKey, RememberedPage } from "../store.js";
 
 const MAX_DETAIL = 2000;
 const RETRYABLE_REASONS = ["lookup_error", "search_unavailable"];
 
 export class KyselyCareersStore implements CareersStore {
     constructor(private readonly db: Kysely<Database>) {}
+
+    /** Returns the careers page remembered for a company, or null when none is. */
+    async rememberedPage(companyKey: string): Promise<CareersPageRow | null> {
+        return (await this.db.selectFrom("careers_pages").selectAll().where("company_key", "=", companyKey).executeTakeFirst()) ?? null;
+    }
+
+    /** Remembers the careers page that led to a found job, replacing any page remembered for that company. */
+    async rememberPage(page: RememberedPage, at: string): Promise<void> {
+        const values = { company: page.company, url: page.url, found_at: at, last_used_at: at };
+        await this.db
+            .insertInto("careers_pages")
+            .values({ company_key: page.companyKey, ...values })
+            .onDuplicateKeyUpdate(values)
+            .execute();
+    }
+
+    /** Records that a remembered careers page was offered to a lookup. */
+    async usePage(companyKey: string, at: string): Promise<void> {
+        await this.db.updateTable("careers_pages").set({ last_used_at: at }).where("company_key", "=", companyKey).execute();
+    }
+
+    /** Forgets a company's careers page once it stops working. */
+    async forgetPage(companyKey: string): Promise<void> {
+        await this.db.deleteFrom("careers_pages").where("company_key", "=", companyKey).execute();
+    }
 
     /** Appends one step of a careers lookup to the audit log, keeping only addresses and counts, never page text. */
     async audit(entry: AuditEntry): Promise<void> {

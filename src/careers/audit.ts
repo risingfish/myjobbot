@@ -9,17 +9,20 @@ export interface AuditDeps {
     now: () => Date;
 }
 
-export class AuditFailed extends Error {}
+export class StoreFailed extends Error {}
 
-/** Builds the function a lookup uses to log its steps for one job, reporting a failed write as AuditFailed. */
+/** Runs a careers-store write, reporting a failure as StoreFailed so the lookup ends as lookup_error. */
+export async function stored(write: () => Promise<void>): Promise<void> {
+    try {
+        await write();
+    } catch (error) {
+        throw new StoreFailed("the careers store could not be written", { cause: error });
+    }
+}
+
+/** Builds the function a lookup uses to log its steps for one job, reporting a failed write as StoreFailed. */
 export function auditor(deps: AuditDeps, job: SoughtJob): (record: StepRecord) => Promise<void> {
-    return async (record) => {
-        try {
-            await deps.careers.audit({ runId: deps.runId, at: deps.now().toISOString(), ats: job.ats, jobId: job.jobId, company: job.company, ...record });
-        } catch (error) {
-            throw new AuditFailed("the careers audit log could not be written", { cause: error });
-        }
-    };
+    return (record) => stored(() => deps.careers.audit({ runId: deps.runId, at: deps.now().toISOString(), ats: job.ats, jobId: job.jobId, company: job.company, ...record }));
 }
 
 /** Logs that a run's lookups were skipped because search can't be used; the row belongs to no job. */

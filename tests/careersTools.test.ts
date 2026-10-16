@@ -11,7 +11,7 @@ function page(html: string, maxChars = 12_000): TrimmedPage {
 }
 
 function tools(ports: Partial<ToolPorts> = {}, session: LookupSession = newSession(JOB)) {
-    const all: ToolPorts = { search: async () => [result(CAREERS_URL), result("https://jobs.example/acme")], open: async () => page(listingPage([{ title: JOB.title, href: "backend" }])), audit: async () => {}, ...ports };
+    const all: ToolPorts = { search: async () => [result(CAREERS_URL), result("https://jobs.example/acme")], open: async () => page(listingPage([{ title: JOB.title, href: "backend" }])), audit: async () => {}, forget: async () => {}, ...ports };
     const byName = Object.fromEntries(lookupTools(session, all).map((tool) => [tool.name, tool]));
     const call = (name: string, args: unknown = {}) => {
         const tool = byName[name];

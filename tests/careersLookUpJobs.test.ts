@@ -9,6 +9,18 @@ import { scriptedChat } from "./helpers/chat.js";
 import { testFileConfig } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
+import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
+
+class FailsFor extends MemoryCareersStore {
+    constructor(private readonly jobId: string) {
+        super();
+    }
+
+    override async audit(entry: AuditEntry): Promise<void> {
+        if (entry.jobId === this.jobId) throw new Error("database gone");
+        await super.audit(entry);
+    }
+}
 
 const BETA: SoughtJob = { ...JOB, jobId: "li_2", company: "Beta" };
 const GAMMA: SoughtJob = { ...JOB, jobId: "li_3", company: "Gamma" };
@@ -66,9 +78,7 @@ test("when SearXNG can't be used, no further lookups start and the note names th
 
 test("a lookup that throws counts as lookup_error and the next job is still looked up", async () => {
     const { deps, trace } = await careersSetup({ replies: [...NOT_FOUND, ...NOT_FOUND] });
-    const audit = (entry: AuditEntry) => (entry.jobId === JOB.jobId ? Promise.reject(new Error("database gone")) : deps.careers.audit(entry));
-    const careers = { audit, attempted: deps.careers.attempted.bind(deps.careers), pruneAuditBefore: deps.careers.pruneAuditBefore.bind(deps.careers) };
-    const summary = await lookUpCareers({ ...deps, careers }, [JOB, BETA]);
+    const summary = await lookUpCareers({ ...deps, careers: new FailsFor(JOB.jobId) }, [JOB, BETA]);
     expect(summary).toMatchObject({ looked_up: 2, failed: { lookup_error: 1, job_not_found: 1 } });
     expect(trace.events).toContainEqual(expect.objectContaining({ type: "careers_error", lookup: "linkedin:li_1" }));
 });
