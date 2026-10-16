@@ -3,6 +3,7 @@ import type { ToolContext } from "./context.js";
 import { defineTool, type Tool } from "./tool.js";
 
 const MAX_VERDICTS = 25;
+const ALERT_ONLY = "scored from the alert only (no description)";
 const MAX_PART = 50;
 const scorePart = z.number().int().min(0).max(MAX_PART);
 const verdict = z.object({
@@ -29,8 +30,15 @@ async function record(context: ToolContext, verdicts: Array<z.infer<typeof verdi
     const stamp = { scoredAt: context.now().toISOString(), runId: context.runId };
     const unknown: string[] = [];
     for (const entry of verdicts) {
-        const known = await context.store.recordVerdict({ ...entry, score: entry.base + entry.bonus }, stamp);
+        const gaps = await withAlertNote(context, entry);
+        const known = await context.store.recordVerdict({ ...entry, gaps, score: entry.base + entry.bonus }, stamp);
         if (!known) unknown.push(entry.job_id);
     }
     return { recorded: verdicts.length - unknown.length, unknown_job_ids: unknown };
+}
+
+/** Adds a note to the gaps of a Gmail alert job scored without a description, so its reasoning says what it was scored on. */
+async function withAlertNote(context: ToolContext, entry: z.infer<typeof verdict>): Promise<string[]> {
+    const job = await context.store.findJob(entry.job_id);
+    return job?.ats === "linkedin" && job.description === null ? [...entry.gaps, ALERT_ONLY] : entry.gaps;
 }

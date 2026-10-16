@@ -13,7 +13,8 @@ const NOW = new Date("2026-10-15T12:00:00.000Z");
 const PASSWORD = "abcd efgh ijkl mnop";
 
 function deps(fake: FakeImap = fakeImap()): GmailDeps {
-    return { gmail: memoryStores().gmail, key: KEY, imap: fake.factory };
+    const stores = memoryStores();
+    return { gmail: stores.gmail, alerts: stores.alerts, key: KEY, imap: fake.factory };
 }
 
 async function connectedDeps(script: FakeImapScript = {}): Promise<{ gmail: GmailDeps; fake: FakeImap }> {
@@ -79,8 +80,10 @@ test("a rejected password or a changed key marks the connection as needing to re
     expect((await offline.gmail.gmail.connection())?.status).toBe("connected");
 });
 
-test("disconnecting forgets the address and password", async () => {
+test("disconnecting forgets the address, the password and where alert reading stopped", async () => {
     const { gmail } = await connectedDeps();
+    await gmail.alerts.recordRead({ uidValidity: 7, lastUid: 120, emails: 1, jobs: 2, notUnderstood: 0 }, NOW.toISOString());
     await disconnect(gmail);
     expect(await gmail.gmail.connection()).toMatchObject({ email: null, app_password: null, status: "none" });
+    expect(await gmail.alerts.state()).toBeNull();
 });

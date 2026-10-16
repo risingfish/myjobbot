@@ -64,7 +64,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
 #### Tests first
 
-- [ ] T003 [US1] Write `tests/helpers/alertEmails.ts`, synthetic plain-text bodies shaped like
+- [X] T003 [US1] Write `tests/helpers/alertEmails.ts`, synthetic plain-text bodies shaped like
   research R1, with made-up companies and titles and IDs over 2³¹:
   - `searchAlert(jobs, keywords)` for the `jobalerts-noreply` layout: a header, then per job
     title / company / location (and an optional extra line) followed by
@@ -74,7 +74,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     before `?`), and a fixed boilerplate line after each job
   - `notification()`: no job links
   - `email(uid, from, body)`, which wraps a body as an `AlertEmail`
-- [ ] T004 [P] [US1] **Unit**: write `tests/alertParse.test.ts` for `parseAlert(email)` from
+- [X] T004 [P] [US1] **Unit**: write `tests/alertParse.test.ts` for `parseAlert(email)` from
   `src/gmail/alertJobs/parse.ts`. 6 tests:
   - a saved-search alert gives `layout: "linkedin_search"`, its `keywords` and every job (title,
     company, location, `linkedinId` as the raw digits) in order, including a 25-job email
@@ -87,7 +87,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     `layout: null` and no jobs
   - a body with a stray `=3D` or a soft line break left in (imapflow's `download` already decodes
     quoted-printable) still parses the same jobs
-- [ ] T005 [P] [US1] **Unit**: write `tests/alertRead.test.ts` for `src/gmail/alertJobs/read.ts`
+- [X] T005 [P] [US1] **Unit**: write `tests/alertRead.test.ts` for `src/gmail/alertJobs/read.ts`
   (the pure reading decisions). 2 tests:
   - `alertSearch({ senders, marker, uidValidity })` always has `gmraw: from:(…)`, built with 006's
     `alertQuery` sender part (no second builder). With a marker whose `uid_validity` equals the
@@ -96,7 +96,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     with `sinceUid` 0.
   - `unreadUids(uids, sinceUid, max)` drops every UID ≤ `sinceUid`, so IMAP's `n:*` returning the
     last message again yields nothing, and keeps only the newest `max` (50).
-- [ ] T006 [P] [US1] **Unit and integration (contract)**: write
+- [X] T006 [P] [US1] **Unit and integration (contract)**: write
   `tests/helpers/alertStoreContract.ts` (`alertStoreContract(make)`, with a `CASES` list) with 3
   cases (data-model.md):
   1. `recordRead` then a second `recordRead` replaces the row
@@ -114,7 +114,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   Call both contracts from `tests/storeContract.test.ts` (memory fake) and
   `tests/integration/storeContract.test.ts` (MariaDB). `tests/helpers/storeContract.ts` stays
   under 200 lines.
-- [ ] T007 [US1] **Unit**: write `tests/alertFetch.test.ts` for `fetchAlerts(deps)` from
+- [X] T007 [US1] **Unit**: write `tests/alertFetch.test.ts` for `fetchAlerts(deps)` from
   `src/gmail/alertFetch.ts`. This task extends `tests/helpers/fakeImap.ts` with `readAlerts`; T013
   only adds the real type. It uses the memory stores and a recording trace, and keeps setup in a
   helper module, `tests/helpers/alertFetchSetup.ts`, so each test stays within 20 lines. 5 tests:
@@ -141,7 +141,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     password. `fetchAlerts` throws `AlertsUnavailable(note)` for those, and for `unreachable` and
     `unknown`. Nothing is stored or read, and `bad_login` also moves the connection to
     needs_reconnect.
-- [ ] T008 [US1] **Unit** (after T003 and T007, whose fixtures and fake it uses): 4 tests in
+- [X] T008 [US1] **Unit** (after T003 and T007, whose fixtures and fake it uses): 4 tests in
   existing files, plus 1 in `tests/config.test.ts`:
   - **`tests/listSources.test.ts`**: "Gmail alerts" is always listed with `kind: "alerts"`. When
     `context.gmail.usable` isn't `true`, it shows `fetch_failed: true` and the fixed `note`, both
@@ -157,13 +157,13 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     Recommended (FR-003).
   - **`tests/config.test.ts`**: a company or saved search named "Gmail alerts" (any case) is
     refused, since that name is reserved for the alerts source.
-- [ ] T009 [US1] **Unit, changed in place (+0)**: in `tests/gmailConnection.test.ts`, the
+- [X] T009 [US1] **Unit, changed in place (+0)**: in `tests/gmailConnection.test.ts`, the
   disconnect test also asserts the alert read marker is cleared (the `deps()` helper gains
   `alerts`).
 
 #### Implementation
 
-- [ ] T010 [US1] Create the pure modules:
+- [X] T010 [US1] Create the pure modules:
   - **`src/gmail/alertJobs/parse.ts`**: `parseAlert`, the layouts from research R1, the money
     pattern and the canonical URL
   - **`src/gmail/alertJobs/read.ts`**: `alertSearch` (reusing `alertQuery`'s sender part from
@@ -174,7 +174,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   `src/gmail` is where `ALERTS_SOURCE` lives. `src/tools`, `src/web` and the config schema
   import it from there. In `src/config/schema.ts`, `hasUniqueSourceNames` also refuses the
   reserved name. T004 and T005 pass.
-- [ ] T011 [US1] Write migration `src/db/migrations/003_gmail_alerts.ts` creating
+- [X] T011 [US1] Write migration `src/db/migrations/003_gmail_alerts.ts` creating
   `gmail_alert_state` (data-model.md: `id TINYINT PK`, `uid_validity BIGINT NULL`,
   `last_uid BIGINT NULL`, `last_run_at VARCHAR(32) NULL`, `emails_read INT NOT NULL DEFAULT 0`,
   `jobs_found INT NOT NULL DEFAULT 0`, `not_understood INT NOT NULL DEFAULT 0`, `utf8mb4_bin`).
@@ -186,7 +186,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     `003_gmail_alerts`, and the collation list becomes `api_calls`, `gmail_alert_state`,
     `gmail_connection`, `jobs`, `verdicts`.
   - Parse the BIGINT columns with `z.coerce.number()`.
-- [ ] T012 [US1] Add the stores:
+- [X] T012 [US1] Add the stores:
   - `AlertStore` (`state`, `recordRead`, `clear`) and `Stores.alerts` in `src/db/store.ts`
   - `src/db/kysely/alertStore.ts`, wired in `src/db/kysely/stores.ts`
   - `tests/helpers/memoryAlertStore.ts`, added to `memoryStores()`
@@ -197,7 +197,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     a helper module.
 
   T006 passes.
-- [ ] T013 [US1] Job model and IMAP:
+- [X] T013 [US1] Job model and IMAP:
   - **`src/jobs/job.ts`**: `Job.ats` gains `"linkedin"`. It is not in `ATS_NAMES`, which remain
     the configurable boards. Check every switch on `ats`.
   - **`src/gmail/imap.ts`**: `ImapApi` gains `readAlerts(request: { senders, marker, max })`,
@@ -210,7 +210,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
        `download(uid, part, { uid: true })` (BODY.PEEK) and read the stream into a string.
        `AlertEmail.from` is the bare sender address.
   - The fake is extended in T007; this task only changes the real type.
-- [ ] T014 [US1] Create `src/gmail/alertFetch.ts`: `AlertDeps` (`gmail`, `alerts`, `store`,
+- [X] T014 [US1] Create `src/gmail/alertFetch.ts`: `AlertDeps` (`gmail`, `alerts`, `store`,
   `key: SecretKeyStatus`, `imap?`, `senders`, `trace`, `now`) and `fetchAlerts(deps)`:
   1. `alertsUsability(row, key)`; when it gives a note, throw `AlertsUnavailable(note)`. These
      are the alert notes from `usable.ts`, separate from 006's `check.ts` wording.
@@ -225,7 +225,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
   Returns the summary (the contract's fields). Keep each function within 20 lines. If the file
   nears 200 lines in S2, the lookup step moves to `src/gmail/alertLookupStep.ts`. T007 passes.
-- [ ] T015 [US1] Agent wiring:
+- [X] T015 [US1] Agent wiring:
   - **`src/app/run.ts`**:
     - `runOnce` computes `secretKeyStatus(environment)` from the raw environment
       (`config.env` has the key stripped by `envSchema`).
@@ -266,7 +266,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     default.
 
   T008 passes.
-- [ ] T016 [US1] Disconnect clears the read marker:
+- [X] T016 [US1] Disconnect clears the read marker:
   - In `src/gmail/connection.ts`, `GmailDeps` gains `alerts`, and `disconnect(deps)` also calls
     `deps.alerts.clear()`. `keyChanged` narrows its parameter to `Pick<GmailDeps, "key">`, so
     `web/app/settings/page.tsx:27` still typechecks.
@@ -274,8 +274,29 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     alert store.
 
   T009 passes.
-- [ ] T017 [US1] Run both checks; fix findings; update the ledger. Then close S1: delete the
+- [X] T017 [US1] Run both checks; fix findings; update the ledger. Then close S1: delete the
   marker and commit ("Read LinkedIn alert emails into jobs (007 S1)").
+
+S1 notes (2026-10-16):
+- **Results**: node 273 (+25), dom 30, integration 29 (+6). The +25 is one more than the ledger:
+  the usability check got its own test.
+- **Parsing changed from the plain-text part to the HTML part.** A further structure-only probe
+  (lengths, word counts, separator names; no text) showed the plain-text lines can't reliably be
+  told apart by position.
+  - In the HTML of both LinkedIn layouts, each job has an image link and a text link to
+    `/jobs/view/<id>` whose text is the title.
+  - The next `<p class="text-system-gray-100 …">` holds "Company &middot; Location".
+  - Any later such paragraph may hold a salary.
+  - `readAlerts` downloads the `text/html` part (BODY.PEEK); `src/gmail/alertJobs/html.ts`
+    decodes entities.
+- **Smaller decisions**:
+  - `ALERTS_SOURCE` lives in its own tiny module, `src/gmail/alertJobs/source.ts`, so the config
+    schema can import it without pulling in `node:crypto`.
+  - `readAlerts` is in `src/gmail/imapAlerts.ts`, and a shared `withAllMail` helper takes the
+    read-only lock.
+  - Alert storage is in `src/gmail/alertStore.ts`.
+  - `clear()` deletes the alert-state row.
+- **Production untouched**: neither database had a `003` step before the migration was written.
 
 **Checkpoint**: US1 is complete. Alert jobs flow in, are scored from the email, and reach
 Recommended.

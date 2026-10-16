@@ -22,8 +22,9 @@ kept. Test fixtures are synthetic.
   `gmail.alert_senders`.
 - **Indeed**: no alert email in the last 14 days, so there's no layout to design from.
 
-**Decision**:
-- **Parsers**: one parser per layout, reading the **plain-text part**. It is simpler and steadier
+**Decision** (revised in S1: the HTML part, see tasks.md S1 notes):
+- **Parsers**: read the **HTML part**, the same way for both LinkedIn layouts. The title is the text of the link to `/jobs/view/<id>`; company and location come from the next `text-system-gray-100` paragraph, split on `&middot;`. The plain-text approach below was dropped.
+- **Superseded**: one parser per layout, reading the **plain-text part**. It is simpler and steadier
   than the HTML, and the structure is the same in both LinkedIn layouts.
   1. Split the part into blocks ending at a job link.
   2. In each block, the last 3–4 non-empty lines before the link are title, company and location,

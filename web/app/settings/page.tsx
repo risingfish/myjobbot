@@ -24,6 +24,6 @@ export default async function SettingsPage() {
 async function gmailView(): Promise<GmailPanelView> {
     const { gmail, key } = await getUiState();
     const row = await gmail.connection();
-    const changed = key.status === "ok" && keyChanged({ gmail, key: key.key }, row);
+    const changed = key.status === "ok" && keyChanged({ key: key.key }, row);
     return gmailPanelView(row, { keyStatus: key.status, keyChanged: changed });
 }

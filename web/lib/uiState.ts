@@ -3,12 +3,13 @@ import { loadFileConfig } from "../../src/config/load.js";
 import type { FileConfig } from "../../src/config/schema.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
-import type { GmailStore, JobViews, Stores } from "../../src/db/store.js";
+import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 
 interface UiState {
     views: JobViews;
     gmail: GmailStore;
+    alerts: AlertStore;
     key: SecretKeyStatus;
     config: FileConfig;
 }
@@ -54,5 +55,5 @@ function secretKey(): SecretKeyStatus {
 /** Returns the database views, the Gmail store, the sealing key and the freshly loaded file config for one request. */
 export async function getUiState(): Promise<UiState> {
     const opened = await stores();
-    return { views: opened.jobViews, gmail: opened.gmail, key: secretKey(), config: loadFileConfig(dataDir()) };
+    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key: secretKey(), config: loadFileConfig(dataDir()) };
 }

@@ -64,9 +64,20 @@ interface GmailConnectionTable {
     reason: Text;
 }
 
+interface GmailAlertStateTable {
+    id: number;
+    uid_validity: Count;
+    last_uid: Count;
+    last_run_at: Text;
+    emails_read: Generated<number>;
+    jobs_found: Generated<number>;
+    not_understood: Generated<number>;
+}
+
 export interface Database {
     jobs: JobsTable;
     verdicts: VerdictsTable;
     api_calls: ApiCallsTable;
     gmail_connection: GmailConnectionTable;
+    gmail_alert_state: GmailAlertStateTable;
 }

@@ -4,6 +4,7 @@ import { testContext } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 import { fetchPage, invokeTool } from "./helpers/tools.js";
+import { makeJob } from "../src/jobs/job.js";
 
 function boardContext() {
     return testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Platform Engineer"])) });
@@ -44,4 +45,20 @@ test("record_matches stores the sum as the score and keeps the breakdown", async
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 38, bonus: 40 }] });
     expect((await stores.jobViews.allJobs({ offset: 0, limit: 10 }))[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
     expect((await stores.jobViews.verdictHistory({ offset: 0, limit: 10 }))[0]).toMatchObject({ score: 78, base_score: 38, bonus_score: 40 });
+});
+
+test("an alert job scored without a description says so in its gaps, at any score", async () => {
+    const stores = memoryStores();
+    const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Platform Engineer"])) }, stores);
+    await fetchPage(context, "Stripe");
+    const alertJob = makeJob({ ats: "linkedin", jobId: "li_9", company: "Acme", title: "Backend Engineer", url: "https://x" }, {});
+    await context.store.upsertAll([alertJob], "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    await invokeTool(context, "record_matches", {
+        verdicts: [
+            { job_id: "li_9", base: 10, bonus: 5 },
+            { job_id: "1000", base: 10, bonus: 5 },
+        ],
+    });
+    const gaps = new Map((await stores.jobViews.allJobs({ offset: 0, limit: 10 })).map((job) => [job.job_id, job.gaps]));
+    expect([gaps.get("li_9"), gaps.get("1000")]).toEqual([["scored from the alert only (no description)"], []]);
 });

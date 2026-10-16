@@ -45,6 +45,13 @@ export interface JobStore {
     earliestSeen(company: string, normalizedTitle: string): Promise<string>;
     pruneLastSeenBefore(cutoff: string): Promise<number>;
     findJob(jobId: string): Promise<JobRow | null>;
+    companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]>;
+    markSeen(keys: JobKey[], seen: string): Promise<void>;
+}
+
+export interface JobKey {
+    ats: string;
+    jobId: string;
 }
 
 export interface JobViews {
@@ -85,10 +92,34 @@ export interface GmailStore {
     disconnect(): Promise<void>;
 }
 
+export interface AlertStateRow {
+    uid_validity: number | null;
+    last_uid: number | null;
+    last_run_at: string | null;
+    emails_read: number;
+    jobs_found: number;
+    not_understood: number;
+}
+
+export interface AlertRead {
+    uidValidity: number;
+    lastUid: number | null;
+    emails: number;
+    jobs: number;
+    notUnderstood: number;
+}
+
+export interface AlertStore {
+    state(): Promise<AlertStateRow | null>;
+    recordRead(read: AlertRead, at: string): Promise<void>;
+    clear(): Promise<void>;
+}
+
 export interface Stores {
     jobStore: JobStore;
     jobViews: JobViews;
     apiCalls: ApiCallLog;
     gmail: GmailStore;
+    alerts: AlertStore;
     close(): Promise<void>;
 }

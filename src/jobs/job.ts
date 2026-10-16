@@ -6,7 +6,7 @@ const MAX_LIST_ITEMS = 50;
 const MAX_LIST_ITEM_CHARS = 500;
 
 export interface Job {
-    ats: Ats | "jsearch";
+    ats: Ats | "jsearch" | "linkedin";
     jobId: string;
     company: string;
     title: string;

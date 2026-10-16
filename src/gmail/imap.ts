@@ -1,5 +1,6 @@
 import { ImapFlow } from "imapflow";
 import type { Envelope } from "./alerts.js";
+import { readAlertMail, type AlertMail, type ReadAlertsRequest } from "./imapAlerts.js";
 import { guarded } from "./imapErrors.js";
 
 interface MailboxLogin {
@@ -15,6 +16,7 @@ interface Lookup {
 export interface ImapApi {
     verify(): Promise<void>;
     lookup(query: string, pick: (uids: number[]) => number[]): Promise<Lookup>;
+    readAlerts(request: ReadAlertsRequest): Promise<AlertMail>;
 }
 
 export type ImapFactory = (login: MailboxLogin) => ImapApi;
@@ -27,6 +29,7 @@ export function imapApi(login: MailboxLogin): ImapApi {
     return {
         verify: () => guarded(() => session(login, async () => undefined)),
         lookup: (query, pick) => guarded(() => session(login, (client) => search(client, { query, pick }))),
+        readAlerts: (request) => guarded(() => session(login, (client) => withAllMail(client, () => readAlertMail(client, request)))),
     };
 }
 
@@ -43,14 +46,21 @@ async function session<T>(login: MailboxLogin, work: (client: ImapFlow) => Promi
     }
 }
 
-/** Searches All Mail read-only with Gmail's own query syntax, fetching envelopes only for the messages picked. */
+/** Searches All Mail with Gmail's own query syntax, fetching envelopes only for the messages picked. */
 async function search(client: ImapFlow, request: { query: string; pick: (uids: number[]) => number[] }): Promise<Lookup> {
-    const lock = await client.getMailboxLock(await allMailPath(client), { readOnly: true });
-    try {
+    return withAllMail(client, async () => {
         const uids = (await client.search({ gmraw: request.query }, { uid: true })) || [];
         const chosen = request.pick(uids);
         const messages = chosen.length === 0 ? [] : await client.fetchAll(chosen, { envelope: true }, { uid: true });
         return { count: uids.length, envelopes: messages.map((message) => message.envelope ?? {}) };
+    });
+}
+
+/** Opens All Mail read-only for one piece of work, so nothing in the mailbox can change, and releases it afterwards. */
+async function withAllMail<T>(client: ImapFlow, work: () => Promise<T>): Promise<T> {
+    const lock = await client.getMailboxLock(await allMailPath(client), { readOnly: true });
+    try {
+        return await work();
     } finally {
         lock.release();
     }

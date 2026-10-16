@@ -8,7 +8,7 @@ import { defineTool, type Tool } from "./tool.js";
 export function listSourcesTool(context: ToolContext): Tool {
     return defineTool({
         name: "list_sources",
-        description: "List the sources you can fetch jobs from (company boards and saved searches), with progress for this run.",
+        description: "List the sources you can fetch jobs from (company boards, saved searches and Gmail alerts), with progress for this run.",
         schema: z.object({}),
         run: () => sourceProgress(context),
     });
@@ -25,16 +25,24 @@ function describeSource(source: Source) {
     return { name: source.name, kind: source.kind };
 }
 
-/** Describes a source that hasn't been fetched this run, flagging a prior fetch failure if any. */
+/** Describes a source that hasn't been fetched this run, flagging a failure and its note if there is one. */
 function notFetched(context: ToolContext, source: Source) {
-    if (context.run.failedFetches.has(source.name)) return { ...describeSource(source), fetched: false, fetch_failed: true };
-    return { ...describeSource(source), fetched: false };
+    const failure = failureNote(context, source);
+    if (failure === undefined) return { ...describeSource(source), fetched: false };
+    return failure === null ? { ...describeSource(source), fetched: false, fetch_failed: true } : { ...describeSource(source), fetched: false, fetch_failed: true, note: failure };
+}
+
+/** Returns why a source can't be fetched (a note, or null when the failure has none), or undefined when it can. */
+function failureNote(context: ToolContext, source: Source): string | null | undefined {
+    if (source.kind === "alerts" && context.gmail.usable !== true) return context.gmail.usable;
+    return context.run.failedFetches.has(source.name) ? (context.run.failedFetches.get(source.name) ?? null) : undefined;
 }
 
 /** Reports a source's status, using its cached fetch when one is in flight or already complete. */
 async function sourceStatus(context: ToolContext, source: Source) {
     const cached = context.run.fetches.get(source.name);
-    return cached ? fetchedStatus(context, source, cached) : notFetched(context, source);
+    const unusable = source.kind === "alerts" && context.gmail.usable !== true;
+    return cached && !unusable ? fetchedStatus(context, source, cached) : notFetched(context, source);
 }
 
 /** Reports a fetched source's unscored-job count, falling back to "not fetched" if the fetch failed. */

@@ -5,6 +5,9 @@ import { testContext } from "./helpers/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
 import { memoryTrace } from "./helpers/trace.js";
+import { makeJob } from "../src/jobs/job.js";
+import { alertEmail, fixtureJobs, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
+import { alertContext } from "./helpers/alertContext.js";
 
 test("fetch_jobs returns title-filtered unscored jobs without null fields", async () => {
     const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Account Executive"])) });
@@ -65,4 +68,13 @@ test("fetch_jobs logs the jobs each board download returned, without description
         { jobId: "1001", title: "Account Executive" },
     ]);
     expect(JSON.stringify(jobLog.events[0])).not.toContain("description");
+});
+
+test("fetch_jobs pages every unscored alert job, including ones an earlier run left unscored", async () => {
+    const context = await alertContext({}, [alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(2), "senior engineer"))]);
+    const earlier = makeJob({ ats: "linkedin", jobId: "li_1", company: "Old Co", title: "Senior Engineer", url: "https://x" }, {});
+    await context.store.upsertAll([earlier], "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    const page = await fetchPage(context, "Gmail alerts");
+    expect([page.total_unscored, page.jobs.map((job) => job.job_id).sort()]).toEqual([3, ["li_1", "li_4100000000", "li_4100000001"]]);
+    expect(page).toMatchObject({ alerts: { emails: 1, jobs_found: 2, stored: 2 } });
 });

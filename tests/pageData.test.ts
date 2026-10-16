@@ -103,3 +103,8 @@ test("job rows carry a title cut to 64 characters alongside the full title, and 
     expect(rows).toMatchObject([{ title, shortTitle: `${title.slice(0, 64).trimEnd()}…` }]);
     expect(rows[0]).not.toHaveProperty("scoredDate");
 });
+
+test("a scored Gmail alerts job at or above the threshold is recommended", async () => {
+    const data = await pagesOf([{ id: "li_1", score: 90, source: "Gmail alerts" }])("recommended");
+    expect(jobRows(data).map((row) => row.jobId)).toEqual(["li_1"]);
+});
