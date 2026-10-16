@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ToolContext } from "./context.js";
-import { unscoredJobs } from "./fetchJobs.js";
+import { unscoredJobs } from "./unscored.js";
 import { configuredSources, type FetchOutcome, type Source } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 

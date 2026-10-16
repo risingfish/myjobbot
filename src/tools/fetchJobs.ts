@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { isExcludedCompany } from "../jobs/companyFilter.js";
-import { passesTitleFilter } from "../jobs/titleFilter.js";
 import { AlertsUnavailable } from "../gmail/alertJobs/usable.js";
 import { alertSource } from "./alertSource.js";
 import { fetchBoard } from "./boardFetch.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
 import { refreshSearch } from "./searchFetch.js";
+import { unscoredJobs } from "./unscored.js";
 import { findSource, type FetchOutcome, type Source } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 
@@ -23,13 +22,6 @@ export function fetchJobsTool(context: ToolContext): Tool {
     });
 }
 
-/** Returns a source's jobs that still need scoring, filtered by the title and excluded-company config. */
-export async function unscoredJobs(context: ToolContext, sourceName: string, outcome: FetchOutcome) {
-    const { store, config } = context;
-    const rows = outcome.seen === null ? await store.unscoredForSource(sourceName) : await store.unscoredSince(sourceName, outcome.seen);
-    return rows.filter((row) => passesTitleFilter(row.title, config.title_filter) && !isExcludedCompany(row.company, config.exclude_companies));
-}
-
 /** Fetches a source, then builds the paginated fetch_jobs response of its unscored jobs. */
 async function jobPage(context: ToolContext, source: Source) {
     const outcome = await fetchOnce(context, source);
@@ -37,7 +29,7 @@ async function jobPage(context: ToolContext, source: Source) {
     const jobs = await Promise.all(unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row)));
     const page = { source: source.name, total_unscored: unscored.length, jobs };
     if (source.kind === "search") return { ...page, ...refreshFields(outcome) };
-    return outcome.alerts === undefined ? page : { ...page, alerts: outcome.alerts };
+    return outcome.alerts === undefined ? page : { ...page, alerts: outcome.alerts, careers: outcome.careers };
 }
 
 /** Reports, for a search source, whether JSearch was actually refreshed or skipped and why. */

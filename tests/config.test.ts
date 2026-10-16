@@ -128,3 +128,16 @@ test("config refuses a company or search named like the Gmail alerts source", ()
     expect(() => testFileConfig({ companies: [{ name: "gmail ALERTS", ats: "greenhouse", slug: "x" }] })).toThrow(/reserved/);
     expect(() => testFileConfig({ searches: [{ ...TEST_SEARCH, name: "Gmail alerts" }] })).toThrow(/reserved/);
 });
+
+test("careers lookup settings default to small, 16GB-friendly limits and reject out-of-range values", () => {
+    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048 });
+    expect(() => testFileConfig({ careers_lookup: { page_chars: 500 } })).toThrow();
+    expect(() => testFileConfig({ careers_lookup: { search_results: 50 } })).toThrow();
+    expect(() => testFileConfig({ careers_lookup: { max_per_run: 0 } })).toThrow();
+});
+
+test("the SearXNG address is optional and must be a URL", () => {
+    expect(configFrom(LLM_ENV).env.MYJOBBOT_SEARXNG_URL).toBeUndefined();
+    expect(configFrom({ ...LLM_ENV, MYJOBBOT_SEARXNG_URL: "https://search.example" }).env.MYJOBBOT_SEARXNG_URL).toBe("https://search.example");
+    expect(() => configFrom({ ...LLM_ENV, MYJOBBOT_SEARXNG_URL: "search.example" })).toThrow();
+});

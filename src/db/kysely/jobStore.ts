@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Job } from "../../jobs/job.js";
 import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
-import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
+import type { FoundDescription, JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
 const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
 
@@ -55,6 +55,12 @@ export class KyselyJobStore implements JobStore {
     /** Moves only the last-seen time of known jobs, so seeing them again never erases their details or score. */
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
         for (const key of keys) await this.db.updateTable("jobs").set({ last_seen: seen }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
+    }
+
+    /** Stores a description found outside the job's own source, with where it came from, changing nothing else. */
+    async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
+        const values = { description: found.description, description_source: found.source, description_url: found.url };
+        await this.db.updateTable("jobs").set(values).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
     }
 
     /** Stores a job's score on every job with that id and appends each to the verdict history; reports whether any existed. */

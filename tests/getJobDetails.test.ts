@@ -48,3 +48,10 @@ test("the prompt carries the base and bonus rubric", () => {
     expect(system).toContain("bonus (0-50)");
     expect(system).toContain("Stack, up to 25");
 });
+
+test("get_job_details says when the description came from the employer's careers page", async () => {
+    const context = contextWith({});
+    await context.store.setDescription({ ats: "jsearch", jobId: "js_1" }, { description: "Build APIs.", url: "https://acme.example/jobs/1", source: "careers" });
+    expect(await invokeTool(context, "get_job_details", { job_id: "js_1" })).toMatchObject({ description: "Build APIs.", description_from: "careers page" });
+    expect(await invokeTool(contextWith({ description: "From the board." }), "get_job_details", { job_id: "js_1" })).not.toHaveProperty("description_from");
+});

@@ -1,6 +1,7 @@
 import { fetchAlerts, type AlertDeps, type LookupDeps } from "../gmail/alertFetch.js";
 import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import { AlertsUnavailable } from "../gmail/alertJobs/usable.js";
+import { lookUpAlertJobs } from "./careersStep.js";
 import type { ToolContext } from "./context.js";
 import { requestsThisMonth } from "./searchBudget.js";
 import type { FetchOutcome } from "./sources.js";
@@ -11,7 +12,7 @@ export async function alertSource(context: ToolContext): Promise<FetchOutcome> {
     const recorded = context.run.failedFetches.get(ALERTS_SOURCE);
     if (recorded) throw new AlertsUnavailable(recorded);
     const alerts = await fetchAlerts({ ...alertDeps(context), lookup: await lookupDeps(context) });
-    return { seen: null, note: null, alerts };
+    return { seen: null, note: null, alerts, careers: await lookUpAlertJobs(context) };
 }
 
 /** Gathers what the alert fetch needs from the run's context. */

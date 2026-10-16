@@ -8,6 +8,10 @@ import { memoryTrace } from "./helpers/trace.js";
 import { makeJob } from "../src/jobs/job.js";
 import { alertEmail, fixtureJobs, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
 import { alertContext } from "./helpers/alertContext.js";
+import { jobPage, searxngJson } from "./helpers/careersPages.js";
+import { fakePages, finish, open, POSTING_URL, search } from "./helpers/careersLookup.js";
+import { scriptedChat } from "./helpers/chat.js";
+import { publicDns } from "./helpers/fakeDns.js";
 
 test("fetch_jobs returns title-filtered unscored jobs without null fields", async () => {
     const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer", "Account Executive"])) });
@@ -77,4 +81,18 @@ test("fetch_jobs pages every unscored alert job, including ones an earlier run l
     const page = await fetchPage(context, "Gmail alerts");
     expect([page.total_unscored, page.jobs.map((job) => job.job_id).sort()]).toEqual([3, ["li_1", "li_4100000000", "li_4100000001"]]);
     expect(page).toMatchObject({ alerts: { emails: 1, jobs_found: 2, stored: 2 } });
+});
+
+test("fetching Gmail alerts looks up careers pages only for unscored jobs without a description that weren't tried before", async () => {
+    const base = await alertContext();
+    const jobs = ["li_new", "li_described", "li_tried"].map((jobId) => makeJob({ ats: "linkedin", jobId, company: "Acme", title: "Senior Engineer", url: "https://x" }, { description: jobId === "li_described" ? "Known." : null }));
+    await base.store.upsertAll(jobs, "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    await base.careers.store.audit({ runId: "old", at: "2026-10-01T00:00:00.000Z", ats: "linkedin", jobId: "li_tried", company: "Acme", step: "finish", url: null, outcome: "failed", reason: "job_not_found" });
+    const { chat, requests } = scriptedChat([search(), open(1, "job_page"), finish(true)]);
+    const careers = { ...base.careers, searxngUrl: "https://search.example", lookup: publicDns(), pages: fakePages({ [POSTING_URL]: jobPage("Senior Engineer", ["Build APIs."]) }) };
+    const context = { ...base, chat, careers, http: fakeBoard(searxngJson([{ url: POSTING_URL, title: "Senior Engineer" }])) };
+    const page = await fetchPage(context, "Gmail alerts");
+    expect(page).toMatchObject({ careers: { looked_up: 1, found: 1 } });
+    expect(String(requests[0]?.[0]?.content)).toContain("Senior Engineer at Acme");
+    expect(await context.store.findJob("li_new")).toMatchObject({ description_source: "careers", description: expect.stringContaining("Build APIs.") });
 });

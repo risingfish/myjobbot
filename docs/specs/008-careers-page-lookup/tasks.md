@@ -138,7 +138,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
 
 #### Tests first
 
-- [ ] T009 [US1] Write `tests/helpers/careersPages.ts`: synthetic HTML builders with made-up
+- [X] T009 [US1] Write `tests/helpers/careersPages.ts`: synthetic HTML builders with made-up
   companies, titles and hosts (`*.example`):
   - `listingPage(jobs, options)`: a careers listing with one `<a>` per job. The options are:
     `singleQuotes` (attributes in single quotes, as on the measured Vetcove page),
@@ -151,7 +151,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
 
   Also write `tests/helpers/fakeDns.ts`: `fakeDns(map)` returns a `HostLookup` that resolves
   each host to the given addresses (and rejects unknown hosts).
-- [ ] T010 [P] [US1] **Unit**: write `tests/careersTrim.test.ts` for `trimPage(html, { baseUrl,
+- [X] T010 [P] [US1] **Unit**: write `tests/careersTrim.test.ts` for `trimPage(html, { baseUrl,
   maxChars, sought?, links? })` from `src/careers/trim.ts`. 10 tests:
   - chrome elements and their text are dropped
   - hidden elements are dropped, all three kinds: `hidden`, `aria-hidden="true"`,
@@ -167,7 +167,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   - the output never exceeds `maxChars` and says `cut: true` when it hit the cap
   - with `sought`, links sharing words with the sought title come first, so cutting keeps them
     (from `src/careers/rank.ts`)
-- [ ] T011 [P] [US1] **Unit**: write `tests/careersAddresses.test.ts` for `src/careers/addresses.ts`.
+- [X] T011 [P] [US1] **Unit**: write `tests/careersAddresses.test.ts` for `src/careers/addresses.ts`.
   4 tests:
   - `isPublicAddress` refuses `0.0.0.0`, `0.1.2.3`, `127.0.0.1`, `10.x`, `172.16.x`,
     `192.168.x`, `169.254.x`, `100.64.x`, multicast, `::`, `::1`, `fc00::`, `fe80::` and the
@@ -184,14 +184,14 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   - a redirect to a host resolving to a private address is refused
   - a 6th redirect is refused
   - a fetch whose abort `cause` is a `TimeoutError` becomes `FetchTimedOut`
-- [ ] T012 [P] [US1] **Unit**: extend `tests/httpClient.test.ts` with 5 `getText` tests, using
+- [X] T012 [P] [US1] **Unit**: extend `tests/httpClient.test.ts` with 5 `getText` tests, using
   the fake fetch already there:
   - returns the body of a `text/html` response
   - retries a 503 exactly as `getJson` does (shared path)
   - refuses a non-HTML content type
   - stops reading at `maxBytes` and reports `cut`
   - returns a redirect (`redirect: "manual"`) as `{ redirect: location }` without following it
-- [ ] T013 [P] [US1] **Unit**: write `tests/careersSearxng.test.ts` for `src/careers/searxng.ts`.
+- [X] T013 [P] [US1] **Unit**: write `tests/careersSearxng.test.ts` for `src/careers/searxng.ts`.
   3 tests:
   - `searchUrl(base, company)` builds `…/search?q=<company>%20careers&format=json`, with or
     without a trailing slash on `base`
@@ -203,7 +203,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     carrying a fixed note when the JSON is in the wrong shape **or** the underlying `getJson`
     fails (network error or HTTP error such as 403); zero results is not an error and returns
     `[]`
-- [ ] T014 [US1] Write `tests/helpers/careersStoreContract.ts` (`careersStoreContract(make)`) and
+- [X] T014 [US1] Write `tests/helpers/careersStoreContract.ts` (`careersStoreContract(make)`) and
   `tests/helpers/memoryCareersStore.ts`, add `careers` to `memoryStores()` in
   `tests/helpers/memoryStore.ts`, and register the contract in `tests/storeContract.test.ts`
   (unit) and `tests/integration/storeContract.test.ts`. 2 cases for now:
@@ -215,7 +215,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   Also add 1 case to `tests/helpers/descriptionContract.ts`: `setDescription(key, { description,
   url, source: "careers" })` sets those three columns and changes no others (score,
   `last_seen`).
-- [ ] T015 [P] [US1] **Unit**: write `tests/careersTools.test.ts` for the tools in
+- [X] T015 [P] [US1] **Unit**: write `tests/careersTools.test.ts` for the tools in
   `src/careers/tools.ts`, built over a `LinkRegistry` (`src/careers/registry.ts`), with a fake
   page fetcher. 8 tests:
   - `search_careers` numbers the results from 1 and registers them
@@ -231,7 +231,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     `note: "no job links on this page"`
   - `finish_lookup({ found: true })` before any job page is a tool error
   - `finish_lookup({ found: false })` needs a `reason`, and either finish ends the lookup
-- [ ] T016 [P] [US1] **Unit**: write `tests/careersLookup.test.ts` for `lookUpJob(deps, job)` in
+- [X] T016 [P] [US1] **Unit**: write `tests/careersLookup.test.ts` for `lookUpJob(deps, job)` in
   `src/careers/lookUpJob.ts`, with `scriptedChat` from `tests/helpers/chat.ts`, a fake SearXNG
   and fake pages. 6 tests:
   - found through a careers page: the description is the last job page's trimmed text, its
@@ -243,7 +243,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   - unreadable careers page: the model opens a zero-link careers page and never finishes, giving
     reason `careers_page_unreadable`; the `finish` row's `url` is that careers page
   - LLM error: the chat throws, and the outcome is `lookup_error`, not `gave_up`
-- [ ] T017 [P] [US1] **Unit**: write `tests/careersLookUpJobs.test.ts` for `lookUpCareers(deps,
+- [X] T017 [P] [US1] **Unit**: write `tests/careersLookUpJobs.test.ts` for `lookUpCareers(deps,
   sought)` in `src/careers/lookUpJobs.ts`. 7 tests:
   - jobs are looked up in order and the summary counts `looked_up`, `found` and `failed` by
     reason
@@ -256,12 +256,12 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     SearXNG's `json` format setting
   - when one lookup throws (a store write fails), it counts as `lookup_error` and the next job's
     lookup still runs
-- [ ] T018 [P] [US1] **Unit**: extend `tests/config.test.ts` with 2 tests:
+- [X] T018 [P] [US1] **Unit**: extend `tests/config.test.ts` with 2 tests:
   - `careers_lookup` defaults are `max_per_run 10`, `max_total_minutes 30`, `max_minutes 5`,
     `page_chars 12000`, `search_results 10` and `max_download_kb 2048`, and out-of-range values
     are rejected
   - `MYJOBBOT_SEARXNG_URL` is optional and must be a URL
-- [ ] T019 [P] [US1] **Unit**: add 2 tests:
+- [X] T019 [P] [US1] **Unit**: add 2 tests:
   - in `tests/fetchJobs.test.ts`, a Gmail alerts fetch with a job missing its description runs
     a lookup (scripted chat and fakes through `tests/helpers/alertContext.ts`); the page carries
     the `careers` summary, and `store.findJob` (the page itself has no description field) shows
@@ -272,10 +272,10 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
 
 #### Implementation
 
-- [ ] T020 [US1] Install `htmlparser2` at exactly `12.0.0` with `npm install --save-exact
+- [X] T020 [US1] Install `htmlparser2` at exactly `12.0.0` with `npm install --save-exact
   htmlparser2@12.0.0`. Check that `package-lock.json` keeps every optional platform entry it
   had (`git diff package-lock.json`), and that no floor-only range was added.
-- [ ] T021 [US1] In `src/http/client.ts`, move `getJson`'s retry loop into a private
+- [X] T021 [US1] In `src/http/client.ts`, move `getJson`'s retry loop into a private
   `request(url, headers, init)` shared by `getJson` and a new `getText(url, { maxBytes, headers })`
   (`TextGetter` interface). `getText`:
   - uses `redirect: "manual"`; a 3xx returns `{ redirect: location }`
@@ -284,7 +284,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   - sends `User-Agent: myjobbot (+careers lookup)`
 
   The file stays ≤ 200 lines. T012 passes.
-- [ ] T022 [P] [US1] Write `src/careers/addresses.ts`: `isPublicAddress(ip)` over a module-level
+- [X] T022 [P] [US1] Write `src/careers/addresses.ts`: `isPublicAddress(ip)` over a module-level
   `BlockList` (`node:net`), covering the ranges in T011 (including `0.0.0.0/8`, `::/128` and
   `::ffff:0:0/96`, or turn a mapped address back into IPv4 before checking), and
   `allowedUrl(url)` for scheme and port. Then write `src/careers/fetchPage.ts`, `fetchPublicPage(deps, url)`:
@@ -296,16 +296,16 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     are not test-only exports)
 
   T011 passes, both files.
-- [ ] T023 [P] [US1] Write `src/careers/trim.ts`, `trimPage(html, { baseUrl, maxChars, sought?,
+- [X] T023 [P] [US1] Write `src/careers/trim.ts`, `trimPage(html, { baseUrl, maxChars, sought?,
   links? })` (links unnumbered; `links: false` skips them), using `htmlparser2`'s `Parser` with `onopentag`, `ontext` and `onclosetag`
   callbacks. Keep a skip-depth counter for dropped and hidden elements, and keep the helpers
   small. Write `src/careers/rank.ts`, `rankLinks(links, soughtTitle)`, using `normalizeTitle`
   from `src/jobs/normalize.ts` and keeping page order for ties. T010 passes.
-- [ ] T024 [P] [US1] Write `src/careers/searxng.ts`: `searchUrl`, `parseResults` (a zod schema
+- [X] T024 [P] [US1] Write `src/careers/searxng.ts`: `searchUrl`, `parseResults` (a zod schema
   for `{ results: [{ url, title, content? }] }`), `SearchUnavailable`, and
   `searchCareers(http, request)`, which wraps both a failed `getJson` (network or HTTP) and a
   failed parse in `SearchUnavailable`. T013 passes.
-- [ ] T025 [US1] In `src/db/store.ts`, add the `CareersStore` interface (`audit`, `attempted`,
+- [X] T025 [US1] In `src/db/store.ts`, add the `CareersStore` interface (`audit`, `attempted`,
   `pruneAuditBefore`) with an `AuditEntry` type, and the data-model fields. `step` is one of
   `search · remembered · open_careers · open_job · finish · skipped`; `outcome` is one of
   `ok · found · failed`; `reason` is one of the nine fixed reasons (data-model.md, including
@@ -319,7 +319,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     `search_unavailable` (data-model, "Which jobs count as attempted").
 
   T014 passes on both stores.
-- [ ] T026 [US1] Write `src/careers/registry.ts` (`LinkRegistry`: `add(urls) → numbers`,
+- [X] T026 [US1] Write `src/careers/registry.ts` (`LinkRegistry`: `add(urls) → numbers`,
   `get(n)`, `range()`) and `src/careers/outcome.ts`. `outcome.ts` maps the lookup's state and the
   loop's `AgentResult` to a `LookupOutcome`: `{ found: true, description, url, careersUrl }` or
   `{ found: false, reason }`. A lookup that ended without a finish takes the first reason that
@@ -328,7 +328,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   careers page had zero links and no job page was opened after it); `no_careers_page` (the
   search had no results and nothing was opened); else `gave_up`. The registry is what numbers
   links (`trimPage` returns them unnumbered).
-- [ ] T027 [US1] Write `src/careers/prompt.ts` (the system prompt and first message exactly as in
+- [X] T027 [US1] Write `src/careers/prompt.ts` (the system prompt and first message exactly as in
   `contracts/careers-lookup.md`, with the sought job filled in) and `src/careers/tools.ts`
   (`lookupTools(session)` → `search_careers`, `open_link`, `finish_lookup` through `defineTool`).
   Results are trimmed by `trimPage`, so there is one trimming step for both page kinds (FR-007).
@@ -337,7 +337,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   `search_careers` with zero results returns `"no results"`. A tool that hits
   `SearchUnavailable` or a store error sets the session's `stop` to it before rethrowing
   (`dispatch` would otherwise turn it into a plain tool error). T015 passes.
-- [ ] T028 [US1] Add `taggedTrace(trace, fields)` to `src/agent/trace.ts`. Write
+- [X] T028 [US1] Add `taggedTrace(trace, fields)` to `src/agent/trace.ts`. Write
   `src/careers/lookUpJob.ts`, `lookUpJob(deps, job)`:
   - runs `runAgent` with the lookup tools and limits `{ max_steps: 8, max_wall_clock_min:
     settings.max_minutes, max_consecutive_tool_errors: 2, context_chars: 56000 }`, and
@@ -351,7 +351,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     not found, and `url` = the last careers page opened, if any)
 
   T016 passes.
-- [ ] T029 [US1] Write `src/careers/lookUpJobs.ts`, `lookUpCareers(deps, sought)`: a loop over
+- [X] T029 [US1] Write `src/careers/lookUpJobs.ts`, `lookUpCareers(deps, sought)`: a loop over
   the jobs with the `max_per_run` and `max_total_minutes` caps and a per-run `Map` of company
   key → search results. It returns the summary `{ looked_up, found, failed, skipped_for_limit }`
   and writes the trace event `{ type: "careers", ...summary }`.
@@ -364,7 +364,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     best-effort `finish` audit row, itself guarded), and the loop moves on to the next job.
 
   T017 passes.
-- [ ] T030 [US1] Add `careers_lookup` to `fileConfigSchema` in `src/config/schema.ts`, with
+- [X] T030 [US1] Add `careers_lookup` to `fileConfigSchema` in `src/config/schema.ts`, with
   `prefault({})` and the defaults:
   - `max_per_run` int ≥ 1, default 10
   - `max_total_minutes` ≥ 1, default 30
@@ -374,7 +374,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   - `max_download_kb` int ≥ 64, default 2048
 
   Add `MYJOBBOT_SEARXNG_URL: z.url().optional()` to `envSchema`. T018 passes.
-- [ ] T031 [US1] Wire the run:
+- [X] T031 [US1] Wire the run:
   - In `src/tools/context.ts`, add `chat: ChatFn` and `careers: { store: CareersStore;
     searxngUrl: string | null; lookup: HostLookup; pages: TextGetter }` (`ToolContext.http`
     stays a `JsonGetter`, so the `fakeBoard` overrides in existing tests keep working; production
@@ -384,7 +384,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
     `careers.store.pruneAuditBefore(cutoff)`.
   - Update `tests/helpers/context.ts` (`chat` defaults to a chat that throws, `careers` to the
     memory store with `searxngUrl: null` and a `pages` getter that rejects).
-- [ ] T032 [US1] Move `unscoredJobs` from `src/tools/fetchJobs.ts` to a new
+- [X] T032 [US1] Move `unscoredJobs` from `src/tools/fetchJobs.ts` to a new
   `src/tools/unscored.ts` (both files import it from there, so `alertSource.ts` and
   `fetchJobs.ts` don't import each other). In `src/tools/alertSource.ts`, after `fetchAlerts`,
   choose the sought jobs: `unscoredJobs(context, ALERTS_SOURCE, outcome)` where
@@ -394,7 +394,7 @@ Create `.specify/sitting-in-progress` naming S2 before T009.
   `src/tools/fetchJobs.ts`, add `careers` to the alerts page. In
   `src/tools/getJobDetails.ts`, add `description_from: "careers page"` when `description_source
   === "careers"`. T019 passes.
-- [ ] T033 [US1] Run `npm run check` and `npm run check:db` and fix every finding (suggested
+- [X] T033 [US1] Run `npm run check` and `npm run check:db` and fix every finding (suggested
   ones too). Update the ledger, delete the marker, and commit S2 ("Look up alert jobs on
   careers pages (008 S2)").
 

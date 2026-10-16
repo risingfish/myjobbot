@@ -1,7 +1,8 @@
 import { jobRowSchema, jobViewSchema, toParams, verdictViewSchema } from "../../src/db/rows.js";
-import type { ApiCallLog, HiddenFlag, JobKey, JobRow, JobStore, JobView, JobViews, Page, ScoreFilter, Stores, Verdict, VerdictStamp, VerdictView } from "../../src/db/store.js";
+import type { ApiCallLog, FoundDescription, HiddenFlag, JobKey, JobRow, JobStore, JobView, JobViews, Page, ScoreFilter, Stores, Verdict, VerdictStamp, VerdictView } from "../../src/db/store.js";
 import type { Job } from "../../src/jobs/job.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
+import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
 
 type Row = Record<string, string | number | null>;
@@ -58,6 +59,11 @@ class MemoryJobStore implements JobStore {
 
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
         for (const job of this.tables.jobs) if (keys.some((key) => key.ats === job.ats && key.jobId === job.job_id)) job.last_seen = seen;
+    }
+
+    async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
+        const job = this.tables.jobs.find((row) => row.ats === key.ats && row.job_id === key.jobId);
+        if (job) Object.assign(job, { description: found.description, description_source: found.source, description_url: found.url });
     }
 
     async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {
@@ -175,5 +181,5 @@ class MemoryApiCallLog implements ApiCallLog {
 export function memoryStores(): Stores {
     const tables: Tables = { jobs: [], verdicts: [], calls: [] };
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(), close };
 }

@@ -1,5 +1,6 @@
 import type { FileConfig } from "../config/schema.js";
 import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
+import type { CareersSummary } from "../careers/lookUpJobs.js";
 import type { AlertSummary } from "../gmail/alertFetch.js";
 import type { ToolContext } from "./context.js";
 
@@ -11,6 +12,7 @@ export interface FetchOutcome {
     seen: string | null;
     note: string | null;
     alerts?: AlertSummary;
+    careers?: CareersSummary;
 }
 
 /** Lists every configured company board and saved search, plus the Gmail alerts source, as a uniform Source list. */

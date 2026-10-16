@@ -91,3 +91,38 @@ test("HttpClient sends request headers when given", async () => {
     await http.getJson(URL_A, { "x-api-key": "secret" });
     expect(inits[0]?.headers).toEqual({ "x-api-key": "secret" });
 });
+
+function htmlResponse(body: string, status = 200, headers: Record<string, string> = {}): Response {
+    return new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8", ...headers } });
+}
+
+test("getText returns an HTML page's body and sends the careers user agent", async () => {
+    const { http, inits } = client([htmlResponse("<p>Jobs</p>")]);
+    expect(await http.getText(URL_A, { maxBytes: 1000 })).toEqual({ url: URL_A, html: "<p>Jobs</p>", cut: false });
+    expect(inits[0]).toMatchObject({ redirect: "manual", headers: { "user-agent": "myjobbot (+careers lookup)" } });
+});
+
+test("getText retries a 503 through the same path as getJson", async () => {
+    const { http, clock, urls } = client([htmlResponse("", 503), htmlResponse("<p>ok</p>")]);
+    expect(await http.getText(URL_A, { maxBytes: 1000 })).toMatchObject({ html: "<p>ok</p>" });
+    expect(urls).toHaveLength(2);
+    expect(clock.sleeps).toEqual([1000]);
+});
+
+test("getText refuses a response that isn't HTML", async () => {
+    const { http } = client([jsonResponse({ jobs: [] })]);
+    await expect(http.getText(URL_A, { maxBytes: 1000 })).rejects.toThrow("not an HTML page");
+});
+
+test("getText stops reading at maxBytes and reports the page as cut", async () => {
+    const { http } = client([htmlResponse("x".repeat(5000))]);
+    const page = await http.getText(URL_A, { maxBytes: 1024 });
+    expect(page).toMatchObject({ cut: true });
+    expect("html" in page ? page.html.length : 0).toBe(1024);
+});
+
+test("getText returns a redirect's target without following it", async () => {
+    const { http, urls } = client([htmlResponse("", 302, { location: "/careers/" })]);
+    expect(await http.getText(URL_A, { maxBytes: 1000 })).toEqual({ redirect: "https://a.example/careers/" });
+    expect(urls).toHaveLength(1);
+});
