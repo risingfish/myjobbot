@@ -441,7 +441,7 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
     with the error's name in the trace, and the marker still advances
 
   Results: node 283 (+1), integration 29.
-- [ ] T030 Live run with the owner on `myjobbot_test`, with production untouched, after the last
+- [X] T030 Live run with the owner on `myjobbot_test`, with production untouched, after the last
   `npm run check:db` (which empties the test tables):
   1. Connect Gmail on the test database: `MYJOBBOT_DB_NAME=myjobbot_test npm run web`, then
      Settings → Connect with the app password.
@@ -455,6 +455,17 @@ Create `.specify/sitting-in-progress` naming S4 before T028.
   Deferred 2026-10-16: the owner chose to commit and open the PR without the test-database run,
   since the app password wasn't at hand. The live check moves to T033, on production after the
   merge.
+
+  Done 2026-10-16, on production rather than `myjobbot_test` (owner-approved). Run
+  `1a7e6f4b` gave:
+  - 3 alert emails, 11 jobs found, 10 stored (1 was a copy of another source's job), 0 not
+    understood, 0 unsupported
+  - 3 searches, 8 jobs looked up, 0 with a description
+  - 8 of the alert jobs scored, none at 70 or more
+
+  Reading, parsing, storing and de-duplication work. The lookups matched nothing, which misses
+  SC-003; counts were added to the trace to find out why (see the follow-ups below), and the
+  matching fix is T031.
 - [ ] T031 Fix anything T030 finds (test-first), or record it as follow-up.
 - [X] T032 Close S4: both checks green; delete the marker; commit; push; open the PR with the
   owner's OK.
@@ -479,6 +490,13 @@ Follow-ups on #12 (2026-10-16):
      it falls short, or the description share misses SC-003's 70%, the owner decides on a
      follow-up.
 
+
+  Steps 1–3 done 2026-10-16: after the merge (`53d6c4c`), `npm run docker:up` rebuilt the stack.
+  Production's steps are `001`, `002` and `003` (`003` was already applied from the branch). The
+  Gmail panel shows Connected and "Last run 2026-10-16 07:21: 3 alert emails, 11 jobs, 0 not
+  understood", and the web log is clean. Step 4 (the week-long SC-002 and SC-003 check) is still
+  open, together with T031 (why the lookups match nothing; the next run's `lookups` counts will
+  show).
 ---
 
 ## Dependencies & Execution Order
