@@ -5,6 +5,7 @@ import type { FileConfig } from "../config/schema.js";
 import type { CareersStore, JobStore } from "../db/store.js";
 import type { Tool } from "../tools/tool.js";
 import { fetchPublicPage, type PageFetchDeps } from "./fetchPage.js";
+import { auditor } from "./audit.js";
 import { decideOutcome, type LookupOutcome } from "./outcome.js";
 import { LOOKUP_COMPACTION, LOOKUP_NUDGE, lookupMessages } from "./prompt.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -31,11 +32,12 @@ const LIMITS = { max_steps: 8, max_consecutive_tool_errors: 2, context_chars: 56
 /** Looks up one job's posting in its own short conversation, storing the description when found and auditing the end. */
 export async function lookUpJob(deps: LookupDeps, job: SoughtJob): Promise<LookupOutcome> {
     const session = newSession(job);
-    const tools = lookupTools(session, { search: () => deps.search(job.company), open: (url, kind) => openPage(deps, { url, kind, sought: job.title }) });
+    const audit = auditor(deps, job);
+    const tools = lookupTools(session, { search: () => deps.search(job.company), open: (url, kind) => openPage(deps, { url, kind, sought: job.title }), audit });
     const result = await runAgent(agentDeps(deps, session, tools), lookupMessages(job));
     if (session.stop instanceof SearchUnavailable) throw session.stop;
     const outcome = decideOutcome(session, result);
-    await recordOutcome(deps, session, outcome);
+    await recordOutcome({ deps, audit }, session, outcome);
     return outcome;
 }
 
@@ -60,11 +62,11 @@ function agentDeps(deps: LookupDeps, session: LookupSession, tools: Tool[]): Age
     };
 }
 
-/** Stores a found description and writes the lookup's finish row, naming the careers page when there was one. */
-async function recordOutcome(deps: LookupDeps, session: LookupSession, outcome: LookupOutcome): Promise<void> {
+/** Stores a found description and writes the lookup's finish row, naming the careers page or the results seen. */
+async function recordOutcome(sinks: { deps: LookupDeps; audit: ReturnType<typeof auditor> }, session: LookupSession, outcome: LookupOutcome): Promise<void> {
     const { job } = session;
-    if (outcome.found) await deps.jobs.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, url: outcome.url, source: "careers" });
-    const where = { runId: deps.runId, at: deps.now().toISOString(), ats: job.ats, jobId: job.jobId, company: job.company, step: "finish" as const };
-    const ending = outcome.found ? { url: outcome.url, outcome: "found" as const, reason: null } : { url: session.careersPage?.url ?? null, outcome: "failed" as const, reason: outcome.reason, warning: true };
-    await deps.careers.audit({ ...where, ...ending });
+    if (outcome.found) await sinks.deps.jobs.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, url: outcome.url, source: "careers" });
+    if (outcome.found) return sinks.audit({ step: "finish", url: outcome.url, outcome: "found", reason: null });
+    const detail = outcome.reason === "no_careers_page" ? session.resultUrls.join(" ") : null;
+    await sinks.audit({ step: "finish", url: session.careersPage?.url ?? null, outcome: "failed", reason: outcome.reason, warning: true, detail });
 }

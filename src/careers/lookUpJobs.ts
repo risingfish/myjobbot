@@ -1,6 +1,7 @@
 import { describeError } from "../errors.js";
 import type { JsonGetter } from "../http/client.js";
 import { normalizeCompany } from "../jobs/company.js";
+import { auditSkipped } from "./audit.js";
 import { lookUpJob, type LookupDeps } from "./lookUpJob.js";
 import type { LookupOutcome } from "./outcome.js";
 import { SEARCH_FAILED, searchCareers, SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -25,7 +26,7 @@ const MS_PER_MINUTE = 60_000;
 /** Looks up the given jobs one at a time on their companies' careers pages, within the run's caps, and reports what happened. */
 export async function lookUpCareers(deps: CareersDeps, sought: SoughtJob[]): Promise<CareersSummary> {
     const summary: CareersSummary = { looked_up: 0, found: 0, failed: {}, skipped_for_limit: 0 };
-    if (deps.searxngUrl === null) return report(deps, { ...summary, note: NOT_CONFIGURED });
+    if (deps.searxngUrl === null) return skipAll(deps, { ...summary, note: NOT_CONFIGURED });
     const lookup = { ...deps, search: cachedSearch(deps, deps.searxngUrl) };
     const started = deps.now().getTime();
     for (const [index, job] of sought.entries()) {
@@ -34,7 +35,7 @@ export async function lookUpCareers(deps: CareersDeps, sought: SoughtJob[]): Pro
             break;
         }
         const outcome = await safeLookUp(lookup, job);
-        if (outcome === null) return report(deps, { ...summary, note: SEARCH_FAILED });
+        if (outcome === null) return skipAll(deps, { ...summary, note: SEARCH_FAILED });
         tally(summary, outcome);
     }
     return report(deps, summary);
@@ -83,6 +84,12 @@ function tally(summary: CareersSummary, outcome: LookupOutcome): void {
     summary.looked_up += 1;
     if (outcome.found) summary.found += 1;
     else summary.failed[outcome.reason] = (summary.failed[outcome.reason] ?? 0) + 1;
+}
+
+/** Logs once that search can't be used, then reports the summary carrying the note why. */
+async function skipAll(deps: CareersDeps, summary: CareersSummary & { note: string }): Promise<CareersSummary> {
+    await auditSkipped(deps, summary.note);
+    return report(deps, summary);
 }
 
 /** Writes the run's careers summary to the trace and returns it. */

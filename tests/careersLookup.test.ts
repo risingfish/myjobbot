@@ -15,7 +15,7 @@ test("a job found through its careers page is stored with the job page's text an
     const outcome = await lookUpJob(setup.deps, JOB);
     expect(outcome).toMatchObject({ found: true, url: POSTING_URL, careersUrl: CAREERS_URL });
     expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description: expect.stringContaining("Build APIs in TypeScript.") });
-    expect(setup.careers.rows).toEqual([expect.objectContaining({ step: "finish", outcome: "found", url: POSTING_URL, reason: null })]);
+    expect(setup.careers.rows.at(-1)).toMatchObject({ step: "finish", outcome: "found", url: POSTING_URL, reason: null });
 });
 
 test("a job page offered straight in the search results can be used without a careers page", async () => {
@@ -27,7 +27,7 @@ test("a job the model can't find is reported with its reason and no description 
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: LISTING }, replies: [search(), open(1, "careers_page"), finish(false, "job_not_found")] });
     expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "job_not_found" });
     expect((await setup.stores.jobStore.findJob(JOB.jobId))?.description).toBeNull();
-    expect(setup.careers.rows).toEqual([expect.objectContaining({ step: "finish", outcome: "failed", reason: "job_not_found", warning: true, url: CAREERS_URL })]);
+    expect(setup.careers.rows.at(-1)).toMatchObject({ step: "finish", outcome: "failed", reason: "job_not_found", warning: true, url: CAREERS_URL });
 });
 
 test("a lookup that never finishes gives up at its step limit", async () => {
@@ -39,10 +39,43 @@ test("a lookup that never finishes gives up at its step limit", async () => {
 test("a careers page with no job links that ends the lookup is reported as unreadable, naming the page", async () => {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: scriptOnlyPage() }, replies: [search(), open(1, "careers_page"), open(7, "job_page"), open(8, "job_page")] });
     expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "careers_page_unreadable" });
-    expect(setup.careers.rows[0]).toMatchObject({ reason: "careers_page_unreadable", url: CAREERS_URL });
+    expect(setup.careers.rows.at(-1)).toMatchObject({ reason: "careers_page_unreadable", url: CAREERS_URL });
 });
 
 test("a model server failure ends the lookup as lookup_error, not gave_up", async () => {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], chat: chatThenCrash([search()], new Error("connect ECONNREFUSED")) });
     expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "lookup_error" });
+});
+
+test("a found lookup leaves its whole trail in the audit log, in order", async () => {
+    const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: LISTING, [POSTING_URL]: POSTING }, replies: [search(), open(1, "careers_page"), open(2, "job_page"), finish(true)] });
+    await lookUpJob(setup.deps, JOB);
+    expect(setup.careers.rows.map((row) => [row.step, row.outcome, row.url])).toEqual([
+        ["search", "ok", "Acme careers"],
+        ["open_careers", "ok", CAREERS_URL],
+        ["open_job", "ok", POSTING_URL],
+        ["finish", "found", POSTING_URL],
+    ]);
+    expect(setup.careers.rows[1]).toMatchObject({ chars: expect.any(Number), cut: false, morePages: false });
+    expect(JSON.stringify(setup.careers.rows)).not.toContain("Build APIs");
+});
+
+test("a lookup with no careers page in the results lists only the result addresses, capped", async () => {
+    const results = Array.from({ length: 40 }, (_, index) => result(`https://board${index}.example/${"x".repeat(60)}`, `Board ${index} snippet text`));
+    const setup = await lookupSetup({ results, replies: [search(), finish(false, "no_careers_page")] });
+    await lookUpJob(setup.deps, JOB);
+    const detail = setup.careers.rows.at(-1)?.detail ?? "";
+    expect(detail.startsWith("https://board0.example/")).toBe(true);
+    expect(detail.length).toBeLessThanOrEqual(2000);
+    expect(detail).not.toContain("snippet");
+});
+
+test("a refused or timed-out fetch writes a failed step and names the reason when the lookup ends unfinished", async () => {
+    const refused = await lookupSetup({ results: [result("http://acme.example:8080/careers")], replies: [search(), open(1, "careers_page"), open(1, "careers_page")] });
+    expect(await lookUpJob(refused.deps, JOB)).toEqual({ found: false, reason: "fetch_refused" });
+    expect(refused.careers.rows[1]).toMatchObject({ step: "open_careers", outcome: "failed", reason: "fetch_refused" });
+    const slow = await lookupSetup({ results: [result(CAREERS_URL)], replies: [search(), open(1, "careers_page"), open(1, "careers_page")] });
+    const timeout = new Error("GET failed", { cause: new DOMException("timed out", "TimeoutError") });
+    const pages = { ...slow.deps.pages, pages: { getText: () => Promise.reject(timeout) } };
+    expect(await lookUpJob({ ...slow.deps, pages }, JOB)).toEqual({ found: false, reason: "timed_out" });
 });

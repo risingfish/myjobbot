@@ -416,21 +416,21 @@ run with search off leaves one `skipped` / `search_unavailable` row.
 
 Create `.specify/sitting-in-progress` naming S3 before T034.
 
-- [ ] T034 [P] [US2] **Unit**: add 3 tests to `tests/careersLookup.test.ts`:
+- [X] T034 [P] [US2] **Unit**: add 3 tests to `tests/careersLookup.test.ts`:
   - a found lookup's audit rows are, in order, `search` (`ok`, `chars`), `open_careers` (`url`,
     `chars`, `cut`, `more_pages`), `open_job`, `finish` (`found`)
   - `no_careers_page` stores the result addresses (and only addresses) in `detail`, capped at
     2000 characters
   - a refused `open_link` writes a `failed` step row, and a lookup that then ends unfinished has
     reason `fetch_refused`; with a fetch that times out instead, the reason is `timed_out`
-- [ ] T035 [P] [US2] **Unit**: add 2 tests to `tests/careersLookUpJobs.test.ts` (the stopping
+- [X] T035 [P] [US2] **Unit**: add 2 tests to `tests/careersLookUpJobs.test.ts` (the stopping
   and the notes already exist from S2; these assert the audit rows):
   - with `searxngUrl` null, exactly one `skipped` row with reason `search_unavailable`, and
     `ats`, `job_id` and `company` all `''`
   - when a SearXNG request fails (HTTP 403), exactly one `skipped` row with reason
     `search_unavailable`, written once however many jobs were waiting, and the interrupted job
     has no `finish` row (so it is tried again next run)
-- [ ] T036 [US2] Write a step audit row from each tool in `src/careers/tools.ts`, through a small
+- [X] T036 [US2] Write a step audit row from each tool in `src/careers/tools.ts`, through a small
   `auditStep(session, step)` helper in a new `src/careers/audit.ts`:
   - `search_careers` writes a `search` row; `open_link` writes `open_careers` or `open_job`
   - every row carries `url`, `chars`, `cut` and `more_pages`, and the `outcome` is `failed` with
@@ -440,10 +440,10 @@ Create `.specify/sitting-in-progress` naming S3 before T034.
   - never any page text
 
   T034 passes.
-- [ ] T037 [US2] In `src/careers/lookUpJobs.ts`, write one `skipped` audit row with reason
+- [X] T037 [US2] In `src/careers/lookUpJobs.ts`, write one `skipped` audit row with reason
   `search_unavailable`, `ats = ''`, `job_id = ''` and `company = ''`, in the two places S2
   already sets a note (not configured; a `SearchUnavailable` was caught). T035 passes.
-- [ ] T038 [US2] Run `npm run check` and `npm run check:db` and fix every finding. Update the
+- [X] T038 [US2] Run `npm run check` and `npm run check:db` and fix every finding. Update the
   ledger, delete the marker, and commit S3 ("Audit every careers lookup step (008 S3)").
 
 ---

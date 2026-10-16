@@ -19,6 +19,7 @@ export interface LookupSession {
     registry: LinkRegistry;
     opens: number;
     searched: number | null;
+    resultUrls: string[];
     lastOpened: "careers" | "job" | null;
     careersPage: { url: string; links: number } | null;
     jobPage: { url: string; text: string } | null;
@@ -29,5 +30,5 @@ export interface LookupSession {
 
 /** Starts the state one job's lookup conversation keeps: the links offered, the pages opened, and how it ended. */
 export function newSession(job: SoughtJob): LookupSession {
-    return { job, registry: new LinkRegistry(), opens: 0, searched: null, lastOpened: null, careersPage: null, jobPage: null, lastFailure: null, finished: null, stop: null };
+    return { job, registry: new LinkRegistry(), opens: 0, searched: null, resultUrls: [], lastOpened: null, careersPage: null, jobPage: null, lastFailure: null, finished: null, stop: null };
 }

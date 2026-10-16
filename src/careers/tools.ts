@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AuditFailed, type StepRecord } from "./audit.js";
 import { defineTool, type Tool } from "../tools/tool.js";
 import { FetchRefused, FetchTimedOut } from "./fetchPage.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -10,6 +11,7 @@ export type PageKind = "careers_page" | "job_page";
 export interface ToolPorts {
     search(): Promise<SearchResult[]>;
     open(url: string, kind: PageKind): Promise<TrimmedPage>;
+    audit(record: StepRecord): Promise<void>;
 }
 
 const MAX_OPENS = 3;
@@ -27,7 +29,7 @@ async function stopOn<T>(session: LookupSession, step: () => Promise<T>): Promis
     try {
         return await step();
     } catch (error) {
-        if (error instanceof SearchUnavailable) session.stop = error;
+        if (error instanceof SearchUnavailable || error instanceof AuditFailed) session.stop = error;
         throw error;
     }
 }
@@ -36,15 +38,22 @@ async function stopOn<T>(session: LookupSession, step: () => Promise<T>): Promis
 async function search(session: LookupSession, ports: ToolPorts) {
     const results = await ports.search();
     session.searched = results.length;
-    if (results.length === 0) return { results: [], note: "no results" };
-    return { results: results.map((result) => ({ n: session.registry.number(result.url), ...result })) };
+    session.resultUrls = results.map((result) => result.url);
+    const shown = results.length === 0 ? { results: [], note: "no results" } : { results: results.map((result) => ({ n: session.registry.number(result.url), ...result })) };
+    await ports.audit({ step: "search", url: `${session.job.company} careers`, chars: JSON.stringify(shown).length, outcome: "ok", reason: null });
+    return shown;
 }
 
 /** Opens a numbered link as a careers page or a job page, within the per-lookup limit. */
 async function openLink(session: LookupSession, ports: ToolPorts, request: z.infer<typeof openSchema>) {
     const url = offeredUrl(session, request.link);
     session.opens += 1;
-    const page = await remembered(session, () => ports.open(url, request.as));
+    const step = request.as === "careers_page" ? "open_careers" : "open_job";
+    const page = await remembered(session, () => ports.open(url, request.as)).catch(async (error: unknown) => {
+        await ports.audit({ step, url, outcome: "failed", reason: session.lastFailure });
+        throw error;
+    });
+    await ports.audit({ step, url: page.url, chars: page.chars, cut: page.cut, morePages: page.morePages, outcome: "ok", reason: null });
     return request.as === "careers_page" ? careersResult(session, page) : jobResult(session, page);
 }
 

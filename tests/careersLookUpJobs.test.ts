@@ -72,3 +72,17 @@ test("a lookup that throws counts as lookup_error and the next job is still look
     expect(summary).toMatchObject({ looked_up: 2, failed: { lookup_error: 1, job_not_found: 1 } });
     expect(trace.events).toContainEqual(expect.objectContaining({ type: "careers_error", lookup: "linkedin:li_1" }));
 });
+
+test("search being off writes one skipped row that belongs to no job", async () => {
+    const { deps, careers } = await careersSetup({ replies: [] });
+    await lookUpCareers({ ...deps, searxngUrl: null }, [JOB, BETA]);
+    expect(careers.rows).toEqual([expect.objectContaining({ step: "skipped", reason: "search_unavailable", ats: "", jobId: "", company: "" })]);
+});
+
+test("SearXNG failing writes one skipped row however many jobs waited, and the interrupted job has no finish row", async () => {
+    const failing = { getJson: () => Promise.reject(new Error("GET https://search.example/search failed with HTTP 403")), urls: [] };
+    const { deps, careers } = await careersSetup({ replies: [search(), search()], http: failing });
+    await lookUpCareers(deps, [JOB, BETA, GAMMA]);
+    expect(careers.rows).toEqual([expect.objectContaining({ step: "skipped", reason: "search_unavailable", detail: expect.stringContaining("search.formats") })]);
+    expect(await careers.attempted([{ ats: JOB.ats, jobId: JOB.jobId }])).toEqual([]);
+});
