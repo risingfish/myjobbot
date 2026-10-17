@@ -130,7 +130,7 @@ each page was read.
 
 Create `.specify/sitting-in-progress` naming S2 before T014.
 
-- [ ] T014 [P] Contract cases in `tests/helpers/careersStoreContract.ts`:
+- [X] T014 [P] Contract cases in `tests/helpers/careersStoreContract.ts`:
   - A `finish` row with `retry_once = 1` is not returned by `attempted()`, and its key is returned
     by `retries()`.
   - A later `finish` row for the same job (`retry_once = 0`) makes it attempted again and drops it
@@ -143,24 +143,24 @@ Create `.specify/sitting-in-progress` naming S2 before T014.
   `plantRetryOnce(entry)` hook: the MariaDB suite (`tests/integration/storeContract.test.ts`) writes
   the row with a raw Kysely insert into `myjobbot_test`; the memory suite sets a test-only field on
   `MemoryCareersStore`.
-- [ ] T015 Add `retries(): Promise<JobKey[]>` to `CareersStore` in `src/db/store.ts`: the keys that
+- [X] T015 Add `retries(): Promise<JobKey[]>` to `CareersStore` in `src/db/store.ts`: the keys that
   have a `retry_once = 1` finish row and no later finish row other than `lookup_error` or
   `search_unavailable` (share the exclusion list with `attempted()`, `RETRYABLE_REASONS` in
   `src/db/kysely/careersStore.ts`). Implement it in
   `src/db/kysely/careersStore.ts` and the memory store, and make `attempted()` ignore rows with
   `retry_once = 1` in both.
-- [ ] T016 Contract case in `tests/helpers/descriptionContract.ts` (memory and MariaDB):
+- [X] T016 Contract case in `tests/helpers/descriptionContract.ts` (memory and MariaDB):
   `setDescription` on a job that has `scored_at` set clears `scored_at`, so the agent scores it
   again; score and verdict columns are left as they are until then. Change `setDescription` in
   `src/db/kysely/jobStore.ts` and `tests/helpers/memoryStore.ts` to also set `scored_at = NULL`, and
   update its doc comment and 008's contract line ("changes no others") in
   `docs/specs/008-careers-page-lookup/data-model.md`.
-- [ ] T017 [P] Unit test in `tests/careersLookup.test.ts`: a `SoughtJob` with `retry: true` writes
+- [X] T017 [P] Unit test in `tests/careersLookup.test.ts`: a `SoughtJob` with `retry: true` writes
   `{ step: "retry", outcome: "ok" }` as its first audit row, before `search`.
-- [ ] T018 Add `retry?: boolean` to `SoughtJob` in `src/careers/session.ts`. Add `"retry"` to
+- [X] T018 Add `retry?: boolean` to `SoughtJob` in `src/careers/session.ts`. Add `"retry"` to
   `AuditStep` in `src/db/store.ts`. Write the row at the start of `lookUpJob` in
   `src/careers/lookUpJob.ts`, next to `offerRemembered`.
-- [ ] T019 [P] Unit test in a new `tests/careersStep.test.ts` (use `tests/helpers/context.ts`):
+- [X] T019 [P] Unit test in a new `tests/careersStep.test.ts` (use `tests/helpers/context.ts`):
   - An alert job that is **already scored**, has no description, and has a `retry_once` finish row
     is looked up with `retry: true`.
   - One with a normal finish row is not looked up.
@@ -171,7 +171,7 @@ Create `.specify/sitting-in-progress` naming S2 before T014.
   unattempted alert jobs as today, plus the jobs from `retries()` that are alert jobs with no
   description and pass the title and company filters (loaded with `store.findJob`), marked
   `retry: true`, oldest first. Check that `fetchJobs` lists unscored jobs after the careers step.
-- [ ] T020 Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Retry
+- [X] T020 Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Retry
   earlier unreadable lookups once (010 S2)").
 
 ---

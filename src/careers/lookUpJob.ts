@@ -37,6 +37,7 @@ export async function lookUpJob(deps: LookupDeps, job: SoughtJob): Promise<Looku
     const session = newSession(job);
     const audit = auditor(deps, job);
     const key = normalizeCompany(job.company);
+    if (job.retry === true) await audit({ step: "retry", url: null, outcome: "ok", reason: null });
     session.remembered = await offerRemembered(deps, { session, audit, key });
     const ports = { search: () => deps.search(job.company), open: (url: string, kind: PageKind) => readPage(deps, { url, kind, sought: job.title }), audit, forget: () => stored(() => deps.careers.forgetPage(key)) };
     const result = await runAgent(agentDeps(deps, session, lookupTools(session, ports)), lookupMessages(job, session.remembered));

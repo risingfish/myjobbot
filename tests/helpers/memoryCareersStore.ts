@@ -3,7 +3,7 @@ import type { AuditEntry, CareersPageRow, CareersStore, JobKey, RememberedPage }
 const RETRYABLE_REASONS = ["lookup_error", "search_unavailable"];
 
 export class MemoryCareersStore implements CareersStore {
-    readonly rows: AuditEntry[] = [];
+    readonly rows: Array<AuditEntry & { retryOnce?: boolean }> = [];
     private readonly pages = new Map<string, CareersPageRow>();
 
     async rememberedPage(companyKey: string): Promise<CareersPageRow | null> {
@@ -29,12 +29,21 @@ export class MemoryCareersStore implements CareersStore {
     }
 
     async attempted(keys: JobKey[]): Promise<JobKey[]> {
-        const ended = this.rows.filter((row) => row.step === "finish" && !RETRYABLE_REASONS.includes(row.reason ?? ""));
+        const ended = this.rows.filter((row) => endedForGood(row) && row.retryOnce !== true);
         return keys.filter((key) => ended.some((row) => row.ats === key.ats && row.jobId === key.jobId));
+    }
+
+    async retries(): Promise<JobKey[]> {
+        const owed = this.rows.filter((row, index) => row.step === "finish" && row.retryOnce === true && !this.rows.slice(index + 1).some((later) => later.ats === row.ats && later.jobId === row.jobId && endedForGood(later)));
+        return owed.map((row) => ({ ats: row.ats, jobId: row.jobId }));
     }
 
     async pruneAuditBefore(cutoff: string): Promise<void> {
         const kept = this.rows.filter((row) => row.at >= cutoff);
         this.rows.splice(0, this.rows.length, ...kept);
     }
+}
+
+function endedForGood(row: AuditEntry): boolean {
+    return row.step === "finish" && !RETRYABLE_REASONS.includes(row.reason ?? "");
 }

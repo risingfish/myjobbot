@@ -122,7 +122,7 @@ export interface AlertStore {
     clear(): Promise<void>;
 }
 
-type AuditStep = "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
+type AuditStep = "retry" | "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
 
 type AuditOutcome = "ok" | "found" | "failed";
 
@@ -167,6 +167,7 @@ export interface CareersStore {
     forgetPage(companyKey: string): Promise<void>;
     audit(entry: AuditEntry): Promise<void>;
     attempted(keys: JobKey[]): Promise<JobKey[]>;
+    retries(): Promise<JobKey[]>;
     pruneAuditBefore(cutoff: string): Promise<void>;
 }
 

@@ -10,6 +10,7 @@ export interface PageFields {
 
 export interface CareersHooks {
     pageFields(): Promise<PageFields[]>;
+    plantRetryOnce(entry: AuditEntry): Promise<void>;
 }
 
 const DAY_ONE = "2026-10-16T12:00:00.000Z";
@@ -73,12 +74,23 @@ async function case5(make: MakeStores, hooks: CareersHooks) {
     ]);
 }
 
+async function case6(make: MakeStores, hooks: CareersHooks) {
+    const { careers } = await make();
+    for (const reason of ["job_page_unreadable", "gave_up", "careers_page_unreadable"]) await hooks.plantRetryOnce(entry(`li_${reason}`, { reason }));
+    await careers.audit(entry("li_gave_up", { reason: "lookup_error" }));
+    await careers.audit(entry("li_careers_page_unreadable", { reason: "job_not_found" }));
+    const keys = ["li_job_page_unreadable", "li_gave_up", "li_careers_page_unreadable"].map((jobId) => ({ ats: "linkedin", jobId }));
+    expect(await careers.attempted(keys)).toEqual([keys[2]]);
+    expect(await careers.retries()).toEqual([keys[0], keys[1]]);
+}
+
 const CASES: Array<[string, (make: MakeStores, hooks: CareersHooks) => Promise<void>]> = [
     ["only lookups that ended for good count as attempted, never steps, retryable failures or skipped rows", case1],
     ["pruning removes only audit rows before the cutoff", case2],
     ["a careers page is remembered per company, replaced when found again, and its last use updated", case3],
     ["forgetting a careers page removes only that company's", case4],
     ["an open step keeps how its page was read, its fallbacks and its board", case5],
+    ["a finish marked for one retry is owed it until a later finish other than a model or search failure", case6],
 ];
 
 export function careersStoreContract(make: MakeStores, hooks: CareersHooks): void {

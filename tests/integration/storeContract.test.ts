@@ -36,6 +36,10 @@ careersStoreContract(emptyStores, {
         const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();
         return rows.map((row) => ({ pageSource: row.page_source, fallback: row.fallback, board: row.board }));
     },
+    plantRetryOnce: async (entry) => {
+        await storesOver(db).careers.audit(entry);
+        await db.updateTable("careers_audit").set({ retry_once: 1 }).where("job_id", "=", entry.jobId).where("step", "=", "finish").execute();
+    },
 });
 
 const JOB = makeJob({ ats: "greenhouse", jobId: "race", company: "Acme", title: "Backend Engineer", url: "u" }, {});

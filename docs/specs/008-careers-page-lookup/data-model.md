@@ -12,7 +12,8 @@ Migration `004_careers_lookup` (`src/db/migrations/004_careers_lookup.ts`, liste
 
 - `upsertAll` writes `description_source = 'source'` when it writes a non-null description.
 - `setDescription(key, { description, url, source: 'careers' })` writes all three and changes
-  nothing else.
+  nothing else, except `scored_at`, which it clears (from 010) so a job that was already scored is
+  scored again on its new description.
 - Both columns are set in `toParams` (`src/db/rows.ts`), so the MariaDB store and the memory
   store produce the same rows.
 - Jobs copied by the one-time `import-sqlite` (already run on 2026-10-15; it refuses a non-empty

@@ -136,3 +136,9 @@ test("an open past the limit after a refused fetch still reports fetch_refused",
     const setup = await lookupSetup({ results: [result("http://acme.example:8080/careers")], replies: [search(), ...Array.from({ length: 5 }, () => open(1, "careers_page"))] });
     expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "fetch_refused" });
 });
+
+test("a retried job notes the retry first in its audit trail", async () => {
+    const setup = await lookupSetup({ results: [result(CAREERS_URL)], replies: [search(), finish(false, "no_careers_page")] });
+    await lookUpJob(setup.deps, { ...JOB, retry: true });
+    expect(setup.careers.rows.map((row) => [row.step, row.outcome])).toEqual([["retry", "ok"], ["search", "ok"], ["finish", "failed"]]);
+});

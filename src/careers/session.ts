@@ -6,6 +6,7 @@ export interface SoughtJob {
     title: string;
     company: string;
     location: string | null;
+    retry?: boolean;
 }
 
 export const MODEL_REASONS = ["no_careers_page", "careers_page_unreadable", "job_not_found", "job_page_unreadable"] as const;

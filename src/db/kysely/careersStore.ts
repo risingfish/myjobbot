@@ -46,6 +46,7 @@ export class KyselyCareersStore implements CareersStore {
             .select(["ats", "job_id"])
             .distinct()
             .where("step", "=", "finish")
+            .where("retry_once", "=", 0)
             .where((eb) => eb.or([eb("reason", "is", null), eb("reason", "not in", RETRYABLE_REASONS)]))
             .where(
                 "job_id",
@@ -54,6 +55,19 @@ export class KyselyCareersStore implements CareersStore {
             )
             .execute();
         return keys.filter((key) => rows.some((row) => row.ats === key.ats && row.job_id === key.jobId));
+    }
+
+    /** Returns the jobs still owed the one retry their earlier unreadable lookup earned, oldest mark first. */
+    async retries(): Promise<JobKey[]> {
+        const rows = await this.db
+            .selectFrom("careers_audit as marked")
+            .select(["marked.ats", "marked.job_id"])
+            .where("marked.step", "=", "finish")
+            .where("marked.retry_once", "=", 1)
+            .where(({ not, exists, selectFrom }) => not(exists(selectFrom("careers_audit as later").select("later.id").whereRef("later.ats", "=", "marked.ats").whereRef("later.job_id", "=", "marked.job_id").where("later.step", "=", "finish").whereRef("later.id", ">", "marked.id").where((eb) => eb.or([eb("later.reason", "is", null), eb("later.reason", "not in", RETRYABLE_REASONS)])))))
+            .orderBy("marked.id")
+            .execute();
+        return rows.map((row) => ({ ats: row.ats, jobId: row.job_id }));
     }
 
     /** Deletes audit rows older than the retention cutoff. */

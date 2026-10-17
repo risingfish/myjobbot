@@ -19,5 +19,8 @@ careersStoreContract(
         careers = new MemoryCareersStore();
         return { ...memoryStores(), careers };
     },
-    { pageFields: async () => careers.rows.map((row) => ({ pageSource: row.pageSource ?? null, fallback: row.fallback ?? null, board: row.board ?? null })) },
+    {
+        pageFields: async () => careers.rows.map((row) => ({ pageSource: row.pageSource ?? null, fallback: row.fallback ?? null, board: row.board ?? null })),
+        plantRetryOnce: async (entry) => void careers.rows.push({ ...entry, retryOnce: true }),
+    },
 );
