@@ -110,8 +110,13 @@ live, read-only checks of the boards' public endpoints on 2026-10-17.
     / `route.fetch` "and any redirects it initiates"). So an allowed request is sent with
     `route.fetch({ maxRedirects: 0 })` and answered with `route.fulfill({ response })`; a 3xx
     then reaches Chromium as a response, and the redirect target comes back through the route as a
-    request of its own. The page's final address is checked again after loading. The real-browser
-    test (T053) must show a redirect to a private address is refused.
+    request of its own. The page's final address is checked again after loading.
+  - **Verified with a real browser (T055)**: a fulfilled 3xx is *still* followed by Chromium
+    without calling the route again for a navigation. So a navigation's redirect is answered with a
+    tiny page that navigates to the target (`<meta http-equiv="refresh">`), a new request the route
+    does see; a script's redirect, which Chromium won't follow after `fulfill` across origins, is
+    followed inside the handler, every hop checked, up to 5. `tests/integration/render.test.ts`
+    fails if either is removed.
   - The Playwright calls live in `src/careers/browser.ts` (`BrowserPort`, `connectBrowser`), the
     only Playwright-specific file; `render.ts` holds `renderPage` and the private verdicts.
 - **DRY**: `fetchPage.ts`'s private `checkPublic` becomes `assertPublic(lookup, url)`, exported once

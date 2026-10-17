@@ -1,4 +1,4 @@
-import { chromium, type BrowserContext, type Page, type Route, type WebSocketRoute } from "playwright-core";
+import { chromium, type APIResponse, type BrowserContext, type Page, type Route, type WebSocketRoute } from "playwright-core";
 
 export interface RoutedRequest {
     url: string;
@@ -31,7 +31,10 @@ export interface BrowserPort {
     close(): Promise<void>;
 }
 
+type Decide = (request: RoutedRequest) => Promise<boolean>;
+
 const CONNECT_MS = 10_000;
+const MAX_REDIRECTS = 5;
 const USER_AGENT = "myjobbot (+careers lookup)";
 
 /** Connects to the owner's Playwright browser service, wrapping it in the small surface the renderer uses. */
@@ -54,13 +57,41 @@ function playwrightSession(context: BrowserContext): BrowserSession {
     };
 }
 
-/** Lets one request through without following its redirects, so each redirect comes back here as a request of its own, or aborts it. */
-async function routed(route: Route, decide: (request: RoutedRequest) => Promise<boolean>): Promise<void> {
+/** Lets one request through, or aborts it, as the caller decides, never handing Chromium a redirect it would follow unchecked. */
+async function routed(route: Route, decide: Decide): Promise<void> {
     const request = route.request();
-    const mainNavigation = request.isNavigationRequest() && request.frame().parentFrame() === null;
-    if (!(await decide({ url: request.url(), kind: request.resourceType(), mainNavigation }))) return route.abort("blockedbyclient");
+    const asked = { url: request.url(), kind: request.resourceType(), mainNavigation: request.isNavigationRequest() && request.frame().parentFrame() === null };
+    if (!(await decide(asked))) return route.abort("blockedbyclient");
     const response = await route.fetch({ maxRedirects: 0 });
-    return route.fulfill({ response });
+    const next = redirectTarget(response, asked.url);
+    if (next === null) return route.fulfill({ response });
+    if (request.isNavigationRequest()) return route.fulfill({ status: 200, contentType: "text/html", body: `<meta http-equiv="refresh" content="0;url=${attribute(next)}">` });
+    return followed(route, decide, { ...asked, url: next, mainNavigation: false });
+}
+
+/** Follows a non-navigation request's redirects here, checking every hop, and answers with the final response. */
+async function followed(route: Route, decide: Decide, first: RoutedRequest): Promise<void> {
+    let hop: RoutedRequest | null = first;
+    for (let count = 0; hop !== null && count < MAX_REDIRECTS; count += 1) {
+        if (!(await decide(hop))) return route.abort("blockedbyclient");
+        const response = await route.fetch({ url: hop.url, maxRedirects: 0 });
+        const next = redirectTarget(response, hop.url);
+        if (next === null) return route.fulfill({ response });
+        hop = { ...hop, url: next };
+    }
+    return route.abort("blockedbyclient");
+}
+
+/** Returns where a redirect response points, resolved against the address it answered, or null when it isn't a redirect. */
+function redirectTarget(response: APIResponse, from: string): string | null {
+    const location = response.headers()["location"];
+    const status = response.status();
+    return status >= 300 && status < 400 && location !== undefined && URL.canParse(location, from) ? new URL(location, from).href : null;
+}
+
+/** Escapes text for use inside a double-quoted HTML attribute. */
+function attribute(text: string): string {
+    return text.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
 }
 
 /** Connects a page's WebSocket to its server, or closes it, as the caller decides. */

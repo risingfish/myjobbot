@@ -166,23 +166,59 @@ on the employer's own careers page before the agent scores them:
 
 1. **Which jobs**: unscored alert jobs that pass the title filter, still have no description
    after JSearch, and haven't been looked up before. At most `careers_lookup.max_per_run` a run,
-   and `careers_lookup.max_total_minutes` in total, one at a time.
+   and `careers_lookup.max_total_minutes` in total, one at a time. Jobs whose lookup before 010
+   ended on an unreadable page (or gave up) get one more try, even if they were scored since; a
+   description found that way makes the job be scored again.
 2. **How**: each job gets its own short conversation with the model, with three tools:
    `search_careers` (SearXNG, "<company> careers"), `open_link` (opens a numbered link as a careers
    page or as the job's own page, at most 4 per job) and `finish_lookup`. The model picks among
    numbered links; it **never types an address**. The code only opens public `http(s)` addresses
-   on the default port, checks every redirect again, and refuses anything on your LAN.
+   on the default port, checks every redirect again, and refuses anything on your LAN. Search
+   results on aggregators (`careers_lookup.skip_hosts`: Glassdoor, ZipRecruiter, Indeed,
+   LinkedIn, Built In, Teamwork Online) are dropped, a second search in one lookup is refused, and
+   a page that fails to open is reported to the model without ending the lookup.
 3. **Pages are trimmed** before the model sees them: scripts, styles, navigation, headers,
    footers, forms and hidden elements go, leaving text and job links, at most
-   `careers_lookup.page_chars` (12,000) characters. A whole lookup stays near 54,000 characters
-   at most (about 14K tokens), so it fits a model served from a 16GB graphics card.
+   `careers_lookup.page_chars` (12,000) characters. With up to four pages a lookup can pass the
+   56,000-character context budget, in which case the oldest page is compacted away, so it fits a
+   model served from a 16GB graphics card.
 4. **Results**: a found job page's text becomes the job's description (`get_job_details` says
    `description_from: "careers page"`), and the agent scores it as usual. The careers page that
    led to it is remembered for the company, so later jobs there skip the search.
 
-Careers sites that build their job list with JavaScript (many hosted job boards) can't be read
-this way; those lookups end with the reason `careers_page_unreadable`. Following a listing's next
-pages isn't done yet; the audit log notes when a page seems to continue.
+**How a page is read**, in order (each open's audit row says which, in `page_source`):
+
+1. **Board data**: links on Ashby, Greenhouse, Lever and Workday (`*.myworkdayjobs.com`) are read
+   from the board's own published data, through the same readers as the job-board sources (plus a
+   Workday reader). A careers page becomes the board's job list (Workday: its search for the
+   sought title), a job page the posting itself. If that fails, the page is downloaded instead
+   (`fallback = 'board_failed'`).
+2. **Download**: the page's HTML, trimmed.
+3. **Rendering**: when the download is unreadable (a job page with no text, or a careers page
+   with no job links, as JavaScript-built sites give), the page is rendered in a browser service
+   and trimmed the same way. Every request the page makes is checked against the same address
+   rules, redirects included; images, fonts and media aren't loaded; each page gets a fresh
+   browser context; rendering stops after `careers_lookup.render_seconds`. Without a browser
+   service (`MYJOBBOT_BROWSER_URL` unset) or after it fails once in a run, unreadable pages stay
+   empty (`fallback = 'render_off'` / `'render_failed'`) and the run summary says so.
+
+Following a listing's next pages isn't done yet; the audit log notes when a page seems to continue.
+
+**Browser service**: run the bundled one with `docker compose --profile browser up -d browser` and
+set `MYJOBBOT_BROWSER_URL=ws://browser:3000/`, or point at a Playwright server elsewhere. It must
+be Playwright **1.64.1**, the same version as `playwright-core` in `package.json`; upgrade both
+together. The bundled service sits on its own Docker network (`172.31.250.0/24`) with no published
+port. The address checks are the protection; as a second line of defence, keep that network off
+your LAN on the Docker host:
+
+```bash
+sudo iptables -I DOCKER-USER -s 172.31.250.0/24 -d 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 \
+  -m conntrack --ctstate NEW -j DROP
+```
+
+and set `careers_lookup.lan_probe_url` to a LAN address that answers (your router, say): each
+run's first rendering then checks the browser can't reach it, and writes a `render_check` audit
+row with `warning = 1` (rendering still goes ahead) if it can.
 
 **SearXNG**: use your own server, or the bundled one: set `SEARXNG_SECRET` in `.env`, start it
 with `docker compose --profile search up -d searxng`, and set
@@ -574,6 +610,9 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `careers_lookup.page_chars` | 12000 | Characters of trimmed page (or search results) handed to the model |
 | `careers_lookup.search_results` | 10 | SearXNG results offered per company |
 | `careers_lookup.max_download_kb` | 2048 | Bytes read from one page before it is cut |
+| `careers_lookup.render_seconds` | 15 | Time limit for rendering one page (5–60) |
+| `careers_lookup.skip_hosts` | aggregators | Hosts (and their subdomains) whose search results are dropped |
+| `careers_lookup.lan_probe_url` | unset | A LAN address the browser service must not reach, checked once per run |
 | `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no company or search may use it |
 
 ### Saved searches (JSearch)

@@ -87,7 +87,13 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `trimPage`, with numbered links (the model never types an address), addresses must be public
   `http(s)` and are checked again on every redirect (`fetchPage.ts`), and `careers_audit` holds
   addresses and sizes only, never page text. Check compose changes with `docker compose config
-  --quiet`; plain `docker compose config` prints `.env`.
+  --quiet`; plain `docker compose config` prints `.env`. Pages are read in order (feature 010,
+  `readPage.ts`): a job board's own data (`src/sources/boardLink.ts`, the board readers, Workday),
+  then the download, then rendering in the owner's Playwright browser when the download is
+  unreadable. Every board and browser request goes through `assertPublic`; the browser never gets a
+  redirect to follow on its own (`browser.ts`). `playwright-core` and the compose `browser` image
+  are pinned to the same version (1.64.1); bump them together. `npm run check:db` runs the
+  real-browser test only when `MYJOBBOT_TEST_BROWSER_URL` is set (quickstart §1).
 
 ## Commands
 

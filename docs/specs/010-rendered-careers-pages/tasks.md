@@ -409,7 +409,7 @@ Create `.specify/sitting-in-progress` naming S5 before T045.
 
 Create `.specify/sitting-in-progress` naming S6 before T052.
 
-- [ ] T052 Add the `browser` service to `compose.yaml`:
+- [X] T052 Add the `browser` service to `compose.yaml`:
   - image `mcr.microsoft.com/playwright:v1.64.1-noble`, `profiles: ["browser"]`,
     `restart: unless-stopped`, `init: true`, `user: pwuser`, `working_dir: /home/pwuser`,
     `shm_size: 1gb`;
@@ -419,7 +419,7 @@ Create `.specify/sitting-in-progress` naming S6 before T052.
     network.
 
   Check with `docker compose config --quiet` (never plain `config`).
-- [ ] T053 [P] Integration test `tests/integration/render.test.ts` (it must also show that a
+- [X] T053 [P] Integration test `tests/integration/render.test.ts` (it must also show that a
   302 from the allowed server to the disallowed port is never followed, research R8 "Redirects"),
   skipped unless
   `MYJOBBOT_TEST_BROWSER_URL` is set. The test browser runs on the developer machine with host
@@ -430,16 +430,19 @@ Create `.specify/sitting-in-progress` naming S6 before T052.
     that server.
   - The page's script-built text is returned.
   - Its request to a second, disallowed local port is never received by that server.
-- [ ] T054 [P] Docs:
+- [X] T054 [P] Docs:
   - `.env.example`: `MYJOBBOT_BROWSER_URL`, commented, with the bundled value `ws://browser:3000/`.
   - `README.md` Careers lookup section: board data, rendering, the browser service, the firewall
     rule, and the `skip_hosts` / `render_seconds` / `lan_probe_url` config rows.
   - `CLAUDE.md` careers note: page reading order; `playwright-core` and the image are pinned
     together; every browser request goes through `assertPublic`.
-- [ ] T055 Run quickstart §1's real-browser check (a host-network test browser on port 3001,
+- [X] T055 Run quickstart §1's real-browser check (a host-network test browser on port 3001,
   `MYJOBBOT_TEST_BROWSER_URL=ws://127.0.0.1:3001/ npm run check:db`). Record the result in one line.
-- [ ] T056 Record the test ledger below.
-- [ ] T057 Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Bundle the
+  - 2026-10-17: 39/39 passed with a 1.64.1 host-network browser. The first run caught that Chromium
+    follows a fulfilled redirect without routing it (research R8); fixed in `browser.ts`, and each of
+    the two redirect paths was shown to fail the test when removed.
+- [X] T056 Record the test ledger below.
+- [X] T057 Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Bundle the
   browser service and document page reading (010 S6)").
 
 ### Sitting S7: live validation (T058–T060)
@@ -504,4 +507,4 @@ Task: "T027 Unit test tests/careersBoardPages.test.ts"
 |---|---|---|---|
 | Baseline (T002) | 356 | 35 | 30 |
 | Planned new | ~47 (T003, T007, T012, T017, T019, T021, T023, T025, T027, T029, T031, T033, T034, T036, T038, T039, T042, T045–T049) | ~5 (T009, T011, T014, T016 on MariaDB; T053 only when `MYJOBBOT_TEST_BROWSER_URL` is set) | 0 |
-| After S6 (T056) | | | |
+| After S6 (T056) | 421 (+65) | 39 (+4; 1 skipped without a browser) | 30 |
