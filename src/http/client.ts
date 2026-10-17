@@ -40,7 +40,7 @@ interface HttpDeps {
     random: () => number;
 }
 
-export class HttpClient implements JsonGetter, JsonPoster, TextGetter {
+export class HttpClient implements JsonGetter, TextGetter {
     private readonly limiter: HostLimiter;
 
     /** Builds the HTTP client, wiring up its per-host rate limiter from the given config and clock. */
@@ -49,15 +49,16 @@ export class HttpClient implements JsonGetter, JsonPoster, TextGetter {
     }
 
     /** Fetches a URL as JSON, retrying on transient failures and rate limits per the configured policy. */
-    async getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
-        const response = await this.request(url, { headers });
-        return this.withUrl(`GET ${url}`, () => response.json());
+    getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
+        return this.json(url, { headers });
     }
 
-    /** Posts a JSON body and returns the JSON answer, with the same retries and rate limits as getJson. */
-    async postJson(url: string, body: unknown): Promise<unknown> {
-        const response = await this.request(url, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
-        return this.withUrl(`POST ${url}`, () => response.json());
+    /** Returns a JSON client that fails on a redirect instead of following it, for addresses checked before each request. */
+    withoutRedirects(): JsonGetter & JsonPoster {
+        return {
+            getJson: (url, headers = {}) => this.json(url, { headers, redirect: "manual" }),
+            postJson: (url, body) => this.json(url, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body), redirect: "manual" }),
+        };
     }
 
     /** Fetches an HTML page without following redirects, reading at most maxBytes, so callers can vet each hop. */
@@ -74,6 +75,17 @@ export class HttpClient implements JsonGetter, JsonPoster, TextGetter {
         }
         const { body, cut } = await this.withUrl(`GET ${url}`, () => readCapped(response, options.maxBytes));
         return { url, html: body, cut };
+    }
+
+    /** Sends a request and reads its JSON answer, refusing a redirect the request asked not to follow. */
+    private async json(url: string, init: RequestInit): Promise<unknown> {
+        const label = `${init.method ?? "GET"} ${url}`;
+        const response = await this.request(url, init);
+        if (REDIRECT_STATUSES.has(response.status)) {
+            await response.body?.cancel();
+            throw new Error(`${label} was redirected; redirects aren't followed here`);
+        }
+        return this.withUrl(label, () => response.json());
     }
 
     /** Sends a request, retrying transient failures, and returns the first successful or redirect response. */

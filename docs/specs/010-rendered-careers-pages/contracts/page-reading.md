@@ -16,6 +16,9 @@ Called by `open_link` for every open. Tries, in order:
    - Board data is read once per board (and per Workday search) per run.
    - Any failure except an address refusal → `board_failed` is added to `fallback`, and step 2 runs on
      the same url.
+   - Board requests never follow a redirect: the board client (`HttpClient.withoutRedirects()`)
+     fails on any 3xx, so the board step falls back to the download, which checks every hop
+     (found in the S6 review: plain `getJson` follows redirects unchecked).
 2. **Plain download**: 008's `fetchPublicPage` + `trimPage`, unchanged.
 3. **Rendering**, only when step 2 succeeded and the page is unreadable (job page: no text;
    careers page: no links), and rendering is on:

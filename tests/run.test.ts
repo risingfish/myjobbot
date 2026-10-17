@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { expect, test, vi } from "vitest";
 import { runOnce } from "../src/app/run.js";
 import { PageRenderer } from "../src/careers/renderState.js";
+import { HttpClient } from "../src/http/client.js";
 import { makeJob } from "../src/jobs/job.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { chatThenCrash, scriptedChat, toolCallsReply } from "./helpers/chat.js";
@@ -55,6 +56,13 @@ test("the page renderer is closed after a finished run and after an aborted one"
     }
     expect(close).toHaveBeenCalledTimes(2);
     close.mockRestore();
+});
+
+test("board data is read through the client that refuses redirects", async () => {
+    const withoutRedirects = vi.spyOn(HttpClient.prototype, "withoutRedirects");
+    await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat([toolCallsReply(["finish", { summary: "done" }])]).chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => memoryStores() });
+    expect(withoutRedirects).toHaveBeenCalledOnce();
+    withoutRedirects.mockRestore();
 });
 
 test("the stores are closed after a finished run and after an aborted one", async () => {

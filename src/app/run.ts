@@ -108,7 +108,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
         trace: logs.trace,
         chat,
-        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client, boards: client, renderer: pageRenderer(config, seams, { logs, stores }) },
+        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client, boards: client.withoutRedirects(), renderer: pageRenderer(config, seams, { logs, stores }) },
     };
 }
 
