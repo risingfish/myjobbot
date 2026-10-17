@@ -141,6 +141,9 @@ export interface AuditEntry {
     reason: string | null;
     warning?: boolean;
     detail?: string | null;
+    pageSource?: string | null;
+    fallback?: string | null;
+    board?: string | null;
 }
 
 export interface CareersPageRow {

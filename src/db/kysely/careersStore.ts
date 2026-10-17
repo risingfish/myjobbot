@@ -62,10 +62,11 @@ export class KyselyCareersStore implements CareersStore {
     }
 }
 
-/** Maps an audit entry to its stored row, with flags as 0/1 and the detail capped. */
+/** Maps an audit entry to its stored row, with flags as 0/1, how the page was read, and the detail capped. */
 function auditRow(entry: AuditEntry) {
     const flag = (value: boolean | undefined) => (value === true ? 1 : 0);
     const where = { run_id: entry.runId, at: entry.at, ats: entry.ats, job_id: entry.jobId, company: entry.company, step: entry.step, url: entry.url };
     const what = { chars: entry.chars ?? null, cut: flag(entry.cut), more_pages: flag(entry.morePages), outcome: entry.outcome, reason: entry.reason, warning: flag(entry.warning) };
-    return { ...where, ...what, detail: entry.detail?.slice(0, MAX_DETAIL) ?? null };
+    const read = { page_source: entry.pageSource ?? null, fallback: entry.fallback ?? null, board: entry.board ?? null };
+    return { ...where, ...what, ...read, detail: entry.detail?.slice(0, MAX_DETAIL) ?? null };
 }

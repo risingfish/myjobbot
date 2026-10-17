@@ -71,7 +71,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 - The audit gains `page_source`, `fallback` and `board`. `page_source = 'html'` is written from
   this sitting on, so the columns are reachable straight away.
 
-- [ ] T003 [P] Unit test `tests/careersFitPage.test.ts`:
+- [X] T003 [P] Unit test `tests/careersFitPage.test.ts`:
   - `fitPage({ text, links }, { maxChars, sought })` ranks the link matching `sought` first.
   - Links take at most half the budget.
   - The total stays ≤ `maxChars`.
@@ -79,48 +79,48 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - An empty input gives empty text and `cut: false`.
 
   Keep the existing `tests/careersTrim.test.ts` cases passing unchanged.
-- [ ] T004 Split the budget step out of `src/careers/trim.ts` into `src/careers/fitPage.ts`
+- [X] T004 Split the budget step out of `src/careers/trim.ts` into `src/careers/fitPage.ts`
   (`fitPage`, plus the `LINK_OVERHEAD` budget moved with it). `trimPage` now walks HTML with
   `walkPage` and then calls `fitPage`. Run `tests/careersTrim.test.ts` and
   `tests/careersFitPage.test.ts`.
-- [ ] T005 Confirm the existing `tests/careersFetchPage.test.ts` cases (private names, the
+- [X] T005 Confirm the existing `tests/careersFetchPage.test.ts` cases (private names, the
   `mixed.example` public-and-private name, loopback, redirects) cover the check being renamed in
   T006; they must pass unchanged after it. No new test.
-- [ ] T006 In `src/careers/fetchPage.ts`, rename the private `checkPublic(deps, url)` to
+- [X] T006 In `src/careers/fetchPage.ts`, rename the private `checkPublic(deps, url)` to
   `assertPublic(lookup: HostLookup, url: string)`, **still private** in this sitting (knip runs in
   production mode: an export used only by its own file and tests is unused). T028 exports it when
   `boardPages.ts` becomes its second production caller.
-- [ ] T007 [P] Unit test `tests/careersReadPage.test.ts`. `readPage(deps, { url, kind, sought })`
+- [X] T007 [P] Unit test `tests/careersReadPage.test.ts`. `readPage(deps, { url, kind, sought })`
   returns the plain download trimmed exactly as `trimPage` would, with `source: "html"`,
   `fallback: null` and `board: null`. A `FetchRefused` from the download is rethrown unchanged.
-- [ ] T008 Create `src/careers/readPage.ts` (`PageRead`, `readPage`) holding the plain step that is
+- [X] T008 Create `src/careers/readPage.ts` (`PageRead`, `readPage`) holding the plain step that is
   in `lookUpJob.ts` `openPage` today. Make `lookUpJob.ts` pass `readPage` as the `open` port, and
   remove `openPage`. `ToolPorts.open` now returns `PageRead` (`TrimmedPage` plus `source`,
   `fallback` and `board`). Update the test helpers that build `open` results in the same task:
   `page()` in `tests/careersTools.test.ts` and `fakePages`/`lookupSetup` in
   `tests/helpers/careersLookup.ts`, via one `asRead(page)` helper in `tests/helpers/careersPages.ts`
   that adds `source: "html"`, `fallback: null` and `board: null`.
-- [ ] T009 Integration test `tests/integration/migrate.test.ts`:
+- [X] T009 Integration test `tests/integration/migrate.test.ts`:
   - 005 runs after 004.
   - `careers_audit` has `page_source VARCHAR(16) NULL`, `fallback VARCHAR(32) NULL`,
     `board VARCHAR(160) NULL` and `retry_once TINYINT NOT NULL DEFAULT 0`, all `utf8mb4_bin`.
   - Pre-existing `finish` rows with reason `careers_page_unreadable`, `job_page_unreadable` or
     `gave_up` get `retry_once = 1`; other rows stay 0.
-- [ ] T010 Create `src/db/migrations/005_page_sources.ts` (export `pageSources`) and list it in
+- [X] T010 Create `src/db/migrations/005_page_sources.ts` (export `pageSources`) and list it in
   `src/db/migrations/index.ts`:
   - `ALTER TABLE careers_audit` adds the four columns exactly as data-model.md defines them.
   - Then `UPDATE careers_audit SET retry_once = 1 WHERE step = 'finish' AND reason IN
     ('careers_page_unreadable', 'job_page_unreadable', 'gave_up')`.
   - Update `CareersAuditTable` in `src/db/schema.ts`: `page_source`, `fallback` and `board` as
     `Text`, and `retry_once` as `Generated<number>`.
-- [ ] T011 Add a contract case to `tests/helpers/careersStoreContract.ts` (runs on memory and
+- [X] T011 Add a contract case to `tests/helpers/careersStoreContract.ts` (runs on memory and
   MariaDB): an audit entry with `pageSource: "html"`, `fallback: null` and `board: null`
   round-trips, and so does `fallback: "board_failed,render_off"`. Extend `AuditEntry` in `src/db/store.ts` with optional `pageSource`, `fallback` and
   `board`, and write them in `src/db/kysely/careersStore.ts` and `tests/helpers/memoryCareersStore.ts`.
-- [ ] T012 In `src/careers/tools.ts` `openLink`, write `pageSource`, `fallback` and `board` from the
+- [X] T012 In `src/careers/tools.ts` `openLink`, write `pageSource`, `fallback` and `board` from the
   `PageRead` on the `open_careers` / `open_job` audit row. Add a unit case to
   `tests/careersLookup.test.ts`'s audit-trail test: both open rows have `pageSource: "html"`.
-- [ ] T013 Run `npm run check` and `npm run check:db`, fix every finding, delete the marker, and
+- [X] T013 Run `npm run check` and `npm run check:db`, fix every finding, delete the marker, and
   commit ("Read every careers page through one path; migration 005 (010 S1)").
 
 **Checkpoint**: behaviour is unchanged, every open goes through `readPage`, and the audit says how

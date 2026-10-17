@@ -58,7 +58,8 @@ test("a found lookup leaves its whole trail in the audit log, in order", async (
         ["open_job", "ok", POSTING_URL],
         ["finish", "found", POSTING_URL],
     ]);
-    expect(setup.careers.rows[1]).toMatchObject({ chars: expect.any(Number), cut: false, morePages: false });
+    expect(setup.careers.rows[1]).toMatchObject({ chars: expect.any(Number), cut: false, morePages: false, pageSource: "html", fallback: null, board: null });
+    expect(setup.careers.rows[2]).toMatchObject({ pageSource: "html" });
     expect(JSON.stringify(setup.careers.rows)).not.toContain("Build APIs");
 });
 

@@ -4,15 +4,15 @@ import { taggedTrace, type Trace } from "../agent/trace.js";
 import type { FileConfig } from "../config/schema.js";
 import type { CareersStore, JobStore } from "../db/store.js";
 import type { Tool } from "../tools/tool.js";
-import { fetchPublicPage, type PageFetchDeps } from "./fetchPage.js";
+import type { PageFetchDeps } from "./fetchPage.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { auditor, stored } from "./audit.js";
 import { decideOutcome, type LookupOutcome } from "./outcome.js";
 import { LOOKUP_COMPACTION, LOOKUP_NUDGE, lookupMessages } from "./prompt.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
 import { newSession, type LookupSession, type SoughtJob } from "./session.js";
+import { readPage } from "./readPage.js";
 import { lookupTools, type PageKind } from "./tools.js";
-import { trimPage, type TrimmedPage } from "./trim.js";
 
 type CareersSettings = FileConfig["careers_lookup"];
 
@@ -38,7 +38,7 @@ export async function lookUpJob(deps: LookupDeps, job: SoughtJob): Promise<Looku
     const audit = auditor(deps, job);
     const key = normalizeCompany(job.company);
     session.remembered = await offerRemembered(deps, { session, audit, key });
-    const ports = { search: () => deps.search(job.company), open: (url: string, kind: PageKind) => openPage(deps, { url, kind, sought: job.title }), audit, forget: () => stored(() => deps.careers.forgetPage(key)) };
+    const ports = { search: () => deps.search(job.company), open: (url: string, kind: PageKind) => readPage(deps, { url, kind, sought: job.title }), audit, forget: () => stored(() => deps.careers.forgetPage(key)) };
     const result = await runAgent(agentDeps(deps, session, lookupTools(session, ports)), lookupMessages(job, session.remembered));
     if (session.stop instanceof SearchUnavailable) throw session.stop;
     const outcome = decideOutcome(session, result);
@@ -54,13 +54,6 @@ async function offerRemembered(deps: LookupDeps, lookup: { session: LookupSessio
     await deps.careers.usePage(lookup.key, deps.now().toISOString());
     await lookup.audit({ step: "remembered", url: page.url, outcome: "ok", reason: null });
     return page.url;
-}
-
-/** Fetches a public page and trims it for the model, keeping links only on careers pages. */
-async function openPage(deps: LookupDeps, request: { url: string; kind: PageKind; sought: string }): Promise<TrimmedPage> {
-    const page = await fetchPublicPage(deps.pages, request.url);
-    const trimmed = trimPage(page.html, { baseUrl: page.url, maxChars: deps.settings.page_chars, sought: request.sought, links: request.kind === "careers_page" });
-    return { ...trimmed, cut: trimmed.cut || page.cut };
 }
 
 /** Sets up the agent loop for a lookup: its tools, small limits, a tagged trace, and an end once finished, out of opens or stopped. */

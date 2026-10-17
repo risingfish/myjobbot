@@ -31,7 +31,12 @@ gmailStoreContract(emptyStores);
 alertStoreContract(emptyStores);
 alertJobContract(emptyStores);
 descriptionContract(emptyStores);
-careersStoreContract(emptyStores);
+careersStoreContract(emptyStores, {
+    pageFields: async () => {
+        const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();
+        return rows.map((row) => ({ pageSource: row.page_source, fallback: row.fallback, board: row.board }));
+    },
+});
 
 const JOB = makeJob({ ats: "greenhouse", jobId: "race", company: "Acme", title: "Backend Engineer", url: "u" }, {});
 

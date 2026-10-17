@@ -2,12 +2,13 @@ import { expect, test } from "vitest";
 import { FetchRefused } from "../src/careers/fetchPage.js";
 import { newSession, type LookupSession } from "../src/careers/session.js";
 import { lookupTools, type ToolPorts } from "../src/careers/tools.js";
-import { trimPage, type TrimmedPage } from "../src/careers/trim.js";
-import { jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
+import type { PageRead } from "../src/careers/readPage.js";
+import { trimPage } from "../src/careers/trim.js";
+import { asRead, jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { CAREERS_URL, JOB, result } from "./helpers/careersLookup.js";
 
-function page(html: string, maxChars = 12_000): TrimmedPage {
-    return trimPage(html, { baseUrl: CAREERS_URL, maxChars, sought: JOB.title });
+function page(html: string, maxChars = 12_000): PageRead {
+    return asRead(trimPage(html, { baseUrl: CAREERS_URL, maxChars, sought: JOB.title }));
 }
 
 function tools(ports: Partial<ToolPorts> = {}, session: LookupSession = newSession(JOB)) {
@@ -48,8 +49,8 @@ test("four opens work and the fifth ends the lookup instead of failing, whatever
     expect(session.overLimit).toBe(true);
 });
 
-function blankJobPage(): TrimmedPage {
-    return { url: "https://acme.example/careers/backend", text: "  \n ", links: [], cut: false, morePages: false, chars: 4 };
+function blankJobPage(): PageRead {
+    return asRead({ url: "https://acme.example/careers/backend", text: "  \n ", links: [], cut: false, morePages: false, chars: 4 });
 }
 
 test("finish_lookup with found refuses a job page with no text and names job_page_unreadable", async () => {

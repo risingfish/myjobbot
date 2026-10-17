@@ -100,6 +100,10 @@ interface CareersAuditTable {
     reason: Text;
     warning: Generated<number>;
     detail: Text;
+    page_source: Text;
+    fallback: Text;
+    board: Text;
+    retry_once: Generated<number>;
 }
 
 export interface Database {

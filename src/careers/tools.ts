@@ -4,13 +4,13 @@ import { defineTool, type Tool } from "../tools/tool.js";
 import { FetchRefused, FetchTimedOut } from "./fetchPage.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
 import { hasText, MODEL_REASONS, type LookupSession } from "./session.js";
-import type { TrimmedPage } from "./trim.js";
+import type { PageRead } from "./readPage.js";
 
 export type PageKind = "careers_page" | "job_page";
 
 export interface ToolPorts {
     search(): Promise<SearchResult[]>;
-    open(url: string, kind: PageKind): Promise<TrimmedPage>;
+    open(url: string, kind: PageKind): Promise<PageRead>;
     audit(record: StepRecord): Promise<void>;
     forget(): Promise<void>;
 }
@@ -61,7 +61,8 @@ async function openLink(session: LookupSession, ports: ToolPorts, request: z.inf
         throw error;
     });
     const stale = request.as === "careers_page" && page.links.length === 0 ? await forgetIfRemembered(session, ports, url) : null;
-    await ports.audit({ step, url: page.url, chars: page.chars, cut: page.cut, morePages: page.morePages, outcome: stale === null ? "ok" : "failed", reason: null, detail: stale });
+    const read = { pageSource: page.source, fallback: page.fallback, board: page.board };
+    await ports.audit({ step, url: page.url, chars: page.chars, cut: page.cut, morePages: page.morePages, ...read, outcome: stale === null ? "ok" : "failed", reason: null, detail: stale });
     return request.as === "careers_page" ? careersResult(session, page) : jobResult(session, page);
 }
 
@@ -81,7 +82,7 @@ function offeredUrl(session: LookupSession, link: number): string {
 }
 
 /** Fetches a page, remembering whether the fetch was refused or timed out so the outcome can say so. */
-async function tracked(session: LookupSession, fetch: () => Promise<TrimmedPage>): Promise<TrimmedPage> {
+async function tracked(session: LookupSession, fetch: () => Promise<PageRead>): Promise<PageRead> {
     try {
         const page = await fetch();
         session.lastFailure = null;
@@ -93,7 +94,7 @@ async function tracked(session: LookupSession, fetch: () => Promise<TrimmedPage>
 }
 
 /** Shows a careers page with the job being looked for and its links as numbers only. */
-function careersResult(session: LookupSession, page: TrimmedPage) {
+function careersResult(session: LookupSession, page: PageRead) {
     session.careersPage = { url: page.url, links: page.links.length };
     session.lastOpened = "careers";
     const { title, company, location } = session.job;
@@ -103,7 +104,7 @@ function careersResult(session: LookupSession, page: TrimmedPage) {
 }
 
 /** Shows a job page's text, which becomes the description if the lookup finishes as found. */
-function jobResult(session: LookupSession, page: TrimmedPage) {
+function jobResult(session: LookupSession, page: PageRead) {
     session.jobPage = { url: page.url, text: page.text };
     session.lastOpened = "job";
     const shown = { url: page.url, text: page.text, links: [], cut: page.cut, more_pages: false };
