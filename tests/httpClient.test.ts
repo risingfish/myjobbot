@@ -126,3 +126,11 @@ test("getText returns a redirect's target without following it", async () => {
     expect(await http.getText(URL_A, { maxBytes: 1000 })).toEqual({ redirect: "https://a.example/careers/" });
     expect(urls).toHaveLength(1);
 });
+
+test("postJson sends a JSON body, retries a 503 like getJson, and names the method when it fails", async () => {
+    const { http, inits, urls } = client([jsonResponse({}, 503), jsonResponse({ total: 1 }), jsonResponse({}, 404)]);
+    expect(await http.postJson(URL_A, { searchText: "Engineer" })).toEqual({ total: 1 });
+    expect(urls).toEqual([URL_A, URL_A]);
+    expect(inits[1]).toMatchObject({ method: "POST", body: JSON.stringify({ searchText: "Engineer" }), headers: { "content-type": "application/json", accept: "application/json" } });
+    await expect(http.postJson(URL_A, {})).rejects.toThrow(`POST ${URL_A} failed with HTTP 404`);
+});

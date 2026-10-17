@@ -33,7 +33,7 @@ export async function fetchPublicPage(deps: PageFetchDeps, url: string): Promise
 }
 
 /** Refuses an address that isn't plain public http(s), resolving its host to check every address it points at. */
-async function assertPublic(lookup: HostLookup, url: string): Promise<void> {
+export async function assertPublic(lookup: HostLookup, url: string): Promise<void> {
     if (!allowedUrl(url)) throw new FetchRefused("refused: only http(s) addresses on the default port can be opened");
     const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
     const addresses = isIP(host) === 0 ? await resolve(lookup, host) : [host];

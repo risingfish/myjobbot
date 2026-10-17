@@ -30,7 +30,7 @@ async function careersSetup(options: { replies: ReturnType<typeof search>[]; set
     const setup = await lookupSetup({ replies: options.replies, chat: options.chat, pages: { [POSTING_URL]: jobPage(JOB.title, ["Build APIs."]) } });
     const http = options.http ?? fakeBoard(searxngJson([{ url: POSTING_URL, title: JOB.title }]));
     const settings = testFileConfig({ careers_lookup: options.settings ?? {} }).careers_lookup;
-    const deps: CareersDeps = { ...setup.deps, settings, http, searxngUrl: "https://search.example" };
+    const deps: CareersDeps = { ...setup.deps, settings, http, boardHttp: setup.deps.boards.http, searxngUrl: "https://search.example" };
     return { ...setup, deps, http };
 }
 

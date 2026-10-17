@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fetchPublicPage, FetchRefused, FetchTimedOut } from "../src/careers/fetchPage.js";
+import { assertPublic, fetchPublicPage, FetchRefused, FetchTimedOut } from "../src/careers/fetchPage.js";
 import type { TextGetter, TextResult } from "../src/http/client.js";
 import { fakeDns } from "./helpers/fakeDns.js";
 
@@ -48,4 +48,9 @@ test("a fetch that times out becomes FetchTimedOut", async () => {
     const timeout = new DOMException("The operation was aborted due to timeout", "TimeoutError");
     const getter = pages({ "https://acme.example/slow": new Error("GET https://acme.example/slow failed: aborted", { cause: timeout }) });
     await expect(fetchPublicPage({ pages: getter, lookup: DNS, maxBytes: 1000 }, "https://acme.example/slow")).rejects.toBeInstanceOf(FetchTimedOut);
+});
+
+test("an address is accepted only on the default port, without credentials, over http(s), with every resolved address public", async () => {
+    for (const url of ["https://acme.example:8443/jobs", "https://user:pw@acme.example/jobs", "ftp://acme.example/jobs", "https://intranet.example/jobs", "https://mixed.example/jobs"]) await expect(assertPublic(DNS, url)).rejects.toBeInstanceOf(FetchRefused);
+    await expect(assertPublic(DNS, "https://acme.example/jobs")).resolves.toBeUndefined();
 });

@@ -5,7 +5,7 @@ import type { FileConfig } from "../config/schema.js";
 import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
 import type { SecretKeyStatus } from "../gmail/secretKey.js";
-import type { JsonGetter, TextGetter } from "../http/client.js";
+import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { FetchOutcome } from "./sources.js";
 
 interface RunState {
@@ -36,6 +36,7 @@ interface CareersAccess {
     searxngUrl: string | null;
     lookup: HostLookup;
     pages: TextGetter;
+    boards: JsonGetter & JsonPoster;
 }
 
 interface GmailAccess {

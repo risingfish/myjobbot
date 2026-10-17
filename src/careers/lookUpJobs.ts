@@ -1,5 +1,5 @@
 import { describeError } from "../errors.js";
-import type { JsonGetter } from "../http/client.js";
+import type { JsonGetter, JsonPoster } from "../http/client.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { auditSkipped } from "./audit.js";
 import { lookUpJob, type LookupDeps } from "./lookUpJob.js";
@@ -7,8 +7,9 @@ import type { LookupOutcome } from "./outcome.js";
 import { SEARCH_FAILED, searchCareers, SearchUnavailable, type SearchResult } from "./searxng.js";
 import type { SoughtJob } from "./session.js";
 
-export interface CareersDeps extends Omit<LookupDeps, "search"> {
+export interface CareersDeps extends Omit<LookupDeps, "search" | "boards"> {
     http: JsonGetter;
+    boardHttp: JsonGetter & JsonPoster;
     searxngUrl: string | null;
 }
 
@@ -27,7 +28,7 @@ const MS_PER_MINUTE = 60_000;
 export async function lookUpCareers(deps: CareersDeps, sought: SoughtJob[]): Promise<CareersSummary> {
     const summary: CareersSummary = { looked_up: 0, found: 0, failed: {}, skipped_for_limit: 0 };
     if (deps.searxngUrl === null) return skipAll(deps, { ...summary, note: NOT_CONFIGURED });
-    const lookup = { ...deps, search: cachedSearch(deps, deps.searxngUrl) };
+    const lookup = { ...deps, search: cachedSearch(deps, deps.searxngUrl), boards: { http: deps.boardHttp, cache: new Map() } };
     const started = deps.now().getTime();
     for (const [index, job] of sought.entries()) {
         if (outOfBudget(deps, { index, started })) {

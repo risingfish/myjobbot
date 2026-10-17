@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { lookUpJob } from "../src/careers/lookUpJob.js";
+import { ashbyBoard } from "./helpers/boardData.js";
 import { chatThenCrash } from "./helpers/chat.js";
 import { jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { CAREERS_URL, finish, JOB, lookupSetup, open, POSTING_URL, result, search } from "./helpers/careersLookup.js";
@@ -141,4 +142,13 @@ test("a retried job notes the retry first in its audit trail", async () => {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], replies: [search(), finish(false, "no_careers_page")] });
     await lookUpJob(setup.deps, { ...JOB, retry: true });
     expect(setup.careers.rows.map((row) => [row.step, row.outcome])).toEqual([["retry", "ok"], ["search", "ok"], ["finish", "failed"]]);
+});
+
+test("a job on a data-publishing board is found from the board's data and stored with the posting's address", async () => {
+    const posting = "https://jobs.ashbyhq.com/Acme/b2";
+    const boards = { "https://api.ashbyhq.com/posting-api/job-board/Acme?includeCompensation=true": ashbyBoard([{ id: "b2", title: JOB.title, location: "Remote" }]) };
+    const setup = await lookupSetup({ results: [result(posting, JOB.title)], boards, replies: [search(), open(1, "job_page"), finish(true)] });
+    expect(await lookUpJob(setup.deps, JOB)).toMatchObject({ found: true, url: posting });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description: expect.stringContaining("builds APIs.") });
+    expect(setup.careers.rows[1]).toMatchObject({ step: "open_job", pageSource: "board", board: "ashby:Acme" });
 });

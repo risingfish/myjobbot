@@ -7,6 +7,7 @@ import type { Tool } from "../tools/tool.js";
 import type { PageFetchDeps } from "./fetchPage.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { auditor, stored } from "./audit.js";
+import type { BoardAccess } from "./boardPages.js";
 import { decideOutcome, type LookupOutcome } from "./outcome.js";
 import { LOOKUP_COMPACTION, LOOKUP_NUDGE, lookupMessages } from "./prompt.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -26,6 +27,7 @@ export interface LookupDeps {
     runId: string;
     now: () => Date;
     search: (company: string) => Promise<SearchResult[]>;
+    boards: BoardAccess;
 }
 
 type Audit = ReturnType<typeof auditor>;

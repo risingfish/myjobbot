@@ -188,7 +188,7 @@ and `board = 'ashby:<slug>'`.
 
 Create `.specify/sitting-in-progress` naming S3 before T021.
 
-- [ ] T021 [P] [US1] Unit test `tests/careersBoardLink.test.ts`, table-driven:
+- [X] T021 [P] [US1] Unit test `tests/careersBoardLink.test.ts`, table-driven:
   - `parseBoardLink` returns kind, slug and postingId for:
     - `jobs.ashbyhq.com/Vetcove` and `.../Vetcove/<uuid>`
     - `boards.greenhouse.io/affirm`, `job-boards.greenhouse.io/affirm/jobs/7815948003`
@@ -201,14 +201,14 @@ Create `.specify/sitting-in-progress` naming S3 before T021.
     - `jobs.ashbyhq.com/` with no slug
     - `http://evil.wd1.myworkdayjobs.com.attacker.example/x`
     - `https://x.wd1.myworkdayjobs.com:8443/s`
-- [ ] T022 [US1] Create `src/sources/boardLink.ts` (`BoardLink`, `parseBoardLink`) per research R3.
-- [ ] T023 [P] [US1] Unit test in `tests/httpClient.test.ts`: `postJson(url, body)` sends
+- [X] T022 [US1] Create `src/sources/boardLink.ts` (`BoardLink`, `parseBoardLink`) per research R3.
+- [X] T023 [P] [US1] Unit test in `tests/httpClient.test.ts`: `postJson(url, body)` sends
   `POST` with `content-type: application/json` and the JSON body. It retries 503 like `getJson`,
   goes through the host limiter, and tags errors with the url.
-- [ ] T024 [US1] In `src/http/client.ts`, add `JsonPoster { postJson(url, body): Promise<unknown> }`
+- [X] T024 [US1] In `src/http/client.ts`, add `JsonPoster { postJson(url, body): Promise<unknown> }`
   and `HttpClient.postJson`. The private `request(url, init)` already takes `init`, so pass
   `method: "POST"` and the body. The error text says the method (`POST <url> failed …`).
-- [ ] T025 [P] [US1] Unit test `tests/careersWorkday.test.ts` using a fake getter/poster and
+- [X] T025 [P] [US1] Unit test `tests/careersWorkday.test.ts` using a fake getter/poster and
   synthetic JSON shaped like research R4:
   - `searchWorkday` posts `{ appliedFacets: {}, limit: 20, offset: 0, searchText }` to
     `https://<host>/wday/cxs/<tenant>/<site>/jobs` and maps `jobPostings` to `{ title,
@@ -216,9 +216,9 @@ Create `.specify/sitting-in-progress` naming S3 before T021.
   - `workdayPosting` gets `<base><externalPath>` and returns title, location and the description as
     text from `jobDescription` HTML.
   - A response of the wrong shape throws.
-- [ ] T026 [US1] Create `src/sources/workday.ts` (`searchWorkday`, `workdayPosting`). Convert the
+- [X] T026 [US1] Create `src/sources/workday.ts` (`searchWorkday`, `workdayPosting`). Convert the
   HTML with the existing `src/sources/htmlText.ts` helper, reusing it rather than writing a new one.
-- [ ] T027 [P] [US1] Unit test `tests/careersBoardPages.test.ts` with `tests/helpers/boardData.ts`
+- [X] T027 [P] [US1] Unit test `tests/careersBoardPages.test.ts` with `tests/helpers/boardData.ts`
   (synthetic Ashby, Greenhouse, Lever and Workday payloads):
   - Careers page: text `"<N> open jobs at <company> on <Board>"`, links `"<title> — <location>"`
     with the sought title first, fitted to `page_chars`.
@@ -230,7 +230,7 @@ Create `.specify/sitting-in-progress` naming S3 before T021.
   Also add the `assertPublic` cases to `tests/careersFetchPage.test.ts`, importing it as an export
   (T028 exports it): non-default port, credentials, `ftp:`, a name resolving to `10.0.0.5`, and
   public-only names accepted.
-- [ ] T028 [US1] Create `src/careers/boardPages.ts` (`boardPage(deps, { link, kind, sought })` and
+- [X] T028 [US1] Create `src/careers/boardPages.ts` (`boardPage(deps, { link, kind, sought })` and
   a per-run cache keyed by `kind:slug`, plus the search text for Workday):
   - Ashby, Greenhouse and Lever go through `fetcherFor(kind)` from `src/sources/index.ts`, matching
     a posting by `jobId` or by `url`.
@@ -239,17 +239,17 @@ Create `.specify/sitting-in-progress` naming S3 before T021.
   - Every request first passes `assertPublic` (FR-006). Export `assertPublic` from
     `src/careers/fetchPage.ts` now that `boardPages.ts` is its second production caller (its tests
     are in T027).
-- [ ] T029 [P] [US1] Unit tests in `tests/careersReadPage.test.ts`:
+- [X] T029 [P] [US1] Unit tests in `tests/careersReadPage.test.ts`:
   - A board link reads board data: `source: "board"`, `board: "ashby:Vetcove"`, and no plain
     download.
   - A board read that throws (HTTP 404, wrong shape) falls back to the plain download with
     `fallback: "board_failed"`.
   - A board host failing `assertPublic` is refused, not fallen back from.
-- [ ] T030 [US1] Add the board step to `readPage` in `src/careers/readPage.ts`, ahead of the plain
+- [X] T030 [US1] Add the board step to `readPage` in `src/careers/readPage.ts`, ahead of the plain
   step. Give `LookupDeps` / `CareersDeps` (`src/careers/lookUpJob.ts`, `src/careers/lookUpJobs.ts`)
   the JSON getter and poster (the run's `HttpClient`) and the per-run board cache, created once in
   `lookUpCareers`.
-- [ ] T031 [US1] Unit test in `tests/careersLookup.test.ts`: a search result that is an Ashby job
+- [X] T031 [US1] Unit test in `tests/careersLookup.test.ts`: a search result that is an Ashby job
   page, then `open(1, "job_page")` and `finish(true)`, stores the posting's description and url.
   The open row has `pageSource: "board"` and `board: "ashby:<slug>"`. Then run `npm run check` and
   `npm run check:db`, delete the marker, and commit ("Read job boards' own data in the careers
