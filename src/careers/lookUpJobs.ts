@@ -93,8 +93,10 @@ async function skipAll(deps: CareersDeps, summary: CareersSummary & { note: stri
     return report(deps, summary);
 }
 
-/** Writes the run's careers summary to the trace and returns it. */
+/** Writes the run's careers summary to the trace, with what rendering had to say, and returns it. */
 function report(deps: CareersDeps, summary: CareersSummary): CareersSummary {
-    deps.trace.write({ type: "careers", ...summary });
-    return summary;
+    const notes = [summary.note, ...deps.renderer.notes()].filter((note) => note !== undefined);
+    const reported = notes.length === 0 ? summary : { ...summary, note: notes.join("; ") };
+    deps.trace.write({ type: "careers", ...reported });
+    return reported;
 }

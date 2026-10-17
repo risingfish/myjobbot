@@ -1,9 +1,10 @@
 import { expect, test } from "vitest";
 import type { ChatFn } from "../src/agent/llm.js";
 import { lookUpCareers, type CareersDeps } from "../src/careers/lookUpJobs.js";
+import { SEARCH_FAILED } from "../src/careers/searxng.js";
 import type { SoughtJob } from "../src/careers/session.js";
 import type { AuditEntry } from "../src/db/store.js";
-import { jobPage, searxngJson } from "./helpers/careersPages.js";
+import { jobPage, scriptOnlyPage, searxngJson } from "./helpers/careersPages.js";
 import { finish, JOB, lookupSetup, open, POSTING_URL, search } from "./helpers/careersLookup.js";
 import { scriptedChat } from "./helpers/chat.js";
 import { testFileConfig } from "./helpers/config.js";
@@ -25,9 +26,10 @@ class FailsFor extends MemoryCareersStore {
 const BETA: SoughtJob = { ...JOB, jobId: "li_2", company: "Beta" };
 const GAMMA: SoughtJob = { ...JOB, jobId: "li_3", company: "Gamma" };
 const NOT_FOUND = [search(), finish(false, "job_not_found")];
+const BLANK = "https://acme.example/careers/blank";
 
-async function careersSetup(options: { replies: ReturnType<typeof search>[]; settings?: object; chat?: ChatFn; http?: ReturnType<typeof fakeBoard> }) {
-    const setup = await lookupSetup({ replies: options.replies, chat: options.chat, pages: { [POSTING_URL]: jobPage(JOB.title, ["Build APIs."]) } });
+async function careersSetup(options: { replies: ReturnType<typeof search>[]; settings?: object; chat?: ChatFn; http?: ReturnType<typeof fakeBoard>; pages?: Record<string, string> }) {
+    const setup = await lookupSetup({ replies: options.replies, chat: options.chat, pages: options.pages ?? { [POSTING_URL]: jobPage(JOB.title, ["Build APIs."]) } });
     const http = options.http ?? fakeBoard(searxngJson([{ url: POSTING_URL, title: JOB.title }]));
     const settings = testFileConfig({ careers_lookup: options.settings ?? {} }).careers_lookup;
     const deps: CareersDeps = { ...setup.deps, settings, http, boardHttp: setup.deps.boards.http, searxngUrl: "https://search.example" };
@@ -95,4 +97,14 @@ test("SearXNG failing writes one skipped row however many jobs waited, and the i
     await lookUpCareers(deps, [JOB, BETA, GAMMA]);
     expect(careers.rows).toEqual([expect.objectContaining({ step: "skipped", reason: "search_unavailable", detail: expect.stringContaining("search.formats") })]);
     expect(await careers.attempted([{ ats: JOB.ats, jobId: JOB.jobId }])).toEqual([]);
+});
+
+test("the summary says when rendering was needed but off, joined to any other note, and says nothing when it was never needed", async () => {
+    const quiet = await careersSetup({ replies: NOT_FOUND });
+    expect(await lookUpCareers(quiet.deps, [JOB])).not.toHaveProperty("note");
+    const blank = await careersSetup({ replies: [search(), open(1, "job_page"), search(), search(), search(), search(), search(), search()], http: fakeBoard(searxngJson([{ url: BLANK, title: JOB.title }])), pages: { [BLANK]: scriptOnlyPage() } });
+    expect(await lookUpCareers(blank.deps, [JOB])).toMatchObject({ note: "page rendering not configured" });
+    const both = await careersSetup({ replies: [search()], http: { getJson: () => Promise.reject(new Error("HTTP 403")), urls: [] } });
+    await both.deps.renderer.render(BLANK);
+    expect((await lookUpCareers(both.deps, [JOB])).note).toBe(`${SEARCH_FAILED}; page rendering not configured`);
 });

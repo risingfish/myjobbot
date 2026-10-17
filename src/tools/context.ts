@@ -1,6 +1,7 @@
 import type { ChatFn } from "../agent/llm.js";
 import type { Trace } from "../agent/trace.js";
 import type { HostLookup } from "../careers/fetchPage.js";
+import type { PageRenderer } from "../careers/renderState.js";
 import type { FileConfig } from "../config/schema.js";
 import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
@@ -37,6 +38,7 @@ interface CareersAccess {
     lookup: HostLookup;
     pages: TextGetter;
     boards: JsonGetter & JsonPoster;
+    renderer: PageRenderer;
 }
 
 interface GmailAccess {

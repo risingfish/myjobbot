@@ -122,7 +122,7 @@ export interface AlertStore {
     clear(): Promise<void>;
 }
 
-type AuditStep = "retry" | "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
+type AuditStep = "retry" | "render_check" | "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
 
 type AuditOutcome = "ok" | "found" | "failed";
 

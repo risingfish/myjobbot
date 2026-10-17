@@ -20,7 +20,9 @@ Called by `open_link` for every open. Tries, in order:
 3. **Rendering**, only when step 2 succeeded and the page is unreadable (job page: no text;
    careers page: no links), and rendering is on:
    - fresh browser context; every request checked by `assertPublic`; images, fonts and media
-     aborted; service workers blocked; WebSockets checked the same way;
+     aborted; service workers blocked; WebSockets checked the same way; allowed requests are
+     fetched without following redirects, so every redirect hop is checked as a request of its
+     own, and the page's final address is checked after loading;
    - `domcontentloaded`, then network idle until `render_seconds` is used up; content capped at
      `max_download_kb`; trimmed with `trimPage`;
    - main navigation refused → `FetchRefused`; any other failure → `render_failed` is added to
@@ -59,6 +61,6 @@ resolved address public).
 ## Careers summary
 
 `note` may now also say (joined with "; " to an existing note):
-- "page rendering not configured"
+- "page rendering not configured" (only when a page needed rendering in that run)
 - "page rendering turned off: browser service failed"
 - "LAN check not configured"

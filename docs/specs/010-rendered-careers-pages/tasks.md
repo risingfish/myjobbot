@@ -274,17 +274,17 @@ Create `.specify/sitting-in-progress` naming S3 before T021.
 
 Create `.specify/sitting-in-progress` naming S4 before T032.
 
-- [ ] T032 [US2] Install `playwright-core` pinned exactly: `npm install --save-exact
+- [X] T032 [US2] Install `playwright-core` pinned exactly: `npm install --save-exact
   playwright-core@1.64.1`. Check that the lockfile still has every optional platform entry
   (`git diff package-lock.json`). It is first imported in T035, in this sitting.
-- [ ] T033 [P] [US3] Unit test `tests/careersRender.test.ts`, part 1, through `renderPage` with
+- [X] T033 [P] [US3] Unit test `tests/careersRender.test.ts`, part 1, through `renderPage` with
   `tests/helpers/fakeBrowser.ts`: the fake replays a list of requests through the route handler
   `renderPage` installed and records each verdict:
   - aborted for `image`, `font` and `media`;
   - aborted when the injected check throws `FetchRefused` (private address, port 8080,
     credentials, `file:`, `data:` documents), and for a WebSocket to a private address;
   - continued for a public `script`, `document`, `xhr` or `fetch`.
-- [ ] T034 [P] [US2] Unit test `tests/careersRender.test.ts`, part 2, with `tests/helpers/fakeBrowser.ts`
+- [X] T034 [P] [US2] Unit test `tests/careersRender.test.ts`, part 2, with `tests/helpers/fakeBrowser.ts`
   (a fake `BrowserPort` that records calls). `renderPage` must:
   - open a fresh context with `serviceWorkers: "block"` and `acceptDownloads: false`;
   - install the route and WebSocket handlers before navigating;
@@ -295,14 +295,14 @@ Create `.specify/sitting-in-progress` naming S4 before T032.
   It also maps errors:
   - a main navigation aborted by the route becomes `FetchRefused`;
   - a timeout still returns the content so far.
-- [ ] T035 [US2] [US3] Create `src/careers/render.ts`:
+- [X] T035 [US2] [US3] Create `src/careers/render.ts`:
   - `BrowserPort`, the minimal surface the renderer uses (`newContext`, and per context `route`,
     `routeWebSocket`, `newPage`, `close`).
   - `routeVerdict`, private (tested through `renderPage`, T033).
   - `renderPage(port, { url, check, seconds, maxBytes })`.
   - `connectBrowser(wsUrl)`, which wraps `chromium.connect` from `playwright-core` into a
     `BrowserPort`. This wrapper is the only Playwright-specific code.
-- [ ] T036 [P] [US2] Unit test `tests/careersRenderState.test.ts`:
+- [X] T036 [P] [US2] Unit test `tests/careersRenderState.test.ts`:
   - Unset url: `off = "page rendering not configured"` and never connects.
   - The first `connect` or render failure sets `off = "page rendering turned off: browser service
     failed"` and later calls don't connect again.
@@ -310,11 +310,11 @@ Create `.specify/sitting-in-progress` naming S4 before T032.
     response writes a `render_check` audit row with `warning: true` and a `render_check` trace
     event with `warning: true`; a connection error writes
     `outcome: "ok"` without a warning. An unset probe adds the note "LAN check not configured".
-- [ ] T037 [US2] Create `src/careers/renderState.ts` (`RenderState`, `newRenderState(deps)`,
+- [X] T037 [US2] Create `src/careers/renderState.ts` (`RenderState`, `newRenderState(deps)`,
   `render(state, request)`) with the lazy connection, turning off on failure, and the self-test
   (`context.request.get(probe, { timeout: 3000 })` through `BrowserPort`). Add `"render_check"` to
   `AuditStep` in `src/db/store.ts`.
-- [ ] T038 [US2] Unit tests in `tests/careersReadPage.test.ts`, then the rendering step in
+- [X] T038 [US2] Unit tests in `tests/careersReadPage.test.ts`, then the rendering step in
   `src/careers/readPage.ts`:
   - A job page with no text, or a careers page with no links, is rendered and trimmed with
     `trimPage`: `source: "rendered"`.
@@ -326,17 +326,24 @@ Create `.specify/sitting-in-progress` naming S4 before T032.
   - A refused main navigation rethrows `FetchRefused`.
   - A board page is never rendered.
 
+S4 notes (as built): the Playwright calls went into `src/careers/browser.ts` (`BrowserPort`,
+`connectBrowser`), so `render.ts` holds only `renderPage`; allowed requests are fetched without
+following redirects (research R8 "Redirects"); the run-closes-the-renderer test spies on
+`PageRenderer.close` in `tests/run.test.ts`, and the slow-render test is in
+`tests/careersLookup.test.ts` (it needs `lookupSetup`'s fake browser); "page rendering not
+configured" is noted only when a page needed rendering.
+
 Still in S4: the renderer is wired into the run in the same sitting, so `render.ts` and
 `renderState.ts` are reachable from `src/app/run.ts` before the sitting ends (knip).
 
-- [ ] T039 [P] [US2] Unit tests in `tests/config.test.ts`:
+- [X] T039 [P] [US2] Unit tests in `tests/config.test.ts`:
   - `careers_lookup.render_seconds` defaults to 15 and rejects 4 and 61.
   - `careers_lookup.lan_probe_url` is an optional URL.
   - `MYJOBBOT_BROWSER_URL` accepts `ws://browser:3000/` and `wss://…`, and rejects `http://…`.
-- [ ] T040 [US2] Add `render_seconds` (int, min 5, max 60, default 15) and `lan_probe_url` (optional
+- [X] T040 [US2] Add `render_seconds` (int, min 5, max 60, default 15) and `lan_probe_url` (optional
   URL) to `careersLookup` in `src/config/schema.ts`. Add `MYJOBBOT_BROWSER_URL` (optional, `ws:` or
   `wss:` only) to `envSchema`.
-- [ ] T041 [US2] Create the run's `RenderState` in `src/app/run.ts` from `MYJOBBOT_BROWSER_URL`,
+- [X] T041 [US2] Create the run's `RenderState` in `src/app/run.ts` from `MYJOBBOT_BROWSER_URL`,
   with a seam `browser?: (url) => Promise<BrowserPort>` for tests. Add it to `ToolContext.careers`
   in `src/tools/context.ts` and the test default in `tests/helpers/context.ts` (off), and pass it
   through `careersDeps` in `src/tools/careersStep.ts`. Close the browser connection at the end of
@@ -345,11 +352,11 @@ Still in S4: the renderer is wired into the run in the same sitting, so `render.
     connection, using the `browser` seam with a fake that records `close`.
   - In `tests/careersLookUpJobs.test.ts`: a fake render that takes longer than `max_minutes` ends
     that lookup at its wall-clock limit like any other step.
-- [ ] T042 [P] [US2] Unit test in `tests/careersLookUpJobs.test.ts`: the summary note joins the
+- [X] T042 [P] [US2] Unit test in `tests/careersLookUpJobs.test.ts`: the summary note joins the
   search note and the rendering note with "; ". "page rendering not configured" appears when the
   browser is off, and nothing is said when it is on and worked.
-- [ ] T043 [US2] Add the rendering notes to `report` / the summary in `src/careers/lookUpJobs.ts`.
-- [ ] T044 [US2] Run `npm run check` and `npm run check:db`, delete the marker, and commit
+- [X] T043 [US2] Add the rendering notes to `report` / the summary in `src/careers/lookUpJobs.ts`.
+- [X] T044 [US2] Run `npm run check` and `npm run check:db`, delete the marker, and commit
   ("Render JavaScript-built careers pages through a checked browser (010 S4)").
 
 **Checkpoint**: US2 and US3 work with a fake browser. With the browser unset, plain-readable pages
@@ -412,7 +419,9 @@ Create `.specify/sitting-in-progress` naming S6 before T052.
     network.
 
   Check with `docker compose config --quiet` (never plain `config`).
-- [ ] T053 [P] Integration test `tests/integration/render.test.ts`, skipped unless
+- [ ] T053 [P] Integration test `tests/integration/render.test.ts` (it must also show that a
+  302 from the allowed server to the disallowed port is never followed, research R8 "Redirects"),
+  skipped unless
   `MYJOBBOT_TEST_BROWSER_URL` is set. The test browser runs on the developer machine with host
   networking (quickstart §1), so it reaches the test's `127.0.0.1` server without crossing the
   `browser` network or the §3 firewall rule:

@@ -1,4 +1,5 @@
 import type { Stores } from "../../src/db/store.js";
+import { PageRenderer } from "../../src/careers/renderState.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testFileConfig } from "./config.js";
 import { memoryStores } from "./memoryStore.js";
@@ -20,9 +21,13 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected" },
         trace: memoryTrace(),
         chat: () => Promise.reject(new Error("unexpected LLM call in test")),
-        careers: { store: stores.careers, searxngUrl: null, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), pages: { getText: () => Promise.reject(new Error("unexpected page fetch in test")) }, boards: { getJson: () => Promise.reject(new Error("unexpected board request in test")), postJson: () => Promise.reject(new Error("unexpected board request in test")) } },
+        careers: { store: stores.careers, searxngUrl: null, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), pages: { getText: () => Promise.reject(new Error("unexpected page fetch in test")) }, boards: { getJson: () => Promise.reject(new Error("unexpected board request in test")), postJson: () => Promise.reject(new Error("unexpected board request in test")) }, renderer: offRenderer(stores) },
         ...overrides,
     };
+}
+
+function offRenderer(stores: Stores): PageRenderer {
+    return new PageRenderer({ connect: null, settings: testFileConfig().careers_lookup, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW });
 }
 
 export function doneContext(): ToolContext {

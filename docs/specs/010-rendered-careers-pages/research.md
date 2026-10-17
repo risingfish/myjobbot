@@ -105,6 +105,15 @@ live, read-only checks of the boards' public endpoints on 2026-10-17.
   - `context.routeWebSocket(/.*/)`: same check, then connect or close.
   - the main navigation going to a refused address makes `page.goto` fail; that becomes
     `FetchRefused` so the lookup reports `fetch_refused` as today.
+  - **Redirects** (found during S4): `route.continue()` lets Chromium follow a request's
+    redirects without calling the route handler again (playwright-core 1.64 docs, `route.continue`
+    / `route.fetch` "and any redirects it initiates"). So an allowed request is sent with
+    `route.fetch({ maxRedirects: 0 })` and answered with `route.fulfill({ response })`; a 3xx
+    then reaches Chromium as a response, and the redirect target comes back through the route as a
+    request of its own. The page's final address is checked again after loading. The real-browser
+    test (T053) must show a redirect to a private address is refused.
+  - The Playwright calls live in `src/careers/browser.ts` (`BrowserPort`, `connectBrowser`), the
+    only Playwright-specific file; `render.ts` holds `renderPage` and the private verdicts.
 - **DRY**: `fetchPage.ts`'s private `checkPublic` becomes `assertPublic(lookup, url)`, exported once
   a second production caller exists (S3, `boardPages`), and used by the plain download, the board
   reader's requests and the browser routes.

@@ -45,5 +45,5 @@ function soughtJob({ row, retry }: { row: JobRow; retry: boolean }): SoughtJob {
 function careersDeps(context: ToolContext): CareersDeps {
     const { careers, config } = context;
     const pages = { pages: careers.pages, lookup: careers.lookup, maxBytes: config.careers_lookup.max_download_kb * BYTES_PER_KB };
-    return { chat: context.chat, trace: context.trace, settings: config.careers_lookup, pages, jobs: context.store, careers: careers.store, runId: context.runId, now: context.now, http: context.http, boardHttp: careers.boards, searxngUrl: careers.searxngUrl };
+    return { chat: context.chat, trace: context.trace, settings: config.careers_lookup, pages, jobs: context.store, careers: careers.store, runId: context.runId, now: context.now, http: context.http, boardHttp: careers.boards, renderer: careers.renderer, searxngUrl: careers.searxngUrl };
 }

@@ -63,6 +63,8 @@ const careersLookup = z.object({
     page_chars: z.number().int().min(2000).default(12_000),
     search_results: z.number().int().min(1).max(20).default(10),
     max_download_kb: z.number().int().min(64).default(2048),
+    render_seconds: z.number().int().min(5).max(60).default(15),
+    lan_probe_url: z.url().optional(),
 });
 
 const http = z.object({
@@ -108,6 +110,7 @@ export const envSchema = z.object({
     MYJOBBOT_LOG_DIR: z.string().min(1).default("log"),
     JSEARCH_API_KEY: z.string().min(1).optional(),
     MYJOBBOT_SEARXNG_URL: z.url().optional(),
+    MYJOBBOT_BROWSER_URL: z.url({ protocol: /^wss?$/ }).optional(),
 });
 
 interface SourceLists {

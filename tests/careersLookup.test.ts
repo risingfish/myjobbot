@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import { lookUpJob } from "../src/careers/lookUpJob.js";
 import { ashbyBoard } from "./helpers/boardData.js";
 import { chatThenCrash } from "./helpers/chat.js";
+import { fakeBrowser } from "./helpers/fakeBrowser.js";
 import { jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { CAREERS_URL, finish, JOB, lookupSetup, open, POSTING_URL, result, search } from "./helpers/careersLookup.js";
 import { TEST_NOW } from "./helpers/context.js";
@@ -151,4 +152,12 @@ test("a job on a data-publishing board is found from the board's data and stored
     expect(await lookUpJob(setup.deps, JOB)).toMatchObject({ found: true, url: posting });
     expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description: expect.stringContaining("builds APIs.") });
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_job", pageSource: "board", board: "ashby:Acme" });
+});
+
+test("a slow rendering counts toward the lookup's time limit", async () => {
+    let now = TEST_NOW.getTime();
+    const browser = fakeBrowser({ html: POSTING, finalUrl: POSTING_URL, onGoto: () => void (now += 6 * 60_000) });
+    const setup = await lookupSetup({ results: [result(POSTING_URL, JOB.title)], pages: { [POSTING_URL]: scriptOnlyPage() }, connect: async () => browser.port, replies: [search(), open(1, "job_page"), finish(true)] });
+    expect(await lookUpJob({ ...setup.deps, now: () => new Date(now) }, JOB)).toEqual({ found: false, reason: "gave_up" });
+    expect(setup.requests).toHaveLength(2);
 });

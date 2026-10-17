@@ -8,6 +8,7 @@ import type { PageFetchDeps } from "./fetchPage.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { auditor, stored } from "./audit.js";
 import type { BoardAccess } from "./boardPages.js";
+import type { PageRenderer } from "./renderState.js";
 import { decideOutcome, type LookupOutcome } from "./outcome.js";
 import { LOOKUP_COMPACTION, LOOKUP_NUDGE, lookupMessages } from "./prompt.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
@@ -28,6 +29,7 @@ export interface LookupDeps {
     now: () => Date;
     search: (company: string) => Promise<SearchResult[]>;
     boards: BoardAccess;
+    renderer: PageRenderer;
 }
 
 type Audit = ReturnType<typeof auditor>;
