@@ -82,6 +82,12 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
   database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
   Never print `.env`, sealed columns or app passwords.
+- The careers lookup lives in `src/careers/` (feature 008) and knows nothing about alerts; only
+  `src/tools/careersStep.ts` decides which jobs use it. Pages reach the model only through
+  `trimPage`, with numbered links (the model never types an address), addresses must be public
+  `http(s)` and are checked again on every redirect (`fetchPage.ts`), and `careers_audit` holds
+  addresses and sizes only, never page text. Check compose changes with `docker compose config
+  --quiet`; plain `docker compose config` prints `.env`.
 
 ## Commands
 

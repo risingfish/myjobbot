@@ -4,7 +4,9 @@ import { storesOver } from "../../src/db/kysely/stores.js";
 import type { Database } from "../../src/db/schema.js";
 import { makeJob } from "../../src/jobs/job.js";
 import { alertJobContract } from "../helpers/alertJobContract.js";
+import { careersStoreContract } from "../helpers/careersStoreContract.js";
 import { alertStoreContract } from "../helpers/alertStoreContract.js";
+import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
 import { storeContract } from "../helpers/storeContract.js";
 import { connectTestDb, emptyTables } from "../helpers/testDb.js";
@@ -28,6 +30,8 @@ storeContract(emptyStores);
 gmailStoreContract(emptyStores);
 alertStoreContract(emptyStores);
 alertJobContract(emptyStores);
+descriptionContract(emptyStores);
+careersStoreContract(emptyStores);
 
 const JOB = makeJob({ ats: "greenhouse", jobId: "race", company: "Acme", title: "Backend Engineer", url: "u" }, {});
 

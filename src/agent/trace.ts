@@ -12,3 +12,8 @@ export function fileTrace(path: string, runId: string): Trace {
         write: (event) => appendFileSync(path, `${JSON.stringify({ at: new Date().toISOString(), run_id: runId, ...event })}\n`),
     };
 }
+
+/** Wraps a Trace so every event it writes carries the given fields, such as the job a lookup is for. */
+export function taggedTrace(trace: Trace, fields: TraceEvent): Trace {
+    return { write: (event) => trace.write({ ...fields, ...event }) };
+}

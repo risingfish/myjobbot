@@ -19,6 +19,8 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         jsearchApiKey: "test-jsearch-key",
         gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected" },
         trace: memoryTrace(),
+        chat: () => Promise.reject(new Error("unexpected LLM call in test")),
+        careers: { store: stores.careers, searxngUrl: null, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), pages: { getText: () => Promise.reject(new Error("unexpected page fetch in test")) } },
         ...overrides,
     };
 }

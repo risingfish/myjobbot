@@ -2,14 +2,30 @@ import type { FileConfig } from "../config/schema.js";
 import { describeError } from "../errors.js";
 import type { Clock } from "./clock.js";
 import { HostLimiter } from "./limiter.js";
+import { readCapped } from "./readCapped.js";
 
 const MS_PER_SECOND = 1000;
 const BASE_BACKOFF_MS = 1000;
 const JITTER_MS = 500;
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const HTML_TYPES = ["text/html", "application/xhtml+xml"];
+const TEXT_HEADERS = { "user-agent": "myjobbot (+careers lookup)" };
 
 export interface JsonGetter {
     getJson(url: string, headers?: Record<string, string>): Promise<unknown>;
+}
+
+export interface TextPage {
+    url: string;
+    html: string;
+    cut: boolean;
+}
+
+export type TextResult = TextPage | { redirect: string };
+
+export interface TextGetter {
+    getText(url: string, options: { maxBytes: number }): Promise<TextResult>;
 }
 
 interface HttpDeps {
@@ -19,7 +35,7 @@ interface HttpDeps {
     random: () => number;
 }
 
-export class HttpClient implements JsonGetter {
+export class HttpClient implements JsonGetter, TextGetter {
     private readonly limiter: HostLimiter;
 
     /** Builds the HTTP client, wiring up its per-host rate limiter from the given config and clock. */
@@ -29,9 +45,31 @@ export class HttpClient implements JsonGetter {
 
     /** Fetches a URL as JSON, retrying on transient failures and rate limits per the configured policy. */
     async getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
+        const response = await this.request(url, { headers });
+        return this.withUrl(url, () => response.json());
+    }
+
+    /** Fetches an HTML page without following redirects, reading at most maxBytes, so callers can vet each hop. */
+    async getText(url: string, options: { maxBytes: number }): Promise<TextResult> {
+        const response = await this.request(url, { headers: TEXT_HEADERS, redirect: "manual" });
+        const location = response.headers.get("location");
+        if (REDIRECT_STATUSES.has(response.status) && location !== null) {
+            await response.body?.cancel();
+            return { redirect: new URL(location, url).href };
+        }
+        if (!isHtml(response.headers.get("content-type"))) {
+            await response.body?.cancel();
+            throw new Error(`GET ${url} is not an HTML page`);
+        }
+        const { body, cut } = await this.withUrl(url, () => readCapped(response, options.maxBytes));
+        return { url, html: body, cut };
+    }
+
+    /** Sends a GET, retrying transient failures, and returns the first successful or redirect response. */
+    private async request(url: string, init: RequestInit): Promise<Response> {
         for (let attempt = 0; ; attempt += 1) {
-            const response = await this.withUrl(url, () => this.send(url, headers));
-            if (response.ok) return this.withUrl(url, () => response.json());
+            const response = await this.withUrl(url, () => this.send(url, init));
+            if (response.ok || REDIRECT_STATUSES.has(response.status)) return response;
             await response.body?.cancel();
             if (!this.shouldRetry(response.status, attempt)) throw new Error(`GET ${url} failed with HTTP ${response.status}`);
             await this.deps.clock.sleep(this.backoffMs(response, attempt));
@@ -48,14 +86,14 @@ export class HttpClient implements JsonGetter {
     }
 
     /** Sends the GET request through the per-host rate limiter so requests to one host stay spaced out. */
-    private send(url: string, headers: Record<string, string>): Promise<Response> {
-        return this.limiter.schedule(new URL(url).host, () => this.fetchWithTimeout(url, headers));
+    private send(url: string, init: RequestInit): Promise<Response> {
+        return this.limiter.schedule(new URL(url).host, () => this.fetchWithTimeout(url, init));
     }
 
     /** Performs the fetch with an abort timeout from the configured request timeout. */
-    private fetchWithTimeout(url: string, headers: Record<string, string>): Promise<Response> {
+    private fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
         const signal = AbortSignal.timeout(this.deps.config.timeout_s * MS_PER_SECOND);
-        return this.deps.fetchFn(url, { signal, headers });
+        return this.deps.fetchFn(url, { ...init, signal });
     }
 
     /** Reports whether a failed response is worth retrying, given its status and the retries used so far. */
@@ -70,4 +108,10 @@ export class HttpClient implements JsonGetter {
         if (retryAfterSeconds > 0) return Math.min(retryAfterSeconds * MS_PER_SECOND, capMs);
         return Math.min(BASE_BACKOFF_MS * 2 ** attempt + this.deps.random() * JITTER_MS, capMs);
     }
+}
+
+/** Tells whether a content-type header names an HTML document. */
+function isHtml(contentType: string | null): boolean {
+    const type = (contentType ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+    return HTML_TYPES.includes(type);
 }

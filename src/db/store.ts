@@ -47,6 +47,13 @@ export interface JobStore {
     findJob(jobId: string): Promise<JobRow | null>;
     companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]>;
     markSeen(keys: JobKey[], seen: string): Promise<void>;
+    setDescription(key: JobKey, found: FoundDescription): Promise<void>;
+}
+
+export interface FoundDescription {
+    description: string;
+    url: string;
+    source: "careers";
 }
 
 export interface JobKey {
@@ -115,11 +122,57 @@ export interface AlertStore {
     clear(): Promise<void>;
 }
 
+type AuditStep = "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
+
+type AuditOutcome = "ok" | "found" | "failed";
+
+export interface AuditEntry {
+    runId: string;
+    at: string;
+    ats: string;
+    jobId: string;
+    company: string;
+    step: AuditStep;
+    url: string | null;
+    chars?: number | null;
+    cut?: boolean;
+    morePages?: boolean;
+    outcome: AuditOutcome;
+    reason: string | null;
+    warning?: boolean;
+    detail?: string | null;
+}
+
+export interface CareersPageRow {
+    company_key: string;
+    company: string;
+    url: string;
+    found_at: string;
+    last_used_at: string;
+}
+
+export interface RememberedPage {
+    companyKey: string;
+    company: string;
+    url: string;
+}
+
+export interface CareersStore {
+    rememberedPage(companyKey: string): Promise<CareersPageRow | null>;
+    rememberPage(page: RememberedPage, at: string): Promise<void>;
+    usePage(companyKey: string, at: string): Promise<void>;
+    forgetPage(companyKey: string): Promise<void>;
+    audit(entry: AuditEntry): Promise<void>;
+    attempted(keys: JobKey[]): Promise<JobKey[]>;
+    pruneAuditBefore(cutoff: string): Promise<void>;
+}
+
 export interface Stores {
     jobStore: JobStore;
     jobViews: JobViews;
     apiCalls: ApiCallLog;
     gmail: GmailStore;
     alerts: AlertStore;
+    careers: CareersStore;
     close(): Promise<void>;
 }

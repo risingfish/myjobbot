@@ -19,6 +19,8 @@ interface JobsTable {
     url: string;
     posted_at: Text;
     description: Text;
+    description_source: Text;
+    description_url: Text;
     publisher: Text;
     requirements: Text;
     skills: Text;
@@ -74,10 +76,38 @@ interface GmailAlertStateTable {
     not_understood: Generated<number>;
 }
 
+interface CareersPagesTable {
+    company_key: string;
+    company: string;
+    url: string;
+    found_at: string;
+    last_used_at: string;
+}
+
+interface CareersAuditTable {
+    id: Generated<number>;
+    run_id: string;
+    at: string;
+    ats: string;
+    job_id: string;
+    company: string;
+    step: string;
+    url: Text;
+    chars: Count;
+    cut: Generated<number>;
+    more_pages: Generated<number>;
+    outcome: string;
+    reason: Text;
+    warning: Generated<number>;
+    detail: Text;
+}
+
 export interface Database {
     jobs: JobsTable;
     verdicts: VerdictsTable;
     api_calls: ApiCallsTable;
     gmail_connection: GmailConnectionTable;
     gmail_alert_state: GmailAlertStateTable;
+    careers_pages: CareersPagesTable;
+    careers_audit: CareersAuditTable;
 }

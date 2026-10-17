@@ -25,6 +25,8 @@ export const jobRowSchema = z.object({
     scored_at: text,
     score: count,
     description: text,
+    description_source: text,
+    description_url: text,
     requirements: jsonList,
     skills: jsonList,
     preferred_skills: jsonList,
@@ -91,6 +93,8 @@ type DetailFields = {
     is_remote: number | null;
     compensation: Text;
     description: Text;
+    description_source: Text;
+    description_url: Text;
     requirements: Text;
     skills: Text;
     preferred_skills: Text;
@@ -128,6 +132,8 @@ function detailParams(job: Job): DetailFields {
         is_remote: toFlag(job.isRemote),
         compensation: job.compensation,
         description: job.description,
+        description_source: job.description === null ? null : "source",
+        description_url: null,
         requirements: listParam(job.requirements),
         skills: listParam(job.skills),
         preferred_skills: listParam(job.preferredSkills),

@@ -11,7 +11,8 @@ import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
-import { HttpClient, type JsonGetter } from "../http/client.js";
+import { HttpClient, type JsonGetter, type TextGetter } from "../http/client.js";
+import { systemLookup } from "../careers/fetchPage.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { alertsUsability } from "../gmail/alertJobs/usable.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
@@ -20,6 +21,7 @@ import { buildTools } from "../tools/registry.js";
 interface RunSeams {
     chat?: ChatFn;
     http?: JsonGetter;
+    pages?: TextGetter;
     openStores?: () => Promise<Stores>;
 }
 
@@ -31,6 +33,7 @@ interface RunParts {
 
 interface ContextParts extends RunParts {
     usable: true | string;
+    chat: ChatFn;
 }
 
 interface RunLogs {
@@ -61,8 +64,8 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 
 /** Runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
-    const context = buildContext(config, seams, { ...parts, usable: await gmailUsable(parts) });
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
+    const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
     const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
     await pruneOldJobs(context);
     return { ...result, runId: parts.logs.runId, summary: context.run.summary };
@@ -73,6 +76,7 @@ async function pruneOldJobs(context: ToolContext): Promise<void> {
     const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
     await context.store.pruneLastSeenBefore(cutoff);
     await context.apiCalls.pruneBefore(cutoff);
+    await context.careers.store.pruneAuditBefore(cutoff);
 }
 
 /** Settles once per run whether the Gmail alerts source can be read, or the fixed note saying why not. */
@@ -82,19 +86,22 @@ async function gmailUsable({ stores, key }: RunParts): Promise<true | string> {
 }
 
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable }: ContextParts): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat }: ContextParts): ToolContext {
+    const client = new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
     return {
         config: config.file,
         run: newRunState(),
         runId: logs.runId,
         store: stores.jobStore,
         apiCalls: stores.apiCalls,
-        http: seams.http ?? new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }),
+        http: seams.http ?? client,
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
         gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
         trace: logs.trace,
+        chat,
+        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client },
     };
 }
 

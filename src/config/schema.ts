@@ -56,6 +56,15 @@ const agent = z.object({
     context_chars: z.number().int().min(10_000).default(160_000),
 });
 
+const careersLookup = z.object({
+    max_per_run: z.number().int().min(1).default(10),
+    max_total_minutes: z.number().min(1).default(30),
+    max_minutes: z.number().min(1).default(5),
+    page_chars: z.number().int().min(2000).default(12_000),
+    search_results: z.number().int().min(1).max(20).default(10),
+    max_download_kb: z.number().int().min(64).default(2048),
+});
+
 const http = z.object({
     min_interval_ms: z.number().int().min(0).default(1000),
     max_requests_per_host_per_run: z.number().int().min(1).default(300),
@@ -79,6 +88,7 @@ export const fileConfigSchema = z
         agent: agent.prefault({}),
         http: http.prefault({}),
         gmail: gmail.prefault({}),
+        careers_lookup: careersLookup.prefault({}),
     })
     .refine(hasAtLeastOneSource, { message: "configure at least one company or search" })
     .refine(hasUniqueSourceNames, { message: "company and search names must be unique" })
@@ -97,6 +107,7 @@ export const envSchema = z.object({
     MYJOBBOT_DATA_DIR: z.string().min(1).default("data"),
     MYJOBBOT_LOG_DIR: z.string().min(1).default("log"),
     JSEARCH_API_KEY: z.string().min(1).optional(),
+    MYJOBBOT_SEARXNG_URL: z.url().optional(),
 });
 
 interface SourceLists {
