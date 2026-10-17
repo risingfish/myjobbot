@@ -169,7 +169,7 @@ on the employer's own careers page before the agent scores them:
    and `careers_lookup.max_total_minutes` in total, one at a time.
 2. **How**: each job gets its own short conversation with the model, with three tools:
    `search_careers` (SearXNG, "<company> careers"), `open_link` (opens a numbered link as a careers
-   page or as the job's own page, at most 3 per job) and `finish_lookup`. The model picks among
+   page or as the job's own page, at most 4 per job) and `finish_lookup`. The model picks among
    numbered links; it **never types an address**. The code only opens public `http(s)` addresses
    on the default port, checks every redirect again, and refuses anything on your LAN.
 3. **Pages are trimmed** before the model sees them: scripts, styles, navigation, headers,

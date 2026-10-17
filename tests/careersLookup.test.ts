@@ -112,3 +112,26 @@ test("a remembered careers page with no job links is forgotten too", async () =>
     expect(await setup.careers.rememberedPage("acme")).toBeNull();
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_careers", outcome: "failed", detail: "forgotten" });
 });
+
+test("a job page with no text is never stored as found, even when the model says found", async () => {
+    const setup = await lookupSetup({ results: [result(POSTING_URL, JOB.title)], pages: { [POSTING_URL]: scriptOnlyPage() }, replies: [search(), open(1, "job_page"), finish(true), finish(true)] });
+    expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "job_page_unreadable" });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description: null, description_source: null });
+});
+
+test("a lookup that keeps opening pages ends after the fifth open as gave_up, not as a tool-error abort", async () => {
+    const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: LISTING }, replies: [search(), ...Array.from({ length: 5 }, () => open(1, "careers_page")), search()] });
+    expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "gave_up" });
+    expect(setup.requests).toHaveLength(6);
+    expect(setup.trace.events).toContainEqual(expect.objectContaining({ type: "end", status: "finished" }));
+});
+
+test("a lookup that stops on a job page with no text names job_page_unreadable, not gave_up", async () => {
+    const setup = await lookupSetup({ results: [result(POSTING_URL, JOB.title)], pages: { [POSTING_URL]: scriptOnlyPage() }, replies: [search(), open(1, "job_page"), ...Array.from({ length: 6 }, search)] });
+    expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "job_page_unreadable" });
+});
+
+test("an open past the limit after a refused fetch still reports fetch_refused", async () => {
+    const setup = await lookupSetup({ results: [result("http://acme.example:8080/careers")], replies: [search(), ...Array.from({ length: 5 }, () => open(1, "careers_page"))] });
+    expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "fetch_refused" });
+});

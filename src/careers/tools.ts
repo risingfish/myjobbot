@@ -3,7 +3,7 @@ import { StoreFailed, type StepRecord } from "./audit.js";
 import { defineTool, type Tool } from "../tools/tool.js";
 import { FetchRefused, FetchTimedOut } from "./fetchPage.js";
 import { SearchUnavailable, type SearchResult } from "./searxng.js";
-import { MODEL_REASONS, type LookupSession } from "./session.js";
+import { hasText, MODEL_REASONS, type LookupSession } from "./session.js";
 import type { TrimmedPage } from "./trim.js";
 
 export type PageKind = "careers_page" | "job_page";
@@ -15,8 +15,10 @@ export interface ToolPorts {
     forget(): Promise<void>;
 }
 
-const MAX_OPENS = 3;
+const MAX_OPENS = 4;
 const NO_LINKS = "no job links on this page";
+const NO_TEXT = "this page has no text; open another link or finish with job_page_unreadable";
+const OVER_LIMIT = { note: `all ${MAX_OPENS} page opens are used; the lookup has ended` };
 const openSchema = z.object({ link: z.number().int().min(1).describe("A link number from search_careers or an opened page"), as: z.enum(["careers_page", "job_page"]) });
 const finishSchema = z.object({ found: z.boolean(), reason: z.enum(MODEL_REASONS).optional() });
 
@@ -45,8 +47,12 @@ async function search(session: LookupSession, ports: ToolPorts) {
     return shown;
 }
 
-/** Opens a numbered link as a careers page or a job page, within the per-lookup limit. */
+/** Opens a numbered link as a careers page or a job page, ending the lookup once the per-lookup limit is used. */
 async function openLink(session: LookupSession, ports: ToolPorts, request: z.infer<typeof openSchema>) {
+    if (session.opens >= MAX_OPENS) {
+        session.overLimit = true;
+        return OVER_LIMIT;
+    }
     const url = offeredUrl(session, request.link);
     session.opens += 1;
     const step = request.as === "careers_page" ? "open_careers" : "open_job";
@@ -67,9 +73,8 @@ async function forgetIfRemembered(session: LookupSession, ports: ToolPorts, url:
     return "forgotten";
 }
 
-/** Returns the address behind a link number, refusing unknown numbers and opens past the limit. */
+/** Returns the address behind a link number, refusing unknown numbers. */
 function offeredUrl(session: LookupSession, link: number): string {
-    if (session.opens >= MAX_OPENS) throw new Error(`at most ${MAX_OPENS} pages can be opened in one lookup; call finish_lookup`);
     const url = session.registry.get(link);
     if (url === undefined) throw new Error(session.registry.size === 0 ? "no links yet; call search_careers first" : `unknown link ${link}; valid links are 1-${session.registry.size}`);
     return url;
@@ -101,13 +106,20 @@ function careersResult(session: LookupSession, page: TrimmedPage) {
 function jobResult(session: LookupSession, page: TrimmedPage) {
     session.jobPage = { url: page.url, text: page.text };
     session.lastOpened = "job";
-    return { url: page.url, text: page.text, links: [], cut: page.cut, more_pages: false };
+    const shown = { url: page.url, text: page.text, links: [], cut: page.cut, more_pages: false };
+    return hasText(page.text) ? shown : { ...shown, note: NO_TEXT };
 }
 
-/** Ends the lookup, requiring an opened job page for found and a reason otherwise. */
+/** Ends the lookup, requiring an opened job page with text for found and a reason otherwise. */
 function finish(session: LookupSession, args: z.infer<typeof finishSchema>) {
-    if (args.found && session.jobPage === null) throw new Error("open the job's own page with open_link as job_page before finishing with found");
+    if (args.found) requireJobText(session);
     if (!args.found && args.reason === undefined) throw new Error("give a reason when the job wasn't found");
     session.finished = { found: args.found, reason: args.found ? null : (args.reason ?? null) };
     return { ok: true };
+}
+
+/** Refuses to finish as found unless the last job page opened has text to store. */
+function requireJobText(session: LookupSession): void {
+    if (session.jobPage === null) throw new Error("open the job's own page with open_link as job_page before finishing with found");
+    if (!hasText(session.jobPage.text)) throw new Error("the job page has no text; finish with found false and reason job_page_unreadable");
 }

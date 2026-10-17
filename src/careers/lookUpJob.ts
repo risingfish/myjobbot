@@ -63,7 +63,7 @@ async function openPage(deps: LookupDeps, request: { url: string; kind: PageKind
     return { ...trimmed, cut: trimmed.cut || page.cut };
 }
 
-/** Sets up the agent loop for a lookup: its tools, small limits, a tagged trace, and an end once finished or stopped. */
+/** Sets up the agent loop for a lookup: its tools, small limits, a tagged trace, and an end once finished, out of opens or stopped. */
 function agentDeps(deps: LookupDeps, session: LookupSession, tools: Tool[]): AgentDeps {
     return {
         chat: deps.chat,
@@ -71,7 +71,7 @@ function agentDeps(deps: LookupDeps, session: LookupSession, tools: Tool[]): Age
         limits: { ...LIMITS, max_wall_clock_min: deps.settings.max_minutes },
         trace: taggedTrace(deps.trace, { lookup: `${session.job.ats}:${session.job.jobId}` }),
         clock: () => deps.now().getTime(),
-        isFinished: () => session.finished !== null || session.stop !== null,
+        isFinished: () => session.finished !== null || session.overLimit || session.stop !== null,
         nudge: LOOKUP_NUDGE,
         compactionNotice: LOOKUP_COMPACTION,
     };

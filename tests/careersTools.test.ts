@@ -3,7 +3,7 @@ import { FetchRefused } from "../src/careers/fetchPage.js";
 import { newSession, type LookupSession } from "../src/careers/session.js";
 import { lookupTools, type ToolPorts } from "../src/careers/tools.js";
 import { trimPage, type TrimmedPage } from "../src/careers/trim.js";
-import { listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
+import { jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { CAREERS_URL, JOB, result } from "./helpers/careersLookup.js";
 
 function page(html: string, maxChars = 12_000): TrimmedPage {
@@ -32,13 +32,44 @@ test("search_careers numbers the results from 1 and registers them", async () =>
     expect(session.registry.get(2)).toBe("https://jobs.example/acme");
 });
 
-test("open_link refuses an unknown number, and more than three opens in one lookup", async () => {
+test("open_link refuses an unknown number", async () => {
     const { call } = tools();
     await expect(call("open_link", { link: 1, as: "careers_page" })).rejects.toThrow("call search_careers first");
     await call("search_careers");
     await expect(call("open_link", { link: 9, as: "careers_page" })).rejects.toThrow("valid links are 1-2");
-    for (let open = 0; open < 3; open += 1) await call("open_link", { link: 1, as: "careers_page" });
-    await expect(call("open_link", { link: 1, as: "careers_page" })).rejects.toThrow("at most 3 pages");
+});
+
+test("four opens work and the fifth ends the lookup instead of failing, whatever link it names", async () => {
+    const { session, call } = tools();
+    await call("search_careers");
+    for (let open = 0; open < 4; open += 1) await call("open_link", { link: 1, as: "careers_page" });
+    expect(session.overLimit).toBe(false);
+    expect(await call("open_link", { link: 9, as: "careers_page" })).toEqual({ note: "all 4 page opens are used; the lookup has ended" });
+    expect(session.overLimit).toBe(true);
+});
+
+function blankJobPage(): TrimmedPage {
+    return { url: "https://acme.example/careers/backend", text: "  \n ", links: [], cut: false, morePages: false, chars: 4 };
+}
+
+test("finish_lookup with found refuses a job page with no text and names job_page_unreadable", async () => {
+    const { session, call } = tools({ open: async () => blankJobPage() });
+    await call("search_careers");
+    expect(await call("open_link", { link: 2, as: "job_page" })).toMatchObject({ note: expect.stringContaining("job_page_unreadable") });
+    await expect(call("finish_lookup", { found: true })).rejects.toThrow("job_page_unreadable");
+    expect(session.finished).toBeNull();
+});
+
+test("the last job page opened is the one finish_lookup judges", async () => {
+    const pages = [page(jobPage(JOB.title, ["Build APIs."])), blankJobPage(), page(jobPage(JOB.title, ["Ship it."]))];
+    const { session, call } = tools({ open: async () => pages.shift() ?? blankJobPage() });
+    await call("search_careers");
+    await call("open_link", { link: 2, as: "job_page" });
+    await call("open_link", { link: 2, as: "job_page" });
+    await expect(call("finish_lookup", { found: true })).rejects.toThrow("no text");
+    await call("open_link", { link: 2, as: "job_page" });
+    await call("finish_lookup", { found: true });
+    expect(session.jobPage?.text).toContain("Ship it.");
 });
 
 test("open_link on a refused address is a tool error and is remembered as fetch_refused", async () => {

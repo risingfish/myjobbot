@@ -26,10 +26,16 @@ export interface LookupSession {
     jobPage: { url: string; text: string } | null;
     lastFailure: "fetch_refused" | "timed_out" | null;
     finished: { found: boolean; reason: ModelReason | null } | null;
+    overLimit: boolean;
     stop: Error | null;
 }
 
 /** Starts the state one job's lookup conversation keeps: the links offered, the pages opened, and how it ended. */
 export function newSession(job: SoughtJob): LookupSession {
-    return { job, registry: new LinkRegistry(), opens: 0, searched: null, resultUrls: [], remembered: null, lastOpened: null, careersPage: null, jobPage: null, lastFailure: null, finished: null, stop: null };
+    return { job, registry: new LinkRegistry(), opens: 0, searched: null, resultUrls: [], remembered: null, lastOpened: null, careersPage: null, jobPage: null, lastFailure: null, finished: null, overLimit: false, stop: null };
+}
+
+/** Tells whether a page's text has anything in it besides whitespace. */
+export function hasText(text: string): boolean {
+    return text.trim() !== "";
 }
