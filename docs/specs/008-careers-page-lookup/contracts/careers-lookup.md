@@ -82,7 +82,8 @@ exists.
   Ashby's) can't finish as found; `finish_lookup` says to use `job_page_unreadable`, and a
   lookup that stops on one ends with that reason. No empty description is ever stored.
 - **Refusals**, each a tool error with a short fixed message and an audit row with
-  `outcome = failed`:
+  `outcome = failed` (since 010, a page that fails to *open* comes back as `{ opened: false, reason,
+  note }` instead of a tool error; see `docs/specs/010-rendered-careers-pages/contracts/page-reading.md`):
   - an unknown number
   - a non-`http(s)` address or a port other than 80/443
   - a host that resolves to a non-public address

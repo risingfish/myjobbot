@@ -108,3 +108,11 @@ test("the summary says when rendering was needed but off, joined to any other no
     await both.deps.renderer.render(BLANK);
     expect((await lookUpCareers(both.deps, [JOB])).note).toBe(`${SEARCH_FAILED}; page rendering not configured`);
 });
+
+test("search results on skipped hosts never reach the model", async () => {
+    const http = fakeBoard(searxngJson([{ url: "https://www.glassdoor.com/acme-jobs", title: "Acme jobs" }, { url: POSTING_URL, title: JOB.title }]));
+    const { deps, requests } = await careersSetup({ replies: [search(), finish(false, "job_not_found")], http });
+    await lookUpCareers(deps, [JOB]);
+    const shown = String(requests[1]?.at(-1)?.content);
+    expect([shown.includes(POSTING_URL), shown.includes("glassdoor")]).toEqual([true, false]);
+});

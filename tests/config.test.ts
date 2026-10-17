@@ -130,7 +130,8 @@ test("config refuses a company or search named like the Gmail alerts source", ()
 });
 
 test("careers lookup settings default to small, 16GB-friendly limits and reject out-of-range values", () => {
-    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048, render_seconds: 15 });
+    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048, render_seconds: 15, skip_hosts: ["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"] });
+    expect(testFileConfig({ careers_lookup: { skip_hosts: [] } }).careers_lookup.skip_hosts).toEqual([]);
     expect(() => testFileConfig({ careers_lookup: { page_chars: 500 } })).toThrow();
     expect(() => testFileConfig({ careers_lookup: { search_results: 50 } })).toThrow();
     expect(() => testFileConfig({ careers_lookup: { max_per_run: 0 } })).toThrow();

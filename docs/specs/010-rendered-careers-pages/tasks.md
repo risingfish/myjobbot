@@ -375,18 +375,18 @@ two refused links in a row is still running after them, sees no aggregator, and 
 
 Create `.specify/sitting-in-progress` naming S5 before T045.
 
-- [ ] T045 [P] [US4] Unit test `tests/careersSkipHosts.test.ts`: `dropSkipped(results, hosts)` drops
+- [X] T045 [P] [US4] Unit test `tests/careersSkipHosts.test.ts`: `dropSkipped(results, hosts)` drops
   `www.glassdoor.com`, `glassdoor.com` and `uk.indeed.com` for hosts `glassdoor.com` and `indeed.com`.
   It keeps `notglassdoor.com` and `glassdoor.com.example`.
-- [ ] T046 [US4] Create `src/careers/skipHosts.ts` (`dropSkipped`). Add `skip_hosts` (array of host
+- [X] T046 [US4] Create `src/careers/skipHosts.ts` (`dropSkipped`). Add `skip_hosts` (array of host
   names, default `["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com",
   "teamworkonline.com"]`) to `careersLookup` in `src/config/schema.ts`, with a case in
   `tests/config.test.ts`. Apply it in `cachedSearch` in `src/careers/lookUpJobs.ts` before caching.
-- [ ] T047 [P] [US4] Unit test in `tests/careersTools.test.ts`: a second `search_careers` returns
+- [X] T047 [P] [US4] Unit test in `tests/careersTools.test.ts`: a second `search_careers` returns
   `{ note: "already searched; use the links above" }`, makes no request, and writes no audit row.
-- [ ] T048 [US4] Implement the repeat-search note in `search` in `src/careers/tools.ts` (the
+- [X] T048 [US4] Implement the repeat-search note in `search` in `src/careers/tools.ts` (the
   `session.searched !== null` check).
-- [ ] T049 [P] [US4] Unit tests:
+- [X] T049 [P] [US4] Unit tests:
   - `tests/careersTools.test.ts`: an open whose fetch fails returns `{ opened: false, reason:
     "fetch_refused", note }` instead of throwing, writes the failed audit row, sets `lastFailure`,
     and counts toward the open limit. An HTTP 404 returns `{ opened: false, reason: null, note }`
@@ -394,11 +394,11 @@ Create `.specify/sitting-in-progress` naming S5 before T045.
   - `tests/careersLookup.test.ts`: two refused opens in a row followed by `finish(false,
     "no_careers_page")` end as `no_careers_page`, not aborted. Update 008's test "a refused or
     timed-out fetch writes a failed step…" for the returned result.
-- [ ] T050 [US4] In `openLink` in `src/careers/tools.ts`, return the failure result instead of
+- [X] T050 [US4] In `openLink` in `src/careers/tools.ts`, return the failure result instead of
   rethrowing. Update the prompt line in `src/careers/prompt.ts` so the model knows a failed open
   comes back as `opened: false`. Update `docs/specs/008-careers-page-lookup/contracts/careers-lookup.md`'s
   "Refusals" bullet to point at 010's contract.
-- [ ] T051 [US4] Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Stop
+- [X] T051 [US4] Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Stop
   the careers lookup wasting steps (010 S5)").
 
 ---

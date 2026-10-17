@@ -65,6 +65,7 @@ const careersLookup = z.object({
     max_download_kb: z.number().int().min(64).default(2048),
     render_seconds: z.number().int().min(5).max(60).default(15),
     lan_probe_url: z.url().optional(),
+    skip_hosts: z.array(z.string().min(1).toLowerCase()).default(["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"]),
 });
 
 const http = z.object({

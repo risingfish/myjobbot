@@ -76,10 +76,11 @@ test("a lookup with no careers page in the results lists only the result address
 });
 
 test("a refused or timed-out fetch writes a failed step and names the reason when the lookup ends unfinished", async () => {
-    const refused = await lookupSetup({ results: [result("http://acme.example:8080/careers")], replies: [search(), open(1, "careers_page"), open(1, "careers_page")] });
+    const unfinished = [search(), open(1, "careers_page"), open(1, "careers_page"), ...Array.from({ length: 5 }, search)];
+    const refused = await lookupSetup({ results: [result("http://acme.example:8080/careers")], replies: unfinished });
     expect(await lookUpJob(refused.deps, JOB)).toEqual({ found: false, reason: "fetch_refused" });
     expect(refused.careers.rows[1]).toMatchObject({ step: "open_careers", outcome: "failed", reason: "fetch_refused" });
-    const slow = await lookupSetup({ results: [result(CAREERS_URL)], replies: [search(), open(1, "careers_page"), open(1, "careers_page")] });
+    const slow = await lookupSetup({ results: [result(CAREERS_URL)], replies: unfinished });
     const timeout = new Error("GET failed", { cause: new DOMException("timed out", "TimeoutError") });
     const pages = { ...slow.deps.pages, pages: { getText: () => Promise.reject(timeout) } };
     expect(await lookUpJob({ ...slow.deps, pages }, JOB)).toEqual({ found: false, reason: "timed_out" });
@@ -160,4 +161,10 @@ test("a slow rendering counts toward the lookup's time limit", async () => {
     const setup = await lookupSetup({ results: [result(POSTING_URL, JOB.title)], pages: { [POSTING_URL]: scriptOnlyPage() }, connect: async () => browser.port, replies: [search(), open(1, "job_page"), finish(true)] });
     expect(await lookUpJob({ ...setup.deps, now: () => new Date(now) }, JOB)).toEqual({ found: false, reason: "gave_up" });
     expect(setup.requests).toHaveLength(2);
+});
+
+test("two refused opens in a row don't end the lookup; the model can still finish it", async () => {
+    const setup = await lookupSetup({ results: [result("http://acme.example:8080/careers"), result("http://acme.example:8080/jobs")], replies: [search(), open(1, "careers_page"), open(2, "careers_page"), finish(false, "no_careers_page")] });
+    expect(await lookUpJob(setup.deps, JOB)).toEqual({ found: false, reason: "no_careers_page" });
+    expect(setup.trace.events).toContainEqual(expect.objectContaining({ type: "end", status: "finished" }));
 });
