@@ -309,6 +309,18 @@ whether that's allowed, runs it, and hands the result back. The [careers lookup]
 reuses the same loop for a short side conversation per job, with three tools of its own; even
 there the model only picks numbered links, and the code decides which addresses may be opened.
 
+**Outside text is fenced off as data.** Job boards, alert emails and web pages are written by
+other people, and any of them could carry instructions aimed at the model. Every result of a tool
+that returns such text (`fetch_jobs`, `get_job_details`, `search_careers`, `open_link`) reaches
+the model between two markers, `<<data TAG>>` and `<</data TAG>>`, where `TAG` comes from the
+run's random id, so nothing written before the run can match it. Both system prompts say that
+anything between the markers is data to read, never instructions to follow. Before wrapping, the
+code removes anything in the text that looks like a marker, so the text can't close its own
+block early; the job it came from gets a "⚠ tried to escape the data markers" note in the web UI,
+and is still scored normally. This is a second layer: budgets, numbered links, address checks and
+score ranges stay enforced in code whatever the model reads. Text that spells a marker with
+look-alike Unicode characters or a typed-out escape sequence isn't caught.
+
 - **The model** decides what to do next.
 - **The code** does the work and enforces every limit.
 
@@ -375,9 +387,14 @@ sequenceDiagram
     DB-->>T: rows
     T-->>D: {source, total_unscored: 34, jobs: [25 jobs]}
     D-->>L: {ok: true, content: "..."}
+    L->>L: scrub look-alike markers, wrap in <<data TAG>> … <</data TAG>>
     L->>L: append role "tool" message with the same id
     L->>M: next request includes the result
 ```
+
+Every tool declares whether its results carry outside text (`outsideText` in `defineTool`).
+For those, the loop (`src/agent/wrapped.ts`) wraps the result in the run's data markers before
+the model sees it; the trace keeps the result as it was, with `wrapped: true`.
 
 **Errors are data, not crashes.** `dispatch` never throws. Bad arguments, an unknown tool,
 or a board that's down all come back to the model as `{"error": "…"}` (capped at 2,000
@@ -391,7 +408,7 @@ work. Three failures in a row and the code ends the run.
 | `list_sources` | Each company board and saved search, plus "Gmail alerts", with this run's progress: `fetched`, `total_unscored`, `fetch_failed` (with a `note` saying why, for Gmail alerts) |
 | `fetch_jobs` | The first call per source per run downloads the board, calls JSearch if the search is due, or reads new Gmail alert emails. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed, and the alerts page carries the run's alert counts |
 | `record_matches` | Saves up to 25 verdicts in one call: a `base` (0–50, resume fit) and a `bonus` (0–50, preference fit) that code sums into the score, with reasons and gaps |
-| `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them, and to treat the description as data, not instructions |
+| `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them; the result arrives inside the run's data markers |
 | `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source is unfetched or still has unscored jobs (a source whose fetch failed doesn't count) |
 
 **Paging needs no page numbers.** The model scores a page and calls `fetch_jobs` again.
@@ -471,6 +488,7 @@ erDiagram
         text reasons "JSON array"
         text gaps "JSON array"
         text scored_at
+        text injection_seen_at "first time its text tried to escape the data markers"
     }
 ```
 

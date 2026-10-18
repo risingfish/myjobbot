@@ -102,6 +102,12 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   redirect to follow on its own (`browser.ts`). `playwright-core` and the compose `browser` image
   are pinned to the same version (1.64.1); bump them together. `npm run check:db` runs the
   real-browser test only when `MYJOBBOT_TEST_BROWSER_URL` is set (quickstart §1).
+- Outside text reaches the model only inside the run's data markers (feature 009): every tool
+  declares `outsideText` in `defineTool`, and the loop scrubs look-alike markers and wraps those
+  results (`src/agent/wrapped.ts`, `src/agent/markers.ts`). A new tool that returns text from job
+  boards, emails or web pages must declare `outsideText: true` (`tests/toolDeclarations.test.ts`
+  lists them). Job fields never go into a system prompt or a tool description. Tool events in the
+  trace stay unwrapped; a removed look-alike is traced and flags the job (`injection_seen_at`).
 
 ## Commands
 

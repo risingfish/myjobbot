@@ -252,14 +252,14 @@ Create `.specify/sitting-in-progress` naming S2 before T018.
 
 Create `.specify/sitting-in-progress` naming S3 before T029.
 
-- [ ] T029 [P] Docs:
+- [X] T029 [P] Docs:
   - `README.md`: describe the data markers in "The big idea" and "Careers lookup"; update
     "A tool call, up close" (results arrive wrapped) and "What a job row remembers"
     (`injection_seen_at`); add the badge and the residual risk (quickstart §4).
   - `CLAUDE.md`: next to the careers note, say that every outside-text tool declares
     `outsideText: true`, wrapping lives in `src/agent/wrapped.ts`, and tool events in the trace
     stay unwrapped.
-- [ ] T030 Record the test ledger below. Run `npm run check` and `npm run check:db`, delete the
+- [X] T030 Record the test ledger below. Run `npm run check` and `npm run check:db`, delete the
   marker, and commit ("Document run-bound data markers (009 S3)").
 - [ ] T031 After the owner merges: run `npm run docker:up` and
   `docker compose --profile browser up -d browser`.
@@ -302,4 +302,4 @@ Task: "T011 Unit test tests/prompt.test.ts"
 |---|---|---|---|
 | Baseline (T002) | 423 | 39 (1 skipped without a browser) | 30 |
 | Planned new | ~27 (T003, T005, T007, T009, T011, T013, T015, T020 on memory, T022, T024) | 2 (T018; T020 on MariaDB) | 1 (T026) |
-| After S3 (T030) | | | |
+| After S3 (T030) | 449 (+26) | 41 (+2; 1 skipped without a browser) | 31 (+1) |
