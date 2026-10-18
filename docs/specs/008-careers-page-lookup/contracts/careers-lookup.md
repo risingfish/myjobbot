@@ -73,10 +73,17 @@ exists.
 ### `open_link`
 
 - **Arguments**: `{ link: integer ≥ 1, as: "careers_page" | "job_page" }`.
-- **Limit**: at most 3 `open_link` calls per lookup (enough for careers page, job page and one
-  retry); a 4th is a tool error. This bounds the conversation (see "Context bound" below).
+- **Limit**: at most 4 `open_link` calls per lookup (company site, job board, job page and one
+  retry); a 5th is not a tool error but ends the lookup, with the unfinished reason (usually
+  `gave_up`). Raised from 3 after the first production run (2026-10-16), where models kept
+  calling `open_link` past the cap until two tool errors aborted the lookup. With 4 opens the
+  worst case passes `context_chars`, so compaction drops the oldest page.
+- **Blank job page**: a job page whose text is only whitespace (pages built by JavaScript, such as
+  Ashby's) can't finish as found; `finish_lookup` says to use `job_page_unreadable`, and a
+  lookup that stops on one ends with that reason. No empty description is ever stored.
 - **Refusals**, each a tool error with a short fixed message and an audit row with
-  `outcome = failed`:
+  `outcome = failed` (since 010, a page that fails to *open* comes back as `{ opened: false, reason,
+  note }` instead of a tool error; see `docs/specs/010-rendered-careers-pages/contracts/page-reading.md`):
   - an unknown number
   - a non-`http(s)` address or a port other than 80/443
   - a host that resolves to a non-public address

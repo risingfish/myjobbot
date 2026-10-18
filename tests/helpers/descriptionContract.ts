@@ -20,12 +20,12 @@ async function case2(make: MakeStores) {
     await jobStore.upsertAll([job("found", null)], SEEN, "Gmail alerts");
     await jobStore.recordVerdict({ job_id: "found", score: 40, reasons: [], gaps: [] }, { scoredAt: SEEN, runId: "run-1" });
     await jobStore.setDescription({ ats: "greenhouse", jobId: "found" }, { description: "Build APIs.", url: "https://acme.example/jobs/1", source: "careers" });
-    expect(await jobStore.findJob("found")).toMatchObject({ description: "Build APIs.", description_source: "careers", description_url: "https://acme.example/jobs/1", score: 40, last_seen: SEEN, title: "Backend Engineer" });
+    expect(await jobStore.findJob("found")).toMatchObject({ description: "Build APIs.", description_source: "careers", description_url: "https://acme.example/jobs/1", score: 40, scored_at: null, last_seen: SEEN, title: "Backend Engineer" });
 }
 
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [
     ["an upsert marks a stored description as coming from the job's own source", case1],
-    ["a careers description is stored with its address and changes nothing else", case2],
+    ["a careers description is stored with its address and marks the job for scoring again, keeping its last score until then", case2],
 ];
 
 export function descriptionContract(make: MakeStores): void {

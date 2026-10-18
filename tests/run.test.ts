@@ -2,6 +2,8 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, vi } from "vitest";
 import { runOnce } from "../src/app/run.js";
+import { PageRenderer } from "../src/careers/renderState.js";
+import { HttpClient } from "../src/http/client.js";
 import { makeJob } from "../src/jobs/job.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { chatThenCrash, scriptedChat, toolCallsReply } from "./helpers/chat.js";
@@ -45,6 +47,22 @@ test("an unreachable database ends the run with its reason before the model is a
     const run = runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores });
     await expect(run).rejects.toThrow("can't reach MariaDB at 192.0.2.1:3306");
     expect(chat).not.toHaveBeenCalled();
+});
+
+test("the page renderer is closed after a finished run and after an aborted one", async () => {
+    const close = vi.spyOn(PageRenderer.prototype, "close");
+    for (const chat of [scriptedChat([toolCallsReply(["finish", { summary: "done" }])]).chat, chatThenCrash([], new Error("LLM down"))]) {
+        await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY), MYJOBBOT_BROWSER_URL: "ws://browser:3000/" }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => memoryStores() });
+    }
+    expect(close).toHaveBeenCalledTimes(2);
+    close.mockRestore();
+});
+
+test("board data is read through the client that refuses redirects", async () => {
+    const withoutRedirects = vi.spyOn(HttpClient.prototype, "withoutRedirects");
+    await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat([toolCallsReply(["finish", { summary: "done" }])]).chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => memoryStores() });
+    expect(withoutRedirects).toHaveBeenCalledOnce();
+    withoutRedirects.mockRestore();
 });
 
 test("the stores are closed after a finished run and after an aborted one", async () => {

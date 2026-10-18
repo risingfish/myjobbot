@@ -545,6 +545,9 @@ Create `.specify/sitting-in-progress` naming S5 before T044.
   first start), confirm the next scheduled run's `careers` trace event, record the merge date
   here, and schedule the SC-001 check one week after the merge (quickstart §6, using that
   date).
+  Merged 2026-10-16 (#13). Stack rebuilt from main; the 2026-10-16 18:00 run logged a `careers`
+  event (0 looked up: both unscored alert jobs fail the title filter). SC-001 check due
+  2026-10-23.
 
 ---
 

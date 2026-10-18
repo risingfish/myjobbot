@@ -3,6 +3,7 @@ import { careersStoreContract } from "./helpers/careersStoreContract.js";
 import { alertStoreContract } from "./helpers/alertStoreContract.js";
 import { descriptionContract } from "./helpers/descriptionContract.js";
 import { gmailStoreContract } from "./helpers/gmailStoreContract.js";
+import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 import { storeContract } from "./helpers/storeContract.js";
 
@@ -11,4 +12,15 @@ gmailStoreContract(async () => memoryStores());
 alertStoreContract(async () => memoryStores());
 alertJobContract(async () => memoryStores());
 descriptionContract(async () => memoryStores());
-careersStoreContract(async () => memoryStores());
+let careers = new MemoryCareersStore();
+
+careersStoreContract(
+    async () => {
+        careers = new MemoryCareersStore();
+        return { ...memoryStores(), careers };
+    },
+    {
+        pageFields: async () => careers.rows.map((row) => ({ pageSource: row.pageSource ?? null, fallback: row.fallback ?? null, board: row.board ?? null })),
+        plantRetryOnce: async (entry) => void careers.rows.push({ ...entry, retryOnce: true }),
+    },
+);

@@ -1,3 +1,6 @@
+import type { PageRead } from "../../src/careers/readPage.js";
+import type { TrimmedPage } from "../../src/careers/trim.js";
+
 interface ListedJob {
     title: string;
     href: string;
@@ -34,4 +37,8 @@ export function scriptOnlyPage(): string {
 
 export function searxngJson(results: Array<{ url: string; title: string; content?: string }>) {
     return { query: "Acme careers", results: results.map((result) => ({ template: "default.html", engine: "fake", ...result })), answers: [], suggestions: [] };
+}
+
+export function asRead(page: TrimmedPage): PageRead {
+    return { ...page, source: "html", fallback: null, board: null };
 }

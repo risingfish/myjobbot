@@ -11,9 +11,14 @@ const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const HTML_TYPES = ["text/html", "application/xhtml+xml"];
 const TEXT_HEADERS = { "user-agent": "myjobbot (+careers lookup)" };
+const JSON_HEADERS = { "content-type": "application/json", accept: "application/json" };
 
 export interface JsonGetter {
     getJson(url: string, headers?: Record<string, string>): Promise<unknown>;
+}
+
+export interface JsonPoster {
+    postJson(url: string, body: unknown): Promise<unknown>;
 }
 
 export interface TextPage {
@@ -44,9 +49,16 @@ export class HttpClient implements JsonGetter, TextGetter {
     }
 
     /** Fetches a URL as JSON, retrying on transient failures and rate limits per the configured policy. */
-    async getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
-        const response = await this.request(url, { headers });
-        return this.withUrl(url, () => response.json());
+    getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
+        return this.json(url, { headers });
+    }
+
+    /** Returns a JSON client that fails on a redirect instead of following it, for addresses checked before each request. */
+    withoutRedirects(): JsonGetter & JsonPoster {
+        return {
+            getJson: (url, headers = {}) => this.json(url, { headers, redirect: "manual" }),
+            postJson: (url, body) => this.json(url, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body), redirect: "manual" }),
+        };
     }
 
     /** Fetches an HTML page without following redirects, reading at most maxBytes, so callers can vet each hop. */
@@ -61,27 +73,39 @@ export class HttpClient implements JsonGetter, TextGetter {
             await response.body?.cancel();
             throw new Error(`GET ${url} is not an HTML page`);
         }
-        const { body, cut } = await this.withUrl(url, () => readCapped(response, options.maxBytes));
+        const { body, cut } = await this.withUrl(`GET ${url}`, () => readCapped(response, options.maxBytes));
         return { url, html: body, cut };
     }
 
-    /** Sends a GET, retrying transient failures, and returns the first successful or redirect response. */
+    /** Sends a request and reads its JSON answer, refusing a redirect the request asked not to follow. */
+    private async json(url: string, init: RequestInit): Promise<unknown> {
+        const label = `${init.method ?? "GET"} ${url}`;
+        const response = await this.request(url, init);
+        if (REDIRECT_STATUSES.has(response.status)) {
+            await response.body?.cancel();
+            throw new Error(`${label} was redirected; redirects aren't followed here`);
+        }
+        return this.withUrl(label, () => response.json());
+    }
+
+    /** Sends a request, retrying transient failures, and returns the first successful or redirect response. */
     private async request(url: string, init: RequestInit): Promise<Response> {
+        const label = `${init.method ?? "GET"} ${url}`;
         for (let attempt = 0; ; attempt += 1) {
-            const response = await this.withUrl(url, () => this.send(url, init));
+            const response = await this.withUrl(label, () => this.send(url, init));
             if (response.ok || REDIRECT_STATUSES.has(response.status)) return response;
             await response.body?.cancel();
-            if (!this.shouldRetry(response.status, attempt)) throw new Error(`GET ${url} failed with HTTP ${response.status}`);
+            if (!this.shouldRetry(response.status, attempt)) throw new Error(`${label} failed with HTTP ${response.status}`);
             await this.deps.clock.sleep(this.backoffMs(response, attempt));
         }
     }
 
-    /** Runs an operation, tagging any error it throws with the URL for easier diagnosis. */
-    private async withUrl<T>(url: string, operation: () => Promise<T>): Promise<T> {
+    /** Runs an operation, tagging any error it throws with the method and URL for easier diagnosis. */
+    private async withUrl<T>(label: string, operation: () => Promise<T>): Promise<T> {
         try {
             return await operation();
         } catch (error) {
-            throw new Error(`GET ${url} failed: ${describeError(error)}`, { cause: error });
+            throw new Error(`${label} failed: ${describeError(error)}`, { cause: error });
         }
     }
 

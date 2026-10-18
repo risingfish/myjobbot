@@ -130,7 +130,8 @@ test("config refuses a company or search named like the Gmail alerts source", ()
 });
 
 test("careers lookup settings default to small, 16GB-friendly limits and reject out-of-range values", () => {
-    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048 });
+    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048, render_seconds: 15, skip_hosts: ["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"] });
+    expect(testFileConfig({ careers_lookup: { skip_hosts: [] } }).careers_lookup.skip_hosts).toEqual([]);
     expect(() => testFileConfig({ careers_lookup: { page_chars: 500 } })).toThrow();
     expect(() => testFileConfig({ careers_lookup: { search_results: 50 } })).toThrow();
     expect(() => testFileConfig({ careers_lookup: { max_per_run: 0 } })).toThrow();
@@ -140,4 +141,16 @@ test("the SearXNG address is optional and must be a URL", () => {
     expect(configFrom(LLM_ENV).env.MYJOBBOT_SEARXNG_URL).toBeUndefined();
     expect(configFrom({ ...LLM_ENV, MYJOBBOT_SEARXNG_URL: "https://search.example" }).env.MYJOBBOT_SEARXNG_URL).toBe("https://search.example");
     expect(() => configFrom({ ...LLM_ENV, MYJOBBOT_SEARXNG_URL: "search.example" })).toThrow();
+});
+
+test("page rendering has a bounded time limit and an optional LAN probe address", () => {
+    for (const render_seconds of [4, 61]) expect(() => testFileConfig({ careers_lookup: { render_seconds } })).toThrow();
+    expect(testFileConfig({ careers_lookup: { lan_probe_url: "http://192.168.3.1/" } }).careers_lookup.lan_probe_url).toBe("http://192.168.3.1/");
+    expect(() => testFileConfig({ careers_lookup: { lan_probe_url: "router" } })).toThrow();
+});
+
+test("the browser service address is optional and must be a WebSocket address", () => {
+    expect(configFrom(LLM_ENV).env.MYJOBBOT_BROWSER_URL).toBeUndefined();
+    for (const url of ["ws://browser:3000/", "wss://browser.example/"]) expect(configFrom({ ...LLM_ENV, MYJOBBOT_BROWSER_URL: url }).env.MYJOBBOT_BROWSER_URL).toBe(url);
+    expect(() => configFrom({ ...LLM_ENV, MYJOBBOT_BROWSER_URL: "http://browser:3000/" })).toThrow();
 });

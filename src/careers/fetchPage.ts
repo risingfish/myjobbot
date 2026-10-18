@@ -24,7 +24,7 @@ export const systemLookup: HostLookup = async (host) => (await lookup(host, { al
 export async function fetchPublicPage(deps: PageFetchDeps, url: string): Promise<TextPage> {
     let current = url;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-        await checkPublic(deps, current);
+        await assertPublic(deps.lookup, current);
         const result = await fetchOnce(deps, current);
         if (!("redirect" in result)) return result;
         current = result.redirect;
@@ -33,17 +33,17 @@ export async function fetchPublicPage(deps: PageFetchDeps, url: string): Promise
 }
 
 /** Refuses an address that isn't plain public http(s), resolving its host to check every address it points at. */
-async function checkPublic(deps: PageFetchDeps, url: string): Promise<void> {
+export async function assertPublic(lookup: HostLookup, url: string): Promise<void> {
     if (!allowedUrl(url)) throw new FetchRefused("refused: only http(s) addresses on the default port can be opened");
     const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
-    const addresses = isIP(host) === 0 ? await resolve(deps, host) : [host];
+    const addresses = isIP(host) === 0 ? await resolve(lookup, host) : [host];
     if (addresses.length === 0 || !addresses.every(isPublicAddress)) throw new FetchRefused("refused: the address is not on the public internet");
 }
 
 /** Resolves a host, treating a name that doesn't resolve as a refused fetch. */
-async function resolve(deps: PageFetchDeps, host: string): Promise<string[]> {
+async function resolve(lookup: HostLookup, host: string): Promise<string[]> {
     try {
-        return await deps.lookup(host);
+        return await lookup(host);
     } catch {
         throw new FetchRefused("refused: the host name could not be resolved");
     }

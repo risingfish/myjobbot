@@ -1,14 +1,16 @@
 import { describeError } from "../errors.js";
-import type { JsonGetter } from "../http/client.js";
+import type { JsonGetter, JsonPoster } from "../http/client.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { auditSkipped } from "./audit.js";
 import { lookUpJob, type LookupDeps } from "./lookUpJob.js";
 import type { LookupOutcome } from "./outcome.js";
 import { SEARCH_FAILED, searchCareers, SearchUnavailable, type SearchResult } from "./searxng.js";
 import type { SoughtJob } from "./session.js";
+import { dropSkipped } from "./skipHosts.js";
 
-export interface CareersDeps extends Omit<LookupDeps, "search"> {
+export interface CareersDeps extends Omit<LookupDeps, "search" | "boards"> {
     http: JsonGetter;
+    boardHttp: JsonGetter & JsonPoster;
     searxngUrl: string | null;
 }
 
@@ -27,7 +29,7 @@ const MS_PER_MINUTE = 60_000;
 export async function lookUpCareers(deps: CareersDeps, sought: SoughtJob[]): Promise<CareersSummary> {
     const summary: CareersSummary = { looked_up: 0, found: 0, failed: {}, skipped_for_limit: 0 };
     if (deps.searxngUrl === null) return skipAll(deps, { ...summary, note: NOT_CONFIGURED });
-    const lookup = { ...deps, search: cachedSearch(deps, deps.searxngUrl) };
+    const lookup = { ...deps, search: cachedSearch(deps, deps.searxngUrl), boards: { http: deps.boardHttp, cache: new Map() } };
     const started = deps.now().getTime();
     for (const [index, job] of sought.entries()) {
         if (outOfBudget(deps, { index, started })) {
@@ -47,12 +49,12 @@ function outOfBudget(deps: CareersDeps, progress: { index: number; started: numb
     return progress.index >= deps.settings.max_per_run || elapsed >= deps.settings.max_total_minutes * MS_PER_MINUTE;
 }
 
-/** Searches each company at most once per run, sharing the results between its jobs. */
+/** Searches each company at most once per run, dropping results on skipped hosts and sharing the rest between its jobs. */
 function cachedSearch(deps: CareersDeps, base: string): (company: string) => Promise<SearchResult[]> {
     const cache = new Map<string, Promise<SearchResult[]>>();
     return (company) => {
         const key = normalizeCompany(company);
-        const cached = cache.get(key) ?? searchCareers(deps.http, { base, company, max: deps.settings.search_results, maxChars: deps.settings.page_chars });
+        const cached = cache.get(key) ?? searchCareers(deps.http, { base, company, max: deps.settings.search_results, maxChars: deps.settings.page_chars }).then((results) => dropSkipped(results, deps.settings.skip_hosts));
         cache.set(key, cached);
         return cached;
     };
@@ -92,8 +94,10 @@ async function skipAll(deps: CareersDeps, summary: CareersSummary & { note: stri
     return report(deps, summary);
 }
 
-/** Writes the run's careers summary to the trace and returns it. */
+/** Writes the run's careers summary to the trace, with what rendering had to say, and returns it. */
 function report(deps: CareersDeps, summary: CareersSummary): CareersSummary {
-    deps.trace.write({ type: "careers", ...summary });
-    return summary;
+    const notes = [summary.note, ...deps.renderer.notes()].filter((note) => note !== undefined);
+    const reported = notes.length === 0 ? summary : { ...summary, note: notes.join("; ") };
+    deps.trace.write({ type: "careers", ...reported });
+    return reported;
 }

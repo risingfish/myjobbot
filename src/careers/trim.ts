@@ -1,10 +1,5 @@
+import { fitPage, type PageLink } from "./fitPage.js";
 import { walkPage, type RawLink } from "./pageWalker.js";
-import { rankLinks } from "./rank.js";
-
-interface PageLink {
-    text: string;
-    url: string;
-}
 
 export interface TrimmedPage {
     url: string;
@@ -22,24 +17,16 @@ export interface TrimOptions {
     links?: boolean;
 }
 
-const LINK_OVERHEAD = 20;
 const MAX_LINK_TEXT = 120;
-const LINK_SHARE = 0.5;
 const NEXT_TEXT = /^(next|›|»|more jobs)$/i;
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
 
 /** Cuts a fetched page down to its readable text and job links, within a character budget the model can afford. */
 export function trimPage(html: string, options: TrimOptions): TrimmedPage {
     const walked = walkPage(html);
-    const resolved = resolveLinks(walked.links, options.baseUrl);
-    const ranked = options.sought === undefined ? resolved : rankLinks(resolved, options.sought);
-    const offered = options.links === false ? [] : ranked;
-    const text = walked.lines.join("\n");
-    const textBudget = Math.min(text.length, options.maxChars - Math.min(linkCost(offered), Math.floor(options.maxChars * LINK_SHARE)));
-    const links = fitLinks(offered, options.maxChars - textBudget);
-    const chars = textBudget + linkCost(links);
-    const cut = textBudget < text.length || links.length < offered.length;
-    return { url: options.baseUrl, text: text.slice(0, textBudget), links, cut, morePages: walked.links.some(isNextLink), chars };
+    const links = options.links === false ? [] : resolveLinks(walked.links, options.baseUrl);
+    const fitted = fitPage({ text: walked.lines.join("\n"), links }, options);
+    return { url: options.baseUrl, ...fitted, morePages: walked.links.some(isNextLink) };
 }
 
 /** Resolves raw links against the page address, keeping named http(s) links once each, without fragments. */
@@ -63,23 +50,6 @@ function webUrl(href: string, baseUrl: string): string | null {
     if (!WEB_PROTOCOLS.has(url.protocol)) return null;
     url.hash = "";
     return url.href;
-}
-
-/** Keeps links in order while they fit the remaining budget. */
-function fitLinks(links: PageLink[], budget: number): PageLink[] {
-    const kept: PageLink[] = [];
-    let used = 0;
-    for (const link of links) {
-        used += link.text.length + LINK_OVERHEAD;
-        if (used > budget) break;
-        kept.push(link);
-    }
-    return kept;
-}
-
-/** Counts what a list of links costs the model, text plus a fixed per-link overhead. */
-function linkCost(links: PageLink[]): number {
-    return links.reduce((sum, link) => sum + link.text.length + LINK_OVERHEAD, 0);
 }
 
 /** Tells whether a link points to a further page of the listing. */

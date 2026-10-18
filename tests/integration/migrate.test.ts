@@ -2,6 +2,7 @@ import { sql, type Kysely } from "kysely";
 import { expect, test } from "vitest";
 import { storesOver } from "../../src/db/kysely/stores.js";
 import { migrateToLatest } from "../../src/db/migrate.js";
+import { MIGRATIONS } from "../../src/db/migrations/index.js";
 import type { Database } from "../../src/db/schema.js";
 import { makeJob } from "../../src/jobs/job.js";
 import { connectTestDb, emptyTables, TABLES, testDatabase, testSettings } from "../helpers/testDb.js";
@@ -52,10 +53,32 @@ test("on an empty database, two processes migrating at once run each step once, 
     try {
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(first);
         const ran = await Promise.all([migrateToLatest(first), migrateToLatest(second)]);
-        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup"]);
+        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources"]);
         expect(await migrateToLatest(first)).toEqual([]);
         expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "careers_audit utf8mb4_bin", "careers_pages utf8mb4_bin", "gmail_alert_state utf8mb4_bin", "gmail_connection utf8mb4_bin", "jobs utf8mb4_bin", "verdicts utf8mb4_bin"]);
     } finally {
         await Promise.all([first.destroy(), second.destroy()]);
+    }
+});
+
+const FINISHES = ["careers_page_unreadable", "job_page_unreadable", "gave_up", "job_not_found", null];
+
+async function columnTypes(db: Kysely<Database>) {
+    const query = sql<{ COLUMN_NAME: string; COLUMN_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null; COLLATION_NAME: string | null }>`SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'careers_audit' AND COLUMN_NAME IN ('page_source', 'fallback', 'board', 'retry_once') ORDER BY COLUMN_NAME`;
+    return (await query.execute(db)).rows.map((row) => [row.COLUMN_NAME, row.COLUMN_TYPE, row.IS_NULLABLE, row.COLUMN_DEFAULT, row.COLLATION_NAME].join(" "));
+}
+
+test("step 005 adds how pages were read and marks earlier unreadable or gave-up finishes for one retry", async () => {
+    const db = await testDatabase();
+    try {
+        for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
+        await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name !== "005_page_sources")) });
+        for (const [index, reason] of FINISHES.entries()) await sql`INSERT INTO careers_audit (run_id, at, ats, job_id, company, step, outcome, reason) VALUES ('r', 'now', 'linkedin', ${`li_${index}`}, 'Acme', 'finish', 'failed', ${reason})`.execute(db);
+        expect(await migrateToLatest(db)).toEqual(["005_page_sources"]);
+        const marked = await sql<{ job_id: string; retry_once: number }>`SELECT job_id, retry_once FROM careers_audit ORDER BY job_id`.execute(db);
+        expect(marked.rows.map((row) => row.retry_once)).toEqual([1, 1, 1, 0, 0]);
+        expect(await columnTypes(db)).toEqual(["board varchar(160) YES NULL utf8mb4_bin", "fallback varchar(32) YES NULL utf8mb4_bin", "page_source varchar(16) YES NULL utf8mb4_bin", "retry_once tinyint(4) NO 0 "]);
+    } finally {
+        await db.destroy();
     }
 });

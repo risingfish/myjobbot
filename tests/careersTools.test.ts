@@ -2,12 +2,13 @@ import { expect, test } from "vitest";
 import { FetchRefused } from "../src/careers/fetchPage.js";
 import { newSession, type LookupSession } from "../src/careers/session.js";
 import { lookupTools, type ToolPorts } from "../src/careers/tools.js";
-import { trimPage, type TrimmedPage } from "../src/careers/trim.js";
-import { listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
+import type { PageRead } from "../src/careers/readPage.js";
+import { trimPage } from "../src/careers/trim.js";
+import { asRead, jobPage, listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { CAREERS_URL, JOB, result } from "./helpers/careersLookup.js";
 
-function page(html: string, maxChars = 12_000): TrimmedPage {
-    return trimPage(html, { baseUrl: CAREERS_URL, maxChars, sought: JOB.title });
+function page(html: string, maxChars = 12_000): PageRead {
+    return asRead(trimPage(html, { baseUrl: CAREERS_URL, maxChars, sought: JOB.title }));
 }
 
 function tools(ports: Partial<ToolPorts> = {}, session: LookupSession = newSession(JOB)) {
@@ -32,20 +33,59 @@ test("search_careers numbers the results from 1 and registers them", async () =>
     expect(session.registry.get(2)).toBe("https://jobs.example/acme");
 });
 
-test("open_link refuses an unknown number, and more than three opens in one lookup", async () => {
+test("open_link refuses an unknown number", async () => {
     const { call } = tools();
     await expect(call("open_link", { link: 1, as: "careers_page" })).rejects.toThrow("call search_careers first");
     await call("search_careers");
     await expect(call("open_link", { link: 9, as: "careers_page" })).rejects.toThrow("valid links are 1-2");
-    for (let open = 0; open < 3; open += 1) await call("open_link", { link: 1, as: "careers_page" });
-    await expect(call("open_link", { link: 1, as: "careers_page" })).rejects.toThrow("at most 3 pages");
 });
 
-test("open_link on a refused address is a tool error and is remembered as fetch_refused", async () => {
-    const { session, call } = tools({ open: () => Promise.reject(new FetchRefused("refused: the address is not on the public internet")) });
+test("four opens work and the fifth ends the lookup instead of failing, whatever link it names", async () => {
+    const { session, call } = tools();
     await call("search_careers");
-    await expect(call("open_link", { link: 1, as: "job_page" })).rejects.toThrow("not on the public internet");
-    expect(session.lastFailure).toBe("fetch_refused");
+    for (let open = 0; open < 4; open += 1) await call("open_link", { link: 1, as: "careers_page" });
+    expect(session.overLimit).toBe(false);
+    expect(await call("open_link", { link: 9, as: "careers_page" })).toEqual({ note: "all 4 page opens are used; the lookup has ended" });
+    expect(session.overLimit).toBe(true);
+});
+
+function blankJobPage(): PageRead {
+    return asRead({ url: "https://acme.example/careers/backend", text: "  \n ", links: [], cut: false, morePages: false, chars: 4 });
+}
+
+test("finish_lookup with found refuses a job page with no text and names job_page_unreadable", async () => {
+    const { session, call } = tools({ open: async () => blankJobPage() });
+    await call("search_careers");
+    expect(await call("open_link", { link: 2, as: "job_page" })).toMatchObject({ note: expect.stringContaining("job_page_unreadable") });
+    await expect(call("finish_lookup", { found: true })).rejects.toThrow("job_page_unreadable");
+    expect(session.finished).toBeNull();
+});
+
+test("the last job page opened is the one finish_lookup judges", async () => {
+    const pages = [page(jobPage(JOB.title, ["Build APIs."])), blankJobPage(), page(jobPage(JOB.title, ["Ship it."]))];
+    const { session, call } = tools({ open: async () => pages.shift() ?? blankJobPage() });
+    await call("search_careers");
+    await call("open_link", { link: 2, as: "job_page" });
+    await call("open_link", { link: 2, as: "job_page" });
+    await expect(call("finish_lookup", { found: true })).rejects.toThrow("no text");
+    await call("open_link", { link: 2, as: "job_page" });
+    await call("finish_lookup", { found: true });
+    expect(session.jobPage?.text).toContain("Ship it.");
+});
+
+test("a page that fails to open comes back as a result, not a tool error, is audited, remembered and counted", async () => {
+    const audits: unknown[] = [];
+    const { session, call } = tools({ open: () => Promise.reject(new FetchRefused("refused: the address is not on the public internet")), audit: async (row) => void audits.push(row) });
+    await call("search_careers");
+    expect(await call("open_link", { link: 1, as: "job_page" })).toEqual({ opened: false, reason: "fetch_refused", note: "refused: the address is not on the public internet" });
+    expect([session.lastFailure, session.opens]).toEqual(["fetch_refused", 1]);
+    expect(audits.at(-1)).toMatchObject({ step: "open_job", outcome: "failed", reason: "fetch_refused" });
+});
+
+test("an HTTP error opening a page comes back the same way, with no reason of its own", async () => {
+    const { call } = tools({ open: () => Promise.reject(new Error("GET https://acme.example/careers/ failed with HTTP 404")) });
+    await call("search_careers");
+    expect(await call("open_link", { link: 1, as: "careers_page" })).toEqual({ opened: false, reason: null, note: "GET https://acme.example/careers/ failed with HTTP 404" });
 });
 
 test("a careers page shows the job sought and numbered links without addresses, within the size limit", async () => {
@@ -88,4 +128,13 @@ test("finish_lookup without found needs a reason, and either finish ends the loo
     await found.call("open_link", { link: 2, as: "job_page" });
     await found.call("finish_lookup", { found: true });
     expect(found.session.finished).toEqual({ found: true, reason: null });
+});
+
+test("a second search in the same lookup doesn't search again and points the model at the links it has", async () => {
+    let searches = 0;
+    let audits = 0;
+    const { call } = tools({ search: async () => ((searches += 1), [result(CAREERS_URL)]), audit: async () => void (audits += 1) });
+    await call("search_careers");
+    expect(await call("search_careers")).toEqual({ note: "already searched; use the links above" });
+    expect([searches, audits]).toEqual([1, 1]);
 });

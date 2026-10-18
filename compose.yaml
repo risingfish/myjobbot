@@ -25,6 +25,7 @@ services:
         volumes:
             - ./data:/data
             - ./src:/app/src:ro
+        networks: [default, browser]
         develop: *rebuild-on-dependency-change
 
     web:
@@ -53,3 +54,20 @@ services:
             SEARXNG_SECRET: ${SEARXNG_SECRET:-}
         volumes:
             - ./docker/searxng/settings.yml:/etc/searxng/settings.yml:ro
+
+    browser:
+        image: mcr.microsoft.com/playwright:v1.64.1-noble
+        profiles: ["browser"]
+        restart: unless-stopped
+        init: true
+        user: pwuser
+        working_dir: /home/pwuser
+        shm_size: 1gb
+        command: ["npx", "-y", "playwright@1.64.1", "run-server", "--port", "3000", "--host", "0.0.0.0"]
+        networks: [browser]
+
+networks:
+    browser:
+        ipam:
+            config:
+                - subnet: 172.31.250.0/24

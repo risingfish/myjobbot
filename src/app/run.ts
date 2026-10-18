@@ -12,7 +12,9 @@ import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
 import { HttpClient, type JsonGetter, type TextGetter } from "../http/client.js";
+import { connectBrowser, type BrowserPort } from "../careers/browser.js";
 import { systemLookup } from "../careers/fetchPage.js";
+import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { alertsUsability } from "../gmail/alertJobs/usable.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
@@ -23,6 +25,7 @@ interface RunSeams {
     http?: JsonGetter;
     pages?: TextGetter;
     openStores?: () => Promise<Stores>;
+    browser?: (url: string) => Promise<BrowserPort>;
 }
 
 interface RunParts {
@@ -66,9 +69,13 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
-    const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
-    await pruneOldJobs(context);
-    return { ...result, runId: parts.logs.runId, summary: context.run.summary };
+    try {
+        const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
+        await pruneOldJobs(context);
+        return { ...result, runId: parts.logs.runId, summary: context.run.summary };
+    } finally {
+        await context.careers.renderer.close();
+    }
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */
@@ -101,8 +108,15 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
         trace: logs.trace,
         chat,
-        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client },
+        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client, boards: client.withoutRedirects(), renderer: pageRenderer(config, seams, { logs, stores }) },
     };
+}
+
+/** Creates the run's page renderer, connected to the browser service only when one is configured. */
+function pageRenderer(config: AppConfig, seams: RunSeams, { logs, stores }: Pick<RunParts, "logs" | "stores">): PageRenderer {
+    const url = config.env.MYJOBBOT_BROWSER_URL;
+    const connect = url === undefined ? null : () => (seams.browser ?? connectBrowser)(url);
+    return new PageRenderer({ connect, settings: config.file.careers_lookup, lookup: systemLookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now: () => new Date() });
 }
 
 /** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */

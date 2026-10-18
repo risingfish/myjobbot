@@ -3,5 +3,6 @@ import { initial } from "./001_initial.js";
 import { gmail } from "./002_gmail.js";
 import { gmailAlerts } from "./003_gmail_alerts.js";
 import { careersLookup } from "./004_careers_lookup.js";
+import { pageSources } from "./005_page_sources.js";
 
-export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup };
+export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources };
