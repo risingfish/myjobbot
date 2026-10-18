@@ -192,24 +192,24 @@ and doesn't stop the run, and the web UI shows the badge.
 
 Create `.specify/sitting-in-progress` naming S2 before T018.
 
-- [ ] T018 [US3] Integration test `tests/integration/migrate.test.ts`:
+- [X] T018 [US3] Integration test `tests/integration/migrate.test.ts`:
   - Line 56's expected list gains `"006_injection_flag"`.
   - The 005 test (lines 75–77) filters out 005 and 006 and expects
     `["005_page_sources", "006_injection_flag"]` to run.
   - `columnTypes` takes the table name.
   - New: `jobs.injection_seen_at` is `varchar(32) YES NULL utf8mb4_bin`, and existing jobs have it
     null.
-- [ ] T019 [US3] Create `src/db/migrations/006_injection_flag.ts` (export `injectionFlag`) with
+- [X] T019 [US3] Create `src/db/migrations/006_injection_flag.ts` (export `injectionFlag`) with
   `db.schema.alterTable("jobs").addColumn("injection_seen_at", "varchar(32)")`, and list it in
   `src/db/migrations/index.ts`. Add `injection_seen_at: Text` to `JobsTable` in
   `src/db/schema.ts`.
-- [ ] T020 [P] [US3] Contract case in `tests/helpers/descriptionContract.ts` (memory and MariaDB),
+- [X] T020 [P] [US3] Contract case in `tests/helpers/descriptionContract.ts` (memory and MariaDB),
   reading the flag through `jobViews.allJobs`:
   - `flagInjection(jobId, t1)` sets `injection_seen_at` to `t1` on every row with that `job_id`.
   - `flagInjection(jobId, t2)` keeps `t1`.
   - Score and `scored_at` are unchanged.
   - Re-upserting the job keeps the flag.
-- [ ] T021 [US3] Add `flagInjection(jobId: string, at: string): Promise<void>` to `JobStore` in
+- [X] T021 [US3] Add `flagInjection(jobId: string, at: string): Promise<void>` to `JobStore` in
   `src/db/store.ts`.
   - Implement it in `src/db/kysely/jobStore.ts` with `updateTable("jobs")`
     `.set({ injection_seen_at: at }).where("job_id", "=", jobId).where("injection_seen_at", "is", null)`,
@@ -217,31 +217,31 @@ Create `.specify/sitting-in-progress` naming S2 before T018.
     `UNSCORED` defaults (line 16).
   - Add `injection_seen_at` to `jobViewSchema` in `src/db/rows.ts` (the views only, not
     `jobRowSchema`) and to `JOB_COLUMNS` in `src/db/kysely/jobViews.ts`. Upserts never write it.
-- [ ] T022 [P] [US3] Unit tests:
+- [X] T022 [P] [US3] Unit tests:
   - `tests/lookalikes.test.ts`: a hit with a `jobId` flags that job, and only that job. A hit with
     `jobId: null` flags nothing. When `flagInjection` throws, `reportLookalike` doesn't throw and
     traces `{ type: "injection_flag_failed", tool, job_id, error }`.
   - `tests/careersMarkers.test.ts`: a forged marker on an opened page flags the looked-up job, and
     a failing store is traced, not thrown.
-- [ ] T023 [US3] Make both reporters flag, each catching its own failure:
+- [X] T023 [US3] Make both reporters flag, each catching its own failure:
   - `reportLookalike` in `src/app/lookalikes.ts` calls `flagInjection(jobId, now)` when `jobId`
     isn't null.
   - The lookup's reporter in `src/careers/lookUpJob.ts` flags the looked-up job's `jobId`.
-- [ ] T024 [P] [US3] Unit test in `tests/webRows.test.ts`: a job view with `injection_seen_at` set
+- [X] T024 [P] [US3] Unit test in `tests/webRows.test.ts`: a job view with `injection_seen_at` set
   gives `JobRowView.injection: true`, and one without gives `false`.
-- [ ] T025 [US3] Add `injection: boolean` to `JobRowView` in `src/web/api.ts`, set it in
+- [X] T025 [US3] Add `injection: boolean` to `JobRowView` in `src/web/api.ts`, set it in
   `src/web/rowViews.ts`, and add `injection: false` to `BASE_JOB_ROW` in
   `tests/helpers/rowFixtures.ts`.
-- [ ] T026 [P] [US3] UI test in `tests/client/jobRow.test.tsx`: a row with `injection: true` shows
+- [X] T026 [P] [US3] UI test in `tests/client/jobRow.test.tsx`: a row with `injection: true` shows
   "⚠ tried to escape the data markers", and one with `false` doesn't.
-- [ ] T027 [US3] In `web/components/tables/TitleCell.tsx`:
+- [X] T027 [US3] In `web/components/tables/TitleCell.tsx`:
   - Move the filter note, hidden note and the new badge into a `TitleNotes` component in the same
     file, keeping both functions within 20 lines.
   - Show `<small className="note injection">⚠ tried to escape the data markers</small>` when
     `job.injection`.
 
   Style `.injection` in `web/app/styles.css` like `.ghost`.
-- [ ] T028 [US3] Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Flag
+- [X] T028 [US3] Run `npm run check` and `npm run check:db`, delete the marker, and commit ("Flag
   jobs whose text tried to escape the data markers (009 S2)").
 
 ---

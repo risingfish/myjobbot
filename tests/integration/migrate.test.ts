@@ -53,7 +53,7 @@ test("on an empty database, two processes migrating at once run each step once, 
     try {
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(first);
         const ran = await Promise.all([migrateToLatest(first), migrateToLatest(second)]);
-        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources"]);
+        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources", "006_injection_flag"]);
         expect(await migrateToLatest(first)).toEqual([]);
         expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "careers_audit utf8mb4_bin", "careers_pages utf8mb4_bin", "gmail_alert_state utf8mb4_bin", "gmail_connection utf8mb4_bin", "jobs utf8mb4_bin", "verdicts utf8mb4_bin"]);
     } finally {
@@ -63,8 +63,8 @@ test("on an empty database, two processes migrating at once run each step once, 
 
 const FINISHES = ["careers_page_unreadable", "job_page_unreadable", "gave_up", "job_not_found", null];
 
-async function columnTypes(db: Kysely<Database>) {
-    const query = sql<{ COLUMN_NAME: string; COLUMN_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null; COLLATION_NAME: string | null }>`SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'careers_audit' AND COLUMN_NAME IN ('page_source', 'fallback', 'board', 'retry_once') ORDER BY COLUMN_NAME`;
+async function columnTypes(db: Kysely<Database>, table: string, columns: string[]) {
+    const query = sql<{ COLUMN_NAME: string; COLUMN_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null; COLLATION_NAME: string | null }>`SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ${table} AND COLUMN_NAME IN (${sql.join(columns)}) ORDER BY COLUMN_NAME`;
     return (await query.execute(db)).rows.map((row) => [row.COLUMN_NAME, row.COLUMN_TYPE, row.IS_NULLABLE, row.COLUMN_DEFAULT, row.COLLATION_NAME].join(" "));
 }
 
@@ -72,12 +72,25 @@ test("step 005 adds how pages were read and marks earlier unreadable or gave-up 
     const db = await testDatabase();
     try {
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
-        await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name !== "005_page_sources")) });
+        await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < "005")) });
         for (const [index, reason] of FINISHES.entries()) await sql`INSERT INTO careers_audit (run_id, at, ats, job_id, company, step, outcome, reason) VALUES ('r', 'now', 'linkedin', ${`li_${index}`}, 'Acme', 'finish', 'failed', ${reason})`.execute(db);
-        expect(await migrateToLatest(db)).toEqual(["005_page_sources"]);
+        expect(await migrateToLatest(db)).toEqual(["005_page_sources", "006_injection_flag"]);
         const marked = await sql<{ job_id: string; retry_once: number }>`SELECT job_id, retry_once FROM careers_audit ORDER BY job_id`.execute(db);
         expect(marked.rows.map((row) => row.retry_once)).toEqual([1, 1, 1, 0, 0]);
-        expect(await columnTypes(db)).toEqual(["board varchar(160) YES NULL utf8mb4_bin", "fallback varchar(32) YES NULL utf8mb4_bin", "page_source varchar(16) YES NULL utf8mb4_bin", "retry_once tinyint(4) NO 0 "]);
+        expect(await columnTypes(db, "careers_audit", ["page_source", "fallback", "board", "retry_once"])).toEqual(["board varchar(160) YES NULL utf8mb4_bin", "fallback varchar(32) YES NULL utf8mb4_bin", "page_source varchar(16) YES NULL utf8mb4_bin", "retry_once tinyint(4) NO 0 "]);
+    } finally {
+        await db.destroy();
+    }
+});
+
+test("step 006 adds the injection flag to jobs, empty for every job already there", async () => {
+    const db = await connectTestDb();
+    try {
+        await emptyTables(db);
+        await storesOver(db).jobStore.upsertAll([makeJob({ ats: "greenhouse", jobId: "old", company: "Acme", title: "Engineer", url: "u" }, {})], "2026-10-14T00:00:00.000Z", "Acme");
+        expect(await columnTypes(db, "jobs", ["injection_seen_at"])).toEqual(["injection_seen_at varchar(32) YES NULL utf8mb4_bin"]);
+        const flags = await db.selectFrom("jobs").select("injection_seen_at").execute();
+        expect(flags).toEqual([{ injection_seen_at: null }]);
     } finally {
         await db.destroy();
     }

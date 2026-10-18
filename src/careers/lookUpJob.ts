@@ -1,4 +1,5 @@
 import { runAgent, type AgentDeps } from "../agent/loop.js";
+import { describeError } from "../errors.js";
 import type { ChatFn } from "../agent/llm.js";
 import type { DataMarkers, Lookalike } from "../agent/markers.js";
 import { taggedTrace, type Trace } from "../agent/trace.js";
@@ -48,7 +49,7 @@ export async function lookUpJob(deps: LookupDeps, job: SoughtJob): Promise<Looku
     const ports = { search: () => deps.search(job.company), open: (url: string, kind: PageKind) => readPage(deps, { url, kind, sought: job.title }), audit, forget: () => stored(() => deps.careers.forgetPage(key)) };
     const opening = lookupMessages(job, session.remembered, deps.markers);
     const trace = lookupTrace(deps, job);
-    for (let count = 0; count < opening.removed; count += 1) noteLookalike(trace, job, { tool: "lookup_opening", jobId: job.jobId });
+    for (let count = 0; count < opening.removed; count += 1) await noteLookalike({ deps, trace, job }, { tool: "lookup_opening", jobId: job.jobId });
     const result = await runAgent(agentDeps(deps, { session, trace }, lookupTools(session, ports)), opening.messages);
     if (session.stop instanceof SearchUnavailable) throw session.stop;
     const outcome = decideOutcome(session, result);
@@ -78,7 +79,7 @@ function agentDeps(deps: LookupDeps, { session, trace }: { session: LookupSessio
         nudge: LOOKUP_NUDGE,
         compactionNotice: LOOKUP_COMPACTION,
         markers: deps.markers,
-        onLookalike: (hit) => noteLookalike(trace, session.job, hit),
+        onLookalike: (hit) => noteLookalike({ deps, trace, job: session.job }, hit),
     };
 }
 
@@ -87,9 +88,14 @@ function lookupTrace(deps: LookupDeps, job: SoughtJob): Trace {
     return taggedTrace(deps.trace, { lookup: `${job.ats}:${job.jobId}` });
 }
 
-/** Notes in the trace that a look-alike marker was removed from something this lookup read, naming the job it belongs to. */
-function noteLookalike(trace: Trace, job: SoughtJob, hit: Lookalike): void {
+/** Notes that a look-alike marker was removed from something this lookup read and flags the job being looked up, tracing a failed flag instead of ending the lookup. */
+async function noteLookalike({ deps, trace, job }: { deps: LookupDeps; trace: Trace; job: SoughtJob }, hit: Lookalike): Promise<void> {
     trace.write({ type: "lookalike_removed", tool: hit.tool, job_id: job.jobId });
+    try {
+        await deps.jobs.flagInjection(job.jobId, deps.now().toISOString());
+    } catch (error) {
+        trace.write({ type: "injection_flag_failed", tool: hit.tool, job_id: job.jobId, error: describeError(error) });
+    }
 }
 
 /** Stores a found description, remembers the careers page that led to it, and writes the lookup's finish row. */

@@ -14,6 +14,7 @@ const BASE_JOB_ROW: JobRowView = {
     posted: { date: "2026-09-30", daysOpen: 3, ghost: false },
     score: { value: 90, note: "" },
     filterNote: null,
+    injection: false,
     hidden: false,
     reasons: ["reason a"],
     gaps: ["gap a"],

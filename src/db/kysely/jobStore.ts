@@ -63,6 +63,11 @@ export class KyselyJobStore implements JobStore {
         await this.db.updateTable("jobs").set(values).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
     }
 
+    /** Records when a job's outside text was first found carrying a forged data marker, on every job with that id, keeping the first time. */
+    async flagInjection(jobId: string, at: string): Promise<void> {
+        await this.db.updateTable("jobs").set({ injection_seen_at: at }).where("job_id", "=", jobId).where("injection_seen_at", "is", null).execute();
+    }
+
     /** Stores a job's score on every job with that id and appends each to the verdict history; reports whether any existed. */
     async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {
         const values = verdictValues(verdict, stamp);
