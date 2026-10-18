@@ -64,9 +64,19 @@ owner MUST approve the choice. No library is added without that approval.
 Every third-party dependency MUST be pinned exactly or with `~`, never floor-only, and MUST be
 installed through the lockfile. Lockfile changes MUST NOT drop optional platform entries.
 
+Once a library or framework is brought in to do a job, code MUST use it the way it is designed to
+be used: its own API, syntax and conventions, not hand-rolled workarounds around it. For example,
+Kysely is used through its builders, the schema builder for DDL in migrations and the query
+builder for queries and data steps, never raw SQL strings; its `sql` tag is only for a fragment
+the builder cannot express (such as the MariaDB type `` sql`tinyint` ``). Code written before this
+rule (migrations 001–004 use `sql.raw`) is known debt, brought in line when it is next touched,
+not mass-rewritten unprompted.
+
 Rationale: libraries save work, but each one is code the owner has to trust, so the owner picks
 it. A floor-only pin lets any future release, including a compromised one, into a clean build;
-a lockfile missing platform entries breaks installs on other machines.
+a lockfile missing platform entries breaks installs on other machines. Working around a library
+throws away the checking and portability it was chosen for, and leaves the reader two ways of
+doing one thing.
 
 ### V. Specs live in docs/specs
 
@@ -125,4 +135,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.2.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 2.3.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-18

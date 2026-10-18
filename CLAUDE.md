@@ -64,6 +64,14 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   popular candidates, trade-offs, a recommendation) and get the owner's approval.
 - New dependencies: exact or `~` pins, installed via the lockfile; lockfile changes must not
   drop optional platform entries.
+- Use every library and framework the way it is designed to be used: its own API, syntax and
+  conventions, not workarounds (owner decision, 2026-10-18; constitution Principle IV). For
+  Kysely that means the builders everywhere, migrations included: `db.schema.createTable` /
+  `alterTable().addColumn()` for DDL and `selectFrom` / `updateTable` / `insertInto` for queries
+  and data steps (in a migration typed `Kysely<unknown>`, type the data step with
+  `db.withTables<...>()`, not `Kysely<any>`). The `sql` tag is only for a fragment a builder can't
+  express (e.g. `` sql`tinyint` ``), never a whole statement. Migrations 001–004 predate this
+  (`sql.raw`); bring them in line only when touched.
 - These rules are ratified in `.specify/memory/constitution.md`; keep the two in agreement.
 - Storage is MariaDB through Kysely (`src/db/`): typed queries checked against `src/db/schema.ts`,
   every table `utf8mb4_bin` (exact comparison, as SQLite was), and `SET NAMES utf8mb4` on every
