@@ -19,6 +19,7 @@ const schema = z.object({ verdicts: z.array(verdict).min(1).max(MAX_VERDICTS) })
 export function recordMatchesTool(context: ToolContext): Tool {
     return defineTool({
         name: "record_matches",
+        outsideText: false,
         description: `Save scores for up to ${MAX_VERDICTS} jobs returned by fetch_jobs: base (0-${MAX_PART}, resume fit) plus bonus (0-${MAX_PART}, preference fit). The score is their sum. Give reasons and gaps when the sum is 40 or more.`,
         schema,
         run: ({ verdicts }) => record(context, verdicts),

@@ -3,6 +3,7 @@ import { z } from "zod";
 interface ToolSpec<S extends z.ZodType> {
     name: string;
     description: string;
+    outsideText: boolean;
     schema: S;
     run(args: z.infer<S>): unknown;
 }
@@ -11,6 +12,7 @@ export interface Tool {
     name: string;
     description: string;
     parameters: Record<string, unknown>;
+    outsideText: boolean;
     invoke(raw: unknown): Promise<unknown>;
 }
 
@@ -21,6 +23,7 @@ export function defineTool<S extends z.ZodType>(spec: ToolSpec<S>): Tool {
         name: spec.name,
         description: spec.description,
         parameters,
+        outsideText: spec.outsideText,
         invoke: async (raw) => spec.run(spec.schema.parse(raw)),
     };
 }

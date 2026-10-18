@@ -8,6 +8,7 @@ import { defineTool, type Tool } from "./tool.js";
 export function listSourcesTool(context: ToolContext): Tool {
     return defineTool({
         name: "list_sources",
+        outsideText: false,
         description: "List the sources you can fetch jobs from (company boards, saved searches and Gmail alerts), with progress for this run.",
         schema: z.object({}),
         run: () => sourceProgress(context),

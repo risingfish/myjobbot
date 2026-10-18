@@ -11,6 +11,7 @@ const schema = z.object({
 export function finishTool(context: ToolContext): Tool {
     return defineTool({
         name: "finish",
+        outsideText: false,
         description: "End the run. Refused while any source is unfetched or still has unscored jobs.",
         schema,
         run: ({ summary }) => finish(context, summary),

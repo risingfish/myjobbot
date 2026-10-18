@@ -19,6 +19,8 @@ import { newRunState, type ToolContext } from "../tools/context.js";
 import { alertsUsability } from "../gmail/alertJobs/usable.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
 import { buildTools } from "../tools/registry.js";
+import { reportLookalike } from "./lookalikes.js";
+import { dataMarkers } from "../agent/markers.js";
 
 interface RunSeams {
     chat?: ChatFn;
@@ -70,7 +72,7 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
     try {
-        const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config));
+        const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
         await pruneOldJobs(context);
         return { ...result, runId: parts.logs.runId, summary: context.run.summary };
     } finally {
@@ -99,6 +101,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         config: config.file,
         run: newRunState(),
         runId: logs.runId,
+        markers: dataMarkers(logs.runId),
         store: stores.jobStore,
         apiCalls: stores.apiCalls,
         http: seams.http ?? client,
@@ -128,6 +131,8 @@ function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, 
         clock: Date.now,
         isFinished: () => context.run.finished,
         ...PROMPT_TEXTS,
+        markers: context.markers,
+        onLookalike: (hit) => reportLookalike(context, hit),
     };
 }
 

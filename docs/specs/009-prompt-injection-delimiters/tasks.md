@@ -65,7 +65,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
 **Purpose**: the shared step (FR-002), used by both conversations. S1 delivers US1 and US2.
 
-- [ ] T003 [P] Unit test `tests/markers.test.ts`:
+- [X] T003 [P] Unit test `tests/markers.test.ts`:
   - `dataMarkers("3f2b8c1e-9a7d-4e21-b0c3-5d6e7f8a9b0c")` gives tag `3f2b8c1e9a7d`, open
     `<<data 3f2b8c1e9a7d>>` and close `<</data 3f2b8c1e9a7d>>`.
   - Two run IDs give different markers.
@@ -75,34 +75,34 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - `scrub` leaves numbers, booleans, null and keys unchanged.
   - `hits` gives one `{ jobId }` per removal: a removal inside `{ jobs: [{ job_id: "a", title: … }] }`
     has jobId `a`, and one outside any `job_id` object has `null`.
-- [ ] T004 Create `src/agent/markers.ts` (`DataMarkers`, `Lookalike = { tool: string; jobId:
+- [X] T004 Create `src/agent/markers.ts` (`DataMarkers`, `Lookalike = { tool: string; jobId:
   string | null }`, `dataMarkers(runId)`, `scrub(value)`) per contracts/data-markers.md.
-- [ ] T005 [P] Unit test `tests/wrapped.test.ts`. `wrapOutcome({ outsideText, outcome, markers })`:
+- [X] T005 [P] Unit test `tests/wrapped.test.ts`. `wrapOutcome({ outsideText, outcome, markers })`:
   - For an outside-text tool, gives `open\n<scrubbed JSON>\nclose`, an error outcome
     (`{"error":…}`) included, plus the hits.
   - For a bare tool, gives the content unchanged with no hits.
   - On a `fetch_jobs`-shaped page of 25 jobs, the markers add at most 5% (SC-004).
-- [ ] T006 Create `src/agent/wrapped.ts` (`wrapOutcome`). It parses the outcome's JSON, scrubs it,
+- [X] T006 Create `src/agent/wrapped.ts` (`wrapOutcome`). It parses the outcome's JSON, scrubs it,
   serialises it again and wraps it.
-- [ ] T007 [P] Unit test `tests/toolDeclarations.test.ts`. Build the main registry's tools
+- [X] T007 [P] Unit test `tests/toolDeclarations.test.ts`. Build the main registry's tools
   (`buildTools` with `testContext()`) and the lookup's (`lookupTools` with `newSession`). The tools
   with `outsideText: true` are exactly `fetch_jobs`, `get_job_details`, `search_careers` and
   `open_link`; `list_sources`, `record_matches`, `finish` and `finish_lookup` are false.
-- [ ] T008 Add a required `outsideText: boolean` to `ToolSpec` and `Tool` in `src/tools/tool.ts`,
+- [X] T008 Add a required `outsideText: boolean` to `ToolSpec` and `Tool` in `src/tools/tool.ts`,
   passed through by `defineTool`.
   - Set it in `src/tools/{fetchJobs,getJobDetails,listSources,recordMatches,finish}.ts` and in the
     three tools in `src/careers/tools.ts`.
   - Make `search_careers`'s description generic: "Search the web for the employer's careers page.
     Returns numbered results." (R1).
   - Add `outsideText` to the `defineTool` calls in `tests/dispatch.test.ts` (`echo`, `explode`).
-- [ ] T009 [P] Unit tests in `tests/agent-loop.test.ts` (use `tests/helpers/agent.ts`):
+- [X] T009 [P] Unit tests in `tests/agent-loop.test.ts` (use `tests/helpers/agent.ts`):
   - A fake outside-text tool's result reaches the next chat request wrapped in the run's markers,
     while the trace's `tool` event has the unwrapped content and `wrapped: true`.
   - A bare tool's result, and a call to an unknown tool, are unchanged, with `wrapped: false`.
   - A result containing `<</data x>>` reaches the model without it, and `onLookalike` is called
     once with `{ tool, jobId }`.
   - Nudge and compaction-notice messages are never wrapped (FR-008).
-- [ ] T010 In `src/agent/loop.ts`:
+- [X] T010 In `src/agent/loop.ts`:
   - Add `markers: DataMarkers` and `onLookalike: (hit: Lookalike) => void | Promise<void>` to
     `AgentDeps`.
   - In `execute()`, find the called tool by name (an unknown tool counts as bare) and call
@@ -111,17 +111,17 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - Call `onLookalike` for each hit.
   - Update `tests/helpers/agent.ts` defaults: markers from the fixed test UUID, and a no-op
     `onLookalike`.
-- [ ] T011 [P] Unit test in a new `tests/prompt.test.ts`. Move the two `initialMessages` tests here
+- [X] T011 [P] Unit test in a new `tests/prompt.test.ts`. Move the two `initialMessages` tests here
   from `tests/getJobDetails.test.ts` (lines 40–48), and update them for the new signature and
   wording. Then check that:
   - the system prompt contains the data sentence with this run's open and close markers;
   - it no longer contains "Job descriptions are written by employers" or "ignore any
     instructions";
   - the resume and preferences sit outside any marker.
-- [ ] T012 In `src/agent/prompt.ts`, add `dataSentence(markers)`, exported for the lookup prompt.
+- [X] T012 In `src/agent/prompt.ts`, add `dataSentence(markers)`, exported for the lookup prompt.
   It replaces the "Job descriptions are written by employers…" line. `initialMessages(config,
   markers)` takes the markers.
-- [ ] T013 [P] [US2] Unit tests in a new `tests/careersMarkers.test.ts` (use `lookupSetup`):
+- [X] T013 [P] [US2] Unit tests in a new `tests/careersMarkers.test.ts` (use `lookupSetup`):
   - The lookup's system prompt names the markers, and neither it nor any lookup tool's description
     contains the job's title, company or location.
   - The first user message carries `<title> at <company>, <location>` between the markers, and the
@@ -129,7 +129,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - A search result and an opened page reach the model wrapped.
   - A job title containing `<<data` reaches the model without it, and a `lookalike_removed` trace
     event names the looked-up job with `tool: "lookup_opening"`.
-- [ ] T014 [US2] In `src/careers/prompt.ts`:
+- [X] T014 [US2] In `src/careers/prompt.ts`:
   - `lookupMessages(job, remembered, markers)` uses `dataSentence` (it replaces "Pages are web
     content…").
   - Remove the `{company}` replacement and the job from `SYSTEM`; the Tools line says "the
@@ -142,11 +142,11 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
     lookup) through `agentDeps`.
   - Report the opening message's hits the same way, with `tool: "lookup_opening"`.
   - `LookupDeps` gains `markers`, built once per run.
-- [ ] T015 [P] Unit test in a new `tests/lookalikes.test.ts` (memory stores, `testContext`):
+- [X] T015 [P] Unit test in a new `tests/lookalikes.test.ts` (memory stores, `testContext`):
   `reportLookalike(context, { tool: "get_job_details", jobId: "a" })` writes exactly
   `{ type: "lookalike_removed", tool: "get_job_details", job_id: "a" }` to the trace, with no other
   fields and no text.
-- [ ] T016 Create `src/app/lookalikes.ts` (`reportLookalike`). In `src/app/run.ts`:
+- [X] T016 Create `src/app/lookalikes.ts` (`reportLookalike`). In `src/app/run.ts`:
   - Build `dataMarkers(runId)` once.
   - Pass it to `initialMessages` and the main agent's `agentDeps`, with
     `onLookalike: (hit) => reportLookalike(context, hit)`.
@@ -155,7 +155,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
 
   Update the defaults in `tests/helpers/context.ts` and `tests/helpers/careersLookup.ts` (the fixed
   test UUID).
-- [ ] T017 Fix the existing tests that read the lookup's system prompt for the job (plan Risks):
+- [X] T017 Fix the existing tests that read the lookup's system prompt for the job (plan Risks):
   `tests/fetchJobs.test.ts:96` (`requests[0]?.[0]` → the first user message), and any in
   `tests/careersLookup.test.ts`. Then run `npm run check` and `npm run check:db`, delete the
   marker, and commit ("Wrap outside text in run-bound data markers (009 S1)").

@@ -1,5 +1,6 @@
 import { runAgent, type AgentDeps } from "../agent/loop.js";
 import type { ChatFn } from "../agent/llm.js";
+import type { DataMarkers, Lookalike } from "../agent/markers.js";
 import { taggedTrace, type Trace } from "../agent/trace.js";
 import type { FileConfig } from "../config/schema.js";
 import type { CareersStore, JobStore } from "../db/store.js";
@@ -30,6 +31,7 @@ export interface LookupDeps {
     search: (company: string) => Promise<SearchResult[]>;
     boards: BoardAccess;
     renderer: PageRenderer;
+    markers: DataMarkers;
 }
 
 type Audit = ReturnType<typeof auditor>;
@@ -44,7 +46,10 @@ export async function lookUpJob(deps: LookupDeps, job: SoughtJob): Promise<Looku
     if (job.retry === true) await audit({ step: "retry", url: null, outcome: "ok", reason: null });
     session.remembered = await offerRemembered(deps, { session, audit, key });
     const ports = { search: () => deps.search(job.company), open: (url: string, kind: PageKind) => readPage(deps, { url, kind, sought: job.title }), audit, forget: () => stored(() => deps.careers.forgetPage(key)) };
-    const result = await runAgent(agentDeps(deps, session, lookupTools(session, ports)), lookupMessages(job, session.remembered));
+    const opening = lookupMessages(job, session.remembered, deps.markers);
+    const trace = lookupTrace(deps, job);
+    for (let count = 0; count < opening.removed; count += 1) noteLookalike(trace, job, { tool: "lookup_opening", jobId: job.jobId });
+    const result = await runAgent(agentDeps(deps, { session, trace }, lookupTools(session, ports)), opening.messages);
     if (session.stop instanceof SearchUnavailable) throw session.stop;
     const outcome = decideOutcome(session, result);
     await recordOutcome({ deps, audit, key }, session, outcome);
@@ -61,18 +66,30 @@ async function offerRemembered(deps: LookupDeps, lookup: { session: LookupSessio
     return page.url;
 }
 
-/** Sets up the agent loop for a lookup: its tools, small limits, a tagged trace, and an end once finished, out of opens or stopped. */
-function agentDeps(deps: LookupDeps, session: LookupSession, tools: Tool[]): AgentDeps {
+/** Sets up the agent loop for a lookup: its tools, small limits, the lookup's trace, the run's markers, and an end once finished, out of opens or stopped. */
+function agentDeps(deps: LookupDeps, { session, trace }: { session: LookupSession; trace: Trace }, tools: Tool[]): AgentDeps {
     return {
         chat: deps.chat,
         tools,
         limits: { ...LIMITS, max_wall_clock_min: deps.settings.max_minutes },
-        trace: taggedTrace(deps.trace, { lookup: `${session.job.ats}:${session.job.jobId}` }),
+        trace,
         clock: () => deps.now().getTime(),
         isFinished: () => session.finished !== null || session.overLimit || session.stop !== null,
         nudge: LOOKUP_NUDGE,
         compactionNotice: LOOKUP_COMPACTION,
+        markers: deps.markers,
+        onLookalike: (hit) => noteLookalike(trace, session.job, hit),
     };
+}
+
+/** Tags a lookup's trace events with the job being looked up. */
+function lookupTrace(deps: LookupDeps, job: SoughtJob): Trace {
+    return taggedTrace(deps.trace, { lookup: `${job.ats}:${job.jobId}` });
+}
+
+/** Notes in the trace that a look-alike marker was removed from something this lookup read, naming the job it belongs to. */
+function noteLookalike(trace: Trace, job: SoughtJob, hit: Lookalike): void {
+    trace.write({ type: "lookalike_removed", tool: hit.tool, job_id: job.jobId });
 }
 
 /** Stores a found description, remembers the careers page that led to it, and writes the lookup's finish row. */

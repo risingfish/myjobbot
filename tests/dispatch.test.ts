@@ -6,6 +6,7 @@ import { defineTool } from "../src/tools/tool.js";
 const echo = defineTool({
     name: "echo",
     description: "Echo text back",
+    outsideText: false,
     schema: z.object({ text: z.string() }),
     run: ({ text }) => ({ text }),
 });
@@ -17,6 +18,7 @@ function explodeWith(message: string): unknown {
 const explode = defineTool({
     name: "explode",
     description: "Throw a huge error",
+    outsideText: false,
     schema: z.object({}),
     run: () => explodeWith("x".repeat(10_000)),
 });
@@ -53,7 +55,7 @@ test("dispatch reports an unknown tool and lists the real ones", async () => {
 });
 
 test("dispatch treats empty arguments as an empty object", async () => {
-    const ping = defineTool({ name: "ping", description: "Ping", schema: z.object({}), run: () => "pong" });
+    const ping = defineTool({ name: "ping", description: "Ping", outsideText: false, schema: z.object({}), run: () => "pong" });
     expect(await dispatch([ping], { name: "ping", arguments: "" })).toEqual({ ok: true, content: '"pong"' });
 });
 
