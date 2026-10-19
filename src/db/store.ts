@@ -48,6 +48,7 @@ export interface JobStore {
     companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]>;
     markSeen(keys: JobKey[], seen: string): Promise<void>;
     setDescription(key: JobKey, found: FoundDescription): Promise<void>;
+    flagInjection(jobId: string, at: string): Promise<void>;
 }
 
 export interface FoundDescription {

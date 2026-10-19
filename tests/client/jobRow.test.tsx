@@ -70,3 +70,10 @@ test("reasons and gaps sit under Why, which is absent when there are none", () =
     const bare = renderRow({ jobId: "c", reasons: [], gaps: [] });
     expect(bare.container.querySelector("details")).toBeNull();
 });
+
+test("a row whose text tried to escape the data markers carries a warning, and other rows don't", () => {
+    renderRow({ injection: true });
+    expect(screen.getByText("⚠ tried to escape the data markers")).toBeTruthy();
+    renderRow({ jobId: "b", title: "Software Engineer b", injection: false });
+    expect(screen.getAllByText("⚠ tried to escape the data markers")).toHaveLength(1);
+});

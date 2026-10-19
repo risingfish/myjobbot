@@ -1,10 +1,11 @@
 import type { AssistantMessage, Message } from "../../src/agent/llm.js";
 import { runAgent, type AgentDeps, type AgentResult } from "../../src/agent/loop.js";
+import { dataMarkers } from "../../src/agent/markers.js";
 import type { TraceEvent } from "../../src/agent/trace.js";
 import type { ToolContext } from "../../src/tools/context.js";
 import { buildTools } from "../../src/tools/registry.js";
 import { scriptedChat } from "./chat.js";
-import { doneContext } from "./context.js";
+import { doneContext, TEST_RUN_ID } from "./context.js";
 import { memoryTrace } from "./trace.js";
 
 export const TEST_LIMITS = { max_steps: 10, max_wall_clock_min: 5, max_consecutive_tool_errors: 3, context_chars: 160_000 };
@@ -35,5 +36,7 @@ function baseDeps(context: ToolContext): Omit<AgentDeps, "chat" | "trace"> {
         isFinished: () => context.run.finished,
         nudge: "Respond only with tool calls.",
         compactionNotice: "Earlier messages were removed.",
+        markers: dataMarkers(TEST_RUN_ID),
+        onLookalike: () => {},
     };
 }

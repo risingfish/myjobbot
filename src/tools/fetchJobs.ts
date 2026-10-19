@@ -16,6 +16,7 @@ const schema = z.object({ source: z.string().describe("Source name exactly as re
 export function fetchJobsTool(context: ToolContext): Tool {
     return defineTool({
         name: "fetch_jobs",
+        outsideText: true,
         description: `Return up to ${PAGE_SIZE} unscored jobs from a source (a company board, a saved search or Gmail alerts) plus total_unscored. Score them with record_matches, then call again until total_unscored is 0.`,
         schema,
         run: ({ source }) => jobPage(context, findSource(context, source)),

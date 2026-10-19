@@ -21,6 +21,7 @@ interface JobsTable {
     description: Text;
     description_source: Text;
     description_url: Text;
+    injection_seen_at: Text;
     publisher: Text;
     requirements: Text;
     skills: Text;

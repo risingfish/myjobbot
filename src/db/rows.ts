@@ -53,6 +53,7 @@ export const jobViewSchema = z.object({
     scored_at: text,
     hidden: z.number().transform((flag) => flag === 1),
     description: text,
+    injection_seen_at: text,
     base_score: count,
     bonus_score: count,
 });

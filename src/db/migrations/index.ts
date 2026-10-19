@@ -4,5 +4,6 @@ import { gmail } from "./002_gmail.js";
 import { gmailAlerts } from "./003_gmail_alerts.js";
 import { careersLookup } from "./004_careers_lookup.js";
 import { pageSources } from "./005_page_sources.js";
+import { injectionFlag } from "./006_injection_flag.js";
 
-export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources };
+export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag };

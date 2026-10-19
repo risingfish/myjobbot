@@ -1,4 +1,5 @@
 import type { AssistantMessage, ChatFn } from "../../src/agent/llm.js";
+import { dataMarkers } from "../../src/agent/markers.js";
 import type { BrowserPort } from "../../src/careers/browser.js";
 import type { LookupDeps } from "../../src/careers/lookUpJob.js";
 import { PageRenderer } from "../../src/careers/renderState.js";
@@ -9,7 +10,7 @@ import { makeJob } from "../../src/jobs/job.js";
 import { fakeBoardHttp } from "./boardData.js";
 import { scriptedChat, toolCallReply } from "./chat.js";
 import { testFileConfig } from "./config.js";
-import { TEST_NOW } from "./context.js";
+import { TEST_NOW, TEST_RUN_ID } from "./context.js";
 import { publicDns } from "./fakeDns.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { memoryStores } from "./memoryStore.js";
@@ -58,6 +59,6 @@ export async function lookupSetup(setup: Setup) {
     const trace = memoryTrace();
     const pages = { pages: fakePages(setup.pages ?? {}), lookup: publicDns(), maxBytes: 1_000_000 };
     const renderer = new PageRenderer({ connect: setup.connect ?? null, settings: testFileConfig().careers_lookup, lookup: pages.lookup, careers, trace, runId: "run-1", now: () => TEST_NOW });
-    const deps: LookupDeps = { chat: setup.chat ?? scripted.chat, trace, settings: testFileConfig().careers_lookup, pages, jobs: stores.jobStore, careers, runId: "run-1", now: () => TEST_NOW, boards: { http: fakeBoardHttp(setup.boards ?? {}), cache: new Map() }, renderer, search: async (company) => (searches.push(company), setup.results ?? []) };
+    const deps: LookupDeps = { chat: setup.chat ?? scripted.chat, trace, settings: testFileConfig().careers_lookup, pages, jobs: stores.jobStore, careers, runId: "run-1", now: () => TEST_NOW, boards: { http: fakeBoardHttp(setup.boards ?? {}), cache: new Map() }, renderer, markers: dataMarkers(TEST_RUN_ID), search: async (company) => (searches.push(company), setup.results ?? []) };
     return { deps, stores, careers, searches, trace, requests: scripted.requests };
 }

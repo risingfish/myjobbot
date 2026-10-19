@@ -93,6 +93,6 @@ test("fetching Gmail alerts looks up careers pages only for unscored jobs withou
     const context = { ...base, chat, careers, http: fakeBoard(searxngJson([{ url: POSTING_URL, title: "Senior Engineer" }])) };
     const page = await fetchPage(context, "Gmail alerts");
     expect(page).toMatchObject({ careers: { looked_up: 1, found: 1 } });
-    expect(String(requests[0]?.[0]?.content)).toContain("Senior Engineer at Acme");
+    expect(String(requests[0]?.[1]?.content)).toContain("Senior Engineer at Acme");
     expect(await context.store.findJob("li_new")).toMatchObject({ description_source: "careers", description: expect.stringContaining("Build APIs.") });
 });

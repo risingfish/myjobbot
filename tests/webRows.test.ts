@@ -60,3 +60,10 @@ test("a malformed hide request is refused and changes nothing", async () => {
     }
     expect(jobRows(await loadRows(views, config, { name: "recommended", offset: 0 })).map((job) => job.jobId)).toEqual(["a"]);
 });
+
+test("a job whose text tried to escape the data markers is marked on its row", async () => {
+    const stores = await seededStores([{ id: "a" }, { id: "b" }]);
+    await stores.jobStore.flagInjection("a", "2026-10-02T00:00:00.000Z");
+    const data = await loadRows(stores.jobViews, config, { name: "jobs", offset: 0 });
+    expect(Object.fromEntries(jobRows(data).map((row) => [row.jobId, row.injection]))).toEqual({ a: true, b: false });
+});

@@ -32,11 +32,15 @@ export function toJobRowView(job: JobView, context: RowContext): JobRowView {
         via: job.publisher,
         posted: posted(job, context),
         score: jobScore(job, context),
-        filterNote: filterNote(job, context),
-        hidden: job.hidden,
+        ...titleNotes(job, context),
         reasons: job.reasons,
         gaps: job.gaps,
     };
+}
+
+/** Works out the notes shown beside a job's title: why a filter hid it, whether its text tried to escape the data markers, and whether the owner hid it. */
+function titleNotes(job: JobView, context: RowContext): Pick<JobRowView, "filterNote" | "injection" | "hidden"> {
+    return { filterNote: filterNote(job, context), injection: job.injection_seen_at !== null, hidden: job.hidden };
 }
 
 /** Converts a stored scoring verdict into the ready-to-display row of the reasoning history. */

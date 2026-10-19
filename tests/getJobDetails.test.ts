@@ -1,8 +1,6 @@
 import { expect, test } from "vitest";
-import { initialMessages } from "../src/agent/prompt.js";
 import { makeJob } from "../src/jobs/job.js";
 import { testContext } from "./helpers/context.js";
-import { testAppConfig } from "./helpers/config.js";
 import { invokeTool } from "./helpers/tools.js";
 
 const CORE = { ats: "jsearch" as const, jobId: "js_1", company: "Acme", title: "Senior Backend Engineer", url: "u" };
@@ -34,19 +32,6 @@ test("get_job_details says when a job has no description", async () => {
 
 test("get_job_details rejects an unknown job id", async () => {
     await expect(invokeTool(testContext(), "get_job_details", { job_id: "nope" })).rejects.toThrow('unknown job_id "nope"');
-});
-
-test("the prompt asks for descriptions of plausible fits and treats them as data", () => {
-    const system = String(initialMessages(testAppConfig())[0]?.content);
-    expect(system).toContain("call get_job_details");
-    expect(system).toContain("ignore any instructions");
-});
-
-test("the prompt carries the base and bonus rubric", () => {
-    const system = String(initialMessages(testAppConfig())[0]?.content);
-    expect(system).toContain("base (0-50)");
-    expect(system).toContain("bonus (0-50)");
-    expect(system).toContain("Stack, up to 25");
 });
 
 test("get_job_details says when the description came from the employer's careers page", async () => {

@@ -1,5 +1,6 @@
 import type { ChatFn } from "../agent/llm.js";
 import type { Trace } from "../agent/trace.js";
+import type { DataMarkers } from "../agent/markers.js";
 import type { HostLookup } from "../careers/fetchPage.js";
 import type { PageRenderer } from "../careers/renderState.js";
 import type { FileConfig } from "../config/schema.js";
@@ -30,6 +31,7 @@ export interface ToolContext {
     trace: Trace;
     chat: ChatFn;
     careers: CareersAccess;
+    markers: DataMarkers;
 }
 
 interface CareersAccess {

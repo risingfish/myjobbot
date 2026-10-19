@@ -95,7 +95,8 @@ small,
 footer {
     color: var(--muted);
 }
-.ghost {
+.ghost,
+.injection {
     color: var(--warn);
 }
 .score {

@@ -5,7 +5,9 @@ import type { Tool } from "../tools/tool.js";
 import { Budget } from "./budget.js";
 import { compactInPlace } from "./compact.js";
 import { functionCalls, toHistory, type ChatFn, type FunctionCall, type Message } from "./llm.js";
+import type { DataMarkers, Lookalike } from "./markers.js";
 import type { Trace, TraceEvent } from "./trace.js";
+import { wrapOutcome } from "./wrapped.js";
 
 export interface AgentDeps {
     chat: ChatFn;
@@ -16,6 +18,8 @@ export interface AgentDeps {
     isFinished: () => boolean;
     nudge: string;
     compactionNotice: string;
+    markers: DataMarkers;
+    onLookalike: (hit: Lookalike) => void | Promise<void>;
 }
 
 export interface AgentResult {
@@ -79,11 +83,15 @@ class AgentSession {
         if (removed > 0) this.deps.trace.write({ type: "compacted", removed });
     }
 
-    /** Dispatches one tool call, records its outcome in the trace/history, and feeds it into the error budget. */
+    /** Dispatches one tool call, records it as it was in the trace and as the model may see it in history, and reports look-alikes. */
     private async execute(call: FunctionCall): Promise<void> {
+        const { name } = call.function;
         const outcome = await dispatch(this.deps.tools, call.function);
         this.budget.recordOutcome(outcome.ok);
-        this.record({ type: "tool", tool_call_id: call.id, name: call.function.name, ok: outcome.ok, content: outcome.content }, { role: "tool", tool_call_id: call.id, content: outcome.content });
+        const outsideText = this.deps.tools.some((tool) => tool.name === name && tool.outsideText);
+        const shown = wrapOutcome({ outsideText, outcome, markers: this.deps.markers });
+        this.record({ type: "tool", tool_call_id: call.id, name, ok: outcome.ok, wrapped: outsideText, content: outcome.content }, { role: "tool", tool_call_id: call.id, content: shown.content });
+        for (const hit of shown.hits) await this.deps.onLookalike({ tool: name, jobId: hit.jobId });
     }
 
     /** Prompts the model to keep working with tool calls when a reply made none, counting it as a failure. */

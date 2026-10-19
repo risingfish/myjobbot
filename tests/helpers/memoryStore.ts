@@ -13,7 +13,7 @@ interface Tables {
     calls: Row[];
 }
 
-const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, emailed_at: null };
+const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, emailed_at: null, injection_seen_at: null };
 
 function companies(rows: Row[]): string[] {
     return [...new Set(rows.map((job) => String(job.company)))];
@@ -64,6 +64,10 @@ class MemoryJobStore implements JobStore {
     async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
         const job = this.tables.jobs.find((row) => row.ats === key.ats && row.job_id === key.jobId);
         if (job) Object.assign(job, { description: found.description, description_source: found.source, description_url: found.url, scored_at: null });
+    }
+
+    async flagInjection(jobId: string, at: string): Promise<void> {
+        for (const job of this.tables.jobs) if (job.job_id === jobId && job.injection_seen_at === null) job.injection_seen_at = at;
     }
 
     async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {

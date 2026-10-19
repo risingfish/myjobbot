@@ -19,6 +19,7 @@ export interface JobRowView {
     posted: { date: string; daysOpen: number; ghost: boolean };
     score: Score | null;
     filterNote: string | null;
+    injection: boolean;
     hidden: boolean;
     reasons: string[];
     gaps: string[];

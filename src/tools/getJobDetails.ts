@@ -11,6 +11,7 @@ const schema = z.object({ job_id: z.union([z.string(), z.number()]).transform(St
 export function getJobDetailsTool(context: ToolContext): Tool {
     return defineTool({
         name: "get_job_details",
+        outsideText: true,
         description: `Return one job's metadata plus its full description (up to ${MAX_DESCRIPTION_CHARS} characters) and, when the source provides them, requirements and skills.`,
         schema,
         run: ({ job_id }) => details(context, job_id),
