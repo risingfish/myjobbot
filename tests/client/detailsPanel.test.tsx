@@ -56,6 +56,14 @@ test("the close button, Escape and a click outside close the panel and take the 
     }
 });
 
+test("a closed panel keeps the last job's details so it can slide out", async () => {
+    showPage();
+    await openTitle("Software Engineer a");
+    await userEvent.keyboard("{Escape}");
+    expect(panel()?.open).toBe(false);
+    expect(panel()?.textContent).toContain("Software Engineer a");
+});
+
 test("clicking another title or a row's Hide doesn't close the panel", async () => {
     showPage();
     await openTitle("Software Engineer a");

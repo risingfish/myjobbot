@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { JobKey } from "../../../src/db/store.js";
 import type { JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
@@ -16,13 +16,21 @@ type PanelRef = RefObject<HTMLDialogElement | null>;
 export function DetailsPanel({ open, job, onClose }: DetailsPanelProps) {
     const panel = useRef<HTMLDialogElement>(null);
     const titleId = useId();
+    const shown = useLastShown(open, job);
     useShown(panel, open === null ? null : jobParam(open));
     useDismissal(panel, open !== null, onClose);
     return (
         <dialog ref={panel} className="details-panel" aria-labelledby={titleId}>
-            {open !== null && <PanelContent job={job} titleId={titleId} onClose={onClose} />}
+            {shown !== null && <PanelContent job={shown.job} titleId={titleId} onClose={onClose} />}
         </dialog>
     );
+}
+
+/** Keeps the last job the panel showed, so a closing panel slides out with its details still in it. */
+function useLastShown(open: JobKey | null, job: JobRowView | null): { job: JobRowView | null } | null {
+    const [shown, setShown] = useState<{ job: JobRowView | null } | null>(null);
+    if (open !== null && shown?.job !== job) setShown({ job });
+    return shown;
 }
 
 /** Renders the open panel: the job's title as its heading, a close button, and the job's sections. */

@@ -188,19 +188,24 @@ dialog.details-panel {
     box-shadow: -8px 0 24px rgb(0 0 0 / 18%);
     flex-direction: column;
     z-index: 10;
+    transform: translateX(100%);
+    transition:
+        transform 180ms ease-in,
+        display 180ms allow-discrete;
 }
 dialog.details-panel[open] {
     display: flex;
-    animation: details-slide-in 180ms ease-out;
+    transform: none;
+    transition-timing-function: ease-out;
 }
-@keyframes details-slide-in {
-    from {
+@starting-style {
+    dialog.details-panel[open] {
         transform: translateX(100%);
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    dialog.details-panel[open] {
-        animation: none;
+    dialog.details-panel {
+        transition: none;
     }
 }
 @media (max-width: 800px) {
