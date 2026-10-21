@@ -100,8 +100,8 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
 
 ### Sitting S2, PR 2: the panel (T009–T018), branch `011-pr2-details-panel`
 
-- [ ] T009 Per-PR flow steps 1–3, for sitting S2.
-- [ ] T010 [P] [US1] Unit test `tests/jobParam.test.ts`:
+- [X] T009 Per-PR flow steps 1–3, for sitting S2.
+- [X] T010 [P] [US1] Unit test `tests/jobParam.test.ts`:
   - `parseJobParam("greenhouse:123")` gives `{ ats: "greenhouse", jobId: "123" }`.
   - It splits on the first `:` only (`"jsearch:a:b"` gives jobId `"a:b"`).
   - `null`, `""`, `"x"`, `":1"` and `"x:"` give `null`.
@@ -109,9 +109,9 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
   - `withJob("?sort=1", key)` gives `"?sort=1&job=greenhouse%3A123"`.
   - `withJob("?sort=1&job=x%3Ay", null)` gives `"?sort=1"`, and `withJob("", null)` gives `"?"`
     or `""`; settle on one and test it.
-- [ ] T011 [US1] Create `web/lib/jobParam.ts` (`parseJobParam`, `jobParam`, `withJob` through
+- [X] T011 [US1] Create `web/lib/jobParam.ts` (`parseJobParam`, `jobParam`, `withJob` through
   `URLSearchParams`).
-- [ ] T012 [P] [US1] UI tests, written before T013–T017:
+- [X] T012 [P] [US1] UI tests, written before T013–T017:
   - New `tests/helpers/navigation.ts` holds the `next/navigation.js` mock (see the header).
   - New `tests/client/detailsPanel.test.tsx` renders `RowsList` with fixture rows from
     `tests/helpers/rowFixtures.ts`:
@@ -132,15 +132,15 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
     - the title's `href` is `?job=greenhouse%3Aa`, with no `target`;
     - it stays a link when `url` is null;
     - its `title` attribute case is kept.
-- [ ] T013 [US1] Create `web/lib/useOpenJob.ts`:
+- [X] T013 [US1] Create `web/lib/useOpenJob.ts`:
   - It reads `job` from `useSearchParams()`, treating `null` as no job.
   - `open(key)` and `close()` call `window.history.pushState(null, "", withJob(location.search,
     …))`.
   - `close()` only pushes when the address still names a job.
-- [ ] T014 [US1] Create `web/components/panel/PanelSection.tsx` (a heading and its content) and
+- [X] T014 [US1] Create `web/components/panel/PanelSection.tsx` (a heading and its content) and
   `web/components/panel/JobSection.tsx`. The job section shows the job fields from a `JobRowView`,
   says "unknown" for missing values, and shows the hidden state.
-- [ ] T015 [US1] Create `web/components/panel/DetailsPanel.tsx`, a non-modal
+- [X] T015 [US1] Create `web/components/panel/DetailsPanel.tsx`, a non-modal
   `<dialog className="details-panel" aria-labelledby>`:
   - It calls `show()` when a job opens and `close()` when none is open.
   - It closes on its close button, on a document `keydown` Escape, and on a document `pointerdown`
@@ -150,18 +150,18 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
   - It keeps the job it opened, even if its row leaves the list.
   - "job not found" shows for an unknown key.
   - Sections render in order, so later PRs append theirs.
-- [ ] T016 [US1] [US3] In `web/components/tables/TitleCell.tsx`, the title becomes
+- [X] T016 [US1] [US3] In `web/components/tables/TitleCell.tsx`, the title becomes
   `<a href={withJob(search, key)} data-keeps-panel>`, using `useOpenJob` directly. A plain left
   click calls `open(key)` with `preventDefault`; modified clicks follow the link. In
   `web/components/pages/RowsList.tsx`, render `<DetailsPanel>` only when `data.kind === "jobs"`,
   and mark `HideButton`'s form `data-keeps-panel`.
-- [ ] T017 [US1] Add `.details-panel` to `web/app/styles.css`:
+- [X] T017 [US1] Add `.details-panel` to `web/app/styles.css`:
   - fixed to the right edge, `width: 60vw` (FR-013), full height, using the existing colour tokens
     and dark mode;
   - slides in, respecting `prefers-reduced-motion`;
   - a body that scrolls with `overscroll-behavior: contain`;
   - under 800px wide, `width: calc(100vw - 1rem)`.
-- [ ] T018 [US1] Per-PR flow steps 4–6: commit ("Open a job's details in a side panel (011 PR 2)"),
+- [X] T018 [US1] Per-PR flow steps 4–6: commit ("Open a job's details in a side panel (011 PR 2)"),
   push, and open PR 2. In its description, note that a deep link to a job not yet loaded shows "job
   not found" until PR 3. **Wait for the owner.**
 
