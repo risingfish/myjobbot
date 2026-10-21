@@ -58,6 +58,14 @@ export const jobViewSchema = z.object({
     bonus_score: count,
 });
 
+export const jobDetailSchema = jobViewSchema.extend({
+    description_source: text,
+    description_url: text,
+    requirements: jsonList,
+    skills: jsonList,
+    preferred_skills: jsonList,
+});
+
 export const verdictViewSchema = z.object({
     id: z.number(),
     run_id: text,

@@ -1,53 +1,80 @@
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject } from "react";
 import type { JobKey } from "../../../src/db/store.js";
 import type { JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
+import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
 import { JobSection } from "./JobSection.js";
 
 interface DetailsPanelProps {
-    open: JobKey | null;
+    open: boolean;
+    shown: JobKey | null;
     job: JobRowView | null;
+    onClose: () => void;
+}
+
+interface ContentProps {
+    job: JobRowView | null;
+    details: Details;
+    titleId: string;
     onClose: () => void;
 }
 
 type PanelRef = RefObject<HTMLDialogElement | null>;
 
 /** Shows the open job's details in a panel at the right of the page, leaving the list usable behind it. */
-export function DetailsPanel({ open, job, onClose }: DetailsPanelProps) {
+export function DetailsPanel({ open, shown, job, onClose }: DetailsPanelProps) {
     const panel = useRef<HTMLDialogElement>(null);
     const titleId = useId();
-    const shown = useLastShown(open, job);
-    useShown(panel, open === null ? null : jobParam(open));
-    useDismissal(panel, open !== null, onClose);
+    const details = useJobDetails(shown);
+    useShown(panel, open && shown !== null ? jobParam(shown) : null);
+    useDismissal(panel, open, onClose);
     return (
         <dialog ref={panel} className="details-panel" aria-labelledby={titleId}>
-            {shown !== null && <PanelContent job={shown.job} titleId={titleId} onClose={onClose} />}
+            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onClose={onClose} />}
         </dialog>
     );
 }
 
-/** Keeps the last job the panel showed, so a closing panel slides out with its details still in it. */
-function useLastShown(open: JobKey | null, job: JobRowView | null): { job: JobRowView | null } | null {
-    const [shown, setShown] = useState<{ job: JobRowView | null } | null>(null);
-    if (open !== null && shown?.job !== job) setShown({ job });
-    return shown;
-}
-
-/** Renders the open panel: the job's title as its heading, a close button, and the job's sections. */
-function PanelContent({ job, titleId, onClose }: { job: JobRowView | null; titleId: string; onClose: () => void }) {
+/** Renders the shown job: its title as the panel's heading, a close button, and the job's sections. */
+function PanelContent({ job, details, titleId, onClose }: ContentProps) {
     return (
         <>
             <header className="details-head">
                 <h2 id={titleId} tabIndex={-1}>
-                    {job === null ? "Job not found" : job.title}
+                    {headingText(job, details)}
                 </h2>
                 <button type="button" onClick={onClose}>
                     Close
                 </button>
             </header>
-            <div className="details-body">{job !== null && <JobSection job={job} />}</div>
+            <div className="details-body">
+                <PanelStatus details={details} />
+                <PanelSections job={job} details={details} />
+            </div>
         </>
     );
+}
+
+/** Names the shown job for the panel's heading, or says it is loading or doesn't exist. */
+function headingText(job: JobRowView | null, details: Details): string {
+    if (details.state === "found") return details.view.job.title;
+    if (details.state === "missing") return "Job not found";
+    return job?.title ?? (details.state === "loading" ? "Loading…" : "Job details");
+}
+
+/** Says the details are still loading, or why they couldn't be loaded. */
+function PanelStatus({ details }: { details: Details }) {
+    if (details.state === "loading") return <p className="details-status">Loading…</p>;
+    if (details.state === "failed") return <p className="details-status" role="alert">{`Couldn't load details: ${details.error}`}</p>;
+    return null;
+}
+
+/** Shows the job's sections from its listed row, adding what only the loaded details hold once they arrive. */
+function PanelSections({ job, details }: { job: JobRowView | null; details: Details }) {
+    const loaded = details.state === "found" ? details.view.job : null;
+    const facts = job ?? loaded;
+    if (details.state === "missing" || facts === null) return null;
+    return <JobSection job={facts} terms={loaded} />;
 }
 
 /** Opens or closes the panel to match the open job's name, moving focus into it on open and back to the job's title on close. */

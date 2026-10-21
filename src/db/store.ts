@@ -1,9 +1,10 @@
 import type { z } from "zod";
 import type { Job } from "../jobs/job.js";
-import type { jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
+import type { jobDetailSchema, jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
 
 export type JobRow = z.infer<typeof jobRowSchema>;
 export type JobView = z.infer<typeof jobViewSchema>;
+export type JobDetailRow = z.infer<typeof jobDetailSchema>;
 export type VerdictView = z.infer<typeof verdictViewSchema>;
 
 export interface Page {
@@ -69,6 +70,7 @@ export interface JobViews {
     countAllJobs(): Promise<number>;
     verdictHistory(page: Page): Promise<VerdictView[]>;
     countVerdicts(): Promise<number>;
+    jobDetail(key: JobKey): Promise<JobDetailRow | null>;
 }
 
 export interface ApiCallLog {

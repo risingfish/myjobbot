@@ -67,7 +67,7 @@ function sourceNames(config: FileConfig): string[] {
 }
 
 /** Builds the context row views need from the current config and time. */
-function rowContext(config: FileConfig, now: Date): RowContext {
+export function rowContext(config: FileConfig, now: Date): RowContext {
     const filters = { titleFilter: config.title_filter, excludedCompanies: config.exclude_companies };
     return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filters };
 }

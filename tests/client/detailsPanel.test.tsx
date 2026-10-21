@@ -2,23 +2,43 @@ import { fireEvent, screen, within } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
-import type { JobRowView, PageName } from "../../src/web/api.js";
+import type { JobDetailView, JobRowView, PageName } from "../../src/web/api.js";
 import { RowsList } from "../../web/components/pages/RowsList.js";
 import { jobPage, jobRowView, verdictPage, verdictRowView } from "../helpers/rowFixtures.js";
 
-const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn() }));
+const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn(), loadJobDetails: vi.fn() }));
 
 vi.mock("../../web/lib/actions.js", () => actions);
 vi.mock("next/navigation.js", () => import("../helpers/navigation.js"));
 
 const ROWS = [jobRowView(), jobRowView({ jobId: "b", title: "Backend Engineer b", company: "Beta" })];
+let listed: JobRowView[] = ROWS;
+
+function details(row: JobRowView, terms: Partial<JobDetailView["job"]> = {}): JobDetailView {
+    return { job: { ...row, pay: null, workplace: null, ...terms } };
+}
+
+function deferred() {
+    let resolve: (view: JobDetailView | null) => void = () => {};
+    const promise = new Promise<JobDetailView | null>((settle) => (resolve = settle));
+    return { promise, resolve };
+}
 
 beforeEach(() => {
     actions.setJobHidden.mockReset().mockResolvedValue({ ok: true });
+    actions.loadJobDetails.mockReset().mockImplementation(async (ats: string, jobId: string) => {
+        const row = listed.find((job) => job.ats === ats && job.jobId === jobId);
+        return row === undefined ? null : details(row);
+    });
 });
 
 function showPage(name: PageName = "jobs", rows: JobRowView[] = ROWS) {
+    listed = rows;
     return render(<RowsList name={name} initial={jobPage(rows)} />);
+}
+
+function heading(): string | null {
+    return within(panel() as HTMLElement).getByRole("heading", { level: 2 }).textContent;
 }
 
 function panel(): HTMLDialogElement | null {
@@ -82,10 +102,48 @@ test("going back to an address without a job closes the panel without adding his
     expect(push).not.toHaveBeenCalled();
 });
 
-test("an address naming a job that isn't listed opens the panel saying so", () => {
+test("an address naming a job that doesn't exist opens the panel saying so", async () => {
     history.replaceState(null, "", "/?job=greenhouse%3Azzz");
     showPage();
-    expect(within(panel() as HTMLElement).getByText("job not found", { exact: false })).toBeTruthy();
+    await vi.waitFor(() => expect(heading()).toBe("Job not found"));
+});
+
+test("a job that isn't listed is loaded and shown", async () => {
+    actions.loadJobDetails.mockResolvedValue(details(jobRowView({ jobId: "zzz", title: "Platform Engineer zzz" })));
+    history.replaceState(null, "", "/?job=greenhouse%3Azzz");
+    showPage();
+    await vi.waitFor(() => expect(heading()).toBe("Platform Engineer zzz"));
+    expect(actions.loadJobDetails).toHaveBeenCalledWith("greenhouse", "zzz");
+});
+
+test("the panel says it is loading until the details arrive, then shows the pay and workplace terms", async () => {
+    const answer = deferred();
+    actions.loadJobDetails.mockReturnValue(answer.promise);
+    showPage();
+    await openTitle("Software Engineer a");
+    expect(panel()?.textContent).toContain("Loading…");
+    answer.resolve(details(jobRowView(), { pay: "$150k–$180k", workplace: "hybrid" }));
+    await vi.waitFor(() => expect(panel()?.textContent).toContain("$150k–$180k"));
+    expect([panel()?.textContent?.includes("hybrid"), panel()?.textContent?.includes("Loading…")]).toEqual([true, false]);
+});
+
+test("a failed load says why", async () => {
+    actions.loadJobDetails.mockRejectedValue(new Error("database down"));
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(panel()?.textContent).toContain("Couldn't load details: database down"));
+});
+
+test("an answer for a job that is no longer open is ignored", async () => {
+    const first = deferred();
+    actions.loadJobDetails.mockReturnValueOnce(first.promise).mockResolvedValueOnce(details(ROWS[1] as JobRowView, { pay: "$2" }));
+    showPage();
+    await openTitle("Software Engineer a");
+    await openTitle("Backend Engineer b");
+    await vi.waitFor(() => expect(panel()?.textContent).toContain("$2"));
+    first.resolve(details(jobRowView(), { pay: "$1" }));
+    await first.promise;
+    expect([heading(), panel()?.textContent?.includes("$1")]).toEqual(["Backend Engineer b", false]);
 });
 
 test("hiding the open job on Recommended removes its row but keeps the panel showing it, as hidden", async () => {

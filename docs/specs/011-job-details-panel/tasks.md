@@ -169,22 +169,22 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
 
 ### Sitting S3, PR 3: loading the details (T019–T029), branch `011-pr3-load-details`
 
-- [ ] T019 Per-PR flow steps 1–3, for sitting S3.
-- [ ] T020 [US1] Move `MemoryJobViews` from `tests/helpers/memoryStore.ts` into a new
+- [X] T019 Per-PR flow steps 1–3, for sitting S3.
+- [X] T020 [US1] Move `MemoryJobViews` from `tests/helpers/memoryStore.ts` into a new
   `tests/helpers/memoryJobViews.ts`, unchanged, so the new reads keep `memoryStore.ts` under 200
   lines. Run `npm test` to show nothing changed.
-- [ ] T021 [P] [US1] Contract cases in a new `tests/helpers/jobDetailContract.ts`, wired into
+- [X] T021 [P] [US1] Contract cases in a new `tests/helpers/jobDetailContract.ts`, wired into
   `tests/storeContract.test.ts` and `tests/integration/storeContract.test.ts`:
   - `jobViews.jobDetail({ ats, jobId })` returns a seeded job with `compensation`,
     `workplace_type`, the description fields, requirements, skills, score parts, reasons, gaps,
     `hidden` and `injection_seen_at`.
   - An unknown key gives `null`.
   - The same `job_id` on another board isn't returned.
-- [ ] T022 [US1] Add `jobDetail(key): Promise<JobDetailRow | null>` to `JobViews` in
+- [X] T022 [US1] Add `jobDetail(key): Promise<JobDetailRow | null>` to `JobViews` in
   `src/db/store.ts`. Implement it in `src/db/kysely/jobViews.ts` with
   `selectFrom("jobs").where("ats", "=", …).where("job_id", "=", …)`, parsed by a zod schema in
   `src/db/rows.ts`, and in `tests/helpers/memoryJobViews.ts`.
-- [ ] T023 [P] [US1] Unit tests:
+- [X] T023 [P] [US1] Unit tests:
   - `tests/jobDetail.test.ts`: `toJobDetailView(row, context)` gives `job` with the row view's
     fields plus `pay` and `workplace` (null when missing).
   - `tests/webRows.test.ts`: `loadDetailsFor(views, config, request)`:
@@ -192,26 +192,26 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
       `jobId` or one over 255;
     - returns `null` for an unknown job;
     - returns the view for a known one.
-- [ ] T024 [US1] Export `rowContext` from `src/web/pageData.ts`. Create `src/web/jobDetail.ts`
+- [X] T024 [US1] Export `rowContext` from `src/web/pageData.ts`. Create `src/web/jobDetail.ts`
   (`toJobDetailView`, with `job` only for now) and add `JobDetailView` to `src/web/api.ts`.
-- [ ] T025 [US1] Add `loadDetailsFor` to `web/lib/rows.ts` (zod check, `views.jobDetail`,
+- [X] T025 [US1] Add `loadDetailsFor` to `web/lib/rows.ts` (zod check, `views.jobDetail`,
   `toJobDetailView`). Add `loadJobDetails(ats, jobId)` to `web/lib/actions.ts`; it only delegates.
-- [ ] T026 [P] [US1] UI tests in `tests/client/detailsPanel.test.tsx` (with the action stubbed):
+- [X] T026 [P] [US1] UI tests in `tests/client/detailsPanel.test.tsx` (with the action stubbed):
   - A job not in the rows is fetched and shown.
   - A `null` answer shows "job not found" (update T012's not-found case to stub `null`).
   - A rejected call shows "Couldn't load details: …".
   - Switching jobs before the first answer arrives shows only the second job.
   - Pay and remote terms show once loaded.
-- [ ] T027 [US1] `DetailsPanel` calls `loadJobDetails` when a job opens:
+- [X] T027 [US1] `DetailsPanel` calls `loadJobDetails` when a job opens:
   - "Loading…" shows until the answer arrives.
   - An answer for a job that's no longer open is ignored.
   - An error shows "Couldn't load details: …".
   - `null` shows "job not found".
 
   `JobSection` shows `pay` and `workplace` from the loaded details, falling back to the row.
-- [ ] T028 [US1] Check the PR's size. It is expected to be about 15 files; say so, and why, in the
+- [X] T028 [US1] Check the PR's size. It is expected to be about 15 files; say so, and why, in the
   PR description.
-- [ ] T029 [US1] Per-PR flow steps 4–6: commit ("Load a job's details for its panel (011 PR 3)"),
+- [X] T029 [US1] Per-PR flow steps 4–6: commit ("Load a job's details for its panel (011 PR 3)"),
   push, and open PR 3. **Wait for the owner.**
 
 ---

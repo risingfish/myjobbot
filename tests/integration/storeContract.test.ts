@@ -8,6 +8,7 @@ import { careersStoreContract } from "../helpers/careersStoreContract.js";
 import { alertStoreContract } from "../helpers/alertStoreContract.js";
 import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
+import { jobDetailContract } from "../helpers/jobDetailContract.js";
 import { storeContract } from "../helpers/storeContract.js";
 import { connectTestDb, emptyTables } from "../helpers/testDb.js";
 
@@ -31,6 +32,7 @@ gmailStoreContract(emptyStores);
 alertStoreContract(emptyStores);
 alertJobContract(emptyStores);
 descriptionContract(emptyStores);
+jobDetailContract(emptyStores);
 careersStoreContract(emptyStores, {
     pageFields: async () => {
         const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();
