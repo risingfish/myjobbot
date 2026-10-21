@@ -66,22 +66,22 @@ description: "Tasks for feature 011: job details panel, delivered as small PRs"
 
 ### Sitting S1, PR 1: posting icon (T004–T008), branch `011-pr1-posting-icon`
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1.
-- [ ] T005 [US3] UI test in `tests/client/hide.test.tsx` (it renders `RowsList` with the actions
+- [X] T004 Per-PR flow steps 1–3, for sitting S1.
+- [X] T005 [US3] UI test in `tests/client/hide.test.tsx` (it renders `RowsList` with the actions
   mocked):
   - A row with a `url` shows a link named "Open the posting", with `href` set to the posting,
     `target="_blank"` and `rel="noopener noreferrer"`. It comes before the Hide button in the same
     cell.
   - A row with `url: null` has no such link.
-- [ ] T006 [US3] Create `web/components/common/PostingLink.tsx`: an `<a>` with an inline SVG
+- [X] T006 [US3] Create `web/components/common/PostingLink.tsx`: an `<a>` with an inline SVG
   external-link icon (`aria-hidden="true"`), `aria-label="Open the posting"`, `target="_blank"`,
   `rel="noopener noreferrer"` and `data-keeps-panel`. It renders nothing when `url` is null
   (`webUrl` in `src/web/rowViews.ts` already turns non-http(s) addresses into null).
-- [ ] T007 [US3] In `web/components/pages/RowsList.tsx`, render `<PostingLink url={job.url} />` then
+- [X] T007 [US3] In `web/components/pages/RowsList.tsx`, render `<PostingLink url={job.url} />` then
   `<HideButton …/>` inside one `<span className="row-actions">`. In `web/app/styles.css`, lay
   `.row-actions` out inline (flex with a small gap) so the icon sits left of Hide (`form.hide` is a
   block today), and size the icon.
-- [ ] T008 [US3] Per-PR flow steps 4–6: commit ("Add a posting link icon beside Hide (011 PR 1)"),
+- [X] T008 [US3] Per-PR flow steps 4–6: commit ("Add a posting link icon beside Hide (011 PR 1)"),
   push, and open PR 1. **Wait for the owner.**
 
 **Checkpoint**: the posting is one click away from an icon; nothing else has changed.

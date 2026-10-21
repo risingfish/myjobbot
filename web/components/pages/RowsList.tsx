@@ -2,6 +2,7 @@
 
 import type { JobRowView, PageData, PageName } from "../../../src/web/api.js";
 import { usePageRows, type PageRows } from "../../lib/usePageRows.js";
+import { PostingLink } from "../common/PostingLink.js";
 import { HideButton } from "../forms/HideButton.js";
 import { LoadMore } from "../tables/LoadMore.js";
 import { JobTable, VerdictTable } from "../tables/Tables.js";
@@ -21,10 +22,15 @@ export function RowsList({ name, initial }: { name: PageName; initial: PageData 
     );
 }
 
-/** Renders a page's rows in the table that suits their kind, with Hide buttons and a row that loads more. */
+/** Renders a page's rows in the table that suits their kind, with posting links and Hide buttons, and a row that loads more. */
 function Rows({ data, rows }: { data: PageData; rows: PageRows }) {
     const more = data.nextOffset === null ? undefined : (columns: number) => <LoadMore columns={columns} onLoad={rows.loadMore} error={rows.moreError} />;
     if (data.kind === "verdicts") return <VerdictTable rows={data.rows} more={more} />;
-    const hide = (job: JobRowView) => <HideButton job={job} onHidden={(hidden) => rows.markHidden(job, hidden)} />;
+    const hide = (job: JobRowView) => (
+        <span className="row-actions">
+            <PostingLink url={job.url} />
+            <HideButton job={job} onHidden={(hidden) => rows.markHidden(job, hidden)} />
+        </span>
+    );
     return <JobTable rows={data.rows} action={hide} more={more} />;
 }
