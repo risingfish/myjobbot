@@ -64,3 +64,12 @@ test("the button is disabled while the change is being saved", async () => {
     finish({ ok: true });
     expect(await screen.findByRole("button", { name: "Unhide" })).toBeTruthy();
 });
+
+test("a row's posting link opens the posting in a new tab, just before Hide in the same cell", () => {
+    const { container } = render(<RowsList name="jobs" initial={jobPage([jobRowView(), jobRowView({ jobId: "b", title: "Software Engineer b", url: null })])} />);
+    const [first, second] = [...container.querySelectorAll("tr.job")];
+    const link = first?.querySelector('a[aria-label="Open the posting"]');
+    expect([link?.getAttribute("href"), link?.getAttribute("target"), link?.getAttribute("rel")]).toEqual(["https://example.com/a", "_blank", "noopener noreferrer"]);
+    expect(link?.nextElementSibling?.matches("form.hide")).toBe(true);
+    expect(second?.querySelector('a[aria-label="Open the posting"]')).toBeNull();
+});

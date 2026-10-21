@@ -140,6 +140,19 @@ ul {
     margin: 4px 0;
     padding-left: 18px;
 }
+.row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.posting-link {
+    display: inline-flex;
+    color: var(--muted);
+}
+.posting-link:hover,
+.posting-link:focus-visible {
+    color: var(--accent);
+}
 form.hide {
     margin: 0;
 }
