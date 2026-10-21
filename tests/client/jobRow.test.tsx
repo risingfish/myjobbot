@@ -21,13 +21,12 @@ test("job text from the outside world is shown as text, never run", () => {
     expect(container.querySelector("script")).toBeNull();
 });
 
-test("a posting link opens in a new tab, and a missing link leaves plain text", () => {
+test("the title links to the job's details panel in this page, even when the posting has no address", () => {
     renderRow();
     const link = screen.getByRole("link", { name: "Software Engineer a" });
-    expect([link.getAttribute("href"), link.getAttribute("target"), link.getAttribute("rel")]).toEqual(["https://example.com/a", "_blank", "noopener noreferrer"]);
+    expect([link.getAttribute("href"), link.getAttribute("target")]).toEqual(["?job=greenhouse%3Aa", null]);
     renderRow({ jobId: "b", title: "Software Engineer b", url: null });
-    expect(screen.queryByRole("link", { name: "Software Engineer b" })).toBeNull();
-    expect(screen.getByText("Software Engineer b")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Software Engineer b" }).getAttribute("href")).toBe("?job=greenhouse%3Ab");
     renderRow({ jobId: "c", title: "A very long title", shortTitle: "A very…" });
     expect(screen.getByRole("link", { name: "A very…" }).getAttribute("title")).toBe("A very long title");
 });
