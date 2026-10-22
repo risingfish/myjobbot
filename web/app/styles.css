@@ -262,6 +262,15 @@ dialog.details-panel[open] {
     color: var(--muted);
     margin: 14px 0 4px;
 }
+.details-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+.details-origin {
+    color: var(--muted);
+    margin: 0 0 8px;
+}
 .details-notes {
     margin: 0;
     padding-left: 20px;

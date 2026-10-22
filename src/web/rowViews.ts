@@ -69,7 +69,7 @@ function dateOnly(iso: string | null): string {
 }
 
 /** Returns the URL only when it is http(s), so unsafe link schemes never become links. */
-function webUrl(url: string | null): string | null {
+export function webUrl(url: string | null): string | null {
     return url !== null && WEB_URL.test(url) ? url : null;
 }
 

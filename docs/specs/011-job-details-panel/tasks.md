@@ -243,22 +243,22 @@ score.
 
 ### Sitting S5, PR 5: description (T036–T041), branch `011-pr5-description`
 
-- [ ] T036 Per-PR flow steps 1–3, for sitting S5.
-- [ ] T037 [P] [US2] Unit tests in `tests/jobDetail.test.ts`:
+- [X] T036 Per-PR flow steps 1–3, for sitting S5.
+- [X] T037 [P] [US2] Unit tests in `tests/jobDetail.test.ts`:
   - `description.text: null` when there's no description.
   - Requirements, skills and preferred skills are mapped.
   - `origin` is `{ kind: "careers", url }` for `description_source = "careers"`,
     `{ kind: "source" }` for `"source"`, and `null` with no description.
-- [ ] T038 [US2] Add `description` to `JobDetailView` in `src/web/api.ts` and
+- [X] T038 [US2] Add `description` to `JobDetailView` in `src/web/api.ts` and
   `src/web/jobDetail.ts`.
-- [ ] T039 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
+- [X] T039 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
   - A careers-origin description shows its text, its requirements and skills, and "from the careers
     page" with a link.
   - A job without one says "no description found".
   - A description containing `<script>` is shown as text.
-- [ ] T040 [US2] Create `web/components/panel/DescriptionSection.tsx` and add it after the score
+- [X] T040 [US2] Create `web/components/panel/DescriptionSection.tsx` and add it after the score
   section in `DetailsPanel`.
-- [ ] T041 [US2] Per-PR flow steps 4–6: commit ("Show a job's description and where it came from in
+- [X] T041 [US2] Per-PR flow steps 4–6: commit ("Show a job's description and where it came from in
   its panel (011 PR 5)"), push, and open PR 5. **Wait for the owner.**
 
 ### Sitting S6, PR 6: warnings and history (T042–T050), branch `011-pr6-warnings-history`
