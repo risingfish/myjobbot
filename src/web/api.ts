@@ -25,6 +25,10 @@ export interface JobRowView {
     gaps: string[];
 }
 
+export interface JobDetailView {
+    job: JobRowView & { pay: string | null; workplace: string | null };
+}
+
 export interface VerdictRowView {
     key: string;
     scoredAt: string;

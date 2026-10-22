@@ -3,6 +3,7 @@ import { careersStoreContract } from "./helpers/careersStoreContract.js";
 import { alertStoreContract } from "./helpers/alertStoreContract.js";
 import { descriptionContract } from "./helpers/descriptionContract.js";
 import { gmailStoreContract } from "./helpers/gmailStoreContract.js";
+import { jobDetailContract } from "./helpers/jobDetailContract.js";
 import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 import { storeContract } from "./helpers/storeContract.js";
@@ -12,6 +13,7 @@ gmailStoreContract(async () => memoryStores());
 alertStoreContract(async () => memoryStores());
 alertJobContract(async () => memoryStores());
 descriptionContract(async () => memoryStores());
+jobDetailContract(async () => memoryStores());
 let careers = new MemoryCareersStore();
 
 careersStoreContract(

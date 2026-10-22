@@ -1,10 +1,12 @@
 import { sql, type Kysely } from "kysely";
 import { z } from "zod";
-import { jobViewSchema, verdictViewSchema } from "../rows.js";
+import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../rows.js";
 import type { Database } from "../schema.js";
-import type { HiddenFlag, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
+import type { HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
 
 const JOB_COLUMNS = ["ats", "job_id", "source", "company", "title", "url", "location", "workplace_type", "is_remote", "compensation", "posted_at", "first_seen", "last_seen", "publisher", "score", "reasons", "gaps", "scored_at", "hidden", "description", "base_score", "bonus_score", "injection_seen_at"] as const;
+
+const DETAIL_COLUMNS = ["description_source", "description_url", "requirements", "skills", "preferred_skills"] as const;
 
 const jobViews = z.array(jobViewSchema);
 
@@ -64,6 +66,17 @@ export class KyselyJobViews implements JobViews {
             .select((eb) => eb.fn.countAll().as("count"))
             .executeTakeFirstOrThrow();
         return Number(row.count);
+    }
+
+    /** Returns one job's stored details for its details panel, or null when no job has that key. */
+    async jobDetail(key: JobKey): Promise<JobDetailRow | null> {
+        const row = await this.db
+            .selectFrom("jobs")
+            .select([...JOB_COLUMNS, ...DETAIL_COLUMNS])
+            .where("ats", "=", key.ats)
+            .where("job_id", "=", key.jobId)
+            .executeTakeFirst();
+        return row === undefined ? null : jobDetailSchema.parse(row);
     }
 
     /** Starts a query over every job's view columns, newest posted first, then first seen, then by id. */

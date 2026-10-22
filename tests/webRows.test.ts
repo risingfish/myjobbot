@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { JobViews } from "../src/db/store.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
-import { loadRows, setHiddenFor } from "../web/lib/rows.js";
+import { loadDetailsFor, loadRows, setHiddenFor } from "../web/lib/rows.js";
 import { testFileConfig } from "./helpers/config.js";
 import { seededStores } from "./helpers/views.js";
 
@@ -66,4 +66,16 @@ test("a job whose text tried to escape the data markers is marked on its row", a
     await stores.jobStore.flagInjection("a", "2026-10-02T00:00:00.000Z");
     const data = await loadRows(stores.jobViews, config, { name: "jobs", offset: 0 });
     expect(Object.fromEntries(jobRows(data).map((row) => [row.jobId, row.injection]))).toEqual({ a: true, b: false });
+});
+
+test("loadDetailsFor refuses a malformed job request", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    const requests = [{ ats: "", jobId: "a" }, { ats: "x".repeat(33), jobId: "a" }, { ats: "greenhouse", jobId: "" }, { ats: "greenhouse", jobId: "x".repeat(256) }, { ats: "greenhouse" }, "greenhouse:a"];
+    for (const request of requests) await expect(loadDetailsFor(views, config, request)).rejects.toThrow("Invalid job request");
+});
+
+test("loadDetailsFor returns a known job's details and null for an unknown one", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    expect((await loadDetailsFor(views, config, JOB_A))?.job).toMatchObject({ jobId: "a", title: "Software Engineer a", pay: null });
+    expect(await loadDetailsFor(views, config, { ats: "greenhouse", jobId: "nope" })).toBeNull();
 });

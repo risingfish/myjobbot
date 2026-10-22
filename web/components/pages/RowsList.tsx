@@ -3,7 +3,7 @@
 import type { JobRowView, PageData, PageName } from "../../../src/web/api.js";
 import { usePageRows, type PageRows } from "../../lib/usePageRows.js";
 import type { ReactNode } from "react";
-import { usePanelJob, useOpenJob } from "../../lib/useOpenJob.js";
+import { useOpenJob, usePanelJob } from "../../lib/useOpenJob.js";
 import { PostingLink } from "../common/PostingLink.js";
 import { DetailsPanel } from "../panel/DetailsPanel.js";
 import { HideButton } from "../forms/HideButton.js";
@@ -49,7 +49,7 @@ function JobRows({ jobs, rows, more }: { jobs: JobRowView[]; rows: PageRows; mor
     return (
         <>
             <JobTable rows={jobs} action={actions} more={more} />
-            <DetailsPanel open={key} job={panel.job} onClose={close} />
+            <DetailsPanel open={key !== null} shown={panel.shown} job={panel.job} onClose={close} />
         </>
     );
 }
