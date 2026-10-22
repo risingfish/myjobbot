@@ -1,11 +1,13 @@
 import { useEffect, useId, useRef, type RefObject } from "react";
 import type { JobKey } from "../../../src/db/store.js";
-import type { JobRowView } from "../../../src/web/api.js";
+import type { JobDetailView, JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
 import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
 import { DescriptionSection } from "./DescriptionSection.js";
+import { HistorySection } from "./HistorySection.js";
 import { JobSection } from "./JobSection.js";
 import { ScoreSection } from "./ScoreSection.js";
+import { WarningsSection } from "./WarningsSection.js";
 
 interface DetailsPanelProps {
     open: boolean;
@@ -73,14 +75,25 @@ function PanelStatus({ details }: { details: Details }) {
 
 /** Shows the job's sections from its listed row, adding what only the loaded details hold once they arrive. */
 function PanelSections({ job, details }: { job: JobRowView | null; details: Details }) {
-    const loaded = details.state === "found" ? details.view.job : null;
-    const facts = job ?? loaded;
+    const view = details.state === "found" ? details.view : null;
+    const facts = job ?? view?.job ?? null;
     if (details.state === "missing" || facts === null) return null;
     return (
         <>
-            <JobSection job={facts} terms={loaded} />
-            {details.state === "found" && <ScoreSection score={details.view.score} />}
-            {details.state === "found" && <DescriptionSection description={details.view.description} />}
+            <JobSection job={facts} terms={view?.job ?? null} />
+            {view !== null && <LoadedSections view={view} />}
+        </>
+    );
+}
+
+/** Shows the sections only the loaded details can fill, in the panel's order: score, description, warnings and history. */
+function LoadedSections({ view }: { view: JobDetailView }) {
+    return (
+        <>
+            <ScoreSection score={view.score} />
+            <DescriptionSection description={view.description} />
+            <WarningsSection warnings={view.warnings} />
+            <HistorySection history={view.history} />
         </>
     );
 }

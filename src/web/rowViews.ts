@@ -48,7 +48,7 @@ export function toVerdictRowView(verdict: VerdictView): VerdictRowView {
     return {
         key: String(verdict.id),
         scoredAt: minutes(verdict.scored_at),
-        run: verdict.run_id ? verdict.run_id.slice(0, 8) : null,
+        run: shortRun(verdict.run_id),
         title: verdict.title ?? "(pruned)",
         url: webUrl(verdict.url),
         company: verdict.company ?? "",
@@ -56,6 +56,11 @@ export function toVerdictRowView(verdict: VerdictView): VerdictRowView {
         reasons: verdict.reasons,
         gaps: verdict.gaps,
     };
+}
+
+/** Shortens a run's id to the first eight characters the trace file names use, or null when the run isn't known. */
+export function shortRun(runId: string | null): string | null {
+    return runId ? runId.slice(0, 8) : null;
 }
 
 /** Shows an ISO timestamp to the minute, as "2026-10-02 09:30". */

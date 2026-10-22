@@ -1,6 +1,6 @@
 import { within } from "@testing-library/dom";
 import { beforeEach, expect, test, vi } from "vitest";
-import { details, listedDetails, openTitle, section, showPage } from "../helpers/panelPage.js";
+import { details, listedDetails, openTitle, panel, section, showPage } from "../helpers/panelPage.js";
 import { jobRowView } from "../helpers/rowFixtures.js";
 
 const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn(), loadJobDetails: vi.fn() }));
@@ -45,4 +45,29 @@ test("a job without a description says no description was found", async () => {
     showPage();
     await openTitle("Software Engineer a");
     await vi.waitFor(() => expect(section("Description").textContent).toContain("No description found."));
+});
+
+const WARNING = "On 2026-10-20 13:05, text from this job's pages tried to escape the data markers that keep it apart from the model's instructions. It was removed before the model read it.";
+const HISTORY = [
+    { scoredAt: "2026-10-21 08:15", total: 65, base: 40, bonus: 25, run: "0f29a1a3" },
+    { scoredAt: "2026-10-19 07:00", total: 50, base: null, bonus: null, run: null },
+];
+
+test("a flagged job shows its warning, and the score history lists every score newest first", async () => {
+    actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, { warnings: [WARNING], history: HISTORY }));
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(section("Warnings").textContent).toContain(WARNING));
+    const rows = within(section("History")).getAllByRole("row").slice(1);
+    expect(rows.map((row) => [...row.querySelectorAll("td")].map((cell) => cell.textContent))).toEqual([
+        ["2026-10-21 08:15", "65", "40 + 25", "0f29a1a3"],
+        ["2026-10-19 07:00", "50", "unknown", "unknown"],
+    ]);
+});
+
+test("a job without warnings has no Warnings section, and one never scored says it has no history", async () => {
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(section("History").textContent).toContain("No scores yet."));
+    expect(within(panel() as HTMLElement).queryByRole("heading", { level: 3, name: "Warnings" })).toBeNull();
 });

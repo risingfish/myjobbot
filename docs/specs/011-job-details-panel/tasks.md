@@ -263,26 +263,26 @@ score.
 
 ### Sitting S6, PR 6: warnings and history (T042–T050), branch `011-pr6-warnings-history`
 
-- [ ] T042 Per-PR flow steps 1–3, for sitting S6.
-- [ ] T043 [P] [US2] Contract case in `tests/helpers/jobDetailContract.ts`:
+- [X] T042 Per-PR flow steps 1–3, for sitting S6.
+- [X] T043 [P] [US2] Contract case in `tests/helpers/jobDetailContract.ts`:
   `jobViews.jobVerdicts({ ats, jobId })` lists only that job's verdicts, newest first (`scored_at`
   then `id`, descending), the current one included; an unknown key gives `[]`.
-- [ ] T044 [US2] Add `jobVerdicts(key): Promise<VerdictView[]>` to `JobViews` in `src/db/store.ts`.
+- [X] T044 [US2] Add `jobVerdicts(key): Promise<VerdictView[]>` to `JobViews` in `src/db/store.ts`.
   Implement it in `src/db/kysely/jobViews.ts` through a private joined builder (verdicts
   left-joined to jobs), shared with `verdictHistory`, and in `tests/helpers/memoryJobViews.ts`.
-- [ ] T045 [P] [US2] Unit tests:
+- [X] T045 [P] [US2] Unit tests:
   - `tests/jobDetail.test.ts`: `warnings` holds the injection warning with its date when
     `injection_seen_at` is set, and is empty otherwise; `history` maps each verdict in order.
   - `tests/webRows.test.ts`: `loadDetailsFor` includes the job's verdicts.
-- [ ] T046 [US2] Add `warnings` and `history` to `JobDetailView` in `src/web/api.ts` and
+- [X] T046 [US2] Add `warnings` and `history` to `JobDetailView` in `src/web/api.ts` and
   `src/web/jobDetail.ts`, and have `loadDetailsFor` also read `views.jobVerdicts`.
-- [ ] T047 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
+- [X] T047 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
   - The warning shows when present, and the Warnings section is absent otherwise.
   - The history lists every score, newest first.
-- [ ] T048 [US2] Create `web/components/panel/WarningsSection.tsx` and
+- [X] T048 [US2] Create `web/components/panel/WarningsSection.tsx` and
   `web/components/panel/HistorySection.tsx`, and append them in `DetailsPanel`.
-- [ ] T049 [US2] Check the PR's size.
-- [ ] T050 [US2] Per-PR flow steps 4–6: commit ("Show a job's warnings and score history in its
+- [X] T049 [US2] Check the PR's size.
+- [X] T050 [US2] Per-PR flow steps 4–6: commit ("Show a job's warnings and score history in its
   panel (011 PR 6)"), push, and open PR 6. **Wait for the owner.**
 
 ---

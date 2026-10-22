@@ -79,3 +79,12 @@ test("loadDetailsFor returns a known job's details and null for an unknown one",
     expect((await loadDetailsFor(views, config, JOB_A))?.job).toMatchObject({ jobId: "a", title: "Software Engineer a", pay: null });
     expect(await loadDetailsFor(views, config, { ats: "greenhouse", jobId: "nope" })).toBeNull();
 });
+
+test("loadDetailsFor includes the job's score history, newest first", async () => {
+    const stores = await seededStores([{ id: "a", score: 70 }]);
+    await stores.jobStore.recordVerdict({ job_id: "a", score: 80, reasons: [], gaps: [] }, { scoredAt: "2026-10-03T00:00:00.000Z", runId: "run-2" });
+    expect((await loadDetailsFor(stores.jobViews, config, JOB_A))?.history.map((entry) => [entry.total, entry.run])).toEqual([
+        [80, "run-2"],
+        [70, "run-1"],
+    ]);
+});

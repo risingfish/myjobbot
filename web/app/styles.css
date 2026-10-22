@@ -271,6 +271,25 @@ dialog.details-panel[open] {
     color: var(--muted);
     margin: 0 0 8px;
 }
+.details-warning {
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    border-left: 3px solid var(--warn);
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+.details-history {
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+.details-history th,
+.details-history td {
+    text-align: left;
+    padding: 4px 16px 4px 0;
+}
+.details-history th {
+    color: var(--muted);
+    font-weight: normal;
+}
 .details-notes {
     margin: 0;
     padding-left: 20px;

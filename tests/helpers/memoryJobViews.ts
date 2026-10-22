@@ -42,8 +42,7 @@ export class MemoryJobViews implements JobViews {
     }
 
     async verdictHistory(page: Page): Promise<VerdictView[]> {
-        const ordered = [...this.tables.verdicts].sort((a, b) => asc(b.scored_at, a.scored_at) || Number(b.id) - Number(a.id));
-        return slice(ordered, page).map((verdict) => this.withJob(verdict));
+        return slice(this.verdictsNewestFirst(this.tables.verdicts), page);
     }
 
     async countVerdicts(): Promise<number> {
@@ -53,6 +52,15 @@ export class MemoryJobViews implements JobViews {
     async jobDetail(key: JobKey): Promise<JobDetailRow | null> {
         const job = this.tables.jobs.find((row) => row.ats === key.ats && row.job_id === key.jobId);
         return job === undefined ? null : jobDetailSchema.parse(job);
+    }
+
+    async jobVerdicts(key: JobKey): Promise<VerdictView[]> {
+        return this.verdictsNewestFirst(this.tables.verdicts.filter((verdict) => verdict.ats === key.ats && verdict.job_id === key.jobId));
+    }
+
+    private verdictsNewestFirst(verdicts: Row[]): VerdictView[] {
+        const ordered = [...verdicts].sort((a, b) => asc(b.scored_at, a.scored_at) || Number(b.id) - Number(a.id));
+        return ordered.map((verdict) => this.withJob(verdict));
     }
 
     private views(rows: Row[]): JobView[] {

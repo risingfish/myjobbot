@@ -9,7 +9,7 @@ export const ROWS = [jobRowView(), jobRowView({ jobId: "b", title: "Backend Engi
 let listed: JobRowView[] = ROWS;
 
 export function details(row: JobRowView, terms: Partial<JobDetailView["job"]> = {}, extra: Partial<Omit<JobDetailView, "job">> = {}): JobDetailView {
-    return { job: { ...row, pay: null, workplace: null, ...terms }, score: null, description: { text: null, requirements: [], skills: [], preferredSkills: [], origin: null }, ...extra };
+    return { job: { ...row, pay: null, workplace: null, ...terms }, score: null, description: { text: null, requirements: [], skills: [], preferredSkills: [], origin: null }, warnings: [], history: [], ...extra };
 }
 
 export async function listedDetails(ats: string, jobId: string): Promise<JobDetailView | null> {
