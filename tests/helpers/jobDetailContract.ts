@@ -36,10 +36,30 @@ async function case3(make: MakeStores) {
     expect((await jobViews.jobDetail({ ats: "lever", jobId: "a" }))?.url).toBe("https://example.com/lever/a");
 }
 
+async function case4(make: MakeStores) {
+    const { jobStore, jobViews } = await make();
+    await jobStore.upsertAll([job("greenhouse", "a"), job("lever", "a"), job("greenhouse", "b")], SEEN, "Acme");
+    const verdicts: Array<[string, number, string]> = [
+        ["a", 50, "2026-10-20T13:00:00.000Z"],
+        ["a", 60, "2026-10-21T13:00:00.000Z"],
+        ["b", 70, "2026-10-21T13:00:00.000Z"],
+        ["a", 65, "2026-10-21T13:00:00.000Z"],
+    ];
+    for (const [jobId, score, scoredAt] of verdicts) await jobStore.recordVerdict({ job_id: jobId, score, base: score - 10, bonus: 10, reasons: [], gaps: [] }, { scoredAt, runId: `run-${score}` });
+    const listed = await jobViews.jobVerdicts({ ats: "greenhouse", jobId: "a" });
+    expect(listed.map((verdict) => [verdict.score, verdict.base_score, verdict.scored_at, verdict.run_id])).toEqual([
+        [65, 55, "2026-10-21T13:00:00.000Z", "run-65"],
+        [60, 50, "2026-10-21T13:00:00.000Z", "run-60"],
+        [50, 40, "2026-10-20T13:00:00.000Z", "run-50"],
+    ]);
+    expect(await jobViews.jobVerdicts({ ats: "greenhouse", jobId: "missing" })).toEqual([]);
+}
+
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [
     ["one job's details come back with its terms, description, lists, score parts and flags", case1],
     ["an unknown job, or a known id on another board, gives no details", case2],
     ["the same id on two boards gives each board's own job", case3],
+    ["a job's verdicts are only its own, newest first, later verdicts first on a tie", case4],
 ];
 
 export function jobDetailContract(make: MakeStores): void {

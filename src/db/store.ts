@@ -71,6 +71,7 @@ export interface JobViews {
     verdictHistory(page: Page): Promise<VerdictView[]>;
     countVerdicts(): Promise<number>;
     jobDetail(key: JobKey): Promise<JobDetailRow | null>;
+    jobVerdicts(key: JobKey): Promise<VerdictView[]>;
 }
 
 export interface ApiCallLog {

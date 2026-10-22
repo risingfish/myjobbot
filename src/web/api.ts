@@ -46,10 +46,20 @@ export interface DescriptionDetail {
     origin: DescriptionOrigin | null;
 }
 
+export interface HistoryEntry {
+    scoredAt: string;
+    total: number;
+    base: number | null;
+    bonus: number | null;
+    run: string | null;
+}
+
 export interface JobDetailView {
     job: JobRowView & { pay: string | null; workplace: string | null };
     score: ScoreDetail | null;
     description: DescriptionDetail;
+    warnings: string[];
+    history: HistoryEntry[];
 }
 
 export interface VerdictRowView {

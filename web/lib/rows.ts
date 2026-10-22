@@ -32,6 +32,6 @@ export async function setHiddenFor(views: JobViews, change: unknown): Promise<Hi
 export async function loadDetailsFor(views: JobViews, config: FileConfig, request: unknown): Promise<JobDetailView | null> {
     const parsed = jobRequest.safeParse(request);
     if (!parsed.success) throw new Error("Invalid job request");
-    const row = await views.jobDetail(parsed.data);
-    return row === null ? null : toJobDetailView(row, rowContext(config, new Date()));
+    const [row, verdicts] = await Promise.all([views.jobDetail(parsed.data), views.jobVerdicts(parsed.data)]);
+    return row === null ? null : toJobDetailView(row, verdicts, rowContext(config, new Date()));
 }
