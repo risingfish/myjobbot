@@ -1,9 +1,10 @@
 # myjobbot
 
 An autonomous agent that pulls software-engineering postings from company job boards
-(Greenhouse, Lever, Ashby) and saved JSearch searches (Google for Jobs: LinkedIn, Indeed and
-more), scores them against your resume with a local LLM, and keeps
-history in MariaDB to spot long-open "ghost" postings.
+(Greenhouse, Lever, Ashby), saved JSearch searches (Google for Jobs: LinkedIn, Indeed and more)
+and your LinkedIn job-alert emails, looks up missing descriptions on employers' own careers pages,
+scores every job against your resume with a local LLM, and keeps history in MariaDB to spot
+long-open "ghost" postings. A web UI lists the results and explains each score.
 
 Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
 
@@ -98,6 +99,20 @@ stops other websites reaching it through DNS tricks. By default that's `localhos
 `127.0.0.1` on `MYJOBBOT_PORT`. To open it from another machine, list every `host:port` you use
 in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:8080`.
 
+How it's built:
+- **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
+  server, so its first rows are in the HTML. Scrolling, Hide and the Gmail panel's buttons run in
+  the browser, and they call server functions in `web/lib/actions.ts` and
+  `web/lib/gmailActions.ts`.
+- **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
+  the agent in `src/web/`, so the browser only lays them out.
+- **`myjobbot serve` is gone.** The `myjobbot` command only runs the agent; the UI is started with
+  the npm scripts above, or by the Docker `web` service (whose container start mode is also named
+  `serve` and runs Next.js).
+- **To learn React and Next.js** from this code, see
+  [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
+  it and ends with exercises.
+
 ### Gmail
 
 Settings has a Gmail panel that connects your mailbox over IMAP with an app password. Once it's
@@ -144,19 +159,6 @@ The senders that count as job alerts are `gmail.alert_senders` in `data/config.j
 password gives full access to the mailbox (Google has no read-only kind), and myjobbot only ever
 reads it. The web UI has no login, so anyone on your LAN can connect or disconnect. The stored app
 password can't be read back through it.
-
-How it's built:
-- **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
-  server, so its first rows are in the HTML. Scrolling, Hide and the Gmail panel's buttons run in
-  the browser, and they call server functions in `web/lib/actions.ts` and
-  `web/lib/gmailActions.ts`.
-- **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
-  the agent in `src/web/`, so the browser only lays them out.
-- **`myjobbot serve` is gone.** `myjobbot` only runs the agent; the UI is started with the npm
-  scripts above.
-- **To learn React and Next.js** from this code, see
-  [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
-  it and ends with exercises.
 
 ### Careers lookup
 
@@ -243,7 +245,19 @@ npm run check:db   # integration tests against myjobbot_test (needs the MYJOBBOT
 ```
 
 Most tests run on in-memory stores; the same store contract runs against MariaDB in
-`tests/integration/`, which only ever touches `myjobbot_test`.
+`tests/integration/`, which only ever touches the test database (`myjobbot_test`, or
+`MYJOBBOT_TEST_DB_NAME`, which must end in `_test`).
+
+The real-browser rendering test runs only when `MYJOBBOT_TEST_BROWSER_URL` names a Playwright
+1.64.1 server that can reach the test's own `127.0.0.1` server, so not the compose `browser`
+service. A throwaway one:
+
+```bash
+docker run --rm -d --name pw-test --network host --init --user pwuser --workdir /home/pwuser \
+  mcr.microsoft.com/playwright:v1.64.1-noble npx -y playwright@1.64.1 run-server --port 3001 --host 127.0.0.1
+MYJOBBOT_TEST_BROWSER_URL=ws://127.0.0.1:3001/ npm run check:db
+docker stop pw-test
+```
 
 ## Deploy with Docker
 
@@ -338,7 +352,7 @@ flowchart TD
 
 ### The loop
 
-The loop lives in `src/agent/loop.ts` and is under 100 lines. It starts with two messages:
+The loop lives in `src/agent/loop.ts`, a little over 100 lines. It starts with two messages:
 the system prompt (the rules for the job, from `src/agent/prompt.ts`) and your resume.
 Then it repeats one step.
 
@@ -368,7 +382,7 @@ list_sources → fetch_jobs → record_matches → fetch_jobs → record_matches
 
 Every tool is defined with a zod schema (`src/tools/tool.ts`). `defineTool` turns it into
 JSON Schema, which goes to the model in the `tools` field of every request. That is how the
-model knows `fetch_jobs` takes `{company: string}`.
+model knows `fetch_jobs` takes `{source: string}`.
 
 ```mermaid
 sequenceDiagram
@@ -435,25 +449,37 @@ Everything below the agent is ordinary, deterministic code.
 
 ```mermaid
 flowchart TD
-    AGENT["agent/<br/>loop · budget · compaction · prompt · LLM client · trace<br/><i>knows nothing about jobs</i>"]
+    AGENT["agent/<br/>loop · budget · compaction · prompt · LLM client · trace · data markers<br/><i>knows nothing about jobs</i>"]
     TOOLS["tools/<br/>thin adapters from model requests to the layers below"]
-    SOURCES["sources/<br/>Greenhouse · Lever · Ashby adapters<br/>(defineBoard: URL + schema + mapper)"]
-    HTTP["http/<br/>1 s spacing per host · 300 requests/run cap<br/>retry 429 and 5xx with backoff"]
+    SOURCES["sources/<br/>Greenhouse · Lever · Ashby · JSearch · Workday readers<br/>(defineBoard: URL + schema + mapper)"]
+    GMAIL["gmail/<br/>IMAP (read-only) · alert email parsing"]
+    CAREERS["careers/<br/>careers-page lookup: its own short loop,<br/>address checks, page trimming, rendering"]
+    HTTP["http/<br/>1 s spacing per host · 300 requests per host per run<br/>retry 429 and 5xx with backoff"]
     DB["db/ + jobs/<br/>MariaDB stores (Kysely) · title filter · days open"]
+    WEB["web/ (Next.js) + src/web/<br/>the UI and the rules it shares with the agent"]
     LLAMA[("llama.cpp server<br/>OpenAI-compatible API")]
     BOARDS[("Job board APIs")]
+    MAIL[("Gmail")]
+    SEARCH[("SearXNG · browser service")]
 
     AGENT --> TOOLS
     AGENT --> LLAMA
     TOOLS --> SOURCES
+    TOOLS --> GMAIL
+    TOOLS --> CAREERS
     TOOLS --> DB
+    CAREERS --> AGENT
+    CAREERS --> SEARCH
+    CAREERS --> HTTP
     SOURCES --> HTTP
     HTTP --> BOARDS
+    GMAIL --> MAIL
+    WEB --> DB
 ```
 
 - **Sources:** each adapter is a URL, a zod schema for the board's response, and a mapper
   to a common `Job` shape.
-- **HTTP:** requests to the same site are at least 1 second apart and capped at 300 per run,
+- **HTTP:** requests to the same site are at least 1 second apart and capped at 300 per site per run,
   and 429 and 5xx responses are retried with backoff that honors `Retry-After`. A looping
   agent can't hammer a job board.
 - **Title filter:** postings like sales, recruiting and management are stored but never
@@ -467,16 +493,24 @@ flowchart TD
 ```mermaid
 erDiagram
     JOBS {
-        text ats PK "greenhouse | lever | ashby | jsearch"
+        text ats PK "greenhouse | lever | ashby | jsearch | linkedin"
         text job_id PK
+        text source "the company, saved search or Gmail alerts it came from"
         text company
         text title
         text normalized_title "for repost matching"
+        text url
         text location
+        text department
+        text team
         text workplace_type
+        int is_remote
         text compensation
+        text publisher "the site a JSearch or alert job was found on"
         text posted_at "from the board"
         text description "plain text, up to 20,000 chars"
+        text description_source "source or careers"
+        text description_url "the careers page it was found on"
         text requirements "JSON array (JSearch qualifications)"
         text skills "JSON array (JSearch required technologies)"
         text preferred_skills "JSON array (JSearch preferred technologies)"
@@ -488,13 +522,19 @@ erDiagram
         text reasons "JSON array"
         text gaps "JSON array"
         text scored_at
+        int hidden "1 when you hid it in the web UI"
+        text emailed_at "reserved for the email digest"
         text injection_seen_at "first time its text tried to escape the data markers"
     }
 ```
 
-Every source saves the job description (Greenhouse's HTML is converted to plain text).
-JSearch also supplies requirement bullets and required and preferred technologies, which are
-saved when present; the other boards don't have them as lists, so those columns stay empty.
+Company boards and JSearch save the job description (Greenhouse's HTML is converted to plain
+text). Alert emails carry none: an alert job takes the description of a matching JSearch result,
+or the one the [careers lookup](#careers-lookup) finds, and otherwise has none
+(`description_source` says which). JSearch also supplies requirement bullets and required and
+preferred technologies, which are saved when present; the other sources don't have them as lists,
+so those columns stay empty. Each scoring decision is also kept in the `verdicts` table (see
+[How scoring works](#how-scoring-works)).
 
 **Fishing-post detection:** "days open" counts from the oldest date the bot has, either
 `posted_at` or `first_seen`, across all rows with the same company and normalized title.
@@ -536,8 +576,8 @@ flowchart LR
 A job's score is decided in four stages. Only the third involves the model.
 
 **1. Filters decide what the model sees** (before scoring, in code). `fetch_jobs` offers only
-jobs whose title passes `title_filter` (an include term, no exclude term, matched as whole
-words) and whose company isn't in `exclude_companies`. Filtered jobs are stored but never
+jobs whose title passes `title_filter` (an include term, matched at the start of a word, and no
+exclude term, matched as a whole word) and whose company isn't in `exclude_companies`. Filtered jobs are stored but never
 scored; All jobs marks them.
 
 **2. The model reads what looks promising.** `fetch_jobs` returns metadata only. For each job
@@ -598,7 +638,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
    `agent/prompt.ts`. The same loop could run a different agent, and a fixed-order pipeline
    could call the same tools if the agent approach ever proves unreliable.
 5. **Everything is traced.** Every model reply, tool call, nudge and compaction is appended
-   to `data/runs/<timestamp>.jsonl`.
+   to `data/runs/<timestamp>-<run_id>.jsonl`.
 
 ### Configuration knobs (`data/config.json`)
 
@@ -622,7 +662,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `agent.max_wall_clock_min` | 120 | Time cap per run |
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |
 | `agent.context_chars` | 160000 | History size that triggers compaction |
-| `http.*` | 1 s spacing, 300 requests, 2 retries, 30 s timeout | Politeness toward job boards |
+| `http.*` | 1 s spacing, 300 requests per host per run, 2 retries, 30 s timeout | Politeness toward job boards |
 | `careers_lookup.max_per_run` / `.max_total_minutes` | 10 / 30 | Careers lookups per run, and the total time they may take |
 | `careers_lookup.max_minutes` | 5 | Time budget for one job's lookup (checked between model turns) |
 | `careers_lookup.page_chars` | 12000 | Characters of trimmed page (or search results) handed to the model |
@@ -658,8 +698,13 @@ the run's jobs log.
 
 ### Roadmap
 
-This covers plan 1 of 4 (the agent core). Still to come: the email digest, Glassdoor
-ratings, and Docker plus cron deployment.
+Built so far: the agent core; company boards and saved JSearch searches; Docker with scheduled
+runs; MariaDB storage; the web UI (Recommended, All jobs, Reasoning, Settings) with a job details
+panel; LinkedIn job alerts from Gmail; the careers-page lookup, with pages rendered in a browser
+when needed; and data markers around outside text. Feature specs are in `docs/specs/`.
+
+Still to come: descriptions kept as Markdown so their structure shows (feature 012), a step-by-step
+trace of how each job was categorized, an email digest, and Glassdoor ratings.
 
 ## License
 
