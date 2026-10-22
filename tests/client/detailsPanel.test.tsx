@@ -14,8 +14,16 @@ vi.mock("next/navigation.js", () => import("../helpers/navigation.js"));
 const ROWS = [jobRowView(), jobRowView({ jobId: "b", title: "Backend Engineer b", company: "Beta" })];
 let listed: JobRowView[] = ROWS;
 
-function details(row: JobRowView, terms: Partial<JobDetailView["job"]> = {}): JobDetailView {
-    return { job: { ...row, pay: null, workplace: null, ...terms } };
+function details(row: JobRowView, terms: Partial<JobDetailView["job"]> = {}, score: JobDetailView["score"] = null): JobDetailView {
+    return { job: { ...row, pay: null, workplace: null, ...terms }, score };
+}
+
+const SCORE = { total: 75, model: 70, boost: "+5 backend", base: 40, bonus: 30, reasons: ["Strong Go", "<script>alert(1)</script>"], gaps: ["No Kafka"], scoredAt: "2026-10-02 09:30" };
+
+function section(title: string): HTMLElement {
+    return within(panel() as HTMLElement)
+        .getByRole("heading", { level: 3, name: title })
+        .closest("section") as HTMLElement;
 }
 
 function deferred() {
@@ -164,4 +172,19 @@ test("the Reasoning page never opens the panel", () => {
     history.replaceState(null, "", "/?job=greenhouse%3Aa");
     render(<RowsList name="reasoning" initial={verdictPage([verdictRowView()])} />);
     expect(panel()).toBeNull();
+});
+
+test("the score section explains the score: total, the model's score, the boost, both parts, reasons and gaps", async () => {
+    actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, SCORE));
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(section("Score").textContent).toContain("75"));
+    for (const text of ["70", "+5 backend", "Resume fit40 of 50", "Preference fit30 of 50", "2026-10-02 09:30", "Strong Go", "No Kafka"]) expect(section("Score").textContent).toContain(text);
+    expect([section("Score").querySelector("script"), within(section("Score")).getByText("<script>alert(1)</script>")]).toEqual([null, expect.anything()]);
+});
+
+test("an unscored job's panel says it hasn't been scored yet", async () => {
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(section("Score").textContent).toContain("Not scored yet."));
 });

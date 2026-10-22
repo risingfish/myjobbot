@@ -1,5 +1,5 @@
 import type { JobDetailView, JobRowView } from "../../../src/web/api.js";
-import { PanelSection } from "./PanelSection.js";
+import { Fact, PanelSection } from "./PanelSection.js";
 
 const REMOTE: Record<JobRowView["remote"], string> = { yes: "Yes", no: "No", "": "" };
 
@@ -21,15 +21,5 @@ export function JobSection({ job, terms }: { job: JobRowView; terms: Terms | nul
                 <Fact label="Hidden" value={job.hidden ? "Hidden by you" : "Not hidden"} />
             </dl>
         </PanelSection>
-    );
-}
-
-/** Shows one labelled fact, saying "unknown" when it is missing. */
-function Fact({ label, value }: { label: string; value: string }) {
-    return (
-        <>
-            <dt>{label}</dt>
-            <dd>{value === "" ? "unknown" : value}</dd>
-        </>
     );
 }

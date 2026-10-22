@@ -25,8 +25,20 @@ export interface JobRowView {
     gaps: string[];
 }
 
+export interface ScoreDetail {
+    total: number;
+    model: number;
+    boost: string | null;
+    base: number | null;
+    bonus: number | null;
+    reasons: string[];
+    gaps: string[];
+    scoredAt: string | null;
+}
+
 export interface JobDetailView {
     job: JobRowView & { pay: string | null; workplace: string | null };
+    score: ScoreDetail | null;
 }
 
 export interface VerdictRowView {

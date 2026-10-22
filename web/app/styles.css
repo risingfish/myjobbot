@@ -257,3 +257,12 @@ dialog.details-panel[open] {
 .details-facts dd {
     margin: 0;
 }
+.details-section h4 {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 14px 0 4px;
+}
+.details-notes {
+    margin: 0;
+    padding-left: 20px;
+}
