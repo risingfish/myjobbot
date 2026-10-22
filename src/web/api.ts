@@ -36,9 +36,20 @@ export interface ScoreDetail {
     scoredAt: string | null;
 }
 
+export type DescriptionOrigin = { kind: "source" } | { kind: "careers"; url: string | null };
+
+export interface DescriptionDetail {
+    text: string | null;
+    requirements: string[];
+    skills: string[];
+    preferredSkills: string[];
+    origin: DescriptionOrigin | null;
+}
+
 export interface JobDetailView {
     job: JobRowView & { pay: string | null; workplace: string | null };
     score: ScoreDetail | null;
+    description: DescriptionDetail;
 }
 
 export interface VerdictRowView {

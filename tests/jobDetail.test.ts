@@ -39,3 +39,19 @@ test("a scored job's score gives the boosted total, the model's score, the boost
     expect(toJobDetailView(row, boosted).score).toEqual({ total: 75, model: 70, boost: "+5 backend", base: 40, bonus: 30, reasons: ["Go"], gaps: ["Kafka"], scoredAt: "2026-10-02 09:30" });
     expect(toJobDetailView(row, context).score).toMatchObject({ total: 70, model: 70, boost: null });
 });
+
+test("a job without a description says so, with no origin", async () => {
+    expect(toJobDetailView(await storedDetail({}), context).description).toEqual({ text: null, requirements: [], skills: [], preferredSkills: [], origin: null });
+});
+
+test("a description from the job's own source carries its requirements and skills", async () => {
+    const row = await storedDetail({ description: "Build APIs.\nShip often.", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"] });
+    expect(toJobDetailView(row, context).description).toEqual({ text: "Build APIs.\nShip often.", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"], origin: { kind: "source" } });
+});
+
+test("a description found on a careers page links that page, but only a web address", async () => {
+    const row = await storedDetail({ description: "Build APIs." });
+    const careers = { ...row, description_source: "careers", description_url: "https://acme.example/jobs/a" };
+    expect(toJobDetailView(careers, context).description.origin).toEqual({ kind: "careers", url: "https://acme.example/jobs/a" });
+    expect(toJobDetailView({ ...careers, description_url: "javascript:alert(1)" }, context).description.origin).toEqual({ kind: "careers", url: null });
+});

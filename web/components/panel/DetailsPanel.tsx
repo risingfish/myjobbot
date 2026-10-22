@@ -3,6 +3,7 @@ import type { JobKey } from "../../../src/db/store.js";
 import type { JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
 import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
+import { DescriptionSection } from "./DescriptionSection.js";
 import { JobSection } from "./JobSection.js";
 import { ScoreSection } from "./ScoreSection.js";
 
@@ -79,6 +80,7 @@ function PanelSections({ job, details }: { job: JobRowView | null; details: Deta
         <>
             <JobSection job={facts} terms={loaded} />
             {details.state === "found" && <ScoreSection score={details.view.score} />}
+            {details.state === "found" && <DescriptionSection description={details.view.description} />}
         </>
     );
 }
