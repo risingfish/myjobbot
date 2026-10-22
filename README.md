@@ -85,6 +85,24 @@ Recommended at once and stays hidden when the posting is fetched again. All jobs
 dimmed, with an **Unhide** button. Hiding, and the Gmail panel on Settings, are the UI's only
 writes; they accept requests from its own pages only.
 
+**Job details.** On Recommended and All jobs, a job's title opens a panel from the right, over
+about 60% of the window, without leaving the list: you can still scroll, hide jobs or click
+another title to switch. The panel has five sections:
+
+- **Job**: company, location, remote and workplace terms, pay, source, posting age and whether
+  you hid it.
+- **Score**: the total, the model's own score and any title boost, the resume-fit and
+  preference-fit parts, and the reasons and gaps.
+- **Description**: the full text, with requirements and skills, and where it came from (the job's
+  own listing, or the careers page the [careers lookup](#careers-lookup) found, linked).
+- **Warnings**: only when text from the job tried to escape the model's data markers.
+- **History**: every score the job has had, newest first, with its parts and run.
+
+Close it with its button, Escape or a click outside it. The open job is in the address
+(`?job=<board>:<id>`), so reload, back and forward keep it, and Ctrl/Cmd-click opens a job in a new
+tab. The icon left of **Hide** opens the original posting. Reasoning keeps its titles as links to
+the posting.
+
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
 bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
 "…", with the full title on hover. See

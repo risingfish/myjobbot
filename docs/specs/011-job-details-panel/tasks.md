@@ -289,7 +289,7 @@ score.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T051 After PR 6 merges, run quickstart PR 6's SC-002 timing. Then, in a small docs PR, update
+- [X] T051 After PR 6 merges, run quickstart PR 6's SC-002 timing. Then, in a small docs PR, update
   `README.md` (the web UI section: the panel, the icon, `?job=`) and the test ledger below.
 
 ---
@@ -332,4 +332,11 @@ Task: "T026 UI tests tests/client/detailsPanel.test.tsx"
 |---|---|---|---|
 | Baseline (T002) | 449 | 41 (1 skipped without a browser) | 31 |
 | Planned new | ~18 (T010, T021 and T043 on memory, T023, T031, T037, T045) | ~5 (T021, T043 on MariaDB) | ~6 (T005, T012, T026, T033, T039, T047) |
-| After PR 6 (T051) | | | |
+| After PR 6 (T051) | 473 (+24) | 45 (+4; 1 skipped without a browser) | 52 (+21) |
+
+UI tests came out well above plan (+21 against ~6): each panel behaviour (opening, switching, the
+three ways to close, deep links, loading and its failures, each section) is its own short
+`RowsList` test, since the panel's wiring lives in React effects that unit tests can't reach. The
+overall mix is now 83 / 8 / 9 (it was 86 / 8 / 6 at the baseline), so the UI share is above the
+1% target. SC-002, measured on the live stack (2026-10-22, ten opens on All jobs, click to the
+History section): median 72 ms, slowest 353 ms, against a 1-second target.
