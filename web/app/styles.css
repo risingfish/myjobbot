@@ -241,9 +241,11 @@ dialog.details-panel[open] {
     padding: 4px 20px 24px;
 }
 .details-section h3 {
-    font-size: 14px;
-    color: var(--muted);
-    margin: 18px 0 8px;
+    font-size: 16px;
+    color: var(--fg);
+    margin: 22px 0 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--rule);
 }
 .details-facts {
     display: grid;

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export function PanelSection({ title, children }: { title: string; children: ReactNode }) {
     return (
         <section className="details-section">
-            <h2>{title}</h2>
+            <h3>{title}</h3>
             {children}
         </section>
     );
