@@ -225,20 +225,20 @@ score.
 
 ### Sitting S4, PR 4: score (T030–T035), branch `011-pr4-score`
 
-- [ ] T030 Per-PR flow steps 1–3, for sitting S4.
-- [ ] T031 [P] [US2] Unit tests in `tests/jobDetail.test.ts`:
+- [X] T030 Per-PR flow steps 1–3, for sitting S4.
+- [X] T031 [P] [US2] Unit tests in `tests/jobDetail.test.ts`:
   - An unscored job gives `score: null`.
   - A scored one gives `total` equal to the row's boosted score, `model` the stored score, `boost`
     the row's note, and base, bonus, reasons, gaps and `scoredAt`.
-- [ ] T032 [US2] Add `score` to `JobDetailView` in `src/web/api.ts` and `src/web/jobDetail.ts`,
+- [X] T032 [US2] Add `score` to `JobDetailView` in `src/web/api.ts` and `src/web/jobDetail.ts`,
   reusing `jobScore` from `src/web/rowViews.ts` (exported if it isn't already).
-- [ ] T033 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
+- [X] T033 [P] [US2] UI test in `tests/client/detailsPanel.test.tsx`:
   - The score section shows the total, model score, boost, base, bonus, reasons and gaps, or "not
     scored yet".
   - A reason containing `<script>` is shown as text.
-- [ ] T034 [US2] Create `web/components/panel/ScoreSection.tsx` and add it after the job section in
+- [X] T034 [US2] Create `web/components/panel/ScoreSection.tsx` and add it after the job section in
   `DetailsPanel`.
-- [ ] T035 [US2] Per-PR flow steps 4–6: commit ("Show a job's score in its panel (011 PR 4)"), push,
+- [X] T035 [US2] Per-PR flow steps 4–6: commit ("Show a job's score in its panel (011 PR 4)"), push,
   and open PR 4. **Wait for the owner.**
 
 ### Sitting S5, PR 5: description (T036–T041), branch `011-pr5-description`

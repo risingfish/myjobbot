@@ -9,3 +9,13 @@ export function PanelSection({ title, children }: { title: string; children: Rea
         </section>
     );
 }
+
+/** Shows one labelled fact, saying "unknown" when it is missing. */
+export function Fact({ label, value }: { label: string; value: string }) {
+    return (
+        <>
+            <dt>{label}</dt>
+            <dd>{value === "" ? "unknown" : value}</dd>
+        </>
+    );
+}

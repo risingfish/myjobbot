@@ -47,7 +47,7 @@ function titleNotes(job: JobView, context: RowContext): Pick<JobRowView, "filter
 export function toVerdictRowView(verdict: VerdictView): VerdictRowView {
     return {
         key: String(verdict.id),
-        scoredAt: verdict.scored_at.slice(0, 16).replace("T", " "),
+        scoredAt: minutes(verdict.scored_at),
         run: verdict.run_id ? verdict.run_id.slice(0, 8) : null,
         title: verdict.title ?? "(pruned)",
         url: webUrl(verdict.url),
@@ -56,6 +56,11 @@ export function toVerdictRowView(verdict: VerdictView): VerdictRowView {
         reasons: verdict.reasons,
         gaps: verdict.gaps,
     };
+}
+
+/** Shows an ISO timestamp to the minute, as "2026-10-02 09:30". */
+export function minutes(iso: string): string {
+    return iso.slice(0, 16).replace("T", " ");
 }
 
 /** Returns the date-only portion of an ISO timestamp, or an empty string when null. */
@@ -84,7 +89,7 @@ function posted(job: JobView, context: RowContext): JobRowView["posted"] {
 /** Returns a job's boosted score with a note on its breakdown and boost, or null when unscored. */
 function jobScore(job: JobView, context: RowContext): Score | null {
     if (job.score === null) return null;
-    const boost = jobBoost([job.title, job.description], context.boosts);
+    const boost = scoreBoost(job, context);
     const notes = [breakdown(job), boostNote(job.score, boost)].filter((note) => note !== "");
     return { value: boostedScore(job.score, boost), note: notes.join(" · ") };
 }
@@ -95,9 +100,20 @@ function breakdown(parts: { base_score: number | null; bonus_score: number | nul
     return `base ${parts.base_score} + bonus ${parts.bonus_score}`;
 }
 
+/** Works out which title boost terms raise a job's score, and by how much. */
+export function scoreBoost(job: JobView, context: RowContext): Boost {
+    return jobBoost([job.title, job.description], context.boosts);
+}
+
+/** Names the points a boost adds and the terms that earned them, as "+5 backend", or null when none did. */
+export function boostText(boost: Boost): string | null {
+    return boost.points === 0 ? null : `+${boost.points} ${boost.terms.join(", ")}`;
+}
+
 /** Formats a note naming the model's score and the boost terms that raised it, or an empty string when none did. */
 function boostNote(score: number, boost: Boost): string {
-    return boost.points === 0 ? "" : `model ${score} · +${boost.points} ${boost.terms.join(", ")}`;
+    const text = boostText(boost);
+    return text === null ? "" : `model ${score} · ${text}`;
 }
 
 /** Explains why a job would be hidden from the model, by company or title filter, or null when it is not. */

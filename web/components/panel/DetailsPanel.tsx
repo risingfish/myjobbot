@@ -4,6 +4,7 @@ import type { JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
 import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
 import { JobSection } from "./JobSection.js";
+import { ScoreSection } from "./ScoreSection.js";
 
 interface DetailsPanelProps {
     open: boolean;
@@ -74,7 +75,12 @@ function PanelSections({ job, details }: { job: JobRowView | null; details: Deta
     const loaded = details.state === "found" ? details.view.job : null;
     const facts = job ?? loaded;
     if (details.state === "missing" || facts === null) return null;
-    return <JobSection job={facts} terms={loaded} />;
+    return (
+        <>
+            <JobSection job={facts} terms={loaded} />
+            {details.state === "found" && <ScoreSection score={details.view.score} />}
+        </>
+    );
 }
 
 /** Opens or closes the panel to match the open job's name, moving focus into it on open and back to the job's title on close. */
