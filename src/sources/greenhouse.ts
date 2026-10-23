@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { markdownDescription } from "../descriptions/toMarkdown.js";
 import { makeJob, type Job } from "../jobs/job.js";
 import { defineBoard } from "./board.js";
 import { optionalDate, optionalText } from "./fields.js";
-import { escapedHtmlToText } from "./htmlText.js";
+import { decodeEntities } from "./htmlText.js";
 
 const posting = z.object({
     id: z.number(),
@@ -20,14 +21,14 @@ export const fetchGreenhouse = defineBoard({
     toJob,
 });
 
-/** Converts a Greenhouse posting into the shared Job record, converting its HTML description to text. */
+/** Converts a Greenhouse posting into the shared Job record, converting its escaped HTML description to Markdown. */
 function toJob(company: string, post: z.infer<typeof posting>): Job {
     return makeJob(
         { ats: "greenhouse", jobId: String(post.id), company, title: post.title, url: post.absolute_url },
         {
             location: post.location?.name ?? null,
             postedAt: post.first_published,
-            description: post.content === null ? null : escapedHtmlToText(post.content),
+            ...markdownDescription(post.content === null ? null : decodeEntities(post.content)),
         },
     );
 }

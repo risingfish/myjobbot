@@ -12,8 +12,22 @@
             "commitment": "Full-time",
             "location": "London, United Kingdom",
             "team": "Dev",
-            "allLocations": ["London, United Kingdom"]
-        }
+            "allLocations": [
+                "London, United Kingdom"
+            ]
+        },
+        "description": "<div><b>Backend Software Engineers</b> at Palantir build software at scale.</div>",
+        "lists": [
+            {
+                "text": "What We Require",
+                "content": "<li>Strong engineering background</li><li>Go &amp; Java</li>"
+            },
+            {
+                "text": "R&D <Labs>",
+                "content": "<li>Distributed systems</li>"
+            }
+        ],
+        "additional": "<div>Palantir is an equal opportunity employer.</div>"
     },
     {
         "id": "5b1e0a52-0000-4000-8000-000000000002",

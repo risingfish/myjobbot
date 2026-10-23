@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
 import { optionalText } from "./fields.js";
-import { escapedHtmlToText } from "./htmlText.js";
+import { capDescription } from "../descriptions/cap.js";
+import { htmlToMarkdown } from "../descriptions/toMarkdown.js";
 
 interface WorkdayBoard {
     host: string;
@@ -28,11 +29,12 @@ export async function searchWorkday(http: JsonPoster, board: WorkdayBoard, text:
     return answer.jobPostings.map((posting) => ({ title: posting.title, location: posting.locationsText, url: pageUrl(board, posting.externalPath), postingId: posting.externalPath }));
 }
 
-/** Reads one Workday posting from its job path, with its description as plain text. */
-export async function workdayPosting(http: JsonGetter, board: WorkdayBoard, path: string): Promise<Omit<WorkdayListing, "postingId"> & { description: string }> {
+/** Reads one Workday posting from its job path, with its raw HTML description as Markdown within the stored limit, or none when it is blank. */
+export async function workdayPosting(http: JsonGetter, board: WorkdayBoard, path: string): Promise<Omit<WorkdayListing, "postingId"> & { description: string | null; format: "markdown" }> {
     if (!JOB_PATH.test(path) || path.includes("/../")) throw new Error(`${path} is not a Workday job path`);
     const { jobPostingInfo: info } = postingAnswer.parse(await http.getJson(`${dataBase(board)}${path}`));
-    return { title: info.title, location: info.location, url: pageUrl(board, path), description: escapedHtmlToText(info.jobDescription ?? "") };
+    const markdown = htmlToMarkdown(info.jobDescription ?? "");
+    return { title: info.title, location: info.location, url: pageUrl(board, path), description: markdown === null ? null : capDescription(markdown, "markdown"), format: "markdown" };
 }
 
 /** Builds the address of a board's public data. */

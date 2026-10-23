@@ -79,7 +79,7 @@ async function workdayPostings(http: BoardHttp, link: BoardLink, sought: string)
 async function findPosting(http: BoardHttp, cache: BoardCache, request: BoardRequest): Promise<Posting | null> {
     const { link } = request;
     if (link.postingId === null) return null;
-    if (link.kind === "workday") return { ...(await workdayPosting(http, workdayBoard(link), link.postingId)), postingId: link.postingId, format: "text" };
+    if (link.kind === "workday") return { ...(await workdayPosting(http, workdayBoard(link), link.postingId)), postingId: link.postingId };
     return (await postings(http, cache, request)).find((each) => each.postingId === link.postingId || each.url === request.url) ?? null;
 }
 

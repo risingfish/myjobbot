@@ -15,7 +15,8 @@ const CASES = [
             url: "https://stripe.com/jobs/search?gh_jid=8172503",
             location: "Remote from the US",
             postedAt: "2026-09-09T14:52:09.000Z",
-            description: "Build payments & billing systems.\nGo\nRuby & Rails",
+            description: "Build payments \\& billing\u00a0systems.\n\n-   Go\n-   Ruby \\& Rails",
+            descriptionFormat: "markdown",
         },
     },
     {
@@ -30,7 +31,8 @@ const CASES = [
             team: "Dev",
             workplaceType: "hybrid",
             postedAt: "2024-03-11T20:25:07.256Z",
-            description: "Backend Software Engineers at Palantir build software at scale.",
+            description: "**Backend Software Engineers** at Palantir build software at scale.\n\n### What We Require\n\n-   Strong engineering background\n-   Go \\& Java\n\n### R\\&D \\<Labs>\n\n-   Distributed systems\n\nPalantir is an equal opportunity employer.",
+            descriptionFormat: "markdown",
         },
     },
     {
@@ -73,4 +75,18 @@ test("ashby adapter stores the posting's HTML as Markdown, leaving out anything 
 test("an ashby posting without HTML has no description", async () => {
     const board = { jobs: [{ id: "x", title: "Engineer", jobUrl: "https://jobs.ashbyhq.com/acme/x", descriptionPlain: "plain only", isListed: true }] };
     expect((await fetcherFor("ashby")({ name: "Acme", slug: "acme" }, fakeBoard(board)))[0]).toMatchObject({ description: null });
+});
+
+test("greenhouse's escaped HTML is decoded once, so escaped markup inside it stays words", async () => {
+    const board = { jobs: [{ id: 1, title: "Engineer", absolute_url: "https://boards.greenhouse.io/acme/jobs/1", content: "&lt;h2&gt;Role&lt;/h2&gt;&lt;p&gt;a &amp;lt;script&amp;gt;x&amp;lt;/script&amp;gt; b&lt;/p&gt;" }] };
+    expect((await fetcherFor("greenhouse")({ name: "Acme", slug: "acme" }, fakeBoard(board)))[0]).toMatchObject({ description: "## Role\n\na \\<script>x\\</script> b", descriptionFormat: "markdown" });
+});
+
+test("a lever posting with no lists or closing section keeps just its opening, and one with nothing has no description", async () => {
+    const board = [
+        { id: "a", text: "Engineer", hostedUrl: "https://jobs.lever.co/acme/a", description: "<p>Opening only.</p>" },
+        { id: "b", text: "Engineer", hostedUrl: "https://jobs.lever.co/acme/b" },
+    ];
+    const jobs = await fetcherFor("lever")({ name: "Acme", slug: "acme" }, fakeBoard(board));
+    expect(jobs.map((job) => job.description)).toEqual(["Opening only.", null]);
 });

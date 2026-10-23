@@ -17,7 +17,7 @@ test("a job found through its careers page is stored with the job page's text an
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: LISTING, [POSTING_URL]: POSTING }, replies: [search(), open(1, "careers_page"), open(2, "job_page"), finish(true)] });
     const outcome = await lookUpJob(setup.deps, JOB);
     expect(outcome).toMatchObject({ found: true, url: POSTING_URL, careersUrl: CAREERS_URL });
-    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description_format: "text", description: expect.stringContaining("Build APIs in TypeScript.") });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description_format: "markdown", description: expect.stringContaining("Build APIs in TypeScript.") });
     expect(setup.careers.rows.at(-1)).toMatchObject({ step: "finish", outcome: "found", url: POSTING_URL, reason: null });
     expect(await setup.careers.rememberedPage("acme")).toMatchObject({ company: "Acme", url: CAREERS_URL });
 });

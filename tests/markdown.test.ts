@@ -31,6 +31,10 @@ test("keeps the words of wrappers and of links that aren't web links, and drops 
     expect(htmlToMarkdown(links)).toBe("a b c d");
 });
 
+test.each(["java\tscript:call()", "java\nscript:call()", "&#106;avascript:call()", "&#x6A;avascript&#58;call()", "javascript&colon;call()", "%6Aavascript:call()", " JaVaScRiPt:call()"])("a link to %j is kept as its words only", (href) => {
+    expect(htmlToMarkdown(`<p><a href="${href}">click</a></p>`)).toBe("click");
+});
+
 test("text that reads like HTML or Markdown stays text, and a ! before a link doesn't make it an image", () => {
     expect(htmlToMarkdown("<p>&lt;script&gt;alert(1)&lt;/script&gt; &lt;https://aws.example.com&gt; C* snake_case</p>")).toBe("\\<script>alert(1)\\</script> \\<https://aws.example.com> C\\* snake\\_case");
     expect(htmlToMarkdown("<p># not a heading</p>")).toBe("\\# not a heading");

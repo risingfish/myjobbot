@@ -2,6 +2,8 @@ import type { FileConfig } from "../config/schema.js";
 import { parseBoardLink } from "../sources/boardLink.js";
 import { boardPage, type BoardAccess } from "./boardPages.js";
 import { fetchPublicPage, FetchRefused, type PageFetchDeps } from "./fetchPage.js";
+import { capDescription } from "../descriptions/cap.js";
+import { pageToMarkdown } from "../descriptions/toMarkdown.js";
 import type { StoredDescription } from "./postingPage.js";
 import type { PageRenderer } from "./renderState.js";
 import { hasText } from "./session.js";
@@ -50,10 +52,16 @@ function unlessRefused(error: unknown): null {
 async function plainPage(deps: ReadDeps, request: ReadRequest, fallback: string | null): Promise<PageRead> {
     const page = await fetchPublicPage(deps.pages, request.url);
     const plain = trimmed(deps, request, page);
-    if (!unreadable(plain, request)) return { ...plain, source: "html", fallback, board: null, description: null };
+    if (!unreadable(plain, request)) return { ...plain, source: "html", fallback, board: null, description: pageDescription(request, page.html) };
     const rendered = await deps.renderer.render(page.url);
     if ("fallback" in rendered) return { ...plain, source: "html", fallback: [fallback, rendered.fallback].filter((each) => each !== null).join(","), board: null, description: null };
-    return { ...trimmed(deps, request, rendered.page), source: "rendered", fallback, board: null, description: null };
+    return { ...trimmed(deps, request, rendered.page), source: "rendered", fallback, board: null, description: pageDescription(request, rendered.page.html) };
+}
+
+/** Converts a job page's HTML to the Markdown description to store if the lookup finds the job there; careers pages carry none. */
+function pageDescription(request: ReadRequest, html: string): StoredDescription | null {
+    const markdown = request.kind === "job_page" ? pageToMarkdown(html) : null;
+    return markdown === null ? null : { text: capDescription(markdown, "markdown"), format: "markdown" };
 }
 
 /** Trims fetched or rendered HTML for the model, keeping links only on careers pages. */

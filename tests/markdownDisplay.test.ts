@@ -3,7 +3,7 @@ import { descriptionHeading, markdownHref } from "../web/lib/markdown.js";
 
 test("a description's links keep web addresses only", () => {
     for (const url of ["https://acme.example/jobs?a=1", "http://acme.example/"]) expect(markdownHref(url)).toBe(url);
-    const unsafe = ["javascript:alert(1)", "JavaScript:alert(1)", " javascript:alert(1)", "data:text/html,x", "vbscript:x", "mailto:a@b.example", "/relative", "#top", "not a url", ""];
+    const unsafe = ["javascript:alert(1)", "JavaScript:alert(1)", " javascript:alert(1)", "java\tscript:alert(1)", "java\nscript:alert(1)", "%6Aavascript:alert(1)", "data:text/html,x", "vbscript:x", "mailto:a@b.example", "/relative", "#top", "not a url", ""];
     for (const url of unsafe) expect(markdownHref(url)).toBe("");
 });
 

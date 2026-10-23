@@ -71,3 +71,23 @@ test("a rendered page that ends on a private address is a refused fetch, and a b
     expect(await readPage(deps, { url: ASHBY_JOB, kind: "job_page", sought: JOB.title })).toMatchObject({ source: "board", text: "", note: "this posting is no longer listed" });
     expect(browser.calls.filter((call) => call.startsWith("goto"))).toEqual([`goto ${BLANK_JOB}`]);
 });
+
+const POSTING_PAGE = "<html><body><nav>Nav decoy</nav><h1>Backend Engineer</h1><p>Build <b>APIs</b>.</p><a href='https://acme.example/apply'>Apply</a></body></html>";
+
+test("a downloaded or rendered job page carries its Markdown to store, while the model's text is unchanged", async () => {
+    const browser = fakeBrowser({ html: POSTING_PAGE, finalUrl: BLANK_JOB });
+    const { deps } = await lookupSetup({ pages: { [CAREERS_URL]: POSTING_PAGE, [BLANK_JOB]: scriptOnlyPage() }, connect: async () => browser.port });
+    const markdown = { text: "# Backend Engineer\n\nBuild **APIs**.\n\n[Apply](https://acme.example/apply)", format: "markdown" };
+    const downloaded = await readPage(deps, { url: CAREERS_URL, kind: "job_page", sought: JOB.title });
+    expect(downloaded).toMatchObject({ source: "html", description: markdown, text: trimPage(POSTING_PAGE, { baseUrl: CAREERS_URL, maxChars: deps.settings.page_chars, sought: JOB.title, links: false }).text });
+    expect(await readPage(deps, { url: BLANK_JOB, kind: "job_page", sought: JOB.title })).toMatchObject({ source: "rendered", description: markdown });
+    expect(await readPage(deps, { url: CAREERS_URL, kind: "careers_page", sought: JOB.title })).toMatchObject({ description: null });
+});
+
+test("a job page with nothing readable carries no Markdown, and a long one is cut within the limit", async () => {
+    const long = `<html><body>${Array.from({ length: 2_000 }, (_, index) => `<p>Paragraph ${index} of the posting.</p>`).join("")}</body></html>`;
+    const { deps } = await lookupSetup({ pages: { [CAREERS_URL]: "<html><body><nav>only chrome</nav><p>text</p></body></html>", [BLANK_JOB]: long } });
+    expect((await readPage(deps, { url: CAREERS_URL, kind: "job_page", sought: JOB.title })).description).toEqual({ text: "text", format: "markdown" });
+    const cut = (await readPage(deps, { url: BLANK_JOB, kind: "job_page", sought: JOB.title })).description?.text ?? "";
+    expect([cut.length <= 20_000, cut.endsWith("posting.")]).toEqual([true, true]);
+});

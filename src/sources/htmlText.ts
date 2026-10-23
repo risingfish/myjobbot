@@ -1,22 +1,9 @@
 const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const ENTITY = /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi;
-const BLOCK_TAG = /<\/?(br|p|div|li|ul|ol|h[1-6]|tr)\b[^>]*>/gi;
-const ANY_TAG = /<[^>]*>/g;
 const MAX_CODE_POINT = 0x10ffff;
 
-/** Converts HTML-escaped job-description markup into plain, line-wrapped text. */
-export function escapedHtmlToText(escaped: string): string {
-    const markup = decodeEntities(escaped);
-    const text = decodeEntities(markup.replace(BLOCK_TAG, "\n").replace(ANY_TAG, ""));
-    return text
-        .split("\n")
-        .map((line) => line.replace(/\s+/g, " ").trim())
-        .filter((line) => line !== "")
-        .join("\n");
-}
-
-/** Replaces HTML character entities in text with their literal characters. */
-function decodeEntities(text: string): string {
+/** Replaces HTML character entities in text with their literal characters, once: used to unescape HTML a board sends escaped. */
+export function decodeEntities(text: string): string {
     return text.replace(ENTITY, (match, name: string) => entityText(name.toLowerCase()) ?? match);
 }
 
