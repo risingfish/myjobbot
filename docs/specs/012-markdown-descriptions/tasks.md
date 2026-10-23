@@ -99,23 +99,23 @@ handle Markdown before any source writes it, then a docs PR.
 
 ### Sitting S2, PR 2: the readable copy (T012–T018), branch `012-pr2-readable-copy`
 
-- [ ] T012 Per-PR flow steps 1–3, for sitting S2.
-- [ ] T013 [P] [US1] Unit tests in a new `tests/readable.test.ts`: `readableDescription` turns
+- [X] T012 Per-PR flow steps 1–3, for sitting S2.
+- [X] T013 [P] [US1] Unit tests in a new `tests/readable.test.ts`: `readableDescription` turns
   `[Apply here](https://x.example/a)` into `Apply here`, including link words that span two lines;
   leaves escaped `\[not a link\]`, `\<b>` and a code span containing `]` alone; returns `'text'` and
   null-format descriptions unchanged (including one containing `[a](b)`); returns null for null.
-- [ ] T014 [US1] Create `src/descriptions/readable.ts` (`readableDescription(description, format)`,
+- [X] T014 [US1] Create `src/descriptions/readable.ts` (`readableDescription(description, format)`,
   contract "Readable copy").
-- [ ] T015 [P] [US1] Unit tests: in `tests/getJobDetails.test.ts`, a `'markdown'` job's description
+- [X] T015 [P] [US1] Unit tests: in `tests/getJobDetails.test.ts`, a `'markdown'` job's description
   reaches the model with its link words and no addresses (wrapping is the loop's job, FR-006); in
   `tests/pageData.test.ts`, next to "boosts count matches in the description", a Markdown
   description whose only "aws" is in a link address earns no "aws" boost, while the word in its text
   does (FR-010).
-- [ ] T016 [US1] Use `readableDescription` in `src/tools/getJobDetails.ts` (before the
+- [X] T016 [US1] Use `readableDescription` in `src/tools/getJobDetails.ts` (before the
   6,000-character cut), `src/web/rowViews.ts` (`scoreBoost`) and `src/web/pageData.ts`
   (`recommendedJobs`).
-- [ ] T017 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T018 [US1] Per-PR flow steps 4–6: commit ("Give the model and boosts descriptions without link
+- [X] T017 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T018 [US1] Per-PR flow steps 4–6: commit ("Give the model and boosts descriptions without link
   addresses (012 PR 2)"), push, open PR 2 (quickstart "PR 2"). **Wait for the owner.**
 
 ### Sitting S3, PR 3: the careers lookup's board path keeps a description's format (T019–T025), branch `012-pr3-careers-board-format`

@@ -13,6 +13,7 @@ export interface SeedJob {
     postedAt?: string | null;
     publisher?: string;
     description?: string;
+    descriptionFormat?: "markdown" | "text";
     parts?: { base: number; bonus: number };
 }
 
@@ -26,7 +27,7 @@ export async function seededStores(entries: SeedJob[]): Promise<Stores> {
 
 function seedJob(entry: SeedJob) {
     const core = { ats: "greenhouse" as const, jobId: entry.id, company: "Acme", title: entry.title ?? `Software Engineer ${entry.id}`, url: entry.url ?? `https://example.com/${entry.id}` };
-    return makeJob(core, { location: "Remote", postedAt: entry.postedAt === undefined ? "2026-09-30T00:00:00.000Z" : entry.postedAt, publisher: entry.publisher ?? null, description: entry.description ?? null });
+    return makeJob(core, { location: "Remote", postedAt: entry.postedAt === undefined ? "2026-09-30T00:00:00.000Z" : entry.postedAt, publisher: entry.publisher ?? null, description: entry.description ?? null, descriptionFormat: entry.descriptionFormat ?? "text" });
 }
 
 function seedVerdict(entry: SeedJob) {

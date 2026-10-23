@@ -54,6 +54,13 @@ test("scores carry the base and bonus breakdown, and boosts count matches in the
     expect(verdictRows(await page("reasoning"))[0]?.score).toEqual({ value: 62, note: "base 32 + bonus 30" });
 });
 
+test("boosts read a Markdown description's words, never its link addresses", async () => {
+    const description = "Deploys go through [our platform](https://aws.example.com/deploy). We use Terraform.";
+    const page = pagesOf([{ id: "m", score: 62, description, descriptionFormat: "markdown" }], { title_boosts: { aws: 10, terraform: 5 } });
+    expect(jobRows(await page("jobs"))[0]?.score?.note).toBe("model 62 · +5 terraform");
+    expect(jobRows(await page("recommended"))).toEqual([]);
+});
+
 test("all jobs lists every job and marks titles the filter hides", async () => {
     const data = await pagesOf([
         { id: "a", score: 90 },

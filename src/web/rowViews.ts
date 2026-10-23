@@ -1,5 +1,6 @@
 import type { FileConfig } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/store.js";
+import { readableDescription } from "../descriptions/readable.js";
 import { daysBetween } from "../jobs/age.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, type Boost } from "../jobs/titleBoost.js";
@@ -107,7 +108,7 @@ function breakdown(parts: { base_score: number | null; bonus_score: number | nul
 
 /** Works out which title boost terms raise a job's score, and by how much. */
 export function scoreBoost(job: JobView, context: RowContext): Boost {
-    return jobBoost([job.title, job.description], context.boosts);
+    return jobBoost([job.title, readableDescription(job.description, job.description_format)], context.boosts);
 }
 
 /** Names the points a boost adds and the terms that earned them, as "+5 backend", or null when none did. */
