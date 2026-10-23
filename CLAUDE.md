@@ -108,6 +108,15 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   boards, emails or web pages must declare `outsideText: true` (`tests/toolDeclarations.test.ts`
   lists them). Job fields never go into a system prompt or a tool description. Tool events in the
   trace stay unwrapped; a removed look-alike is traced and flags the job (`injection_seen_at`).
+- Job descriptions are Markdown or plain text (feature 012), and `jobs.description_format` says which
+  (null exactly when there is no description; old and JSearch rows are `'text'`). HTML from a source
+  becomes Markdown only through `src/descriptions/toMarkdown.ts` (turndown 7.2.4, pinned; its
+  `remove`/`addRule`/`escape` extension points), never stored as HTML, and descriptions stay within
+  `capDescription`'s 20,000 characters. The panel shows Markdown only through `MarkdownText`
+  (react-markdown 10.1.0, pinned; `skipHtml`, an allow-list, `http(s)` links via `isWebAddress`);
+  never `dangerouslySetInnerHTML` or `rehype-raw`. The model and title boosts read
+  `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
+  (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever) never is.
 
 ## Commands
 

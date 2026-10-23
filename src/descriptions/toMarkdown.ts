@@ -1,4 +1,5 @@
 import TurndownService from "turndown";
+import type { Job } from "../jobs/job.js";
 import { isWebAddress } from "./webAddress.js";
 
 const OPTIONS: TurndownService.Options = { headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced", emDelimiter: "*", strongDelimiter: "**", hr: "---" };
@@ -6,6 +7,9 @@ const OPTIONS: TurndownService.Options = { headingStyle: "atx", bulletListMarker
 const REMOVED = new Set(["script", "style", "noscript", "noembed", "noframes", "template", "iframe", "frame", "frameset", "object", "embed", "applet", "param", "canvas", "svg", "math", "form", "input", "button", "select", "textarea", "option", "picture", "video", "audio", "source", "track", "head", "title", "meta", "link", "base"]);
 
 const ADDRESS_BREAKERS = /[()\s]/g;
+
+const PAGE_CHROME = new Set(["nav", "header", "footer"]);
+const HIDDEN_STYLE = /display\s*:\s*none|visibility\s*:\s*hidden/i;
 
 /** Builds a converter with the rules every description shares: unsafe elements and images dropped, only web links kept, code blocks rebuilt from what's left, and text that looks like markup escaped. */
 function descriptionConverter(): TurndownService {
@@ -45,10 +49,39 @@ function fencedCode(content: string): string {
     return `\n\n${fence}\n${content}\n${fence}\n\n`;
 }
 
+/** Builds the converter for whole careers pages: the description rules plus dropping the site's navigation, header, footer and hidden elements. */
+function pageConverter(): TurndownService {
+    const service = descriptionConverter();
+    service.addRule("pageChrome", { filter: isChromeOrHidden, replacement: () => "" });
+    return service;
+}
+
+/** Tells whether an element is site navigation, a header or footer, or hidden from readers, as the careers lookup's page reading treats them. */
+function isChromeOrHidden(node: HTMLElement): boolean {
+    if (PAGE_CHROME.has(node.nodeName.toLowerCase()) || node.hasAttribute("hidden")) return true;
+    return node.getAttribute("aria-hidden") === "true" || HIDDEN_STYLE.test(node.getAttribute("style") ?? "");
+}
+
 const DESCRIPTIONS = descriptionConverter();
+const PAGES = pageConverter();
+
+/** Runs a converter, giving null when nothing readable is left. */
+function convert(service: TurndownService, html: string): string | null {
+    const markdown = service.turndown(html).trim();
+    return markdown === "" ? null : markdown;
+}
 
 /** Converts a source's HTML description to Markdown that keeps only plain formatting and web links, or null when nothing readable is left. */
 export function htmlToMarkdown(html: string): string | null {
-    const markdown = DESCRIPTIONS.turndown(html).trim();
-    return markdown === "" ? null : markdown;
+    return convert(DESCRIPTIONS, html);
+}
+
+/** Converts a whole careers page to Markdown under the same rules, leaving out the site's navigation, header, footer and hidden elements. */
+export function pageToMarkdown(html: string): string | null {
+    return convert(PAGES, html);
+}
+
+/** Gives a board posting's description as Markdown converted from its HTML, or none when the board sent no HTML. */
+export function markdownDescription(html: string | null): Pick<Job, "description" | "descriptionFormat"> {
+    return { description: html === null ? null : htmlToMarkdown(html), descriptionFormat: "markdown" };
 }

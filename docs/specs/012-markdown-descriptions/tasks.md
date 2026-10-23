@@ -254,21 +254,21 @@ Markdown yet.
 
 ### Sitting S7, PR 7: Greenhouse and Workday (T047–T051), branch `012-pr7-greenhouse-workday`
 
-- [ ] T047 Per-PR flow steps 1–3, for sitting S7.
-- [ ] T048 [P] [US2] Unit tests: in `tests/sources.test.ts`, Greenhouse's escaped `content`
+- [X] T047 Per-PR flow steps 1–3, for sitting S7.
+- [X] T048 [P] [US2] Unit tests: in `tests/sources.test.ts`, Greenhouse's escaped `content`
   (`&lt;h2&gt;…`) becomes Markdown with the heading, decoded once (an escaped `&amp;lt;script&amp;gt;`
   stays the escaped words `<script>`, never a tag), replacing the plain-text expectation at
   `tests/sources.test.ts:18`; in `tests/careersWorkday.test.ts`, Workday's raw `jobDescription`
   becomes Markdown **without decoding first** (text `&lt;b&gt;` stays the words `<b>`), a blank one
   gives none, and one over 20,000 characters is cut by `capDescription`, updating the `toEqual` at
   `tests/careersWorkday.test.ts:25`.
-- [ ] T049 [US2] In `src/sources/htmlText.ts`, export `decodeEntities` and delete
+- [X] T049 [US2] In `src/sources/htmlText.ts`, export `decodeEntities` and delete
   `escapedHtmlToText`; `tests/htmlText.test.ts` keeps only decoding cases. `src/sources/greenhouse.ts`
   converts `decodeEntities(content)`; `src/sources/workday.ts`'s `workdayPosting` converts
   `jobDescription` as is, caps it, and returns its format; both `descriptionFormat: "markdown"`;
   `src/careers/boardPages.ts` passes Workday's format on (S3's board path).
-- [ ] T050 [US2] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T051 [US2] Per-PR flow steps 4–6: commit ("Convert Greenhouse and Workday descriptions to
+- [X] T050 [US2] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T051 [US2] Per-PR flow steps 4–6: commit ("Convert Greenhouse and Workday descriptions to
   Markdown (012 PR 7)"), push, open PR 7 (quickstart "PR 7"). **Wait for the owner.**
 
 ---
@@ -277,19 +277,19 @@ Markdown yet.
 
 ### Sitting S8, PR 8: Lever (T052–T056), branch `012-pr8-lever-posting`
 
-- [ ] T052 Per-PR flow steps 1–3, for sitting S8.
-- [ ] T053 [P] [US1] Unit tests in `tests/sources.test.ts`: a Lever posting's `description`, two
+- [X] T052 Per-PR flow steps 1–3, for sitting S8.
+- [X] T053 [P] [US1] Unit tests in `tests/sources.test.ts`: a Lever posting's `description`, two
   `lists` (`{ text, content }` with `<li>` items) and `additional` become one Markdown description:
   the opening, then each list's `text` as a heading followed by its items, then the closing section,
   in that order; a list `text` containing `<` or `&` shows as written; missing `lists` or
   `additional` are skipped. Add those fields to `tests/fixtures/lever.json` and update the
   expectation at `tests/sources.test.ts:33`.
-- [ ] T054 [US1] In `src/sources/lever.ts`, read `description`, `lists` and `additional` (zod,
+- [X] T054 [US1] In `src/sources/lever.ts`, read `description`, `lists` and `additional` (zod,
   `.nullish()`), assemble the HTML (`<h3>` with the list's `text` escaped, then `<ul>content</ul>`
   per list) and store `htmlToMarkdown` with `descriptionFormat: "markdown"`; stop reading
   `descriptionPlain`.
-- [ ] T055 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T056 [US1] Per-PR flow steps 4–6: commit ("Store Lever's whole posting as Markdown (012 PR 8)"),
+- [X] T055 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T056 [US1] Per-PR flow steps 4–6: commit ("Store Lever's whole posting as Markdown (012 PR 8)"),
   push, open PR 8 (quickstart "PR 8"), noting a Lever company must be configured to see it, and
   that stored Lever jobs from companies no longer configured stay plain text. **Wait for the owner.**
 
@@ -299,23 +299,23 @@ Markdown yet.
 
 ### Sitting S9, PR 9: careers pages (T057–T063), branch `012-pr9-careers-markdown`
 
-- [ ] T057 Per-PR flow steps 1–3, for sitting S9.
-- [ ] T058 [P] [US2] Unit tests in a new `tests/pageMarkdown.test.ts`: `pageToMarkdown` drops `nav`,
+- [X] T057 Per-PR flow steps 1–3, for sitting S9.
+- [X] T058 [P] [US2] Unit tests in a new `tests/pageMarkdown.test.ts`: `pageToMarkdown` drops `nav`,
   `header`, `footer` and hidden elements with their contents whatever the element (`<p hidden>`,
   `<li aria-hidden="true">`, `<h2 style="display:none">`, `<div style="visibility: hidden">`, and a
   hidden element inside a code block), keeps `aside` and the posting's own content, and otherwise
   follows `htmlToMarkdown`'s rules; `htmlToMarkdown` on the same page still keeps `header` text (the
   rule doesn't leak into the base service).
-- [ ] T059 [US2] Add `pageToMarkdown(html)` to `src/descriptions/toMarkdown.ts`: a second service from
+- [X] T059 [US2] Add `pageToMarkdown(html)` to `src/descriptions/toMarkdown.ts`: a second service from
   the factory with an `addRule` filter function for chrome and hidden elements (research R7).
-- [ ] T060 [P] [US1] Unit tests in `tests/careersReadPage.test.ts`: a downloaded or rendered job page
+- [X] T060 [P] [US1] Unit tests in `tests/careersReadPage.test.ts`: a downloaded or rendered job page
   carries `description: { text: <Markdown>, format: "markdown" }` (cut by `capDescription` at 20,000
   characters, with a case over the limit) while the model's text is unchanged; an unreadable
   conversion falls back to the page text as `'text'`; a careers page carries none.
-- [ ] T061 [US1] In `src/careers/readPage.ts`, set `description` for downloaded and rendered job
+- [X] T061 [US1] In `src/careers/readPage.ts`, set `description` for downloaded and rendered job
   pages from `pageToMarkdown` and `capDescription`.
-- [ ] T062 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T063 [US1] Per-PR flow steps 4–6: commit ("Store careers-page descriptions as Markdown (012
+- [X] T062 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T063 [US1] Per-PR flow steps 4–6: commit ("Store careers-page descriptions as Markdown (012
   PR 9)"), push, open PR 9 (quickstart "PR 9"). **Wait for the owner.**
 
 ---
@@ -324,16 +324,16 @@ Markdown yet.
 
 ### Sitting S10, PR 10: docs (T064–T067), branch `012-docs-readme`
 
-- [ ] T064 Per-PR flow steps 1–3, for sitting S10.
-- [ ] T065 Run quickstart "SC checks": SC-003 and SC-005 against the sources it names (Lever and
+- [X] T064 Per-PR flow steps 1–3, for sitting S10.
+- [X] T065 Run quickstart "SC checks": SC-003 and SC-005 against the sources it names (Lever and
   Ashby `descriptionPlain`; Greenhouse through the old `escapedHtmlToText` from git), and SC-004's
   ten timed panel opens.
-- [ ] T066 Update `README.md` (the Description section of the details panel, how descriptions are
+- [X] T066 Update `README.md` (the Description section of the details panel, how descriptions are
   stored, the job-row diagram's `description` and `description_format`, the careers lookup's
   "Results", and that a board's conversion needs a configured company) and `CLAUDE.md` (a line on
   `src/descriptions/`, turndown and react-markdown, and the `description_format` rule), and fill the
   ledger below.
-- [ ] T067 Per-PR flow steps 4–6 for a docs-only PR ("Document Markdown job descriptions (012)").
+- [X] T067 Per-PR flow steps 4–6 for a docs-only PR ("Document Markdown job descriptions (012)").
 
 ---
 
@@ -366,4 +366,15 @@ Within a sitting, the [P] test tasks touch different files:
 |---|---|---|---|
 | Baseline (T002) | 473 | 45 (1 skipped without a browser) | 52 |
 | Planned new | ~52 (T013, T015, T020, T021, T027, T040, T042, T044, T048, T053, T058, T060, and the memory runs of T006, T021's contract case and T035) | ~5 (T005, and the MariaDB runs of T006, T021's contract case and T035) | 2 (T029) |
-| After PR 10 (T066) | | | |
+| After the combined PR (T066) | 543 (+70) | 50 (+5; 1 skipped without a browser) | 54 (+2) |
+
+**Delivery note (owner, 2026-10-23):** sittings S7–S10 (Greenhouse and Workday, Lever, careers pages,
+docs) were delivered as one PR at the owner's request, after PRs 1–6 merged separately.
+
+**SC checks (T065, 2026-10-23, live postings):** SC-003 and SC-005 hold. Five Lever postings: every
+old word present in order, the Markdown 4–7 times longer with the lists and closing section; no boost
+term lost, one posting gaining `typescript` and `javascript` from its requirement lists. Five
+Greenhouse postings: every old word present, except that the old converter left `&mdash;` undecoded
+(the word "mdash"), which turndown now decodes; no boost term lost or gained. Ashby (PR 6): only link
+addresses missing from the readable copy, as intended. SC-004 (panel timing) waits for Markdown rows:
+none is stored until a configured board runs.

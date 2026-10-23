@@ -94,7 +94,9 @@ another title to switch. The panel has five sections:
 - **Score**: the total, the model's own score and any title boost, the resume-fit and
   preference-fit parts, and the reasons and gaps.
 - **Description**: the full text, with requirements and skills, and where it came from (the job's
-  own listing, or the careers page the [careers lookup](#careers-lookup) found, linked).
+  own listing, or the careers page the [careers lookup](#careers-lookup) found, linked). Descriptions
+  stored as Markdown show formatted (headings, lists, emphasis, links opening in a new tab); plain
+  text shows with its line breaks. See [How descriptions are stored](#how-descriptions-are-stored).
 - **Warnings**: only when text from the job tried to escape the model's data markers.
 - **History**: every score the job has had, newest first, with its parts and run.
 
@@ -202,8 +204,10 @@ on the employer's own careers page before the agent scores them:
    `careers_lookup.page_chars` (12,000) characters. With up to four pages a lookup can pass the
    56,000-character context budget, in which case the oldest page is compacted away, so it fits a
    model served from a 16GB graphics card.
-4. **Results**: a found job page's text becomes the job's description (`get_job_details` says
-   `description_from: "careers page"`), and the agent scores it as usual. The careers page that
+4. **Results**: a found job page becomes the job's description, as Markdown converted from the
+   page's HTML without its navigation, header, footer or hidden parts (or, from a board's own data,
+   the posting's own description), and the agent scores it as usual (`get_job_details` says
+   `description_from: "careers page"`). The careers page that
    led to it is remembered for the company, so later jobs there skip the search.
 
 **How a page is read**, in order (each open's audit row says which, in `page_source`):
@@ -440,7 +444,7 @@ work. Three failures in a row and the code ends the run.
 | `list_sources` | Each company board and saved search, plus "Gmail alerts", with this run's progress: `fetched`, `total_unscored`, `fetch_failed` (with a `note` saying why, for Gmail alerts) |
 | `fetch_jobs` | The first call per source per run downloads the board, calls JSearch if the search is due, or reads new Gmail alert emails. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed, and the alerts page carries the run's alert counts |
 | `record_matches` | Saves up to 25 verdicts in one call: a `base` (0–50, resume fit) and a `bonus` (0–50, preference fit) that code sums into the score, with reasons and gaps |
-| `get_job_details` | One job's metadata plus its description (first 6,000 characters) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them; the result arrives inside the run's data markers |
+| `get_job_details` | One job's metadata plus its description (first 6,000 characters, Markdown without link addresses, or plain text) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them; the result arrives inside the run's data markers |
 | `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source is unfetched or still has unscored jobs (a source whose fetch failed doesn't count) |
 
 **Paging needs no page numbers.** The model scores a page and calls `fetch_jobs` again.
@@ -526,7 +530,8 @@ erDiagram
         text compensation
         text publisher "the site a JSearch or alert job was found on"
         text posted_at "from the board"
-        text description "plain text, up to 20,000 chars"
+        text description "Markdown or plain text, up to 20,000 chars"
+        text description_format "markdown or text (null with no description)"
         text description_source "source or careers"
         text description_url "the careers page it was found on"
         text requirements "JSON array (JSearch qualifications)"
@@ -546,13 +551,43 @@ erDiagram
     }
 ```
 
-Company boards and JSearch save the job description (Greenhouse's HTML is converted to plain
-text). Alert emails carry none: an alert job takes the description of a matching JSearch result,
+Company boards and JSearch save the job description (see below). Alert emails carry none: an alert job takes the description of a matching JSearch result,
 or the one the [careers lookup](#careers-lookup) finds, and otherwise has none
 (`description_source` says which). JSearch also supplies requirement bullets and required and
 preferred technologies, which are saved when present; the other sources don't have them as lists,
 so those columns stay empty. Each scoring decision is also kept in the `verdicts` table (see
 [How scoring works](#how-scoring-works)).
+
+#### How descriptions are stored
+
+Sources that send HTML have it converted to **Markdown** before it is stored
+([turndown](https://github.com/mixmark-io/turndown), `src/descriptions/toMarkdown.ts`), so the
+posting's headings, lists and emphasis survive:
+
+| Source | What is stored |
+|---|---|
+| Greenhouse | Markdown from its HTML (sent escaped, decoded once) |
+| Ashby | Markdown from `descriptionHtml` |
+| Lever | Markdown of the whole posting: the opening, each list ("Requirements"…) under its own heading, then the closing section |
+| Careers lookup | Markdown of the job page (a Workday or other board page's own posting, or the downloaded or rendered page without its menus, header, footer or hidden parts) |
+| JSearch | Plain text, as JSearch sends it |
+
+`description_format` says which a row holds; rows stored before Markdown, and JSearch's, stay
+plain text and always show as plain text.
+
+- **Only safe formatting is kept.** Scripts, styles, frames, forms, media and images are dropped
+  with their contents; other wrappers keep their text; links are kept only for `http(s)` addresses;
+  text that merely looks like HTML or Markdown is escaped. At most 20,000 characters, cut at a line
+  break.
+- **It is shown safely.** The panel renders it with
+  [react-markdown](https://github.com/remarkjs/react-markdown): raw HTML is never interpreted, no
+  images load, and only `http(s)` links become links (new tab, no referrer).
+- **The model reads a link-free copy.** `get_job_details` and title boosts see the Markdown with each
+  link reduced to its words, so a link to `aws.example.com` doesn't count as "aws".
+- **Scored again once.** The first time a scored job's description changes to Markdown, it is marked
+  for scoring again, keeping its current score until then.
+- **Only configured boards change.** Stored jobs from companies no longer in `data/config.json` are
+  never fetched again, so they keep their plain text.
 
 **Fishing-post detection:** "days open" counts from the oldest date the bot has, either
 `posted_at` or `first_seen`, across all rows with the same company and normalized title.
@@ -721,8 +756,10 @@ runs; MariaDB storage; the web UI (Recommended, All jobs, Reasoning, Settings) w
 panel; LinkedIn job alerts from Gmail; the careers-page lookup, with pages rendered in a browser
 when needed; and data markers around outside text. Feature specs are in `docs/specs/`.
 
-Still to come: descriptions kept as Markdown so their structure shows (feature 012), a step-by-step
-trace of how each job was categorized, an email digest, and Glassdoor ratings.
+Also built: descriptions kept as Markdown so their structure shows (feature 012).
+
+Still to come: a step-by-step trace of how each job was categorized, an email digest, and Glassdoor
+ratings.
 
 ## License
 
