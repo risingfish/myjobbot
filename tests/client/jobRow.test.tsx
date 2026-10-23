@@ -1,15 +1,17 @@
 import { screen } from "@testing-library/dom";
 import { render } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import type { JobRowView } from "../../src/web/api.js";
 import { JobRow } from "../../web/components/tables/JobRow.js";
 import { jobRowView } from "../helpers/rowFixtures.js";
+
+vi.mock("../../web/lib/actions.js", () => ({ setJobApplied: vi.fn() }));
 
 function renderRow(overrides: Partial<JobRowView> = {}) {
     return render(
         <table>
             <tbody>
-                <JobRow job={jobRowView(overrides)} />
+                <JobRow job={jobRowView(overrides)} onApplied={() => {}} />
             </tbody>
         </table>,
     );

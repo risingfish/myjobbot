@@ -6,6 +6,7 @@
     --accent: #2b4fb0;
     --card: #fff;
     --warn: #a3561a;
+    --applied: #1e7a3c;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -16,6 +17,7 @@
         --accent: #93a8ff;
         --card: #1a1f1c;
         --warn: #e6a467;
+        --applied: #6fd08f;
     }
 }
 body {
@@ -102,6 +104,23 @@ footer {
 .score {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+}
+.applied-cell {
+    text-align: center;
+    font-weight: 700;
+}
+.applied-cell span.applied {
+    color: var(--applied);
+}
+.applied-cell span.unapplied {
+    color: var(--accent);
+}
+form.applied-form button {
+    border: 0;
+    background: none;
+    padding: 2px 6px;
+    font: inherit;
+    cursor: pointer;
 }
 .score-col {
     width: 1%;
@@ -233,6 +252,21 @@ dialog.details-panel[open] {
     border-radius: 6px;
     padding: 2px 10px;
     cursor: pointer;
+}
+.details-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.details-head .applied-action {
+    color: #fff;
+    background: var(--applied);
+    border-color: var(--applied);
+}
+.details-head .applied-done {
+    color: var(--applied);
+    border-color: var(--applied);
 }
 .details-body {
     flex: 1;

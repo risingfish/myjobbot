@@ -1,5 +1,6 @@
 import type { JobRowView } from "../../../src/web/api.js";
 import { useHide } from "../../lib/useHide.js";
+import { SaveFailedNote } from "./SaveFailedNote.js";
 
 interface HideButtonProps {
     job: JobRowView;
@@ -12,12 +13,7 @@ export function HideButton({ job, onHidden }: HideButtonProps) {
     return (
         <form className="hide" onSubmit={(event) => void submit(event)}>
             <button disabled={status === "saving"}>{job.hidden ? "Unhide" : "Hide"}</button>
-            {status === "failed" && (
-                <>
-                    {" "}
-                    <small className="note">Couldn't save — try again</small>
-                </>
-            )}
+            <SaveFailedNote status={status} />
         </form>
     );
 }

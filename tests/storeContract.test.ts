@@ -1,4 +1,5 @@
 import { alertJobContract } from "./helpers/alertJobContract.js";
+import { appliedContract } from "./helpers/appliedContract.js";
 import { careersStoreContract } from "./helpers/careersStoreContract.js";
 import { alertStoreContract } from "./helpers/alertStoreContract.js";
 import { descriptionContract } from "./helpers/descriptionContract.js";
@@ -14,6 +15,7 @@ alertStoreContract(async () => memoryStores());
 alertJobContract(async () => memoryStores());
 descriptionContract(async () => memoryStores());
 jobDetailContract(async () => memoryStores());
+appliedContract(async () => memoryStores());
 let careers = new MemoryCareersStore();
 
 careersStoreContract(

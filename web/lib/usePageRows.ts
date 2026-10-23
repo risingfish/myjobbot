@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobRowView, PageData, PageName } from "../../src/web/api.js";
 import { loadMoreRows } from "./actions.js";
-import { jobKey, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsState } from "./pageRows.js";
+import { jobKey, withJobApplied, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsState } from "./pageRows.js";
 
 export interface PageRows extends RowsState {
     loadMore: () => void;
     markHidden: (job: JobRowView, hidden: boolean) => void;
+    markApplied: (job: JobRowView, appliedOn: string | null) => void;
 }
 
 type SetRows = Dispatch<SetStateAction<RowsState>>;
@@ -16,7 +17,7 @@ interface NextPage {
     version: number;
 }
 
-/** Keeps a page's rows, starting from the server-rendered first page, loading more on request and following hides. */
+/** Keeps a page's rows, starting from the server-rendered first page, loading more on request and following hides and marks. */
 export function usePageRows(name: PageName, initial: PageData): PageRows {
     const [state, setState] = useState<RowsState>({ data: initial, error: null, moreError: null, version: 0 });
     const loadMore = useLoadMore({ name, offset: state.data?.nextOffset ?? null, version: state.version }, setState);
@@ -28,7 +29,13 @@ export function usePageRows(name: PageName, initial: PageData): PageRows {
         },
         [name],
     );
-    return { ...state, loadMore, markHidden };
+    const markApplied = useMarkApplied(setState);
+    return { ...state, loadMore, markHidden, markApplied };
+}
+
+/** Returns the function that records a job's applied mark, or its undoing, on the rows shown; a mark never removes a row. */
+function useMarkApplied(setState: SetRows): PageRows["markApplied"] {
+    return useCallback((job, appliedOn) => setState((current) => ({ ...current, data: current.data && withJobApplied(jobKey(job), appliedOn)(current.data) })), [setState]);
 }
 
 /** Returns a loader for the next page of rows that never runs twice at once, or does nothing at the end. */

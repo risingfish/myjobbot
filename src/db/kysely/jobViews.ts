@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 import { z } from "zod";
 import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../rows.js";
 import type { Database } from "../schema.js";
-import type { HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
+import type { AppliedChange, HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
 
 const JOB_COLUMNS = ["ats", "job_id", "source", "company", "title", "url", "location", "workplace_type", "is_remote", "compensation", "posted_at", "first_seen", "last_seen", "publisher", "score", "reasons", "gaps", "scored_at", "hidden", "description", "description_format", "base_score", "bonus_score", "injection_seen_at", "applied", "applied_on"] as const;
 
@@ -30,6 +30,19 @@ export class KyselyJobViews implements JobViews {
             .where("job_id", "=", flag.jobId)
             .executeTakeFirst();
         return Number(result.numUpdatedRows) > 0;
+    }
+
+    /** Marks a job applied, keeping the time it was first marked, or clears the mark; gives the stored time, or null when the job doesn't exist. */
+    async setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null> {
+        const result = await this.db
+            .updateTable("jobs")
+            .set((eb) => (change.applied ? { applied: 1, applied_on: eb.fn.coalesce("applied_on", eb.val(change.at)) } : { applied: 0, applied_on: null }))
+            .where("ats", "=", change.ats)
+            .where("job_id", "=", change.jobId)
+            .executeTakeFirst();
+        if (Number(result.numUpdatedRows) === 0) return null;
+        const row = await this.db.selectFrom("jobs").select("applied_on").where("ats", "=", change.ats).where("job_id", "=", change.jobId).executeTakeFirstOrThrow();
+        return { appliedOn: row.applied_on };
     }
 
     /** Returns one newest-first page of every stored job, hidden or not, for the all-jobs tab. */

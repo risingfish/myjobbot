@@ -18,6 +18,13 @@ export interface HiddenFlag {
     hidden: boolean;
 }
 
+export interface AppliedChange {
+    ats: string;
+    jobId: string;
+    applied: boolean;
+    at: string;
+}
+
 export interface ScoreFilter {
     sources: string[];
     minScore: number;
@@ -67,6 +74,7 @@ export interface JobKey {
 export interface JobViews {
     scoredFrom(filter: ScoreFilter): Promise<JobView[]>;
     setHidden(flag: HiddenFlag): Promise<boolean>;
+    setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null>;
     allJobs(page: Page): Promise<JobView[]>;
     countAllJobs(): Promise<number>;
     verdictHistory(page: Page): Promise<VerdictView[]>;

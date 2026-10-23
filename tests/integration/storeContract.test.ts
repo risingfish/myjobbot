@@ -4,6 +4,7 @@ import { storesOver } from "../../src/db/kysely/stores.js";
 import type { Database } from "../../src/db/schema.js";
 import { makeJob } from "../../src/jobs/job.js";
 import { alertJobContract } from "../helpers/alertJobContract.js";
+import { appliedContract } from "../helpers/appliedContract.js";
 import { careersStoreContract } from "../helpers/careersStoreContract.js";
 import { alertStoreContract } from "../helpers/alertStoreContract.js";
 import { descriptionContract } from "../helpers/descriptionContract.js";
@@ -33,6 +34,7 @@ alertStoreContract(emptyStores);
 alertJobContract(emptyStores);
 descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
+appliedContract(emptyStores);
 careersStoreContract(emptyStores, {
     pageFields: async () => {
         const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();

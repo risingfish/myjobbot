@@ -100,9 +100,9 @@ export class KyselyJobStore implements JobStore {
         return z.object({ earliest: z.string() }).parse(row).earliest;
     }
 
-    /** Deletes jobs not seen since a cutoff and their now-orphaned verdicts; returns the number of jobs removed. */
+    /** Deletes jobs not seen since a cutoff, except those marked applied, and their now-orphaned verdicts; returns the number of jobs removed. */
     async pruneLastSeenBefore(cutoff: string): Promise<number> {
-        const result = await this.db.deleteFrom("jobs").where("last_seen", "<", cutoff).executeTakeFirst();
+        const result = await this.db.deleteFrom("jobs").where("last_seen", "<", cutoff).where("applied", "=", 0).executeTakeFirst();
         await this.db
             .deleteFrom("verdicts")
             .where(({ not, exists, selectFrom }) =>

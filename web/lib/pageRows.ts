@@ -35,9 +35,19 @@ export function withoutJob(key: string): RowsChange {
 
 /** Builds the change that marks a job as hidden or shown again. */
 export function withJobHidden(key: string, hidden: boolean): RowsChange {
+    return withJobFields(key, { hidden });
+}
+
+/** Builds the change that marks a job applied at a time, or clears its mark when the time is null. */
+export function withJobApplied(key: string, appliedOn: string | null): RowsChange {
+    return withJobFields(key, { applied: appliedOn !== null, appliedOn });
+}
+
+/** Builds the change that updates some of one job's fields in the rows shown. */
+function withJobFields(key: string, fields: Partial<JobRowView>): RowsChange {
     return (data) => {
         if (data.kind !== "jobs") return data;
-        return { ...data, rows: data.rows.map((job) => (jobKey(job) === key ? { ...job, hidden } : job)) };
+        return { ...data, rows: data.rows.map((job) => (jobKey(job) === key ? { ...job, ...fields } : job)) };
     };
 }
 
