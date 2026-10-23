@@ -13,7 +13,7 @@ async function case1(make: MakeStores) {
     const { jobStore, jobViews } = await make();
     await jobStore.upsertAll([job("greenhouse", "a")], SEEN, "Acme");
     await jobStore.recordVerdict({ job_id: "a", score: 70, base: 60, bonus: 10, reasons: ["Go"], gaps: ["Kafka"] }, { scoredAt: SEEN, runId: "run-1" });
-    await jobStore.setDescription({ ats: "greenhouse", jobId: "a" }, { description: "Build APIs in Go.", url: "https://acme.example/jobs/a", source: "careers" });
+    await jobStore.setDescription({ ats: "greenhouse", jobId: "a" }, { description: "Build APIs in Go.", format: "text", url: "https://acme.example/jobs/a", source: "careers" });
     await jobStore.flagInjection("a", "2026-10-20T13:00:00.000Z");
     await jobViews.setHidden({ ats: "greenhouse", jobId: "a", hidden: true });
     expect(await jobViews.jobDetail({ ats: "greenhouse", jobId: "a" })).toMatchObject({

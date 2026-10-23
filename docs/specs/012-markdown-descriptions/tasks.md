@@ -120,14 +120,14 @@ handle Markdown before any source writes it, then a docs PR.
 
 ### Sitting S3, PR 3: the careers lookup's board path keeps a description's format (T019–T025), branch `012-pr3-careers-board-format`
 
-- [ ] T019 Per-PR flow steps 1–3, for sitting S3.
-- [ ] T020 [P] [US1] Unit tests in `tests/careersBoardPages.test.ts`: a board job page whose posting
+- [X] T019 Per-PR flow steps 1–3, for sitting S3.
+- [X] T020 [P] [US1] Unit tests in `tests/careersBoardPages.test.ts`: a board job page whose posting
   has a `'markdown'` description gives the model the title, location and `readableDescription` (no
   link addresses), and carries `description: { text: <the Markdown>, format: "markdown" }`; a
   `'text'` posting gives today's page text and `format: "text"`; a blank Workday description counts
   as none; a careers page (job list) carries no description. Update `asRead` in
   `tests/helpers/careersPages.ts:42-43` for the new `PageRead.description` field.
-- [ ] T021 [P] [US1] Unit tests: in `tests/careersOutcome.test.ts`, a found lookup returns the job
+- [X] T021 [P] [US1] Unit tests: in `tests/careersOutcome.test.ts`, a found lookup returns the job
   page's `description` with its format, and a downloaded page (no `description` yet) returns its
   page text as `'text'` (update the `jobPage` literal at `tests/careersOutcome.test.ts:7`); in
   `tests/careersLookup.test.ts` (next to its storage cases at `:16`, `:149`), a found lookup stores
@@ -135,18 +135,18 @@ handle Markdown before any source writes it, then a docs PR.
   `setDescription` stores `found.format`. Add `format` to the existing `setDescription` calls at
   `tests/getJobDetails.test.ts:39`, `tests/helpers/jobDetailContract.ts:16` and
   `tests/helpers/descriptionContract.ts:22`.
-- [ ] T022 [US1] Add `format: "markdown" | "text"` to `FoundDescription` in `src/db/store.ts`, and
+- [X] T022 [US1] Add `format: "markdown" | "text"` to `FoundDescription` in `src/db/store.ts`, and
   store it in `setDescription` (`src/db/kysely/jobStore.ts`, `tests/helpers/memoryStore.ts`). In
   `src/careers/boardPages.ts`, carry the board posting's `descriptionFormat`, treat a blank
   description as none, build the model's text with `readableDescription`, and return
   `description: { text, format }` for job pages. Add
   `description: { text: string; format: "markdown" | "text" } | null` to `PageRead` in
   `src/careers/readPage.ts` (null for downloads and careers pages until S9).
-- [ ] T023 [US1] Keep the description on `session.jobPage` (`src/careers/session.ts`,
+- [X] T023 [US1] Keep the description on `session.jobPage` (`src/careers/session.ts`,
   `src/careers/tools.ts`); `src/careers/outcome.ts` returns it (falling back to the page text as
   `'text'`); `src/careers/lookUpJob.ts` stores it with its format.
-- [ ] T024 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T025 [US1] Per-PR flow steps 4–6: commit ("Keep a board description's format in the careers
+- [X] T024 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T025 [US1] Per-PR flow steps 4–6: commit ("Keep a board description's format in the careers
   lookup (012 PR 3)"), push, open PR 3 (quickstart "PR 3"). Expect about 13 files; say so.
   **Wait for the owner.**
 

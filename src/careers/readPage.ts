@@ -2,6 +2,7 @@ import type { FileConfig } from "../config/schema.js";
 import { parseBoardLink } from "../sources/boardLink.js";
 import { boardPage, type BoardAccess } from "./boardPages.js";
 import { fetchPublicPage, FetchRefused, type PageFetchDeps } from "./fetchPage.js";
+import type { StoredDescription } from "./postingPage.js";
 import type { PageRenderer } from "./renderState.js";
 import { hasText } from "./session.js";
 import type { PageKind } from "./tools.js";
@@ -14,6 +15,7 @@ export interface PageRead extends TrimmedPage {
     source: PageSource;
     fallback: string | null;
     board: string | null;
+    description: StoredDescription | null;
     note?: string;
 }
 
@@ -48,10 +50,10 @@ function unlessRefused(error: unknown): null {
 async function plainPage(deps: ReadDeps, request: ReadRequest, fallback: string | null): Promise<PageRead> {
     const page = await fetchPublicPage(deps.pages, request.url);
     const plain = trimmed(deps, request, page);
-    if (!unreadable(plain, request)) return { ...plain, source: "html", fallback, board: null };
+    if (!unreadable(plain, request)) return { ...plain, source: "html", fallback, board: null, description: null };
     const rendered = await deps.renderer.render(page.url);
-    if ("fallback" in rendered) return { ...plain, source: "html", fallback: [fallback, rendered.fallback].filter((each) => each !== null).join(","), board: null };
-    return { ...trimmed(deps, request, rendered.page), source: "rendered", fallback, board: null };
+    if ("fallback" in rendered) return { ...plain, source: "html", fallback: [fallback, rendered.fallback].filter((each) => each !== null).join(","), board: null, description: null };
+    return { ...trimmed(deps, request, rendered.page), source: "rendered", fallback, board: null, description: null };
 }
 
 /** Trims fetched or rendered HTML for the model, keeping links only on careers pages. */

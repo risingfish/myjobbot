@@ -59,7 +59,7 @@ export class KyselyJobStore implements JobStore {
 
     /** Stores a description found outside the job's own source, with where it came from, and marks the job for scoring again. */
     async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
-        const values = { description: found.description, description_format: "text", description_source: found.source, description_url: found.url, scored_at: null };
+        const values = { description: found.description, description_format: found.format, description_source: found.source, description_url: found.url, scored_at: null };
         await this.db.updateTable("jobs").set(values).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
     }
 

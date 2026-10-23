@@ -123,7 +123,7 @@ function careersResult(session: LookupSession, page: PageRead) {
 
 /** Shows a job page's text, which becomes the description if the lookup finishes as found. */
 function jobResult(session: LookupSession, page: PageRead) {
-    session.jobPage = { url: page.url, text: page.text };
+    session.jobPage = { url: page.url, text: page.text, description: page.description };
     session.lastOpened = "job";
     const shown = { url: page.url, text: page.text, links: [], cut: page.cut, more_pages: false };
     return hasText(page.text) ? shown : { ...shown, note: NO_TEXT };

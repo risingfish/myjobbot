@@ -1,14 +1,24 @@
 import type { AgentResult } from "../agent/loop.js";
+import type { DescriptionFormat } from "../jobs/job.js";
 import { hasText, type LookupReason, type LookupSession } from "./session.js";
 
-export type LookupOutcome = { found: true; description: string; url: string; careersUrl: string | null } | { found: false; reason: LookupReason };
+type JobPage = NonNullable<LookupSession["jobPage"]>;
+type Found = { found: true; description: string; format: DescriptionFormat; url: string; careersUrl: string | null };
+
+export type LookupOutcome = Found | { found: false; reason: LookupReason };
 
 /** Decides how a lookup ended: the description found, the model's reason, or the code's reason when it never finished. */
 export function decideOutcome(session: LookupSession, result: AgentResult): LookupOutcome {
     const { finished, jobPage } = session;
-    if (finished?.found === true && jobPage !== null && hasText(jobPage.text)) return { found: true, description: jobPage.text, url: jobPage.url, careersUrl: session.careersPage?.url ?? null };
+    if (finished?.found === true && jobPage !== null && hasText(jobPage.text)) return foundOutcome(session, jobPage);
     if (finished?.reason) return { found: false, reason: finished.reason };
     return { found: false, reason: unfinishedReason(session, result) };
+}
+
+/** Describes a found lookup: the job page's own description in its format, or its page text as plain text. */
+function foundOutcome(session: LookupSession, jobPage: JobPage): Found {
+    const stored = jobPage.description ?? { text: jobPage.text, format: "text" };
+    return { found: true, description: stored.text, format: stored.format, url: jobPage.url, careersUrl: session.careersPage?.url ?? null };
 }
 
 /** Picks the reason for a lookup that ended without finish_lookup, in the contract's fixed order. */

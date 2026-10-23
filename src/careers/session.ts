@@ -1,4 +1,5 @@
 import { LinkRegistry } from "./registry.js";
+import type { StoredDescription } from "./postingPage.js";
 
 export interface SoughtJob {
     ats: string;
@@ -24,7 +25,7 @@ export interface LookupSession {
     remembered: string | null;
     lastOpened: "careers" | "job" | null;
     careersPage: { url: string; links: number } | null;
-    jobPage: { url: string; text: string } | null;
+    jobPage: { url: string; text: string; description: StoredDescription | null } | null;
     lastFailure: "fetch_refused" | "timed_out" | null;
     finished: { found: boolean; reason: ModelReason | null } | null;
     overLimit: boolean;
