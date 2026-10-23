@@ -31,11 +31,9 @@
 
 ## Notes
 
-- Three [NEEDS CLARIFICATION] markers are open, raised to the owner rather than guessed: what the
-  panel does after Hide (US3 scenario 2), whether Applied can be undone (Edge Cases), and the time
-  zone for the applied time (FR-011).
-- Also raised to the owner, outside the three-marker limit: confirm Hide reuses the existing hidden
-  flag (Assumptions), and whether the applied state is its own stored yes/no or follows from the
-  time being set (a storage choice for `/speckit-plan`).
-- The column names `applied` / `applied_on` from the request are kept out of the spec as storage
-  detail; the plan's data model decides them.
+- The three [NEEDS CLARIFICATION] markers raised by `/speckit-specify` were resolved with the owner
+  on 2026-10-23 (spec Clarifications): Applied can be undone after a confirmation, the panel closes
+  after Hide, and times show in the browser's time zone.
+- The two further questions were resolved the same day: Hide reuses the existing hidden flag, and
+  the cleanup keeps applied jobs (FR-014, raised while planning). The storage shape (`applied` beside
+  `applied_on`, as the request named them) is decided in research R1.

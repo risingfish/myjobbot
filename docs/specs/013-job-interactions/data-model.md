@@ -36,10 +36,10 @@ the applied columns.
 ## Store interface (`src/db/store.ts`)
 
 ```ts
-interface AppliedMark { ats: string; jobId: string; applied: boolean; at: string }
+interface AppliedChange { ats: string; jobId: string; applied: boolean; at: string }
 interface JobViews {
     // …existing methods
-    setApplied(mark: AppliedMark): Promise<{ appliedOn: string | null } | null>; // null: no such job
+    setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null>; // null: no such job
 }
 ```
 
@@ -51,15 +51,21 @@ interface JobViews {
 - `applied: boolean`
 - `appliedOn: string | null`, the stored ISO time, formatted only in the browser (research R4)
 
-`toJobRowView` in `src/web/rowViews.ts` copies both from the `JobView`. `JobDetailView.job` extends
+`toJobRowView` in `src/web/rowViews.ts` copies both from the `JobView`, through a private
+`appliedMark(job)` spread (the function is at 19 of its 20 lines). `JobDetailView.job` extends
 `JobRowView`, so the panel gets them too.
 
-## Store contract cases (`tests/helpers/storeContract.ts`)
+## Store contract (`tests/helpers/appliedContract.ts`)
+
+One bundled case, run on the memory stores and on `myjobbot_test` (research R12), whose steps cover:
 
 1. Marking sets the mark and time, and returns the time; reading the job back shows both.
 2. Marking again keeps the first time.
-3. Undoing clears both; marking after an undo records the new time.
+3. Undoing clears both; marking after an undo records the new time, and a second undo clears it
+   again.
 4. A missing job returns `null`.
 5. An upsert of the same job (an agent run) keeps `applied` and `applied_on`.
 6. The prune keeps an applied job past the cutoff and deletes an unapplied one; after an undo, the
-   job is pruned.
+   job is pruned. The prune runs before any upsert that would move `last_seen`.
+7. Marking changes neither `hidden` nor what `scoredFrom` and `findJob` return; `setHidden` doesn't
+   change the mark.

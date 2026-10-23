@@ -49,11 +49,9 @@ This feature adds:
 ## Delivery
 
 As with earlier features, this ships as **small pull requests** merged and tried in the UI one at a
-time (about 10 files each, tests included). A likely split:
-1. **Recording Applied**: the stored applied state and time, and the row's question-mark /
-   checkmark (US1).
-2. **The panel's Applied button** and its "Applied ✓" state (US2).
-3. **The panel's Hide button** (US3).
+time (about 10 files each, tests included). The split is in the plan's
+[Delivery](plan.md#delivery-research-r12) section: storage and a shared save hook first, then the
+row's mark (US1), the panel's Applied (US2), and the panel's Hide (US3).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -218,7 +216,9 @@ if its row's Hide had been clicked.
   marked; none is lost to an agent run.
 - **SC-004**: The owner can tell at a glance, for every row of either table, whether they've applied.
 - **SC-005**: Every existing Hide scenario (rows, Recommended removal, Unhide on All jobs, failures,
-  cross-site refusal) still passes unchanged.
+  cross-site refusal) still behaves as before, and its tests pass unchanged. The tests around it
+  change only for the table's new first column, the no-JavaScript note's wording, and the job row's
+  test, which mocks the new action.
 
 ## Assumptions
 
@@ -231,7 +231,4 @@ if its row's Hide had been clicked.
 - **The marked time is when the owner clicks**, not an application date they type in.
 - **Reasoning page** keeps its current columns; the applied icon is only on Recommended and All
   jobs.
-- **Storage detail for planning**: whether the applied state is its own stored yes/no beside the
-  time, or simply "the time is set", is a design choice left to `/speckit-plan` (the request named
-  `applied` and `applied_on`). Either way it is a numbered migration with the
-  schema and the store contract updated.
+- **Storage**: how the applied state and time are stored is decided in research R1.
