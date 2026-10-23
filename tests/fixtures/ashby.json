@@ -18,7 +18,8 @@
             "compensation": {
                 "compensationTierSummary": "$250K - $445K, Offers Equity",
                 "scrapeableCompensationSalarySummary": "$250K - $445K"
-            }
+            },
+            "descriptionHtml": "<h2>About the role</h2><p>Build the infrastructure that trains <strong>frontier models</strong>.</p><ul><li>Kubernetes</li><li>Go</li></ul><script>alert(1)</script>"
         },
         {
             "id": "9c0f3a10-0000-4000-8000-000000000003",

@@ -1,9 +1,10 @@
+import { capDescription } from "../descriptions/cap.js";
+
 export const ATS_NAMES = ["greenhouse", "lever", "ashby"] as const;
 export type Ats = (typeof ATS_NAMES)[number];
 export const DESCRIPTION_FORMATS = ["markdown", "text"] as const;
 export type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
 
-const MAX_DESCRIPTION_CHARS = 20_000;
 const MAX_LIST_ITEMS = 50;
 const MAX_LIST_ITEM_CHARS = 500;
 
@@ -49,7 +50,8 @@ const NO_DETAILS: JobDetails = {
 
 /** Builds a complete Job from required identity fields plus optional details, filling gaps and capping sizes. */
 export function makeJob(core: JobCore, details: Partial<JobDetails>): Job {
-    const description = details.description?.slice(0, MAX_DESCRIPTION_CHARS) ?? null;
+    const given = details.description ?? null;
+    const description = given === null ? null : capDescription(given, details.descriptionFormat ?? "text");
     const lists = { requirements: capList(details.requirements), skills: capList(details.skills), preferredSkills: capList(details.preferredSkills) };
     return { ...NO_DETAILS, ...details, ...core, description, ...lists };
 }

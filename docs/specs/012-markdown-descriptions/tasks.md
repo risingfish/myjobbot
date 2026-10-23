@@ -214,8 +214,8 @@ Markdown yet.
 
 ### Sitting S6, PR 6: the conversion and Ashby (T039–T046), branch `012-pr6-convert-ashby`
 
-- [ ] T039 Per-PR flow steps 1–3, for sitting S6.
-- [ ] T040 [P] [US2] Unit tests in a new `tests/markdown.test.ts` (the hostile set, SC-002), as
+- [X] T039 Per-PR flow steps 1–3, for sitting S6.
+- [X] T040 [P] [US2] Unit tests in a new `tests/markdown.test.ts` (the hostile set, SC-002), as
   `test.each` tables, one row per contract line:
   - kept: ATX headings, nested `-` lists, bold, italic, inline code, a fenced code block (and one
     containing backticks, fenced longer), a block quote, `---`, `[words](https://…)` with
@@ -230,24 +230,24 @@ Markdown yet.
   - broken HTML (unclosed, stray closers) keeps all its text; blank paragraphs, items and headings
     are dropped; `<li><img></li>` leaves at most a bare `-`; nothing readable gives null; outside
     code there is no unescaped `<`.
-- [ ] T041 [US2] Install `turndown@7.2.4` and `@types/turndown@5.0.6` (dev), exact. Create
+- [X] T041 [US2] Install `turndown@7.2.4` and `@types/turndown@5.0.6` (dev), exact. Create
   `src/descriptions/toMarkdown.ts`: a factory building a configured `TurndownService` (research R1:
   options, `remove`, the image, link and code-block rules, the `escape` override) and
   `htmlToMarkdown(html): string | null` on the base service.
-- [ ] T042 [P] [US2] Unit tests in a new `tests/descriptionCap.test.ts`: `capDescription` leaves text
+- [X] T042 [P] [US2] Unit tests in a new `tests/descriptionCap.test.ts`: `capDescription` leaves text
   at or under 20,000 characters alone, cuts `'text'` at the limit, and cuts `'markdown'` at the last
   newline before it (FR-008).
-- [ ] T043 [US2] Create `src/descriptions/cap.ts` (`capDescription`) and use it in `makeJob`
+- [X] T043 [US2] Create `src/descriptions/cap.ts` (`capDescription`) and use it in `makeJob`
   (`src/jobs/job.ts`).
-- [ ] T044 [P] [US2] Unit test in `tests/sources.test.ts`: an Ashby posting's `descriptionHtml` with
+- [X] T044 [P] [US2] Unit test in `tests/sources.test.ts`: an Ashby posting's `descriptionHtml` with
   a heading, a list and a script becomes a `"markdown"` description with the heading and list and no
   script; a posting without it has no description. Add `descriptionHtml` to
   `tests/fixtures/ashby.json`, and send it from `ashbyBoard` in `tests/helpers/boardData.ts:15`. The
   careers tests using it (`tests/careersReadPage.test.ts:29`, `tests/careersBoardPages.test.ts:39`,
   `tests/careersLookup.test.ts:154`) match loosely and may need no change; run them.
-- [ ] T045 [US2] In `src/sources/ashby.ts`, read `descriptionHtml` (no longer `descriptionPlain`)
+- [X] T045 [US2] In `src/sources/ashby.ts`, read `descriptionHtml` (no longer `descriptionPlain`)
   and store `htmlToMarkdown` with `descriptionFormat: "markdown"`.
-- [ ] T046 [US2] Run the touched tests, then `npm run check` and `npm run check:db`; per-PR flow
+- [X] T046 [US2] Run the touched tests, then `npm run check` and `npm run check:db`; per-PR flow
   steps 4–6: commit ("Convert job descriptions to Markdown, starting with Ashby (012 PR 6)"), push,
   open PR 6 (quickstart "PR 6"), noting an Ashby company must be configured to see it. Expect about
   12 files. **Wait for the owner.**

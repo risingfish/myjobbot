@@ -155,7 +155,7 @@ test("a job on a data-publishing board is found from the board's data and stored
     const boards = { "https://api.ashbyhq.com/posting-api/job-board/Acme?includeCompensation=true": ashbyBoard([{ id: "b2", title: JOB.title, location: "Remote" }]) };
     const setup = await lookupSetup({ results: [result(posting, JOB.title)], boards, replies: [search(), open(1, "job_page"), finish(true)] });
     expect(await lookUpJob(setup.deps, JOB)).toMatchObject({ found: true, url: posting });
-    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description_format: "text", description: "Senior Backend Engineer builds APIs." });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description_format: "markdown", description: "Senior Backend Engineer builds APIs." });
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_job", pageSource: "board", board: "ashby:Acme" });
 });
 
