@@ -40,6 +40,7 @@ export type DescriptionOrigin = { kind: "source" } | { kind: "careers"; url: str
 
 export interface DescriptionDetail {
     text: string | null;
+    format: "markdown" | "text" | null;
     requirements: string[];
     skills: string[];
     preferredSkills: string[];

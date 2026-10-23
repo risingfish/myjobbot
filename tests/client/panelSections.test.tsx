@@ -29,7 +29,7 @@ test("an unscored job's panel says it hasn't been scored yet", async () => {
     await vi.waitFor(() => expect(section("Score").textContent).toContain("Not scored yet."));
 });
 
-const CAREERS = { text: "Build APIs.\n<script>alert(1)</script>", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"], origin: { kind: "careers" as const, url: "https://acme.example/jobs/a" } };
+const CAREERS = { text: "Build APIs.\n<script>alert(1)</script>\n## x\n**y**\n- z", format: "text" as const, requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"], origin: { kind: "careers" as const, url: "https://acme.example/jobs/a" } };
 
 test("a careers description shows its text, requirements and skills, and links the page it came from", async () => {
     actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, { description: CAREERS }));
@@ -39,6 +39,37 @@ test("a careers description shows its text, requirements and skills, and links t
     for (const text of ["5 years of Go", "Go, SQL", "Kafka", "From the careers page"]) expect(section("Description").textContent).toContain(text);
     expect(within(section("Description")).getByRole("link", { name: "the careers page" }).getAttribute("href")).toBe("https://acme.example/jobs/a");
     expect(section("Description").querySelector("script")).toBeNull();
+    expect(["h4", "strong", "li"].map((tag) => section("Description").querySelector(tag))).toEqual([null, null, null]);
+    expect(section("Description").textContent).toContain("## x\n**y**\n- z");
+});
+
+const MARKDOWN = "## Role\n\n- Build **APIs**\n- Ship *often*\n\n[Apply here](https://acme.example/apply)";
+const HOSTILE = '<script>alert(1)</script>\n\n<form action="https://x.example"><input name="q"></form>\n\n<iframe src="https://x.example"></iframe>\n\n![x](https://t.example/p.png) [a](javascript:alert(1)) [b](data:text/html,x) <javascript:alert(1)>';
+
+function markdownDescription(text: string) {
+    return { description: { text, format: "markdown" as const, requirements: [], skills: [], preferredSkills: [], origin: null } };
+}
+
+test("a Markdown description shows as formatting, below the panel's headings, with links opening in a new tab", async () => {
+    actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, markdownDescription(MARKDOWN)));
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(within(section("Description")).getByRole("heading", { level: 4, name: "Role" })).toBeTruthy());
+    const shown = section("Description");
+    expect([shown.querySelectorAll("li").length, shown.querySelector("strong")?.textContent, shown.querySelector("em")?.textContent]).toEqual([2, "APIs", "often"]);
+    expect(shown.textContent).not.toMatch(/##|\*\*/);
+    const link = within(shown).getByRole("link", { name: "Apply here" });
+    expect(["href", "target", "rel", "referrerpolicy"].map((name) => link.getAttribute(name))).toEqual(["https://acme.example/apply", "_blank", "noopener noreferrer", "no-referrer"]);
+});
+
+test("hostile Markdown renders no script, form, frame or image, and no link with an unsafe address", async () => {
+    actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, markdownDescription(HOSTILE)));
+    showPage();
+    await openTitle("Software Engineer a");
+    await vi.waitFor(() => expect(section("Description").textContent).toContain("a"));
+    const shown = section("Description");
+    expect(["script", "form", "input", "iframe", "img"].map((tag) => shown.querySelector(tag))).toEqual([null, null, null, null, null]);
+    expect(shown.querySelectorAll("a")).toHaveLength(0);
 });
 
 test("a job without a description says no description was found", async () => {

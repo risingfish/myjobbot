@@ -41,12 +41,12 @@ test("a scored job's score gives the boosted total, the model's score, the boost
 });
 
 test("a job without a description says so, with no origin", async () => {
-    expect(toJobDetailView(await storedDetail({}), [], context).description).toEqual({ text: null, requirements: [], skills: [], preferredSkills: [], origin: null });
+    expect(toJobDetailView(await storedDetail({}), [], context).description).toEqual({ text: null, format: null, requirements: [], skills: [], preferredSkills: [], origin: null });
 });
 
 test("a description from the job's own source carries its requirements and skills", async () => {
     const row = await storedDetail({ description: "Build APIs.\nShip often.", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"] });
-    expect(toJobDetailView(row, [], context).description).toEqual({ text: "Build APIs.\nShip often.", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"], origin: { kind: "source" } });
+    expect(toJobDetailView(row, [], context).description).toEqual({ text: "Build APIs.\nShip often.", format: "text", requirements: ["5 years of Go"], skills: ["Go", "SQL"], preferredSkills: ["Kafka"], origin: { kind: "source" } });
 });
 
 test("a description found on a careers page links that page, but only a web address", async () => {
