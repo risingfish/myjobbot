@@ -64,3 +64,13 @@ test("greenhouse adapter maps missing optional fields to null", async () => {
     const jobs = await fetcherFor("greenhouse")({ name: "Acme", slug: "stripe" }, fakeBoard(loadFixture("greenhouse.json")));
     expect(jobs[1]).toMatchObject({ location: null, postedAt: null, description: null });
 });
+
+test("ashby adapter stores the posting's HTML as Markdown, leaving out anything unsafe", async () => {
+    const jobs = await fetcherFor("ashby")({ name: "Acme", slug: "openai" }, fakeBoard(loadFixture("ashby.json")));
+    expect(jobs[0]).toMatchObject({ descriptionFormat: "markdown", description: "## About the role\n\nBuild the infrastructure that trains **frontier models**.\n\n-   Kubernetes\n-   Go" });
+});
+
+test("an ashby posting without HTML has no description", async () => {
+    const board = { jobs: [{ id: "x", title: "Engineer", jobUrl: "https://jobs.ashbyhq.com/acme/x", descriptionPlain: "plain only", isListed: true }] };
+    expect((await fetcherFor("ashby")({ name: "Acme", slug: "acme" }, fakeBoard(board)))[0]).toMatchObject({ description: null });
+});

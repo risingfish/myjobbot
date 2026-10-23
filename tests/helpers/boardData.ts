@@ -12,7 +12,7 @@ export function workdayDetail(title: string, html: string) {
 }
 
 export function ashbyBoard(postings: Array<Posting & { id: string }>, slug = "Acme") {
-    return { jobs: postings.map((posting) => ({ id: posting.id, title: posting.title, jobUrl: `https://jobs.ashbyhq.com/${slug}/${posting.id}`, location: posting.location, descriptionPlain: `${posting.title} builds APIs.`, isListed: true })) };
+    return { jobs: postings.map((posting) => ({ id: posting.id, title: posting.title, jobUrl: `https://jobs.ashbyhq.com/${slug}/${posting.id}`, location: posting.location, descriptionHtml: `<p>${posting.title} builds APIs.</p>`, isListed: true })) };
 }
 
 export function fakeBoardHttp(answers: Record<string, unknown>) {

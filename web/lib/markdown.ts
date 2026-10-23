@@ -1,8 +1,8 @@
-const WEB_PROTOCOLS = new Set(["http:", "https:"]);
+import { isWebAddress } from "../../src/descriptions/webAddress.js";
 
 /** Keeps a link's address when it is a web address, and empties any other so the link shows as plain words. */
 export function markdownHref(url: string): string {
-    return URL.canParse(url) && WEB_PROTOCOLS.has(new URL(url).protocol) ? url : "";
+    return isWebAddress(url) ? url : "";
 }
 
 /** Places a description's heading below the panel's own section headings, so it never outranks "Description". */

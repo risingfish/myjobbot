@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { htmlToMarkdown } from "../descriptions/toMarkdown.js";
 import { makeJob, type Job } from "../jobs/job.js";
 import { defineBoard } from "./board.js";
 import { optionalDate, optionalFlag, optionalText } from "./fields.js";
@@ -13,7 +14,7 @@ const posting = z.object({
     isRemote: optionalFlag,
     workplaceType: optionalText,
     publishedAt: optionalDate,
-    descriptionPlain: optionalText,
+    descriptionHtml: optionalText,
     isListed: optionalFlag,
     compensation: z.object({ compensationTierSummary: optionalText }).nullish(),
 });
@@ -30,5 +31,10 @@ export const fetchAshby = defineBoard({
 function toJob(company: string, post: z.infer<typeof posting>): Job {
     const { department, team, location, isRemote, workplaceType } = post;
     const compensation = post.compensation?.compensationTierSummary ?? null;
-    return makeJob({ ats: "ashby", jobId: post.id, company, title: post.title, url: post.jobUrl }, { department, team, location, isRemote, workplaceType, compensation, postedAt: post.publishedAt, description: post.descriptionPlain });
+    return makeJob({ ats: "ashby", jobId: post.id, company, title: post.title, url: post.jobUrl }, { department, team, location, isRemote, workplaceType, compensation, postedAt: post.publishedAt, ...markdownDescription(post.descriptionHtml) });
+}
+
+/** Converts a posting's HTML description to Markdown, or gives none when there is no HTML. */
+function markdownDescription(html: string | null): Pick<Job, "description" | "descriptionFormat"> {
+    return { description: html === null ? null : htmlToMarkdown(html), descriptionFormat: "markdown" };
 }
