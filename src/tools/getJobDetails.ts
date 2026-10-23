@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { JobRow } from "../db/store.js";
+import { readableDescription } from "../descriptions/readable.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
 import { defineTool, type Tool } from "./tool.js";
@@ -23,7 +24,7 @@ async function details(context: ToolContext, jobId: string): Promise<Record<stri
     const row = await context.store.findJob(jobId);
     if (!row) throw new Error(`unknown job_id "${jobId}"`);
     const origin = row.description_source === "careers" ? { description_from: "careers page" } : {};
-    return { ...(await summarizeJob(context, row)), ...descriptionFields(row.description), ...origin, ...listFields(row) };
+    return { ...(await summarizeJob(context, row)), ...descriptionFields(readableDescription(row.description, row.description_format)), ...origin, ...listFields(row) };
 }
 
 /** Returns the job's description, truncated to the limit when needed, or a placeholder when absent. */

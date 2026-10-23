@@ -1,5 +1,6 @@
 import type { FileConfig } from "../config/schema.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
+import { readableDescription } from "../descriptions/readable.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
@@ -37,7 +38,7 @@ async function recommendedJobs(views: JobViews, config: FileConfig): Promise<Job
     const threshold = config.match_threshold;
     const scored = await views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
     const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
-    return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, job.description], config.title_boosts)) >= threshold);
+    return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
 }
 
 /** Loads a page of all retrieved jobs, for the All jobs page. */

@@ -1,7 +1,7 @@
 export const ATS_NAMES = ["greenhouse", "lever", "ashby"] as const;
 export type Ats = (typeof ATS_NAMES)[number];
 export const DESCRIPTION_FORMATS = ["markdown", "text"] as const;
-type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
+export type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
 
 const MAX_DESCRIPTION_CHARS = 20_000;
 const MAX_LIST_ITEMS = 50;

@@ -19,6 +19,11 @@ test("get_job_details returns the metadata plus the description, requirements an
     expect(details).not.toHaveProperty("description_truncated");
 });
 
+test("get_job_details gives a Markdown description's link words without their addresses", async () => {
+    const context = contextWith({ description: "## Role\n\nBuild [our APIs](https://acme.example/apis?ref=1).", descriptionFormat: "markdown" });
+    expect(await invokeTool(context, "get_job_details", { job_id: "js_1" })).toMatchObject({ description: "## Role\n\nBuild our APIs." });
+});
+
 test("get_job_details truncates very long descriptions and says so", async () => {
     const context = contextWith({ description: "a".repeat(9000) });
     const details = await invokeTool(context, "get_job_details", { job_id: "js_1" });
