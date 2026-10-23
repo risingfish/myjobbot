@@ -104,7 +104,7 @@ test("each alert email is looked up with one JSearch request, filling in the des
     expect(summary).toMatchObject({ stored: 3, searches: 1, looked_up: 2, with_description: 1, alert_only: 2 });
     expect(trace.events[0]?.lookups).toEqual([{ results: 1, linkedin_links: 1, by_id: 1, by_title: 0, hosts: { "www.linkedin.com": 1 } }]);
     expect([http.requests.length, await stores.apiCalls.countSince("jsearch", "2026-10-01T00:00:00.000Z")]).toEqual([1, 1]);
-    expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ description: "full description 4100000000", skills: ["Go"] });
+    expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ description: "full description 4100000000", description_format: "text", skills: ["Go"] });
 });
 
 test("lookups stop at the allowance, and a JSearch failure or missing key leaves jobs scored from the alert", async () => {

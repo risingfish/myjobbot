@@ -1,5 +1,7 @@
 export const ATS_NAMES = ["greenhouse", "lever", "ashby"] as const;
 export type Ats = (typeof ATS_NAMES)[number];
+export const DESCRIPTION_FORMATS = ["markdown", "text"] as const;
+type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
 
 const MAX_DESCRIPTION_CHARS = 20_000;
 const MAX_LIST_ITEMS = 50;
@@ -19,6 +21,7 @@ export interface Job {
     compensation: string | null;
     postedAt: string | null;
     description: string | null;
+    descriptionFormat: DescriptionFormat;
     publisher: string | null;
     requirements: string[];
     skills: string[];
@@ -37,6 +40,7 @@ const NO_DETAILS: JobDetails = {
     compensation: null,
     postedAt: null,
     description: null,
+    descriptionFormat: "text",
     publisher: null,
     requirements: [],
     skills: [],

@@ -19,6 +19,7 @@ interface JobsTable {
     url: string;
     posted_at: Text;
     description: Text;
+    description_format: Text;
     description_source: Text;
     description_url: Text;
     injection_seen_at: Text;

@@ -1,10 +1,11 @@
 import { z } from "zod";
-import type { Job } from "../jobs/job.js";
+import { DESCRIPTION_FORMATS, type Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import { jsonList } from "./columns.js";
 
 const text = z.string().nullable();
 const count = z.number().nullable();
+const format = z.enum(DESCRIPTION_FORMATS).nullable();
 
 export const jobRowSchema = z.object({
     ats: z.string(),
@@ -25,6 +26,7 @@ export const jobRowSchema = z.object({
     scored_at: text,
     score: count,
     description: text,
+    description_format: format,
     description_source: text,
     description_url: text,
     requirements: jsonList,
@@ -53,6 +55,7 @@ export const jobViewSchema = z.object({
     scored_at: text,
     hidden: z.number().transform((flag) => flag === 1),
     description: text,
+    description_format: format,
     injection_seen_at: text,
     base_score: count,
     bonus_score: count,
@@ -102,6 +105,7 @@ type DetailFields = {
     is_remote: number | null;
     compensation: Text;
     description: Text;
+    description_format: Text;
     description_source: Text;
     description_url: Text;
     requirements: Text;
@@ -141,6 +145,7 @@ function detailParams(job: Job): DetailFields {
         is_remote: toFlag(job.isRemote),
         compensation: job.compensation,
         description: job.description,
+        description_format: job.description === null ? null : job.descriptionFormat,
         description_source: job.description === null ? null : "source",
         description_url: null,
         requirements: listParam(job.requirements),
