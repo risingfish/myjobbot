@@ -41,7 +41,7 @@ test("get_job_details rejects an unknown job id", async () => {
 
 test("get_job_details says when the description came from the employer's careers page", async () => {
     const context = contextWith({});
-    await context.store.setDescription({ ats: "jsearch", jobId: "js_1" }, { description: "Build APIs.", url: "https://acme.example/jobs/1", source: "careers" });
+    await context.store.setDescription({ ats: "jsearch", jobId: "js_1" }, { description: "Build APIs.", format: "text", url: "https://acme.example/jobs/1", source: "careers" });
     expect(await invokeTool(context, "get_job_details", { job_id: "js_1" })).toMatchObject({ description: "Build APIs.", description_from: "careers page" });
     expect(await invokeTool(contextWith({ description: "From the board." }), "get_job_details", { job_id: "js_1" })).not.toHaveProperty("description_from");
 });

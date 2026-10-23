@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { Job } from "../jobs/job.js";
+import type { DescriptionFormat, Job } from "../jobs/job.js";
 import type { jobDetailSchema, jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
 
 export type JobRow = z.infer<typeof jobRowSchema>;
@@ -54,6 +54,7 @@ export interface JobStore {
 
 export interface FoundDescription {
     description: string;
+    format: DescriptionFormat;
     url: string;
     source: "careers";
 }

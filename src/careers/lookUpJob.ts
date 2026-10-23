@@ -103,7 +103,7 @@ async function recordOutcome(sinks: { deps: LookupDeps; audit: Audit; key: strin
     const { deps, audit } = sinks;
     const { job } = session;
     if (!outcome.found) return audit({ step: "finish", url: session.careersPage?.url ?? null, outcome: "failed", reason: outcome.reason, warning: true, detail: outcome.reason === "no_careers_page" ? session.resultUrls.join(" ") : null });
-    await deps.jobs.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, url: outcome.url, source: "careers" });
+    await deps.jobs.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, format: outcome.format, url: outcome.url, source: "careers" });
     if (outcome.careersUrl !== null) await deps.careers.rememberPage({ companyKey: sinks.key, company: job.company, url: outcome.careersUrl }, deps.now().toISOString());
     await audit({ step: "finish", url: outcome.url, outcome: "found", reason: null });
 }

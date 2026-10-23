@@ -13,7 +13,7 @@ const LISTING = listingPage([{ title: JOB.title, href: "backend" }]);
 test("a page is read by plain download and trimmed as trimPage would, marked as html", async () => {
     const { deps } = await lookupSetup({ pages: { [CAREERS_URL]: LISTING } });
     const read = await readPage(deps, { url: CAREERS_URL, kind: "careers_page", sought: JOB.title });
-    expect(read).toEqual({ ...trimPage(LISTING, { baseUrl: CAREERS_URL, maxChars: deps.settings.page_chars, sought: JOB.title, links: true }), source: "html", fallback: null, board: null });
+    expect(read).toEqual({ ...trimPage(LISTING, { baseUrl: CAREERS_URL, maxChars: deps.settings.page_chars, sought: JOB.title, links: true }), source: "html", fallback: null, board: null, description: null });
 });
 
 test("a refused download is rethrown unchanged", async () => {

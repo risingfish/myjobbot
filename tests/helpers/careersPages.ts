@@ -40,5 +40,5 @@ export function searxngJson(results: Array<{ url: string; title: string; content
 }
 
 export function asRead(page: TrimmedPage): PageRead {
-    return { ...page, source: "html", fallback: null, board: null };
+    return { ...page, source: "html", fallback: null, board: null, description: null };
 }

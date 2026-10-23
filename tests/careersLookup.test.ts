@@ -17,7 +17,7 @@ test("a job found through its careers page is stored with the job page's text an
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: LISTING, [POSTING_URL]: POSTING }, replies: [search(), open(1, "careers_page"), open(2, "job_page"), finish(true)] });
     const outcome = await lookUpJob(setup.deps, JOB);
     expect(outcome).toMatchObject({ found: true, url: POSTING_URL, careersUrl: CAREERS_URL });
-    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description: expect.stringContaining("Build APIs in TypeScript.") });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description_format: "text", description: expect.stringContaining("Build APIs in TypeScript.") });
     expect(setup.careers.rows.at(-1)).toMatchObject({ step: "finish", outcome: "found", url: POSTING_URL, reason: null });
     expect(await setup.careers.rememberedPage("acme")).toMatchObject({ company: "Acme", url: CAREERS_URL });
 });
@@ -143,7 +143,11 @@ test("an open past the limit after a refused fetch still reports fetch_refused",
 test("a retried job notes the retry first in its audit trail", async () => {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], replies: [search(), finish(false, "no_careers_page")] });
     await lookUpJob(setup.deps, { ...JOB, retry: true });
-    expect(setup.careers.rows.map((row) => [row.step, row.outcome])).toEqual([["retry", "ok"], ["search", "ok"], ["finish", "failed"]]);
+    expect(setup.careers.rows.map((row) => [row.step, row.outcome])).toEqual([
+        ["retry", "ok"],
+        ["search", "ok"],
+        ["finish", "failed"],
+    ]);
 });
 
 test("a job on a data-publishing board is found from the board's data and stored with the posting's address", async () => {
@@ -151,7 +155,7 @@ test("a job on a data-publishing board is found from the board's data and stored
     const boards = { "https://api.ashbyhq.com/posting-api/job-board/Acme?includeCompensation=true": ashbyBoard([{ id: "b2", title: JOB.title, location: "Remote" }]) };
     const setup = await lookupSetup({ results: [result(posting, JOB.title)], boards, replies: [search(), open(1, "job_page"), finish(true)] });
     expect(await lookUpJob(setup.deps, JOB)).toMatchObject({ found: true, url: posting });
-    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description: expect.stringContaining("builds APIs.") });
+    expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: posting, description_format: "text", description: "Senior Backend Engineer builds APIs." });
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_job", pageSource: "board", board: "ashby:Acme" });
 });
 
