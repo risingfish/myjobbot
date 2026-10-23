@@ -42,6 +42,9 @@ This feature adds:
   in the header? → A: Hide is shown but disabled, labelled as already hidden.
 - Q: Should the panel's Hide be the same Hide the rows already have, setting the existing hidden
   flag? → A: Yes: one hidden flag; Recommended drops the job, and Unhide on All jobs brings it back.
+- Q (raised while planning): Should the cleanup after each run, which deletes jobs not seen for
+  `job_retention_days` (90), keep jobs marked Applied? → A: Yes: applied jobs are never pruned; a
+  job whose mark is undone can be pruned again.
 
 ## Delivery
 
@@ -153,6 +156,9 @@ if its row's Hide had been clicked.
   saved, as Hide does ("No such job.").
 - **Agent runs**: a run that fetches the job again or scores it again keeps its applied state and
   time, as it keeps the hidden flag today.
+- **Old applied jobs**: the cleanup after each run never deletes an applied job, however long it
+  has gone unseen, so its verdict history stays too (FR-014). Once its mark is undone, the usual
+  rule applies again.
 - **Cross-site requests** to mark a job applied are refused, as they are for Hide.
 - **JavaScript off**: the icon shows the saved state; marking needs JavaScript, and the page's
   existing note says so. Without JavaScript the browser's time zone is unknown, so the label may
@@ -192,6 +198,8 @@ if its row's Hide had been clicked.
 - **FR-013**: The owner MUST be able to undo Applied from the row's green checkmark or the panel's
   "Applied ✓", only after confirming "Mark as not applied?". Undoing MUST clear both the mark and its
   time; declining MUST change nothing, and a failed save MUST leave the job applied and say so.
+- **FR-014**: The cleanup after each run MUST NOT delete a job marked applied, whatever its last
+  seen time; other jobs are pruned as before.
 
 ### Key Entities
 
