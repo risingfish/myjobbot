@@ -187,18 +187,18 @@ handle Markdown before any source writes it, then a docs PR.
 
 ### Sitting S5, PR 5: scoring again once (T034–T038), branch `012-pr5-rescore-once`
 
-- [ ] T034 Per-PR flow steps 1–3, for sitting S5.
-- [ ] T035 [P] [US2] Contract cases in `tests/helpers/descriptionContract.ts` (memory and MariaDB,
+- [X] T034 Per-PR flow steps 1–3, for sitting S5.
+- [X] T035 [P] [US2] Contract cases in `tests/helpers/descriptionContract.ts` (memory and MariaDB,
   FR-014): a scored `'text'` job upserted again as `'markdown'` gets `scored_at` null with its score,
   reasons and gaps kept; so does a scored job stored with no description (null format) that is
   upserted with a Markdown one; upserting the same Markdown again
   after re-scoring leaves `scored_at` set; a `'text'` to `'text'` upsert leaves it set.
-- [ ] T036 [US2] In `src/db/kysely/jobStore.ts`'s `upsertAll`, add `scored_at` to the duplicate-key
+- [X] T036 [US2] In `src/db/kysely/jobStore.ts`'s `upsertAll`, add `scored_at` to the duplicate-key
   update as an `eb.case()` (stored format `'text'` or null and `VALUES(description_format)`
   `'markdown'` → null, else `scored_at`), placed **before** `description_format` (research R6);
   mirror it in `tests/helpers/memoryStore.ts`.
-- [ ] T037 [US2] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T038 [US2] Per-PR flow steps 4–6: commit ("Score a job again when its description first becomes
+- [X] T037 [US2] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T038 [US2] Per-PR flow steps 4–6: commit ("Score a job again when its description first becomes
   Markdown (012 PR 5)"), push, open PR 5 (quickstart "PR 5"). **Wait for the owner.**
 
 **Checkpoint**: every reader handles Markdown and the re-scoring rule is in place; nothing stored is

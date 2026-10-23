@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import { sql, type ExpressionBuilder, type Kysely } from "kysely";
 import { z } from "zod";
 import type { Job } from "../../jobs/job.js";
 import { jobRowSchema, toParams, type JobFields } from "../rows.js";
@@ -15,17 +15,29 @@ function insertRow(job: Job, seen: string, source: string) {
     return { ...fields, first_seen: seen, last_seen: seen };
 }
 
+/** Keeps a job's scoring time, or clears it the first time its description turns from plain text (or no format) to Markdown; it must precede the format's own update, which MariaDB applies in order. */
+function scoredAtAfterRefresh(eb: ExpressionBuilder<Database, "jobs">) {
+    const wasPlain = eb.or([eb("description_format", "=", "text"), eb("description_format", "is", null)]);
+    const becomesMarkdown = eb(sql<string>`VALUES(description_format)`, "=", "markdown");
+    return eb
+        .case()
+        .when(eb.and([wasPlain, becomesMarkdown]))
+        .then(null)
+        .else(eb.ref("scored_at"))
+        .end();
+}
+
 export class KyselyJobStore implements JobStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Inserts or refreshes jobs from a fetch, keeping first seen, score and the hidden flag of known jobs. */
+    /** Inserts or refreshes jobs from a fetch, keeping first seen, score and the hidden flag of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
     async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
         if (jobs.length === 0) return;
         const refresh = Object.fromEntries([...REFRESHED, "last_seen"].map((column) => [column, sql`VALUES(${sql.ref(column)})`]));
         await this.db
             .insertInto("jobs")
             .values(jobs.map((job) => insertRow(job, seen, source)))
-            .onDuplicateKeyUpdate(refresh)
+            .onDuplicateKeyUpdate((eb) => ({ scored_at: scoredAtAfterRefresh(eb), ...refresh }))
             .execute();
     }
 

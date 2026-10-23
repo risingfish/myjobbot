@@ -92,6 +92,7 @@ class MemoryJobStore implements JobStore {
     private upsert(params: Row, seen: string): void {
         const { seen: _seen, ...fields } = params;
         const existing = this.tables.jobs.find((job) => job.ats === fields.ats && job.job_id === fields.job_id);
+        if (existing && existing.description_format !== "markdown" && fields.description_format === "markdown") existing.scored_at = null;
         if (existing) Object.assign(existing, fields, { last_seen: seen });
         else this.tables.jobs.push({ ...UNSCORED, ...fields, first_seen: seen, last_seen: seen });
     }
