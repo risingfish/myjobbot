@@ -5,7 +5,7 @@ import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
 import type { FoundDescription, JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
-const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
+const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
 
 const jobRows = z.array(jobRowSchema);
 
@@ -59,7 +59,7 @@ export class KyselyJobStore implements JobStore {
 
     /** Stores a description found outside the job's own source, with where it came from, and marks the job for scoring again. */
     async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
-        const values = { description: found.description, description_source: found.source, description_url: found.url, scored_at: null };
+        const values = { description: found.description, description_format: "text", description_source: found.source, description_url: found.url, scored_at: null };
         await this.db.updateTable("jobs").set(values).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
     }
 

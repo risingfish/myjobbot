@@ -35,10 +35,32 @@ async function case3(make: MakeStores) {
     expect(flags).toEqual({ flagged: ["2026-10-16T13:00:00.000Z", 40, SEEN], clean: [null, null, null] });
 }
 
+async function case4(make: MakeStores) {
+    const { jobStore, jobViews } = await make();
+    const markdown = makeJob({ ats: "greenhouse", jobId: "md", company: "Acme", title: "Backend Engineer", url: "https://example.com/md" }, { description: "## Build APIs", descriptionFormat: "markdown" });
+    await jobStore.upsertAll([job("plain", "Build APIs."), job("none", null), markdown], SEEN, "Acme");
+    await jobStore.setDescription({ ats: "greenhouse", jobId: "none" }, { description: "Found on the careers page.", url: "https://acme.example/jobs/none", source: "careers" });
+    const formats = { plain: "text", none: "text", md: "markdown" };
+    for (const [jobId, format] of Object.entries(formats)) {
+        expect((await jobStore.findJob(jobId))?.description_format).toBe(format);
+        expect((await jobViews.jobDetail({ ats: "greenhouse", jobId }))?.description_format).toBe(format);
+    }
+    const listed = await jobViews.allJobs({ offset: 0, limit: 10 });
+    expect(Object.fromEntries(listed.map((view) => [view.job_id, view.description_format]))).toEqual(formats);
+}
+
+async function case5(make: MakeStores) {
+    const { jobStore } = await make();
+    await jobStore.upsertAll([job("empty", null)], SEEN, "Acme");
+    expect((await jobStore.findJob("empty"))?.description_format).toBeNull();
+}
+
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [
     ["an upsert marks a stored description as coming from the job's own source", case1],
     ["a careers description is stored with its address and marks the job for scoring again, keeping its last score until then", case2],
     ["a job is flagged once, keeping the first time, without touching its score, and stays flagged when fetched again", case3],
+    ["a description's format is stored with it, plain text unless a source says Markdown, and read back by every view", case4],
+    ["a job without a description has no format", case5],
 ];
 
 export function descriptionContract(make: MakeStores): void {

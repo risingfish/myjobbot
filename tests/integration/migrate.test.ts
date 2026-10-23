@@ -53,7 +53,7 @@ test("on an empty database, two processes migrating at once run each step once, 
     try {
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(first);
         const ran = await Promise.all([migrateToLatest(first), migrateToLatest(second)]);
-        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources", "006_injection_flag"]);
+        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources", "006_injection_flag", "007_description_format"]);
         expect(await migrateToLatest(first)).toEqual([]);
         expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "careers_audit utf8mb4_bin", "careers_pages utf8mb4_bin", "gmail_alert_state utf8mb4_bin", "gmail_connection utf8mb4_bin", "jobs utf8mb4_bin", "verdicts utf8mb4_bin"]);
     } finally {
@@ -74,7 +74,7 @@ test("step 005 adds how pages were read and marks earlier unreadable or gave-up 
         for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
         await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < "005")) });
         for (const [index, reason] of FINISHES.entries()) await sql`INSERT INTO careers_audit (run_id, at, ats, job_id, company, step, outcome, reason) VALUES ('r', 'now', 'linkedin', ${`li_${index}`}, 'Acme', 'finish', 'failed', ${reason})`.execute(db);
-        expect(await migrateToLatest(db)).toEqual(["005_page_sources", "006_injection_flag"]);
+        expect(await migrateToLatest(db)).toEqual(["005_page_sources", "006_injection_flag", "007_description_format"]);
         const marked = await sql<{ job_id: string; retry_once: number }>`SELECT job_id, retry_once FROM careers_audit ORDER BY job_id`.execute(db);
         expect(marked.rows.map((row) => row.retry_once)).toEqual([1, 1, 1, 0, 0]);
         expect(await columnTypes(db, "careers_audit", ["page_source", "fallback", "board", "retry_once"])).toEqual(["board varchar(160) YES NULL utf8mb4_bin", "fallback varchar(32) YES NULL utf8mb4_bin", "page_source varchar(16) YES NULL utf8mb4_bin", "retry_once tinyint(4) NO 0 "]);
@@ -91,6 +91,32 @@ test("step 006 adds the injection flag to jobs, empty for every job already ther
         expect(await columnTypes(db, "jobs", ["injection_seen_at"])).toEqual(["injection_seen_at varchar(32) YES NULL utf8mb4_bin"]);
         const flags = await db.selectFrom("jobs").select("injection_seen_at").execute();
         expect(flags).toEqual([{ injection_seen_at: null }]);
+    } finally {
+        await db.destroy();
+    }
+});
+
+function storedJob(jobId: string, description: string | null) {
+    const seen = "2026-10-22T00:00:00.000Z";
+    return { ats: "greenhouse", job_id: jobId, company: "Acme", source: "Acme", title: "Engineer", normalized_title: "engineer", url: "u", description, first_seen: seen, last_seen: seen };
+}
+
+test("step 007 records the format of every stored description as plain text, and none where there is no description", async () => {
+    const db = await testDatabase();
+    try {
+        for (const table of [...TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
+        await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < "007")) });
+        await db
+            .insertInto("jobs")
+            .values([storedJob("with", "Build APIs."), storedJob("without", null)])
+            .execute();
+        expect(await migrateToLatest(db)).toEqual(["007_description_format"]);
+        const formats = await db.selectFrom("jobs").select(["job_id", "description_format"]).orderBy("job_id").execute();
+        expect(formats).toEqual([
+            { job_id: "with", description_format: "text" },
+            { job_id: "without", description_format: null },
+        ]);
+        expect(await columnTypes(db, "jobs", ["description_format"])).toEqual(["description_format varchar(16) YES NULL utf8mb4_bin"]);
     } finally {
         await db.destroy();
     }

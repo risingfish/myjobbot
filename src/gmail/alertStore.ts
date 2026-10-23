@@ -48,6 +48,6 @@ async function withoutCopies(store: JobStore, jobs: AlertJob[]): Promise<AlertJo
 export function alertJobRecord(job: AlertJob, match?: Job): Job {
     const url = `https://www.linkedin.com/jobs/view/${job.linkedinId}/`;
     const core = { ats: "linkedin" as const, jobId: alertJobId(job.linkedinId), company: job.company, title: job.title, url };
-    const details = match === undefined ? {} : { description: match.description, requirements: match.requirements, skills: match.skills, preferredSkills: match.preferredSkills, postedAt: match.postedAt, isRemote: match.isRemote, workplaceType: match.workplaceType };
+    const details = match === undefined ? {} : { description: match.description, descriptionFormat: match.descriptionFormat, requirements: match.requirements, skills: match.skills, preferredSkills: match.preferredSkills, postedAt: match.postedAt, isRemote: match.isRemote, workplaceType: match.workplaceType };
     return makeJob(core, { ...details, location: job.location, compensation: job.salary ?? match?.compensation ?? null });
 }

@@ -46,7 +46,7 @@ class MemoryJobStore implements JobStore {
 
     async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
         const job = this.tables.jobs.find((row) => row.ats === key.ats && row.job_id === key.jobId);
-        if (job) Object.assign(job, { description: found.description, description_source: found.source, description_url: found.url, scored_at: null });
+        if (job) Object.assign(job, { description: found.description, description_format: "text", description_source: found.source, description_url: found.url, scored_at: null });
     }
 
     async flagInjection(jobId: string, at: string): Promise<void> {

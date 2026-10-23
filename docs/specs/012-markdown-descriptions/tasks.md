@@ -66,35 +66,35 @@ handle Markdown before any source writes it, then a docs PR.
 
 ### Sitting S1, PR 1: the format column (T004–T011), branch `012-pr1-description-format`
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1.
-- [ ] T005 [P] Integration test in `tests/integration/migrate.test.ts`: on a database migrated to
+- [X] T004 Per-PR flow steps 1–3, for sitting S1.
+- [X] T005 [P] Integration test in `tests/integration/migrate.test.ts`: on a database migrated to
   006, seed a job with a description and one without through a Kysely `insertInto("jobs")` (not
   `upsertAll`, which writes the new column), run 007, and check `jobs.description_format` is
   `'text'` and null. Update the exact migration lists at `tests/integration/migrate.test.ts:56` and
   `:77` to include `007_description_format`.
-- [ ] T006 [P] Contract cases in `tests/helpers/descriptionContract.ts` (memory and MariaDB): an
+- [X] T006 [P] Contract cases in `tests/helpers/descriptionContract.ts` (memory and MariaDB): an
   upserted job with a description stores `description_format` `'text'` by default and one without
   stores null; an upsert with `descriptionFormat: "markdown"` stores `'markdown'`; `findJob`,
   `jobViews.allJobs` and `jobViews.jobDetail` return it; `setDescription` stores `'text'`.
-- [ ] T007 Create `src/db/migrations/007_description_format.ts` with
+- [X] T007 Create `src/db/migrations/007_description_format.ts` with
   `db.schema.alterTable("jobs").addColumn("description_format", "varchar(16)")` and a data step
   `db.withTables<...>().updateTable("jobs").set({ description_format: "text" }).where("description",
   "is not", null)`; list it in `src/db/migrations/index.ts`; add `description_format: Text` to
   `src/db/schema.ts`. Rule (data-model.md): "`description_format` is null exactly when `description`
   is null", except rows copied by `import-sqlite` (null format, read as `'text'`).
-- [ ] T008 In `src/jobs/job.ts`, add `descriptionFormat: "markdown" | "text"` to `Job` with `"text"`
+- [X] T008 In `src/jobs/job.ts`, add `descriptionFormat: "markdown" | "text"` to `Job` with `"text"`
   in `NO_DETAILS` (`JobDetails` is an `Omit` of `Job`). In `src/db/rows.ts`, add it to
   `DetailFields`, write `description_format` in `toParams` (null with no description), and add it to
   `jobRowSchema` and `jobViewSchema` as `z.enum(["markdown", "text"]).nullable()`. In
   `src/db/kysely/jobViews.ts`, add `description_format` to `JOB_COLUMNS` (the views select a fixed
   column list).
-- [ ] T009 In `src/db/kysely/jobStore.ts`, add `description_format` to `REFRESHED`, and have
+- [X] T009 In `src/db/kysely/jobStore.ts`, add `description_format` to `REFRESHED`, and have
   `setDescription` write `description_format: "text"` (a constant until S3); mirror both in
   `tests/helpers/memoryStore.ts`. `src/gmail/alertStore.ts`'s `alertJobRecord` copies
   `match.descriptionFormat` with the description, with one assertion added to its existing test in
   `tests/gmailAlerts.test.ts` (or wherever `alertJobRecord` is tested).
-- [ ] T010 Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T011 Per-PR flow steps 4–6: commit ("Record each job description's format (012 PR 1)"), push,
+- [X] T010 Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T011 Per-PR flow steps 4–6: commit ("Record each job description's format (012 PR 1)"), push,
   open PR 1 (quickstart "PR 1"). Expect about 12 files; say so if more. **Wait for the owner.**
 
 ### Sitting S2, PR 2: the readable copy (T012–T018), branch `012-pr2-readable-copy`
