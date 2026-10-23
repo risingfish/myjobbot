@@ -21,7 +21,7 @@ function scoreDetail(row: JobDetailRow, job: JobRowView, context: RowContext): S
 /** Gathers the job's description with its requirements and skills, and where the description came from. */
 function descriptionDetail(row: JobDetailRow): DescriptionDetail {
     const lists = { requirements: row.requirements, skills: row.skills, preferredSkills: row.preferred_skills };
-    return { text: row.description, ...lists, origin: descriptionOrigin(row) };
+    return { text: row.description, format: row.description_format, ...lists, origin: descriptionOrigin(row) };
 }
 
 /** Says whether the description came from the job's own listing or a careers page, linking that page only when it is a web address. */

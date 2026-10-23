@@ -269,6 +269,37 @@ dialog.details-panel[open] {
     overflow-wrap: anywhere;
     line-height: 1.5;
 }
+.details-markdown {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.details-markdown h4,
+.details-markdown h5,
+.details-markdown h6 {
+    color: var(--fg);
+    font-size: 15px;
+    margin: 16px 0 6px;
+}
+.details-markdown h5,
+.details-markdown h6 {
+    font-size: 14px;
+}
+.details-markdown ul,
+.details-markdown ol {
+    margin: 6px 0;
+    padding-left: 22px;
+}
+.details-markdown blockquote {
+    margin: 8px 0;
+    padding-left: 12px;
+    border-left: 3px solid var(--rule);
+    color: var(--muted);
+}
+.details-markdown pre {
+    overflow-x: auto;
+    padding: 8px;
+    background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
 .details-origin {
     color: var(--muted);
     margin: 0 0 8px;

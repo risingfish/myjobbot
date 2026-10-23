@@ -1,4 +1,5 @@
 import type { DescriptionDetail, DescriptionOrigin } from "../../../src/web/api.js";
+import { MarkdownText } from "./MarkdownText.js";
 import { Fact, PanelSection } from "./PanelSection.js";
 
 /** Shows the job's description in the details panel, with its requirements and skills and where it came from. */
@@ -7,9 +8,16 @@ export function DescriptionSection({ description }: { description: DescriptionDe
         <PanelSection title="Description">
             {description.origin !== null && <Origin origin={description.origin} />}
             <DescriptionLists description={description} />
-            {description.text === null ? <p>No description found.</p> : <p className="details-text">{description.text}</p>}
+            <DescriptionText description={description} />
         </PanelSection>
     );
+}
+
+/** Shows the description itself: formatted when it is Markdown, as text with its line breaks otherwise, or says there is none. */
+function DescriptionText({ description }: { description: DescriptionDetail }) {
+    if (description.text === null) return <p>No description found.</p>;
+    if (description.format === "markdown") return <MarkdownText text={description.text} />;
+    return <p className="details-text">{description.text}</p>;
 }
 
 /** Says where the description came from, linking the careers page it was found on. */

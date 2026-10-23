@@ -152,14 +152,14 @@ handle Markdown before any source writes it, then a docs PR.
 
 ### Sitting S4, PR 4: showing Markdown (T026–T033), branch `012-pr4-markdown-display`
 
-- [ ] T026 Per-PR flow steps 1–3, for sitting S4.
-- [ ] T027 [P] [US3] Unit tests in a new `tests/markdownDisplay.test.ts` (US2, US3):
+- [X] T026 Per-PR flow steps 1–3, for sitting S4.
+- [X] T027 [P] [US3] Unit tests in a new `tests/markdownDisplay.test.ts` (US2, US3):
   `markdownHref` keeps `https://` and `http://` addresses and returns `""` for `javascript:`,
   `JavaScript:`, `data:`, `vbscript:`, `mailto:`, relative and malformed addresses;
   `descriptionHeading` maps 1 and 2 → `h4`, 3 → `h5`, 4–6 → `h6`.
-- [ ] T028 [US3] Create `web/lib/markdown.ts` (`markdownHref`, `descriptionHeading`, contract
+- [X] T028 [US3] Create `web/lib/markdown.ts` (`markdownHref`, `descriptionHeading`, contract
   "Display").
-- [ ] T029 [P] [US1] Two UI tests in `tests/client/panelSections.test.tsx`:
+- [X] T029 [P] [US1] Two UI tests in `tests/client/panelSections.test.tsx`:
   - a `'markdown'` description shows its heading as an `h4`, a list, bold and italic with no `##` or
     `**` visible, and an `https://` link with `target="_blank"`, `rel="noopener noreferrer"` and
     `referrerpolicy="no-referrer"`;
@@ -172,16 +172,16 @@ handle Markdown before any source writes it, then a docs PR.
   `tests/client/panelSections.test.tsx:32`, which also gains a `'text'` description containing
   `## x`, `**y**` and `- z` with assertions that it renders no `h4`, `strong` or `li` (FR-004,
   FR-011; the UI test count stays 2 new).
-- [ ] T030 [US1] Install `react-markdown@10.1.0` (exact). Create
+- [X] T030 [US1] Install `react-markdown@10.1.0` (exact). Create
   `web/components/panel/MarkdownText.tsx` per contract "Display" (a `details-markdown` wrapper, using
   `web/lib/markdown.ts`); add `format` to `DescriptionDetail` in `src/web/api.ts` and
   `src/web/jobDetail.ts`; `web/components/panel/DescriptionSection.tsx` uses `MarkdownText` for
   `'markdown'` and today's text paragraph otherwise.
-- [ ] T031 [US1] In `web/app/styles.css`, style `.details-markdown` headings (`h4`–`h6`, overriding
+- [X] T031 [US1] In `web/app/styles.css`, style `.details-markdown` headings (`h4`–`h6`, overriding
   `.details-section h4`), lists, block quotes, code and links (wrapping long words and addresses,
   like `.details-text`).
-- [ ] T032 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
-- [ ] T033 [US1] Per-PR flow steps 4–6: commit ("Show Markdown descriptions safely in the panel
+- [X] T032 [US1] Run the touched tests, then `npm run check` and `npm run check:db`.
+- [X] T033 [US1] Per-PR flow steps 4–6: commit ("Show Markdown descriptions safely in the panel
   (012 PR 4)"), push, open PR 4 (quickstart "PR 4", including the step to configure boards before
   PRs 6–8). **Wait for the owner.**
 
