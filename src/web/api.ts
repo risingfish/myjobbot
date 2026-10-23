@@ -21,6 +21,8 @@ export interface JobRowView {
     filterNote: string | null;
     injection: boolean;
     hidden: boolean;
+    applied: boolean;
+    appliedOn: string | null;
     reasons: string[];
     gaps: string[];
 }

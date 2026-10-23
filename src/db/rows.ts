@@ -54,6 +54,8 @@ export const jobViewSchema = z.object({
     gaps: jsonList,
     scored_at: text,
     hidden: z.number().transform((flag) => flag === 1),
+    applied: z.number().transform((flag) => flag === 1),
+    applied_on: text,
     description: text,
     description_format: format,
     injection_seen_at: text,

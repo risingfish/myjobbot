@@ -37,6 +37,8 @@ interface JobsTable {
     gaps: Text;
     emailed_at: Text;
     hidden: Generated<number>;
+    applied: Generated<number>;
+    applied_on: Text;
 }
 
 interface VerdictsTable {

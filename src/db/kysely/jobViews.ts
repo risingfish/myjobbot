@@ -4,7 +4,7 @@ import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../rows.js";
 import type { Database } from "../schema.js";
 import type { HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
 
-const JOB_COLUMNS = ["ats", "job_id", "source", "company", "title", "url", "location", "workplace_type", "is_remote", "compensation", "posted_at", "first_seen", "last_seen", "publisher", "score", "reasons", "gaps", "scored_at", "hidden", "description", "description_format", "base_score", "bonus_score", "injection_seen_at"] as const;
+const JOB_COLUMNS = ["ats", "job_id", "source", "company", "title", "url", "location", "workplace_type", "is_remote", "compensation", "posted_at", "first_seen", "last_seen", "publisher", "score", "reasons", "gaps", "scored_at", "hidden", "description", "description_format", "base_score", "bonus_score", "injection_seen_at", "applied", "applied_on"] as const;
 
 const DETAIL_COLUMNS = ["description_source", "description_url", "requirements", "skills", "preferred_skills"] as const;
 

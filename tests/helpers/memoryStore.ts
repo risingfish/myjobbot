@@ -6,7 +6,7 @@ import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
 import { asc, MemoryJobViews, type Row, type Tables } from "./memoryJobViews.js";
 
-const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, emailed_at: null, injection_seen_at: null };
+const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, emailed_at: null, injection_seen_at: null };
 
 function companies(rows: Row[]): string[] {
     return [...new Set(rows.map((job) => String(job.company)))];

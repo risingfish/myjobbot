@@ -73,36 +73,36 @@ and the existing tests its change breaks, which are updated in that same test ta
 
 Nothing visible changes; Hide works as before.
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1.
-- [ ] T005 [P] Integration test in `tests/integration/migrate.test.ts` (one new `test()`): on a
+- [X] T004 Per-PR flow steps 1–3, for sitting S1.
+- [X] T005 [P] Integration test in `tests/integration/migrate.test.ts` (one new `test()`): on a
   database migrated to 007, seed a job through a Kysely `insertInto("jobs")`, run 008, and check it
   reads `applied = 0` and `applied_on` null; insert a second job naming neither column and check the
   same; and check `columnTypes(db, "jobs", ["applied", "applied_on"])` equals `["applied tinyint(4)
   NO 0 ", "applied_on varchar(32) YES NULL utf8mb4_bin"]`, as the 005 and 006 tests do (`:80`,
   `:91`). Add `008_applied` to the exact migration lists at `tests/integration/migrate.test.ts:56`,
   `:77` and `:113`.
-- [ ] T006 [P] Unit tests (two `test()`s, on the memory stores): in `tests/pageData.test.ts`, a stored
+- [X] T006 [P] Unit tests (two `test()`s, on the memory stores): in `tests/pageData.test.ts`, a stored
   job's row view has `applied: false` and `appliedOn: null`; in `tests/jobDetail.test.ts`,
   `toJobDetailView({ ...(await storedDetail({})), applied: true, applied_on:
   "2026-10-23T16:40:00.000Z" }, [], context).job` has `applied: true` and that `appliedOn`. Add the defaults
   to `jobRowView()` in `tests/helpers/rowFixtures.ts` (`applied: false, appliedOn: null`) and to
   `UNSCORED` in `tests/helpers/memoryStore.ts:9` (`applied: 0, applied_on: null`).
-- [ ] T007 Add `src/db/migrations/008_applied.ts` exporting `applied: Migration`, whose `up` runs
+- [X] T007 Add `src/db/migrations/008_applied.ts` exporting `applied: Migration`, whose `up` runs
   `db.schema.alterTable("jobs").addColumn("applied", sql`tinyint`, (column) =>
   column.notNull().defaultTo(0)).addColumn("applied_on", "varchar(32)").execute()` (the chain of
   `005_page_sources.ts:17`); list it as `"008_applied"` in `src/db/migrations/index.ts`.
-- [ ] T008 Add `applied: Generated<number>` and `applied_on: Text` to `JobsTable` in
+- [X] T008 Add `applied: Generated<number>` and `applied_on: Text` to `JobsTable` in
   `src/db/schema.ts`; add `applied: z.number().transform((flag) => flag === 1)` and `applied_on:
   text` to `jobViewSchema` in `src/db/rows.ts`; add `"applied", "applied_on"` to `JOB_COLUMNS` in
   `src/db/kysely/jobViews.ts`.
-- [ ] T009 Update `upsertAll`'s doc comment in `src/db/kysely/jobStore.ts:33` to name the applied
+- [X] T009 Update `upsertAll`'s doc comment in `src/db/kysely/jobStore.ts:33` to name the applied
   mark among what an upsert keeps ("…keeping first seen, score, the hidden flag and the applied mark
   of known jobs…"); the code needs no change (research R11).
-- [ ] T010 Add `applied: boolean` and `appliedOn: string | null` to `JobRowView` in `src/web/api.ts`.
+- [X] T010 Add `applied: boolean` and `appliedOn: string | null` to `JobRowView` in `src/web/api.ts`.
   In `src/web/rowViews.ts`, add one spread `...appliedMark(job)` to `toJobRowView` from a new
   private `appliedMark(job): Pick<JobRowView, "applied" | "appliedOn">` with its doc comment
   (`toJobRowView` is at 19 lines). Fix any other `JobRowView` literals the typecheck names.
-- [ ] T011 Per-PR flow steps 4–6 ("Store when a job was marked applied (013 PR 1)").
+- [X] T011 Per-PR flow steps 4–6 ("Store when a job was marked applied (013 PR 1)").
 
 ### Sitting S2, PR 2: one way to save a change (T012–T018), branch `013-pr2-save-core`
 
