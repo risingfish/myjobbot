@@ -30,7 +30,7 @@ function scoredAtAfterRefresh(eb: ExpressionBuilder<Database, "jobs">) {
 export class KyselyJobStore implements JobStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Inserts or refreshes jobs from a fetch, keeping first seen, score and the hidden flag of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
+    /** Inserts or refreshes jobs from a fetch, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
     async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
         if (jobs.length === 0) return;
         const refresh = Object.fromEntries([...REFRESHED, "last_seen"].map((column) => [column, sql`VALUES(${sql.ref(column)})`]));

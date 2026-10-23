@@ -16,6 +16,8 @@ const BASE_JOB_ROW: JobRowView = {
     filterNote: null,
     injection: false,
     hidden: false,
+    applied: false,
+    appliedOn: null,
     reasons: ["reason a"],
     gaps: ["gap a"],
 };

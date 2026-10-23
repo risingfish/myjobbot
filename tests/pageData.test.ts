@@ -115,3 +115,7 @@ test("a scored Gmail alerts job at or above the threshold is recommended", async
     const data = await pagesOf([{ id: "li_1", score: 90, source: "Gmail alerts" }])("recommended");
     expect(jobRows(data).map((row) => row.jobId)).toEqual(["li_1"]);
 });
+
+test("a stored job's row is not applied until marked", async () => {
+    expect(jobRows(await pagesOf([{ id: "a", score: 90 }])("jobs"))[0]).toMatchObject({ applied: false, appliedOn: null });
+});

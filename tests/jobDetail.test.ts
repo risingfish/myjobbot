@@ -70,3 +70,8 @@ test("the history lists each verdict in the order given, with its time, score, p
         { scoredAt: "2026-10-21 08:15", total: 45, base: null, bonus: null, run: null },
     ]);
 });
+
+test("an applied job's row view carries the mark and the time it was marked", async () => {
+    const row = { ...(await storedDetail({})), applied: true, applied_on: "2026-10-23T16:40:00.000Z" };
+    expect(toJobDetailView(row, [], context).job).toMatchObject({ applied: true, appliedOn: "2026-10-23T16:40:00.000Z" });
+});
