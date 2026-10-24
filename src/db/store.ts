@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { CompanyStore } from "./companyStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 import type { jobDetailSchema, jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
 
@@ -183,5 +184,6 @@ export interface Stores {
     gmail: GmailStore;
     alerts: AlertStore;
     careers: CareersStore;
+    companies: CompanyStore;
     close(): Promise<void>;
 }
