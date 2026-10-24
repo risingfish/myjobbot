@@ -6,6 +6,7 @@ import { makeJob } from "../../src/jobs/job.js";
 import { alertJobContract } from "../helpers/alertJobContract.js";
 import { appliedContract } from "../helpers/appliedContract.js";
 import { careersStoreContract } from "../helpers/careersStoreContract.js";
+import { companyContract, type CompanyHooks } from "../helpers/companyContract.js";
 import { alertStoreContract } from "../helpers/alertStoreContract.js";
 import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
@@ -34,6 +35,7 @@ alertStoreContract(emptyStores);
 alertJobContract(emptyStores);
 descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
+companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
 careersStoreContract(emptyStores, {
     pageFields: async () => {
@@ -70,3 +72,14 @@ test("a hide and a verdict on the same job at the same moment both land", async 
         await other.destroy();
     }
 });
+
+function companyHooks(): CompanyHooks {
+    return {
+        listCompanies: () => db.selectFrom("companies").select(["id", "company_key", "name", "created_date", "last_found_date"]).orderBy("id").execute(),
+        jobLinks: () => db.selectFrom("jobs").select(["job_id", "company_id"]).orderBy("job_id").execute(),
+        seedUnlinked: async (jobs) => {
+            const rows = jobs.map((job) => ({ ats: "greenhouse", job_id: job.jobId, company: job.company, source: job.company, title: "Engineer", normalized_title: "engineer", url: "u", first_seen: job.firstSeen, last_seen: job.lastSeen }));
+            await db.insertInto("jobs").values(rows).execute();
+        },
+    };
+}

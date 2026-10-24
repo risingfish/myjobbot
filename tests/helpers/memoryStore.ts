@@ -1,12 +1,15 @@
 import { jobRowSchema, toParams } from "../../src/db/rows.js";
 import type { ApiCallLog, FoundDescription, JobKey, JobRow, JobStore, Stores, Verdict, VerdictStamp } from "../../src/db/store.js";
+import { companyKeys } from "../../src/companies/keys.js";
+import { normalizeCompany } from "../../src/jobs/company.js";
 import type { Job } from "../../src/jobs/job.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
+import { recordMemoryCompanies, touchMemoryCompany } from "./memoryCompanies.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
-import { asc, MemoryJobViews, type Row, type Tables } from "./memoryJobViews.js";
+import { asc, MemoryJobViews, newTables, type Row, type Tables } from "./memoryJobViews.js";
 
-const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, emailed_at: null, injection_seen_at: null };
+const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, company_id: null, emailed_at: null, injection_seen_at: null };
 
 function companies(rows: Row[]): string[] {
     return [...new Set(rows.map((job) => String(job.company)))];
@@ -21,7 +24,15 @@ class MemoryJobStore implements JobStore {
     constructor(private readonly tables: Tables) {}
 
     async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
-        for (const job of jobs) this.upsert(toParams(job, seen, source), seen);
+        const ids = recordMemoryCompanies(this.tables, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
+        for (const job of jobs) this.upsert({ ...toParams(job, seen, source), company_id: ids.get(normalizeCompany(job.company)) ?? null }, seen);
+    }
+
+    async linkUnlinkedJobs(): Promise<number> {
+        const unlinked = this.tables.jobs.filter((job) => job.company_id === null).sort((a, b) => asc(a.first_seen, b.first_seen) || asc(a.ats, b.ats) || asc(a.job_id, b.job_id));
+        const ids = recordMemoryCompanies(this.tables, companyKeys(unlinked.map((job) => ({ name: String(job.company), firstSeen: String(job.first_seen), lastSeen: String(job.last_seen) }))));
+        for (const job of unlinked) job.company_id = ids.get(normalizeCompany(String(job.company))) ?? null;
+        return unlinked.filter((job) => job.company_id !== null).length;
     }
 
     async unscoredSince(source: string, seen: string): Promise<JobRow[]> {
@@ -41,7 +52,11 @@ class MemoryJobStore implements JobStore {
     }
 
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
-        for (const job of this.tables.jobs) if (keys.some((key) => key.ats === job.ats && key.jobId === job.job_id)) job.last_seen = seen;
+        for (const job of this.tables.jobs) {
+            if (!keys.some((key) => key.ats === job.ats && key.jobId === job.job_id)) continue;
+            job.last_seen = seen;
+            touchMemoryCompany(this.tables, job, seen);
+        }
     }
 
     async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
@@ -124,8 +139,7 @@ class MemoryApiCallLog implements ApiCallLog {
     }
 }
 
-export function memoryStores(): Stores {
-    const tables: Tables = { jobs: [], verdicts: [], calls: [] };
+export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
     return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(), close };
 }

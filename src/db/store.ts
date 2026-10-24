@@ -55,6 +55,7 @@ export interface JobStore {
     findJob(jobId: string): Promise<JobRow | null>;
     companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]>;
     markSeen(keys: JobKey[], seen: string): Promise<void>;
+    linkUnlinkedJobs(): Promise<number>;
     setDescription(key: JobKey, found: FoundDescription): Promise<void>;
     flagInjection(jobId: string, at: string): Promise<void>;
 }
