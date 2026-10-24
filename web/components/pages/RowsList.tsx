@@ -3,6 +3,7 @@
 import type { JobRowView, PageData, PageName } from "../../../src/web/api.js";
 import { usePageRows, type PageRows } from "../../lib/usePageRows.js";
 import type { ReactNode } from "react";
+import { useJobChanges } from "../../lib/useJobChanges.js";
 import { useOpenJob, usePanelJob } from "../../lib/useOpenJob.js";
 import { PostingLink } from "../common/PostingLink.js";
 import { DetailsPanel } from "../panel/DetailsPanel.js";
@@ -18,7 +19,7 @@ export function RowsList({ name, initial }: { name: PageName; initial: PageData 
         <>
             <p>{data.summary}</p>
             <noscript>
-                <p className="note">Loading more rows and Hide need JavaScript.</p>
+                <p className="note">Loading more rows, Hide and Applied need JavaScript.</p>
             </noscript>
             {data.total === 0 ? <p>{data.empty}</p> : <Rows data={data} rows={rows} />}
         </>
@@ -32,24 +33,21 @@ function Rows({ data, rows }: { data: PageData; rows: PageRows }) {
     return <JobRows jobs={data.rows} rows={rows} more={more} />;
 }
 
-/** Renders the job table, each row with its posting link and Hide button, and the details panel for the job the address names. */
+/** Renders the job table, each row with its applied button, posting link and Hide button, and the details panel for the job the address names, passing saved changes to both. */
 function JobRows({ jobs, rows, more }: { jobs: JobRowView[]; rows: PageRows; more?: (columns: number) => ReactNode }) {
     const { key, close } = useOpenJob();
     const panel = usePanelJob(jobs, key);
-    const markHidden = (job: JobRowView, hidden: boolean) => {
-        rows.markHidden(job, hidden);
-        panel.noteHidden(job, hidden);
-    };
+    const changes = useJobChanges(rows, panel, close);
     const actions = (job: JobRowView) => (
         <span className="row-actions" data-keeps-panel>
             <PostingLink url={job.url} />
-            <HideButton job={job} onHidden={(hidden) => markHidden(job, hidden)} />
+            <HideButton job={job} onHidden={(hidden) => changes.markHidden(job, hidden)} />
         </span>
     );
     return (
         <>
-            <JobTable rows={jobs} action={actions} more={more} />
-            <DetailsPanel open={key !== null} shown={panel.shown} job={panel.job} onClose={close} />
+            <JobTable rows={jobs} action={actions} onApplied={changes.markApplied} more={more} />
+            <DetailsPanel open={key !== null} shown={panel.shown} job={panel.job} onApplied={changes.markApplied} onHidden={changes.hideFromPanel} onClose={close} />
         </>
     );
 }

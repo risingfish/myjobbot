@@ -7,7 +7,7 @@ import { jobPage, jobRowView, verdictPage, verdictRowView } from "../helpers/row
 
 vi.mock("../../web/lib/actions.js", () => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn() }));
 
-const JOB_HEADERS = ["Score", "Title", "Company", "Location", "Remote", "Source", "Posted", ""];
+const JOB_HEADERS = ["Applied", "Score", "Title", "Company", "Location", "Remote", "Source", "Posted", ""];
 const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Company", "Score", "Reasons", "Gaps"];
 
 function headers(container: HTMLElement): string[] {
@@ -36,7 +36,10 @@ test("an empty page says so and shows no table", () => {
 });
 
 test("the server-rendered rows tell readers without JavaScript what needs it", () => {
-    const html = renderToString(<RowsList name="jobs" initial={jobPage([jobRowView()])} />);
-    expect(html).toContain('<noscript><p class="note">Loading more rows and Hide need JavaScript.</p></noscript>');
+    const applied = jobRowView({ jobId: "b", applied: true, appliedOn: "2026-10-23T16:40:00.000Z" });
+    const html = renderToString(<RowsList name="jobs" initial={jobPage([jobRowView(), applied])} />);
+    expect(html).toContain('<noscript><p class="note">Loading more rows, Hide and Applied need JavaScript.</p></noscript>');
     expect(html).toContain('class="job"');
+    expect(html).toContain('aria-label="Applied"');
+    expect(html).not.toContain("Applied on");
 });

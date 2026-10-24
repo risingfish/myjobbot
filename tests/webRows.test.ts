@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { JobViews } from "../src/db/store.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
-import { loadDetailsFor, loadRows, setHiddenFor } from "../web/lib/rows.js";
+import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor } from "../web/lib/rows.js";
 import { testFileConfig } from "./helpers/config.js";
 import { seededStores } from "./helpers/views.js";
 
@@ -87,4 +87,41 @@ test("loadDetailsFor includes the job's score history, newest first", async () =
         [80, "run-2"],
         [70, "run-1"],
     ]);
+});
+
+const NOW = new Date("2026-10-23T16:40:00.000Z");
+const LATER = new Date("2026-10-24T08:00:00.000Z");
+
+test("marking a job applied records the time it was marked", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    expect(await setAppliedFor(views, { ...JOB_A, applied: true }, NOW)).toEqual({ ok: true, appliedOn: NOW.toISOString() });
+});
+
+test("marking an applied job again keeps the time it was first marked", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    await setAppliedFor(views, { ...JOB_A, applied: true }, NOW);
+    expect(await setAppliedFor(views, { ...JOB_A, applied: true }, LATER)).toEqual({ ok: true, appliedOn: NOW.toISOString() });
+});
+
+test("undoing the mark clears its time", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    await setAppliedFor(views, { ...JOB_A, applied: true }, NOW);
+    expect(await setAppliedFor(views, { ...JOB_A, applied: false }, LATER)).toEqual({ ok: true, appliedOn: null });
+});
+
+test("marking an unknown job reports that there is no such job", async () => {
+    const views = await seededViews([{ id: "a" }]);
+    expect(await setAppliedFor(views, { ats: "greenhouse", jobId: "missing", applied: true }, NOW)).toEqual({ ok: false, error: "No such job." });
+});
+
+test("an applied request without a source is refused", async () => {
+    await expect(setAppliedFor(await seededViews([{ id: "a" }]), { jobId: "a", applied: true }, NOW)).rejects.toThrow("Invalid applied request");
+});
+
+test("an applied request with an empty job id is refused", async () => {
+    await expect(setAppliedFor(await seededViews([{ id: "a" }]), { ...JOB_A, jobId: "", applied: true }, NOW)).rejects.toThrow("Invalid applied request");
+});
+
+test("an applied request that isn't yes or no is refused", async () => {
+    await expect(setAppliedFor(await seededViews([{ id: "a" }]), { ...JOB_A, applied: "yes" }, NOW)).rejects.toThrow("Invalid applied request");
 });

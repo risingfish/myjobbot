@@ -73,7 +73,7 @@ class MemoryJobStore implements JobStore {
 
     async pruneLastSeenBefore(cutoff: string): Promise<number> {
         const before = this.tables.jobs.length;
-        this.tables.jobs = this.tables.jobs.filter((job) => String(job.last_seen) >= cutoff);
+        this.tables.jobs = this.tables.jobs.filter((job) => String(job.last_seen) >= cutoff || job.applied === 1);
         const kept = new Set(this.tables.jobs.map((job) => `${job.ats}:${job.job_id}`));
         this.tables.verdicts = this.tables.verdicts.filter((verdict) => kept.has(`${verdict.ats}:${verdict.job_id}`));
         return before - this.tables.jobs.length;

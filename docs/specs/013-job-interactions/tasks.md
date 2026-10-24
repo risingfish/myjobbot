@@ -14,6 +14,11 @@ and the existing tests its change breaks, which are updated in that same test ta
 **Organization**: by user story, in sittings. **Each sitting is one pull request** (plan
 "Delivery"): a docs PR, then six code PRs.
 
+**Delivery note (owner, 2026-10-23):** after PR 1 merged, the owner asked for sittings S2–S6 to be
+delivered as one PR, from branch `013-applied-and-panel-hide`. The sittings are still worked in
+order, tests first, with `npm run check` green at each sitting's end; their per-PR flow steps 1–2 and
+5–6 happen once, for the combined PR.
+
 - **Per-PR flow** (each sitting's first and last tasks):
   1. Check `docker compose top myjobbot | grep -c "cli.ts run"` prints 0 (as its own command), then
      `docker compose stop`. Make sure `docker:watch` isn't running.
@@ -109,26 +114,26 @@ Nothing visible changes; Hide works as before.
 A refactor with no change in behaviour, so the Applied code in S4 to S6 doesn't duplicate Hide's
 (research R13). Every existing Hide test passes unchanged.
 
-- [ ] T012 Per-PR flow steps 1–3, for sitting S2.
-- [ ] T013 [P] Unit tests in a new `tests/saveOutcome.test.ts` (three `test()`s) for the pure
+- [X] T012 Per-PR flow steps 1–3, for sitting S2.
+- [X] T013 [P] Unit tests in a new `tests/saveOutcome.test.ts` (three `test()`s) for the pure
   `saveOutcome(result)` in a new `web/lib/saveOutcome.ts`: an `{ ok: true, … }` result is the saved
   result, an `{ ok: false, error }` result is a failure, and `null` (a rejected send) is a failure.
-- [ ] T014 Add `web/lib/saveOutcome.ts` (T013), and `web/lib/useSave.ts`, which imports it:
+- [X] T014 Add `web/lib/saveOutcome.ts` (T013), and `web/lib/useSave.ts`, which imports it:
   `useSave(send, onSaved)`, where `send: () => Promise<R>` for a result `R extends { ok: boolean }`
   and `onSaved` receives the successful result, returns `{ status, submit }` with `status` one of
   `"idle" | "saving" | "failed"`; `submit(event)` prevents the default, sets `"saving"`, awaits
   `send()` (a rejection becomes `null`), and calls `onSaved(result)` on success.
-- [ ] T015 Move `web/lib/useHide.ts` onto `useSave`: `useHide(job, onHidden)` keeps its signature,
+- [X] T015 Move `web/lib/useHide.ts` onto `useSave`: `useHide(job, onHidden)` keeps its signature,
   sends `setJobHidden(job.ats, job.jobId, !job.hidden)`, and its `onSaved` ignores the result and
   calls `onHidden(!job.hidden)`, as today.
-- [ ] T016 Add `web/components/forms/SaveFailedNote.tsx`: the `{" "}<small className="note">Couldn't
+- [X] T016 Add `web/components/forms/SaveFailedNote.tsx`: the `{" "}<small className="note">Couldn't
   save — try again</small>` fragment, shown when `status === "failed"`; use it in
   `web/components/forms/HideButton.tsx`.
-- [ ] T017 Add `web/lib/useJobChanges.ts`: `useJobChanges(rows, panel)` returning `markHidden(job,
+- [X] T017 Add `web/lib/useJobChanges.ts`: `useJobChanges(rows, panel)` returning `markHidden(job,
   hidden)`, the body that `JobRows` in `web/components/pages/RowsList.tsx` has today (both
   `rows.markHidden` and `panel.noteHidden`). `JobRows` calls it and only renders; update `JobRows`'
   doc comment (it no longer handles hides itself).
-- [ ] T018 Per-PR flow steps 4–6 ("Share one way to save a job change (013 PR 2)"). Confirm
+- [X] T018 Per-PR flow steps 4–6 ("Share one way to save a job change (013 PR 2)"). Confirm
   `tests/client/hide.test.tsx`, `rowsList.test.tsx` and `detailsPanel.test.tsx` pass with no edits.
 
 ---
@@ -144,25 +149,25 @@ A refactor with no change in behaviour, so the Applied code in S4 to S6 doesn't 
 
 Rows show their saved state; nothing can be clicked yet.
 
-- [ ] T019 [US1] Per-PR flow steps 1–3, for sitting S3.
-- [ ] T020 [P] [US1] Unit tests in a new `tests/appliedTime.test.ts` (five `test()`s) for
+- [X] T019 [US1] Per-PR flow steps 1–3, for sitting S3.
+- [X] T020 [P] [US1] Unit tests in a new `tests/appliedTime.test.ts` (five `test()`s) for
   `rowLabel(job, timeZone)` (research R4, exact strings): "Mark as applied" for an unapplied job;
   `"Applied on 2026-10-23"` for `appliedOn: "2026-10-23T23:30:00.000Z"` in `"America/Los_Angeles"`;
   `"Applied on 2026-10-24"` for the same instant in `"Asia/Tokyo"`; `"Applied"` when the zone is
   `null`; and "Mark as applied" for an unapplied job even when the zone is `null`. Only `rowLabel` is imported: `appliedLabel` stays private until S5
   gives it a production caller.
-- [ ] T021 [P] [US1] Update the UI tests the new column changes (no new `test()`):
+- [X] T021 [P] [US1] Update the UI tests the new column changes (no new `test()`):
   `tests/client/rowsList.test.tsx` `JOB_HEADERS` (`:10`) gains `"Applied"` first, and its
   server-render test (`:38`) also renders an applied job and checks the HTML
   `toContain('aria-label="Applied"')` and `not.toContain("Applied on")` (FR-011: no date before the
   browser's zone is known). Neither assertion names an element, so S4 moving the label to a button
   keeps them true.
-- [ ] T022 [US1] Add `web/lib/appliedTime.ts`: a private `appliedLabel(iso, timeZone)` formatting the
+- [X] T022 [US1] Add `web/lib/appliedTime.ts`: a private `appliedLabel(iso, timeZone)` formatting the
   date with `Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeZone })` (`YYYY-MM-DD`); the
   exported `rowLabel(job, timeZone)`; and the exported `useLocalTimeZone()` returning
   `Intl.DateTimeFormat().resolvedOptions().timeZone` through `useSyncExternalStore` with a no-op
   subscribe and a server snapshot of `null`.
-- [ ] T023 [US1] Add `web/components/tables/AppliedMark.tsx`: a `<span role="img">` showing `?`
+- [X] T023 [US1] Add `web/components/tables/AppliedMark.tsx`: a `<span role="img">` showing `?`
   (class `unapplied`) or `✓` (class `applied`), with `aria-label` and `title` from
   `rowLabel(job, useLocalTimeZone())`. Render it in a new first `<td className="applied-cell">` of
   `web/components/tables/JobRow.tsx`, and put `"Applied"` first in `JOB_HEADERS`
@@ -171,12 +176,12 @@ Rows show their saved state; nothing can be clicked yet.
   `@media (prefers-color-scheme: dark)` block; the blue `?` uses the existing `--accent` (`#2b4fb0` /
   `#93a8ff`). Add the `.applied-cell` styles, scoping the glyph rules as `span.applied` and
   `span.unapplied`.
-- [ ] T024 [US1] Per-PR flow steps 4–6 ("Show which jobs are marked applied (013 PR 3)").
+- [X] T024 [US1] Per-PR flow steps 4–6 ("Show which jobs are marked applied (013 PR 3)").
 
 ### Sitting S4, PR 4: marking from the rows (T025–T040), branch `013-pr4-applied-rows`
 
-- [ ] T025 [US1] Per-PR flow steps 1–3, for sitting S4.
-- [ ] T026 [P] [US1] One contract case in a new `tests/helpers/appliedContract.ts` (memory and
+- [X] T025 [US1] Per-PR flow steps 1–3, for sitting S4.
+- [X] T026 [P] [US1] One contract case in a new `tests/helpers/appliedContract.ts` (memory and
   MariaDB, one `test()` named "the applied mark is set once, undone, kept through runs and the
   cleanup, and independent of hiding"; each step a file-local helper), wired into
   `tests/storeContract.test.ts` and `tests/integration/storeContract.test.ts` like
@@ -194,19 +199,19 @@ Rows show their saved state; nothing can be clicked yet.
   - undoing returns `{ appliedOn: null }` and clears both; marking again with a later `at` records
     that new time (Edge Cases); undoing once more, the next prune deletes the job; a missing job
     returns `null`.
-- [ ] T027 [P] [US1] Unit tests in `tests/webRows.test.ts` (seven `test()`s) for
+- [X] T027 [P] [US1] Unit tests in `tests/webRows.test.ts` (seven `test()`s) for
   `setAppliedFor(views, change, now)`: `{ ok: true, appliedOn: now.toISOString() }` on a first mark;
   the original time on a repeat; `{ ok: true, appliedOn: null }` on undo; `{ ok: false, error: "No
   such job." }` for a missing job; and `"Invalid applied request"` thrown for a missing `ats`, an
   empty `jobId`, and a non-boolean `applied` (one `test()` each).
-- [ ] T028 [P] [US1] Unit tests in `tests/pageRows.test.ts` (four `test()`s) for
+- [X] T028 [P] [US1] Unit tests in `tests/pageRows.test.ts` (four `test()`s) for
   `withJobApplied(key, appliedOn)`: sets `applied` and `appliedOn` on the matching row; leaves other
   rows alone; clears both for `null`; leaves a verdicts page unchanged.
-- [ ] T029 [P] [US1] Unit tests in a new `tests/appliedRequest.test.ts` (three `test()`s) for the pure
+- [X] T029 [P] [US1] Unit tests in a new `tests/appliedRequest.test.ts` (three `test()`s) for the pure
   `appliedRequest(job)` in a new `web/lib/appliedRequest.ts`: an unapplied job asks to mark with no
   confirmation; an applied job asks to undo with the confirmation "Mark as not applied?"; and the
   request names the job's `ats` and `jobId`.
-- [ ] T030 [P] [US1] UI test in a new `tests/client/applied.test.tsx` (one `test()`), mocking
+- [X] T030 [P] [US1] UI test in a new `tests/client/applied.test.tsx` (one `test()`), mocking
   `web/lib/actions.js` with `setJobApplied` as `tests/client/hide.test.tsx` mocks `setJobHidden`, and
   stubbing `confirm` with `vi.stubGlobal`, and rendering `name="recommended"`: "Mark as applied"
   sends `("greenhouse", "a", true)`, the row stays listed (FR-012) and its button's name is
@@ -219,7 +224,7 @@ Rows show their saved state; nothing can be clicked yet.
   `vi.mock("../../web/lib/actions.js", () => ({ setJobApplied: vi.fn() }))`, since `JobRow` now
   imports the action through `AppliedButton`. Tests that never click Applied need no
   `setJobApplied` in their mocks (vitest only throws when a missing mock export is used).
-- [ ] T031 [US1] Add `AppliedChange` (`ats`, `jobId`, `applied: boolean`, `at: string`; not
+- [X] T031 [US1] Add `AppliedChange` (`ats`, `jobId`, `applied: boolean`, `at: string`; not
   `AppliedMark`, the component's name) and `setApplied(change: AppliedChange): Promise<{ appliedOn:
   string | null } | null>` to `JobViews` in
   `src/db/store.ts`. Implement it in `src/db/kysely/jobViews.ts`: one `updateTable("jobs")` setting
@@ -227,42 +232,42 @@ Rows show their saved state; nothing can be clicked yet.
   0, applied_on: null` when undoing, by `ats` and `job_id`; `null` when no row matched (mysql2's
   found-rows count, as `setHidden` relies on); otherwise `selectFrom("jobs").select("applied_on")`
   for the same key. Implement the same in `tests/helpers/memoryJobViews.ts`.
-- [ ] T032 [US1] Make `pruneLastSeenBefore` skip applied jobs: `.where("applied", "=", 0)` in
+- [X] T032 [US1] Make `pruneLastSeenBefore` skip applied jobs: `.where("applied", "=", 0)` in
   `src/db/kysely/jobStore.ts:105`, and keep `job.applied === 1` rows in the filter of
   `tests/helpers/memoryStore.ts:76`. Update its doc comment ("…except those marked applied…").
-- [ ] T033 [US1] Add `AppliedResult` and `setAppliedFor(views, change, now)` to `web/lib/rows.ts`,
+- [X] T033 [US1] Add `AppliedResult` and `setAppliedFor(views, change, now)` to `web/lib/rows.ts`,
   with an `appliedChange` zod schema of `hideChange`'s fields with `applied: z.boolean()`; add the
   server action `setJobApplied(ats, jobId, applied)` to `web/lib/actions.ts`, calling it with
   `new Date()` (contract). Cross-site refusal (FR-010) comes from Next.js's server-action origin
   check and `web/proxy.ts`, as for `setJobHidden` (research R6). The suite has no harness for a
   running Next.js server, so the quickstart's PR 4 step 8 checks it by hand.
-- [ ] T034 [US1] Add `web/lib/appliedRequest.ts` with `appliedRequest(job)` (T029), and
+- [X] T034 [US1] Add `web/lib/appliedRequest.ts` with `appliedRequest(job)` (T029), and
   `web/lib/useApplied.ts`, which imports it: `useApplied(job, onApplied)` built on `useSave`. Its own
   `submit(event)` asks `confirm(request.confirm)` first when the request has one; on Cancel it calls
   `event.preventDefault()` and returns **before** `useSave`'s `submit`, so the status stays `"idle"`
   and no failure note shows. Otherwise it hands over to `useSave`'s `submit`, which sends
   `setJobApplied(...)` and on success calls `onApplied(result.appliedOn)`.
-- [ ] T035 [US1] Add `web/components/forms/AppliedButton.tsx`: a `form.applied-form` whose button
+- [X] T035 [US1] Add `web/components/forms/AppliedButton.tsx`: a `form.applied-form` whose button
   holds the glyph and carries `rowLabel`'s text as its `aria-label` and `title`, disabled while
-  saving, followed by `SaveFailedNote`. Give `web/components/tables/AppliedMark.tsx` an `inButton`
-  prop that drops its own `role="img"`, `aria-label` and `title` (the button names it), and update
-  its doc comment.
-- [ ] T036 [US1] Add `withJobApplied` to `web/lib/pageRows.ts`, and `markApplied(job, appliedOn)` to
+  saving, followed by `SaveFailedNote`. `web/components/tables/AppliedMark.tsx` becomes the bare
+  glyph (`aria-hidden`), taking only `applied`, since the button now names it and nothing shows the
+  mark outside a button; update its doc comment.
+- [X] T036 [US1] Add `withJobApplied` to `web/lib/pageRows.ts`, and `markApplied(job, appliedOn)` to
   `PageRows` in `web/lib/usePageRows.ts`, built by a small private helper beside `markHidden` so
   `usePageRows` stays within 20 lines. It never removes a row (FR-012). Update `usePageRows`' doc
   comment ("…following hides and marks").
-- [ ] T037 [US1] Add `markApplied(job, appliedOn)` to `useJobChanges` (`web/lib/useJobChanges.ts`),
+- [X] T037 [US1] Add `markApplied(job, appliedOn)` to `useJobChanges` (`web/lib/useJobChanges.ts`),
   calling `rows.markApplied` (S5 adds the panel, T045).
-- [ ] T038 [US1] Give `JobRow` (`web/components/tables/JobRow.tsx`) an `onApplied(appliedOn)` prop
+- [X] T038 [US1] Give `JobRow` (`web/components/tables/JobRow.tsx`) an `onApplied(appliedOn)` prop
   and render `AppliedButton` in its first cell, now `<td className="applied-cell"
   data-keeps-panel>`; pass it through `JobTable` (`web/components/tables/Tables.tsx`) from
   `JobRows`, using `useJobChanges`' `markApplied`. Update the doc comments of `JobRow`, `JobTable`
   and `JobRows` for the new prop.
-- [ ] T039 [US1] Change `RowsList`'s `<noscript>` note to "Loading more rows, Hide and Applied need
+- [X] T039 [US1] Change `RowsList`'s `<noscript>` note to "Loading more rows, Hide and Applied need
   JavaScript."; style `form.applied-form button` in `web/app/styles.css` (no border, the glyph's
   colour). In `README.md`, change the sentence at `:85` that calls Hide and the Gmail panel "the UI's
   only writes" to include Applied, so the README isn't wrong between PR 4 and PR 6.
-- [ ] T040 [US1] Per-PR flow steps 4–6 ("Mark jobs applied from their rows (013 PR 4)"). It is about
+- [X] T040 [US1] Per-PR flow steps 4–6 ("Mark jobs applied from their rows (013 PR 4)"). It is about
   25 files: tell the owner when opening it.
 
 **Checkpoint**: User Story 1 works on its own; the panel is unchanged.
@@ -278,16 +283,16 @@ Rows show their saved state; nothing can be clicked yet.
 
 ### Sitting S5, PR 5: the panel's Applied (T041–T049), branch `013-pr5-applied-panel`
 
-- [ ] T041 [US2] Per-PR flow steps 1–3, for sitting S5.
-- [ ] T042 [P] [US2] Unit tests in `tests/appliedTime.test.ts` (three `test()`s) for
+- [X] T041 [US2] Per-PR flow steps 1–3, for sitting S5.
+- [X] T042 [P] [US2] Unit tests in `tests/appliedTime.test.ts` (three `test()`s) for
   `appliedFact(job, timeZone)`, the Job section's value: `"2026-10-23 09:40"` for `appliedOn:
   "2026-10-23T16:40:00.000Z"` in `"America/Los_Angeles"`; `"Not applied"` for an unapplied job; and
   `"Yes"` for an applied job while the zone is `null`. `appliedLabel` stays private: `rowLabel` and
   `appliedFact` are its only callers.
-- [ ] T043 [P] [US2] Unit tests in a new `tests/panelActions.test.ts` (three `test()`s) for the pure
+- [X] T043 [P] [US2] Unit tests in a new `tests/panelActions.test.ts` (three `test()`s) for the pure
   `panelApplied(job)` in `web/lib/panelActions.ts`: `"offer"` for an unapplied job, `"done"` for an
   applied one, and `"done"` for a job both applied and hidden (the two are independent).
-- [ ] T044 [P] [US2] UI test in a new `tests/client/panelHeader.test.tsx` (one `test()`, scenarios as
+- [X] T044 [P] [US2] UI test in a new `tests/client/panelHeader.test.tsx` (one `test()`, scenarios as
   helpers, `confirm` stubbed with `vi.stubGlobal`), with its own `actions` mock (`loadMoreRows`,
   `setJobHidden`, `setJobApplied`, `loadJobDetails`) and the page helpers of
   `tests/helpers/panelPage.tsx` (`tests/client/detailsPanel.test.tsx` is at 135 lines): the header
@@ -299,7 +304,7 @@ Rows show their saved state; nothing can be clicked yet.
   again"; a job already applied opens on "Applied ✓"; and a job opened by address that isn't listed
   (as `tests/client/detailsPanel.test.tsx:79` does) switches to "Applied ✓" after its click, and
   still shows "Applied ✓" after another, listed row is then marked (FR-006; US2 scenarios 1–6).
-- [ ] T045 [US2] Replace `noteHidden` in `usePanelJob` (`web/lib/useOpenJob.ts`) with
+- [X] T045 [US2] Replace `noteHidden` in `usePanelJob` (`web/lib/useOpenJob.ts`) with
   `noteChange(job, change)` taking `Partial<Pick<JobRowView, "hidden" | "applied" | "appliedOn">>`.
   It changes the kept row only for the job the panel shows, using the passed `job` as the base when
   the kept row isn't that job: `setKept((current) => (isJob(job, key) ? { ...(current !== null &&
@@ -307,7 +312,7 @@ Rows show their saved state; nothing can be clicked yet.
   then follows its own changes, and a change to another row never replaces it. `useJobChanges` calls
   it for hides and marks. Update `usePanelJob`'s doc comment ("…and noting changes to the job it
   shows").
-- [ ] T046 [US2] Add `web/lib/panelActions.ts` with `panelApplied(job)` (T043), and
+- [X] T046 [US2] Add `web/lib/panelActions.ts` with `panelApplied(job)` (T043), and
   `web/components/panel/PanelHeader.tsx`: the heading (moved from `PanelContent` in
   `DetailsPanel.tsx` with `headingText`, keeping its `id` and `tabIndex`), then a `div.details-actions`
   holding
@@ -315,9 +320,9 @@ Rows show their saved state; nothing can be clicked yet.
   `button.applied-action` reading "Applied" for `"offer"`, else a button reading "Applied ✓". The
   actions render once the panel has a row (`job ?? view.job`). Update `PanelContent`'s doc comment
   (the header is now `PanelHeader`).
-- [ ] T047 [US2] Give `DetailsPanel` an `onApplied(job, appliedOn)` prop from `JobRows`
+- [X] T047 [US2] Give `DetailsPanel` an `onApplied(job, appliedOn)` prop from `JobRows`
   (`useJobChanges`' `markApplied`), and render `PanelHeader` from `PanelContent`.
-- [ ] T048 [US2] In `web/lib/appliedTime.ts`, give the private `appliedLabel` a `style` parameter
+- [X] T048 [US2] In `web/lib/appliedTime.ts`, give the private `appliedLabel` a `style` parameter
   (`"date" | "dateTime"`, the latter adding `timeStyle: "short"`; `rowLabel` passes `"date"`), and
   export `appliedFact(job, timeZone)` (T042). In `web/components/panel/JobSection.tsx`, add `<Fact
   label="Applied" value={appliedFact(job, useLocalTimeZone())} />` (one line, keeping the function
@@ -325,7 +330,7 @@ Rows show their saved state; nothing can be clicked yet.
   `.details-actions` (a flex row with a gap, so `.details-head`'s `space-between` keeps the buttons
   together) and the green `.details-head .applied-action`, which must outrank `.details-head button`
   (`styles.css:228`).
-- [ ] T049 [US2] Per-PR flow steps 4–6 ("Mark jobs applied from the details panel (013 PR 5)").
+- [X] T049 [US2] Per-PR flow steps 4–6 ("Mark jobs applied from the details panel (013 PR 5)").
 
 **Checkpoint**: User Stories 1 and 2 work; the panel has no Hide yet.
 
@@ -340,32 +345,32 @@ gone (quickstart PR 6).
 
 ### Sitting S6, PR 6: the panel's Hide, and docs (T050–T058), branch `013-pr6-panel-hide`
 
-- [ ] T050 [US3] Per-PR flow steps 1–3, for sitting S6.
-- [ ] T051 [P] [US3] Unit test in `tests/panelActions.test.ts` (one `test()`) for `panelHide(job)`:
+- [X] T050 [US3] Per-PR flow steps 1–3, for sitting S6.
+- [X] T051 [P] [US3] Unit test in `tests/panelActions.test.ts` (one `test()`) for `panelHide(job)`:
   `"enabled"` for a job not hidden, `"disabled"` for a hidden one.
-- [ ] T052 [P] [US3] UI test in `tests/client/panelHeader.test.tsx` (one `test()`, scenarios as
+- [X] T052 [P] [US3] UI test in `tests/client/panelHeader.test.tsx` (one `test()`, scenarios as
   helpers): the header reads Applied, Hide, Close in that order; Hide on Recommended sends `true`,
   closes the panel and drops the row; Hide on All jobs closes the panel and the row shows Unhide; a
   failed save keeps the panel open with "Couldn't save — try again"; for a hidden job on All jobs,
   Hide is disabled and named "Hide (already hidden)" (US3 scenarios 1–4; FR-004).
-- [ ] T053 [US3] Add `panelHide(job)` to `web/lib/panelActions.ts`, and `PanelHide` to
+- [X] T053 [US3] Add `panelHide(job)` to `web/lib/panelActions.ts`, and `PanelHide` to
   `web/components/panel/PanelHeader.tsx` between `PanelApplied` and Close, styled like Close: it uses
   `useHide(job, () => onHidden(job))` (the panel only ever hides, so it ignores `useHide`'s boolean)
   and `SaveFailedNote`, and for `"disabled"` renders a disabled button with
   `title="Already hidden"` and `aria-label="Hide (already hidden)"`.
-- [ ] T054 [US3] Add `hideFromPanel(job)` to `useJobChanges` (`web/lib/useJobChanges.ts`, which then
+- [X] T054 [US3] Add `hideFromPanel(job)` to `useJobChanges` (`web/lib/useJobChanges.ts`, which then
   takes `close` as its third argument): `markHidden(job, true)`, then `close()`. Pass it to
   `DetailsPanel` as `onHidden`. Focus returns as it does for Close.
-- [ ] T055 [P] Update `README.md`: the rows' Applied column and its undo (near the Hide passage at
+- [X] T055 [P] Update `README.md`: the rows' Applied column and its undo (near the Hide passage at
   `README.md:83`); the panel's header buttons (near `:89`) and the Job section's "Applied" fact (the
   bullet at `:92`); the `applied` / `applied_on` columns in the job-row diagram (beside `hidden` at
   `:548`); and that the cleanup keeps applied jobs, at `:596` and in the `job_retention_days` row at
   `:709`.
-- [ ] T056 [P] Add one line to `CLAUDE.md`'s Conventions: the applied mark is written only through
+- [X] T056 [P] Add one line to `CLAUDE.md`'s Conventions: the applied mark is written only through
   `JobViews.setApplied` (both columns together, the server's time), and the cleanup never prunes an
   applied job.
-- [ ] T057 Fill the ledger's last row with the final counts.
-- [ ] T058 [US3] Per-PR flow steps 4–6 ("Hide jobs from the details panel (013 PR 6)").
+- [X] T057 Fill the ledger's last row with the final counts.
+- [X] T058 [US3] Per-PR flow steps 4–6 ("Hide jobs from the details panel (013 PR 6)").
 
 **Checkpoint**: all three stories work.
 
@@ -425,4 +430,4 @@ case runs once per store, so one bundled case) and UI at 3.
 | Baseline (after 012, T002) | 543 | 50 (1 skipped without a browser) | 54 |
 | Planned new | 32 (T006 2, T013 3, T020 5, T026's memory run 1, T027 7, T028 4, T029 3, T042 3, T043 3, T051 1) | 2 (T005, T026's MariaDB run) | 3 (T030, T044, T052) |
 | Planned after | 575 (84.1%, from 83.9%) | 52 (7.6%, from 7.7%) | 57 (8.3%, from 8.3%: 8.33 from 8.35) |
-| After PR 6 (T057) | | | |
+| After the combined PR (T057) | 575 (+32) | 52 (+2; 1 skipped without a browser) | 57 (+3) |

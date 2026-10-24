@@ -117,6 +117,10 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   never `dangerouslySetInnerHTML` or `rehype-raw`. The model and title boosts read
   `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
   (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever) never is.
+- The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
+  `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
+  on a repeat. The cleanup after each run never prunes an applied job. Hide and Applied save through
+  `useSave` and show `SaveFailedNote`; a new job action should too.
 
 ## Commands
 

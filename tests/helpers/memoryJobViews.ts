@@ -1,5 +1,5 @@
 import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../../src/db/rows.js";
-import type { HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../../src/db/store.js";
+import type { AppliedChange, HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../../src/db/store.js";
 
 export type Row = Record<string, string | number | null>;
 
@@ -28,9 +28,21 @@ export class MemoryJobViews implements JobViews {
     }
 
     async setHidden(flag: HiddenFlag): Promise<boolean> {
-        const job = this.tables.jobs.find((row) => row.ats === flag.ats && row.job_id === flag.jobId);
+        const job = this.job(flag.ats, flag.jobId);
         if (job) job.hidden = Number(flag.hidden);
         return job !== undefined;
+    }
+
+    async setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null> {
+        const job = this.job(change.ats, change.jobId);
+        if (!job) return null;
+        job.applied = Number(change.applied);
+        job.applied_on = change.applied ? (job.applied_on ?? change.at) : null;
+        return { appliedOn: job.applied_on === null ? null : String(job.applied_on) };
+    }
+
+    private job(ats: string, jobId: string): Row | undefined {
+        return this.tables.jobs.find((row) => row.ats === ats && row.job_id === jobId);
     }
 
     async allJobs(page: Page): Promise<JobView[]> {

@@ -82,15 +82,24 @@ A Next.js app for browsing the database, with three tabs and a Settings page (se
 
 Each job row has a **Hide** button. Hiding sets the job's `hidden` flag: it disappears from
 Recommended at once and stays hidden when the posting is fetched again. All jobs still lists it,
-dimmed, with an **Unhide** button. Hiding, and the Gmail panel on Settings, are the UI's only
-writes; they accept requests from its own pages only.
+dimmed, with an **Unhide** button.
+
+Each row also starts with an **Applied** column: a blue **?** until you've applied, which you click
+to mark the job applied, and then a green **✓**. Hovering the check shows the date you marked it, in
+your browser's time zone. Clicking the check asks "Mark as not applied?" and, if you confirm, clears
+the mark. Applied and Hide are independent: marking a job doesn't move it on or off Recommended or
+change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, and the Gmail panel on Settings
+are the UI's only writes; they accept requests from its own pages only.
 
 **Job details.** On Recommended and All jobs, a job's title opens a panel from the right, over
 about 60% of the window, without leaving the list: you can still scroll, hide jobs or click
-another title to switch. The panel has five sections:
+another title to switch. Its header, beside the title, has a green **Applied** button (which becomes
+**Applied ✓**, and undoes the mark after the same confirmation), **Hide** (which hides the job as its
+row's Hide does and closes the panel; it is greyed out for a job already hidden, which you bring back
+with Unhide on All jobs) and **Close**. The panel has five sections:
 
-- **Job**: company, location, remote and workplace terms, pay, source, posting age and whether
-  you hid it.
+- **Job**: company, location, remote and workplace terms, pay, source, posting age, whether
+  you hid it, and when you marked it applied.
 - **Score**: the total, the model's own score and any title boost, the resume-fit and
   preference-fit parts, and the reasons and gaps.
 - **Description**: the full text, with requirements and skills, and where it came from (the job's
@@ -546,6 +555,8 @@ erDiagram
         text gaps "JSON array"
         text scored_at
         int hidden "1 when you hid it in the web UI"
+        int applied "1 when you marked it applied in the web UI"
+        text applied_on "when you marked it applied (UTC), set with applied"
         text emailed_at "reserved for the email digest"
         text injection_seen_at "first time its text tried to escape the data markers"
     }
@@ -593,7 +604,8 @@ plain text and always show as plain text.
 `posted_at` or `first_seen`, across all rows with the same company and normalized title.
 That way a job reposted under a new ID still shows its true age. Over 60 days
 (`ghost_threshold_days`) sets `possible_ghost: true`, and the model lowers its score a
-little. Rows not seen for 90 days (`job_retention_days`) are pruned after each run.
+little. Rows not seen for 90 days (`job_retention_days`) are pruned after each run, except jobs
+you've marked applied, which are kept with their scoring history.
 
 ### Context compaction
 
@@ -706,7 +718,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
-| `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold) |
+| `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold); jobs marked applied are never pruned |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
 | `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |

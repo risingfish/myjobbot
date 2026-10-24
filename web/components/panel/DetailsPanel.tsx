@@ -6,6 +6,7 @@ import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
 import { DescriptionSection } from "./DescriptionSection.js";
 import { HistorySection } from "./HistorySection.js";
 import { JobSection } from "./JobSection.js";
+import { PanelHeader } from "./PanelHeader.js";
 import { ScoreSection } from "./ScoreSection.js";
 import { WarningsSection } from "./WarningsSection.js";
 
@@ -13,6 +14,8 @@ interface DetailsPanelProps {
     open: boolean;
     shown: JobKey | null;
     job: JobRowView | null;
+    onApplied: (job: JobRowView, appliedOn: string | null) => void;
+    onHidden: (job: JobRowView) => void;
     onClose: () => void;
 }
 
@@ -20,13 +23,15 @@ interface ContentProps {
     job: JobRowView | null;
     details: Details;
     titleId: string;
+    onApplied: (job: JobRowView, appliedOn: string | null) => void;
+    onHidden: (job: JobRowView) => void;
     onClose: () => void;
 }
 
 type PanelRef = RefObject<HTMLDialogElement | null>;
 
 /** Shows the open job's details in a panel at the right of the page, leaving the list usable behind it. */
-export function DetailsPanel({ open, shown, job, onClose }: DetailsPanelProps) {
+export function DetailsPanel({ open, shown, job, onApplied, onHidden, onClose }: DetailsPanelProps) {
     const panel = useRef<HTMLDialogElement>(null);
     const titleId = useId();
     const details = useJobDetails(shown);
@@ -34,36 +39,22 @@ export function DetailsPanel({ open, shown, job, onClose }: DetailsPanelProps) {
     useDismissal(panel, open, onClose);
     return (
         <dialog ref={panel} className="details-panel" aria-labelledby={titleId}>
-            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onClose={onClose} />}
+            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onClose={onClose} />}
         </dialog>
     );
 }
 
-/** Renders the shown job: its title as the panel's heading, a close button, and the job's sections. */
-function PanelContent({ job, details, titleId, onClose }: ContentProps) {
+/** Renders the shown job: its header, with the title and the actions on the job, and the job's sections. */
+function PanelContent({ job, details, titleId, onApplied, onHidden, onClose }: ContentProps) {
     return (
         <>
-            <header className="details-head">
-                <h2 id={titleId} tabIndex={-1}>
-                    {headingText(job, details)}
-                </h2>
-                <button type="button" onClick={onClose}>
-                    Close
-                </button>
-            </header>
+            <PanelHeader job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onClose={onClose} />
             <div className="details-body">
                 <PanelStatus details={details} />
                 <PanelSections job={job} details={details} />
             </div>
         </>
     );
-}
-
-/** Names the shown job for the panel's heading, or says it is loading or doesn't exist. */
-function headingText(job: JobRowView | null, details: Details): string {
-    if (details.state === "found") return details.view.job.title;
-    if (details.state === "missing") return "Job not found";
-    return job?.title ?? (details.state === "loading" ? "Loading…" : "Job details");
 }
 
 /** Says the details are still loading, or why they couldn't be loaded. */

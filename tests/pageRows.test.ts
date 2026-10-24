@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { PageData } from "../src/web/api.js";
-import { jobKey, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
-import { jobPage, jobRowView } from "./helpers/rowFixtures.js";
+import { jobKey, withJobApplied, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
+import { jobPage, jobRowView, verdictPage, verdictRowView } from "./helpers/rowFixtures.js";
 
 function jobs(from: number, count: number) {
     return Array.from({ length: count }, (_, index) => jobRowView({ jobId: String(from + index), title: `Job ${from + index}` }));
@@ -38,4 +38,30 @@ test("hiding on All jobs marks the row instead of removing it", () => {
     const data = jobPage(jobs(0, 2));
     const marked = withJobHidden(jobKey(jobRowView({ jobId: "1" })), true)(data);
     expect(marked.kind === "jobs" ? marked.rows.map((row) => row.hidden) : []).toEqual([false, true]);
+});
+
+const MARKED_AT = "2026-10-23T16:40:00.000Z";
+
+function marks(data: PageData) {
+    return data.kind === "jobs" ? data.rows.map((row) => [row.applied, row.appliedOn]) : [];
+}
+
+test("marking a job applied sets its mark and time", () => {
+    const marked = withJobApplied(jobKey(jobRowView({ jobId: "1" })), MARKED_AT)(jobPage(jobs(0, 2)));
+    expect(marks(marked)[1]).toEqual([true, MARKED_AT]);
+});
+
+test("marking one job applied leaves the other rows alone", () => {
+    const marked = withJobApplied(jobKey(jobRowView({ jobId: "1" })), MARKED_AT)(jobPage(jobs(0, 2)));
+    expect(marks(marked)[0]).toEqual([false, null]);
+});
+
+test("undoing a job's mark clears its mark and time", () => {
+    const data = jobPage([jobRowView({ jobId: "1", applied: true, appliedOn: MARKED_AT })]);
+    expect(marks(withJobApplied(jobKey(jobRowView({ jobId: "1" })), null)(data))).toEqual([[false, null]]);
+});
+
+test("marking a job applied leaves a page of verdicts unchanged", () => {
+    const data = verdictPage([verdictRowView()]);
+    expect(withJobApplied("greenhouse:1", MARKED_AT)(data)).toBe(data);
 });
