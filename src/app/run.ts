@@ -67,17 +67,24 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
     }
 }
 
-/** Runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
+/** Links stored jobs to their companies, runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
     try {
+        await beforeAgent(context);
         const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
         await pruneOldJobs(context);
         return { ...result, runId: parts.logs.runId, summary: context.run.summary };
     } finally {
         await context.careers.renderer.close();
     }
+}
+
+/** Prepares the stored data before the agent starts: links any job not yet linked to its company's record, which after an upgrade is every stored job. */
+async function beforeAgent(context: ToolContext): Promise<void> {
+    const linked = await context.store.linkUnlinkedJobs();
+    if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */
