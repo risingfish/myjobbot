@@ -1,18 +1,27 @@
 import { sql, type ExpressionBuilder, type Kysely } from "kysely";
 import { z } from "zod";
+import { companyKeys } from "../../companies/keys.js";
+import { normalizeCompany } from "../../jobs/company.js";
 import type { Job } from "../../jobs/job.js";
 import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
+import { linkJobs, recordCompanies, touchCompanyOf } from "./companyRows.js";
 import type { FoundDescription, JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
-const REFRESHED: Array<keyof JobFields> = ["company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
+const REFRESHED: Array<keyof JobFields | "company_id"> = ["company_id", "company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
 
 const jobRows = z.array(jobRowSchema);
 
-/** Builds the insert row for a fetched job, first and last seen at the fetch time. */
-function insertRow(job: Job, seen: string, source: string) {
-    const { seen: _seen, ...fields } = toParams(job, seen, source);
-    return { ...fields, first_seen: seen, last_seen: seen };
+interface Batch {
+    seen: string;
+    source: string;
+    companyIds: Map<string, number>;
+}
+
+/** Builds the insert row for a fetched job, first and last seen at the fetch time and linked to its company's record. */
+function insertRow(job: Job, batch: Batch) {
+    const { seen: _seen, ...fields } = toParams(job, batch.seen, batch.source);
+    return { ...fields, company_id: batch.companyIds.get(normalizeCompany(job.company)) ?? null, first_seen: batch.seen, last_seen: batch.seen };
 }
 
 /** Keeps a job's scoring time, or clears it the first time its description turns from plain text (or no format) to Markdown; it must precede the format's own update, which MariaDB applies in order. */
@@ -30,13 +39,14 @@ function scoredAtAfterRefresh(eb: ExpressionBuilder<Database, "jobs">) {
 export class KyselyJobStore implements JobStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Inserts or refreshes jobs from a fetch, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
+    /** Records the companies of fetched jobs, then inserts or refreshes the jobs linked to them, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
     async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
         if (jobs.length === 0) return;
+        const companyIds = await recordCompanies(this.db, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
         const refresh = Object.fromEntries([...REFRESHED, "last_seen"].map((column) => [column, sql`VALUES(${sql.ref(column)})`]));
         await this.db
             .insertInto("jobs")
-            .values(jobs.map((job) => insertRow(job, seen, source)))
+            .values(jobs.map((job) => insertRow(job, { seen, source, companyIds })))
             .onDuplicateKeyUpdate((eb) => ({ scored_at: scoredAtAfterRefresh(eb), ...refresh }))
             .execute();
     }
@@ -64,9 +74,19 @@ export class KyselyJobStore implements JobStore {
         return rows.map((row) => row.company);
     }
 
-    /** Moves only the last-seen time of known jobs, so seeing them again never erases their details or score. */
+    /** Moves only the last-seen time of known jobs, and their companies' found date, so seeing them again never erases their details or score. */
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
-        for (const key of keys) await this.db.updateTable("jobs").set({ last_seen: seen }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
+        for (const key of keys) {
+            await this.db.updateTable("jobs").set({ last_seen: seen }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
+            await touchCompanyOf(this.db, key, seen);
+        }
+    }
+
+    /** Links every job without a company record to one, oldest first so each new record is named after its oldest job, and returns how many were linked. */
+    async linkUnlinkedJobs(): Promise<number> {
+        const rows = await this.db.selectFrom("jobs").select(["ats", "job_id", "company", "first_seen", "last_seen"]).where("company_id", "is", null).orderBy("first_seen").orderBy("ats").orderBy("job_id").execute();
+        const companyIds = await recordCompanies(this.db, companyKeys(rows.map((row) => ({ name: row.company, firstSeen: row.first_seen, lastSeen: row.last_seen }))));
+        return linkJobs(this.db, rows.map((row) => ({ ats: row.ats, job_id: row.job_id, company_key: normalizeCompany(row.company) })), companyIds);
     }
 
     /** Stores a description found outside the job's own source, with where it came from, and marks the job for scoring again. */

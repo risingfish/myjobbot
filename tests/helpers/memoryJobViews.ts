@@ -7,6 +7,11 @@ export interface Tables {
     jobs: Row[];
     verdicts: Row[];
     calls: Row[];
+    companies: Row[];
+}
+
+export function newTables(): Tables {
+    return { jobs: [], verdicts: [], calls: [], companies: [] };
 }
 
 export const asc = (left: unknown, right: unknown): number => (String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0);

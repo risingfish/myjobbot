@@ -4,6 +4,8 @@ import { testFileConfig } from "./helpers/config.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
+import { newTables } from "./helpers/memoryJobViews.js";
+import { memoryStores } from "./helpers/memoryStore.js";
 import { memoryTrace } from "./helpers/trace.js";
 import { makeJob } from "../src/jobs/job.js";
 import { alertEmail, fixtureJobs, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
@@ -24,8 +26,10 @@ test("fetch_jobs returns title-filtered unscored jobs without null fields", asyn
 
 test("fetch_jobs leaves out jobs at excluded companies", async () => {
     const config = testFileConfig({ exclude_companies: ["stripe"] });
-    const context = testContext({ config, http: fakeBoard(greenhouseBoard(["Backend Engineer"])) });
+    const tables = newTables();
+    const context = testContext({ config, http: fakeBoard(greenhouseBoard(["Backend Engineer"])) }, memoryStores(tables));
     expect(await fetchPage(context, "Stripe")).toMatchObject({ total_unscored: 0, jobs: [] });
+    expect(tables.companies.map((company) => company.company_key)).toEqual(["stripe"]);
 });
 
 test("fetch_jobs flags postings open longer than the ghost threshold", async () => {

@@ -6,6 +6,7 @@ import { makeJob } from "../src/jobs/job.js";
 import { alertEmail, digest, DIGEST_SENDER, fixtureJob, fixtureJobs, notification, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
 import { alertSetup, connectedStores, lookupDeps, NOW } from "./helpers/alertFetchSetup.js";
 import { routedHttp } from "./helpers/http.js";
+import { newTables } from "./helpers/memoryJobViews.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
 const SEARCH = fixtureJobs(3, 4100000000);
@@ -16,12 +17,15 @@ function twoEmails() {
     return [alertEmail(10, SEARCH_SENDER, searchAlert([{ ...fixtureJob(0), extra: "$140K/yr" }, ...SEARCH.slice(1)], "senior engineer")), alertEmail(11, DIGEST_SENDER, digest(DIGEST))];
 }
 
-test("new alert emails become stored jobs, counted and traced", async () => {
-    const { deps, stores, trace } = await alertSetup(twoEmails());
+test("new alert emails become stored jobs, counted and traced, with their companies recorded", async () => {
+    const tables = newTables();
+    const { deps, stores, trace } = await alertSetup(twoEmails(), {}, await connectedStores(memoryStores(tables)));
     const summary = await fetchAlerts(deps);
     expect(summary).toEqual({ emails: 2, jobs_found: 5, stored: 5, seen_again: 0, searches: 0, looked_up: 0, with_description: 0, alert_only: 5, not_understood: 0, unsupported: 0 });
     expect(await stores.jobStore.findJob("li_4100000000")).toMatchObject({ ats: "linkedin", url: "https://www.linkedin.com/jobs/view/4100000000/", compensation: "$140K/yr", company: "Company 0", location: "Boise, ID" });
     expect(trace.events).toEqual([{ type: "alerts", ...summary, lookups: [], not_understood: [] }]);
+    expect(tables.companies.length).toBeGreaterThan(0);
+    expect(tables.jobs.every((job) => typeof job.company_id === "number")).toBe(true);
 });
 
 test("the read marker advances only after storing, and is kept when nothing is new", async () => {

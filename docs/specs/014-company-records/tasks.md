@@ -117,8 +117,8 @@ unlinked, and no company key has two records (quickstart PR 1b).
 
 ### Sitting S1b, PR 1b: recording and the backfill (T009–T018), branch `014-pr1b-company-records`
 
-- [ ] T009 [US1] Per-PR flow steps 1–3, for sitting S1b.
-- [ ] T010 [P] [US1] Unit tests in a new `tests/companyKeys.test.ts` (five `test()`s) for
+- [X] T009 [US1] Per-PR flow steps 1–3, for sitting S1b.
+- [X] T010 [P] [US1] Unit tests in a new `tests/companyKeys.test.ts` (five `test()`s) for
   `companyKeys(entries)` in `src/companies/keys.ts` (research R2). Each entry is `{ name, firstSeen,
   lastSeen }`:
   - "Acme", "ACME, Inc." and "Acme LLC" give one key, `acme`;
@@ -127,7 +127,7 @@ unlinked, and no company key has two records (quickstart PR 1b).
   - a key keeps the earliest first-seen and the latest last-seen of its entries;
   - a key's name is the name of the entry with the earliest first-seen, whatever the entries'
     order. On a tie, the earlier entry wins.
-- [ ] T011 [P] [US1] One bundled contract case in a new `tests/helpers/companyContract.ts`, wired
+- [X] T011 [P] [US1] One bundled contract case in a new `tests/helpers/companyContract.ts`, wired
   into `tests/storeContract.test.ts` and `tests/integration/storeContract.test.ts` like
   `appliedContract`.
   - **The test:** one `test()` named "companies are recorded once, linked, kept through pruning and
@@ -146,15 +146,15 @@ unlinked, and no company key has two records (quickstart PR 1b).
       company's `created_date` is the earliest `first_seen` and `last_found_date` the latest
       `last_seen`, and its name is the oldest job's. A second call returns 0;
     - `pruneLastSeenBefore` deletes the jobs and keeps the records.
-- [ ] T012 [P] [US1] Extend two existing unit tests, with no new `test()`, to check that excluded
+- [X] T012 [P] [US1] Extend two existing unit tests, with no new `test()`, to check that excluded
   companies are recorded (FR-005, SC-002):
   - `tests/fetchJobs.test.ts`, "fetch_jobs leaves out jobs at excluded companies" (`:25`): Stripe
     also has a company record, read from the test's memory `Tables`;
   - `tests/alertFetch.test.ts`: an alert job from an `exclude_companies` company is stored and its
     company recorded. Add the excluded company to an existing case's email if none has one.
-- [ ] T013 [US1] Add `src/companies/keys.ts` with `companyKeys` (T010), built on `normalizeCompany`.
-- [ ] T014 [US1] Add `linkUnlinkedJobs(): Promise<number>` to `JobStore` in `src/db/store.ts`.
-- [ ] T015 [US1] Add `src/db/kysely/companyRows.ts` with `recordCompanies(db, keys)`. It returns an
+- [X] T013 [US1] Add `src/companies/keys.ts` with `companyKeys` (T010), built on `normalizeCompany`.
+- [X] T014 [US1] Add `linkUnlinkedJobs(): Promise<number>` to `JobStore` in `src/db/store.ts`.
+- [X] T015 [US1] Add `src/db/kysely/companyRows.ts` with `recordCompanies(db, keys)`. It returns an
   empty map at once when there are no keys. Otherwise it does:
   - one `insertInto("companies")` with `onDuplicateKeyUpdate`, keeping the earlier `created_date`
     and the later `last_found_date` (`LEAST`/`GREATEST` of the row's value and `VALUES(...)`);
@@ -169,17 +169,17 @@ unlinked, and no company key has two records (quickstart PR 1b).
     ats, job_id` (key, name and times) and links them through `recordCompanies`.
 
   Update `upsertAll`'s and `markSeen`'s doc comments.
-- [ ] T016 [US1] Mirror T015 in the memory stores:
+- [X] T016 [US1] Mirror T015 in the memory stores:
   - add `companies` to `Tables` and an exported `newTables()` in `tests/helpers/memoryJobViews.ts`;
   - add `tests/helpers/memoryCompanies.ts` with the memory `recordCompanies(tables, keys)`;
   - in `tests/helpers/memoryStore.ts`, `upsert`, `markSeen` and `linkUnlinkedJobs` use it,
     `UNSCORED` gains `company_id: null`, and `memoryStores(tables = newTables())` takes the tables.
 
   Keep `memoryStore.ts` (131 lines) under 200.
-- [ ] T017 [US1] Add `beforeAgent(context)` to `src/app/run.ts`. It calls
+- [X] T017 [US1] Add `beforeAgent(context)` to `src/app/run.ts`. It calls
   `context.store.linkUnlinkedJobs()` and writes `{ type: "companies_linked", jobs: n }` to the trace
   when `n > 0`. `runWithStores` calls it before the agent. Update `runWithStores`' doc comment.
-- [ ] T018 [US1] Per-PR flow steps 4–6 ("Record every company and link its jobs (014 PR 1b)"). It is
+- [X] T018 [US1] Per-PR flow steps 4–6 ("Record every company and link its jobs (014 PR 1b)"). It is
   about 14 files: tell the owner when opening it.
 
 **Checkpoint**: User Story 1's core works: every company recorded, every job linked.
