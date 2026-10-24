@@ -7,5 +7,6 @@ import { pageSources } from "./005_page_sources.js";
 import { injectionFlag } from "./006_injection_flag.js";
 import { descriptionFormat } from "./007_description_format.js";
 import { applied } from "./008_applied.js";
+import { companies } from "./009_companies.js";
 
-export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied };
+export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied, "009_companies": companies };

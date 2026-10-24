@@ -39,6 +39,23 @@ interface JobsTable {
     hidden: Generated<number>;
     applied: Generated<number>;
     applied_on: Text;
+    company_id: Count;
+}
+
+interface CompaniesTable {
+    id: Generated<number>;
+    company_key: string;
+    name: string;
+    website_url: Text;
+    careers_url: Text;
+    careers_source: Text;
+    created_date: string;
+    last_found_date: string;
+    searched_at: Text;
+    website_reason: Text;
+    website_rejected: Text;
+    careers_reason: Text;
+    careers_rejected: Text;
 }
 
 interface VerdictsTable {
@@ -112,6 +129,7 @@ interface CareersAuditTable {
 
 export interface Database {
     jobs: JobsTable;
+    companies: CompaniesTable;
     verdicts: VerdictsTable;
     api_calls: ApiCallsTable;
     gmail_connection: GmailConnectionTable;
