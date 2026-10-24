@@ -19,7 +19,7 @@ test("a job found through its careers page is stored with the job page's text an
     expect(outcome).toMatchObject({ found: true, url: POSTING_URL, careersUrl: CAREERS_URL });
     expect(await setup.stores.jobStore.findJob(JOB.jobId)).toMatchObject({ description_source: "careers", description_url: POSTING_URL, description_format: "markdown", description: expect.stringContaining("Build APIs in TypeScript.") });
     expect(setup.careers.rows.at(-1)).toMatchObject({ step: "finish", outcome: "found", url: POSTING_URL, reason: null });
-    expect(await setup.careers.rememberedPage("acme")).toMatchObject({ company: "Acme", url: CAREERS_URL });
+    expect(await setup.careers.careersPage("acme")).toBe(CAREERS_URL);
 });
 
 test("a job page offered straight in the search results can be used without a careers page", async () => {
@@ -88,7 +88,7 @@ test("a refused or timed-out fetch writes a failed step and names the reason whe
 
 async function rememberedSetup(replies: ReturnType<typeof search>[], page: string) {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], pages: { [CAREERS_URL]: page, [POSTING_URL]: POSTING }, replies });
-    await setup.careers.rememberPage({ companyKey: "acme", company: "Acme", url: CAREERS_URL }, "2026-09-01T00:00:00.000Z");
+    await setup.careers.setLookupPage({ key: "acme", name: "Acme", url: CAREERS_URL }, "2026-09-01T00:00:00.000Z");
     return setup;
 }
 
@@ -98,14 +98,14 @@ test("a remembered careers page is offered first, so no search is needed", async
     expect(String(setup.requests[0]?.[1]?.content)).toContain(`Remembered careers page: [1] ${CAREERS_URL}`);
     expect(setup.searches).toEqual([]);
     expect(setup.careers.rows[0]).toMatchObject({ step: "remembered", outcome: "ok", url: CAREERS_URL });
-    expect(await setup.careers.rememberedPage("acme")).toMatchObject({ last_used_at: TEST_NOW.toISOString() });
+    expect(await setup.careers.careersPage("acme")).toBe(CAREERS_URL);
 });
 
 test("a remembered careers page that fails to load is forgotten, and searching still works", async () => {
     const setup = await lookupSetup({ results: [result(CAREERS_URL)], replies: [open(1, "careers_page"), search(), finish(false, "no_careers_page")] });
-    await setup.careers.rememberPage({ companyKey: "acme", company: "Acme", url: "https://acme.example/old-careers" }, "2026-09-01T00:00:00.000Z");
+    await setup.careers.setLookupPage({ key: "acme", name: "Acme", url: "https://acme.example/old-careers" }, "2026-09-01T00:00:00.000Z");
     await lookUpJob(setup.deps, JOB);
-    expect(await setup.careers.rememberedPage("acme")).toBeNull();
+    expect(await setup.careers.careersPage("acme")).toBeNull();
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_careers", outcome: "failed", detail: "forgotten" });
     expect(setup.searches).toEqual(["Acme"]);
 });
@@ -113,7 +113,7 @@ test("a remembered careers page that fails to load is forgotten, and searching s
 test("a remembered careers page with no job links is forgotten too", async () => {
     const setup = await rememberedSetup([open(1, "careers_page"), finish(false, "careers_page_unreadable")], scriptOnlyPage());
     await lookUpJob(setup.deps, JOB);
-    expect(await setup.careers.rememberedPage("acme")).toBeNull();
+    expect(await setup.careers.careersPage("acme")).toBeNull();
     expect(setup.careers.rows[1]).toMatchObject({ step: "open_careers", outcome: "failed", detail: "forgotten" });
 });
 

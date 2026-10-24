@@ -37,5 +37,6 @@ export function memoryCompanyHooks(tables: () => Tables): CompanyHooks {
         listCompanies: async () => tables().companies.map((row) => ({ id: Number(row.id), company_key: String(row.company_key), name: String(row.name), created_date: String(row.created_date), last_found_date: String(row.last_found_date) })),
         jobLinks: async () => [...tables().jobs].sort((left, right) => String(left.job_id).localeCompare(String(right.job_id))).map((job) => ({ job_id: String(job.job_id), company_id: job.company_id === null ? null : Number(job.company_id) })),
         seedUnlinked: async (jobs) => void tables().jobs.push(...jobs.map(unlinkedRow)),
+        seedBoardPage: async (key, url) => void tables().companies.push({ id: tables().companies.length + 1, company_key: key, name: key, created_date: "2026-10-01T00:00:00.000Z", last_found_date: "2026-10-01T00:00:00.000Z", ...NO_ADDRESSES, careers_url: url, careers_source: "board" }),
     };
 }

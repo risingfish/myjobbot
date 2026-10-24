@@ -160,25 +160,16 @@ export interface AuditEntry {
     board?: string | null;
 }
 
-export interface CareersPageRow {
-    company_key: string;
-    company: string;
-    url: string;
-    found_at: string;
-    last_used_at: string;
-}
-
-export interface RememberedPage {
-    companyKey: string;
-    company: string;
+export interface CompanyPage {
+    key: string;
+    name: string;
     url: string;
 }
 
 export interface CareersStore {
-    rememberedPage(companyKey: string): Promise<CareersPageRow | null>;
-    rememberPage(page: RememberedPage, at: string): Promise<void>;
-    usePage(companyKey: string, at: string): Promise<void>;
-    forgetPage(companyKey: string): Promise<void>;
+    careersPage(companyKey: string): Promise<string | null>;
+    setLookupPage(page: CompanyPage, at: string): Promise<void>;
+    clearLookupPage(companyKey: string): Promise<void>;
     audit(entry: AuditEntry): Promise<void>;
     attempted(keys: JobKey[]): Promise<JobKey[]>;
     retries(): Promise<JobKey[]>;

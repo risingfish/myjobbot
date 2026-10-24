@@ -83,7 +83,7 @@ Every decision below follows the code on `main` after features 013 and the depen
   `company_key`: it inserts a record when none exists, with `name`, `careers_url`, `careers_source =
   'lookup'`, and the row's `found_at` as both dates. It then drops `careers_pages`. `CareersStore`
   loses `rememberedPage`, `rememberPage`, `usePage` and `forgetPage`, and gains `careersPage(key)`,
-  `setLookupPage(key, name, url, at)` and `clearLookupPage(key)`, which read and write the company
+  `setLookupPage(page, at)` (with `page` a `CompanyPage { key, name, url }`, which keeps every method within 3 parameters) and `clearLookupPage(key)`, which read and write the company
   record. `last_used_at` is dropped: nothing reads it.
 - **Rule**: a page the lookup finds replaces a `search` or `lookup` careers page, never a `board`
   one. The SQL condition is `careers_source IS NULL OR careers_source <> 'board'`, because `NULL <>
@@ -108,7 +108,7 @@ Every decision below follows the code on `main` after features 013 and the depen
   address for a configured company: `https://job-boards.greenhouse.io/<slug>`,
   `https://jobs.lever.co/<slug>` or `https://jobs.ashbyhq.com/<slug>`. `parseBoardLink` already
   recognizes each of these. At the start of each run, `beforeAgent` calls
-  `companies.setBoardPage(key, name, url, at)` for every configured board. That inserts the record if
+  `companies.setBoardPage(page, at)` for every configured board. That inserts the record if
   there is none, sets `careers_url` with `careers_source = 'board'`, and clears the careers reason
   and list. It overwrites any `search` or `lookup` page, and nothing overwrites a `board` page
   afterwards. The configured boards are fixed for a run, so this one call covers boards fetched

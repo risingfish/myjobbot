@@ -21,7 +21,7 @@ test("the lookup's system prompt and tool descriptions name the markers but carr
 
 test("the job and any remembered page are given inside the markers", async () => {
     const setup = await lookupSetup({ replies: [finish(false, "no_careers_page")] });
-    await setup.careers.rememberPage({ companyKey: "acme", company: "Acme", url: CAREERS_URL }, "2026-09-01T00:00:00.000Z");
+    await setup.careers.setLookupPage({ key: "acme", name: "Acme", url: CAREERS_URL }, "2026-09-01T00:00:00.000Z");
     await lookUpJob(setup.deps, JOB);
     expect(setup.requests[0]?.[1]?.content).toBe(`Find the posting for:\n${MARKERS.open}\n${JOB.title} at ${JOB.company}, ${JOB.location}\nRemembered careers page: [1] ${CAREERS_URL}\n${MARKERS.close}`);
 });

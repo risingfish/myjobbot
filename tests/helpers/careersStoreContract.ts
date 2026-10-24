@@ -11,6 +11,7 @@ export interface PageFields {
 export interface CareersHooks {
     pageFields(): Promise<PageFields[]>;
     plantRetryOnce(entry: AuditEntry): Promise<void>;
+    careersRejected(companyKey: string): Promise<string[]>;
 }
 
 const DAY_ONE = "2026-10-16T12:00:00.000Z";
@@ -46,20 +47,19 @@ async function case2(make: MakeStores) {
 
 async function case3(make: MakeStores) {
     const { careers } = await make();
-    expect(await careers.rememberedPage("acme")).toBeNull();
-    await careers.rememberPage({ companyKey: "acme", company: "Acme", url: "https://acme.example/careers" }, DAY_ONE);
-    await careers.rememberPage({ companyKey: "acme", company: "Acme Inc", url: "https://acme.example/jobs" }, DAY_ONE);
-    await careers.usePage("acme", DAY_TWO);
-    expect(await careers.rememberedPage("acme")).toEqual({ company_key: "acme", company: "Acme Inc", url: "https://acme.example/jobs", found_at: DAY_ONE, last_used_at: DAY_TWO });
+    expect(await careers.careersPage("acme")).toBeNull();
+    await careers.setLookupPage({ key: "acme", name: "Acme", url: "https://acme.example/careers" }, DAY_ONE);
+    await careers.setLookupPage({ key: "acme", name: "Acme Inc", url: "https://acme.example/jobs" }, DAY_TWO);
+    expect(await careers.careersPage("acme")).toBe("https://acme.example/jobs");
 }
 
-async function case4(make: MakeStores) {
+async function case4(make: MakeStores, hooks: CareersHooks) {
     const { careers } = await make();
-    await careers.rememberPage({ companyKey: "acme", company: "Acme", url: "https://acme.example/careers" }, DAY_ONE);
-    await careers.rememberPage({ companyKey: "beta", company: "Beta", url: "https://beta.example/careers" }, DAY_ONE);
-    await careers.forgetPage("acme");
-    expect(await careers.rememberedPage("acme")).toBeNull();
-    expect(await careers.rememberedPage("beta")).toMatchObject({ url: "https://beta.example/careers" });
+    await careers.setLookupPage({ key: "acme", name: "Acme", url: "https://acme.example/careers" }, DAY_ONE);
+    await careers.setLookupPage({ key: "beta", name: "Beta", url: "https://beta.example/careers" }, DAY_ONE);
+    await careers.clearLookupPage("acme");
+    expect([await careers.careersPage("acme"), await careers.careersPage("beta")]).toEqual([null, "https://beta.example/careers"]);
+    expect(await hooks.careersRejected("acme")).toEqual(["https://acme.example/careers"]);
 }
 
 async function case5(make: MakeStores, hooks: CareersHooks) {
@@ -87,8 +87,8 @@ async function case6(make: MakeStores, hooks: CareersHooks) {
 const CASES: Array<[string, (make: MakeStores, hooks: CareersHooks) => Promise<void>]> = [
     ["only lookups that ended for good count as attempted, never steps, retryable failures or skipped rows", case1],
     ["pruning removes only audit rows before the cutoff", case2],
-    ["a careers page is remembered per company, replaced when found again, and its last use updated", case3],
-    ["forgetting a careers page removes only that company's", case4],
+    ["a careers page is kept on its company's record and replaced when found again", case3],
+    ["clearing a careers page removes only that company's and keeps it among the turned-down addresses", case4],
     ["an open step keeps how its page was read, its fallbacks and its board", case5],
     ["a finish marked for one retry is owed it until a later finish other than a model or search failure", case6],
 ];

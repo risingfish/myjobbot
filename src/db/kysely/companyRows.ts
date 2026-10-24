@@ -37,6 +37,15 @@ async function companyIds(db: Kysely<Database>, keys: string[]): Promise<Map<str
     return new Map(rows.map((row) => [row.company_key, row.id]));
 }
 
+/** Makes sure a company has a record, creating one found at the given time when it has none. */
+export async function ensureCompany(db: Kysely<Database>, company: { key: string; name: string }, at: string): Promise<void> {
+    await db
+        .insertInto("companies")
+        .values({ company_key: company.key, name: company.name, created_date: at, last_found_date: at })
+        .onDuplicateKeyUpdate((eb) => ({ company_key: eb.ref("company_key") }))
+        .execute();
+}
+
 /** Moves the found date of a seen job's company forward, when the job is linked to one. */
 export async function touchCompanyOf(db: Kysely<Database>, key: JobKey, seen: string): Promise<void> {
     await db

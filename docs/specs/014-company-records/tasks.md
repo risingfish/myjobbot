@@ -186,8 +186,8 @@ unlinked, and no company key has two records (quickstart PR 1b).
 
 ### Sitting S2, PR 2: the careers lookup's pages folded in (T019–T026), branch `014-pr2-fold-careers-pages`
 
-- [ ] T019 [US1] Per-PR flow steps 1–3, for sitting S2.
-- [ ] T020 [P] [US1] Integration test in `tests/integration/migrate.test.ts` (one new `test()`), on a
+- [X] T019 [US1] Per-PR flow steps 1–3, for sitting S2.
+- [X] T020 [P] [US1] Integration test in `tests/integration/migrate.test.ts` (one new `test()`), on a
   database migrated to 009. Seed:
   - one company with a null `careers_url`;
   - one `careers_pages` row for that company's key;
@@ -205,7 +205,7 @@ unlinked, and no company key has two records (quickstart PR 1b).
   - remove `careers_pages` from `TABLES` in `tests/helpers/testDb.ts`, but keep `"careers_pages"` in
     the drop loops at `:54`, `:74`, `:107` and `:128` as a legacy table, so a leftover from an
     interrupted run can't break 004.
-- [ ] T021 [P] [US1] Rewrite the tests around the remembered pages (no new `test()`):
+- [X] T021 [P] [US1] Rewrite the tests around the remembered pages (no new `test()`):
   - **The company contract:** add `careersSteps` to `tests/helpers/companyContract.ts`. A lookup
     page never replaces or clears a board page seeded through a new `seedBoardPage(key, url)` hook,
     implemented in both wirings.
@@ -218,7 +218,7 @@ unlinked, and no company key has two records (quickstart PR 1b).
   - **The other callers:** `tests/careersLookup.test.ts` at `:22`, `:91`, `:101` and `:106–116`
     (drop the `last_used_at` check at `:101`), and `tests/careersMarkers.test.ts:24`, move to the new
     methods.
-- [ ] T022 [US1] Add `src/db/migrations/010_fold_careers_pages.ts`:
+- [X] T022 [US1] Add `src/db/migrations/010_fold_careers_pages.ts`:
   - a data step, typed with `db.withTables<...>()`, inserting into `companies` from
     `selectFrom("careers_pages")`;
   - its `onDuplicateKeyUpdate` assigns `careers_source` **before** `careers_url`, each set only
@@ -227,9 +227,9 @@ unlinked, and no company key has two records (quickstart PR 1b).
   - then `dropTable("careers_pages")`.
 
   List it in `src/db/migrations/index.ts`, and remove `CareersPagesTable` from `src/db/schema.ts`.
-- [ ] T023 [US1] In `src/db/store.ts`, replace `CareersPageRow`, `RememberedPage` and the four page
+- [X] T023 [US1] In `src/db/store.ts`, replace `CareersPageRow`, `RememberedPage` and the four page
   methods of `CareersStore` with `careersPage(key): Promise<string | null>`,
-  `setLookupPage(key, name, url, at)` and `clearLookupPage(key)`. Implement them in
+  `setLookupPage(page, at)` and `clearLookupPage(key)`. Implement them in
   `src/db/kysely/careersStore.ts` over `companies`:
   - **`setLookupPage`** inserts a record when none exists. It then sets the page where
     `careers_source IS NULL OR careers_source <> 'board'`, clearing `careers_reason` and
@@ -240,17 +240,17 @@ unlinked, and no company key has two records (quickstart PR 1b).
     - leaves `searched_at` alone (FR-009, FR-010).
 
   Update the doc comments.
-- [ ] T024 [US1] Do the same in `tests/helpers/memoryCareersStore.ts`. Its constructor takes `tables:
+- [X] T024 [US1] Do the same in `tests/helpers/memoryCareersStore.ts`. Its constructor takes `tables:
   Tables = newTables()`, so the six places that build it on its own still work, and `memoryStores()`
   passes its tables.
-- [ ] T025 [US1] In `src/careers/lookUpJob.ts`:
+- [X] T025 [US1] In `src/careers/lookUpJob.ts`:
   - `offerRemembered` reads `careers.careersPage(key)` and audits `remembered` as before, without
     `usePage`;
   - `recordOutcome` calls `setLookupPage`;
   - `forget` calls `clearLookupPage`.
 
   Update their doc comments.
-- [ ] T026 [US1] Per-PR flow steps 4–6 ("Keep the careers lookup's pages on company records (014 PR
+- [X] T026 [US1] Per-PR flow steps 4–6 ("Keep the careers lookup's pages on company records (014 PR
   2)"). It is about 16 files: tell the owner when opening it.
 
 ### Sitting S3, PR 3: board addresses (T027–T033), branch `014-pr3-board-pages`
@@ -270,7 +270,7 @@ unlinked, and no company key has two records (quickstart PR 1b).
 - [ ] T030 [US1] Add `src/companies/boardPage.ts` (T028).
 - [ ] T031 [US1] Add the company store and wire it everywhere it is needed:
   - **The interface:** `src/db/companyStore.ts`, with `CompanyStore` and its first method,
-    `setBoardPage(key, name, url, at)`. Add `companies: CompanyStore` to `Stores` in
+    `setBoardPage(page, at)`. Add `companies: CompanyStore` to `Stores` in
     `src/db/store.ts`.
   - **Kysely:** a new `src/db/kysely/companyStore.ts`. It inserts the record when none exists, then
     sets the page and its source and clears the careers reason and list. Wire it into `storesOver`

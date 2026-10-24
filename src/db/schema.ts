@@ -97,14 +97,6 @@ interface GmailAlertStateTable {
     not_understood: Generated<number>;
 }
 
-interface CareersPagesTable {
-    company_key: string;
-    company: string;
-    url: string;
-    found_at: string;
-    last_used_at: string;
-}
-
 interface CareersAuditTable {
     id: Generated<number>;
     run_id: string;
@@ -134,6 +126,5 @@ export interface Database {
     api_calls: ApiCallsTable;
     gmail_connection: GmailConnectionTable;
     gmail_alert_state: GmailAlertStateTable;
-    careers_pages: CareersPagesTable;
     careers_audit: CareersAuditTable;
 }

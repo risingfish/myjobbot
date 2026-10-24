@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../schema.js";
-import type { AuditEntry, CareersPageRow, CareersStore, JobKey, RememberedPage } from "../store.js";
+import type { AuditEntry, CareersStore, CompanyPage, JobKey } from "../store.js";
+import { ensureCompany } from "./companyRows.js";
 
 const MAX_DETAIL = 2000;
 const RETRYABLE_REASONS = ["lookup_error", "search_unavailable"];
@@ -8,29 +9,35 @@ const RETRYABLE_REASONS = ["lookup_error", "search_unavailable"];
 export class KyselyCareersStore implements CareersStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Returns the careers page remembered for a company, or null when none is. */
-    async rememberedPage(companyKey: string): Promise<CareersPageRow | null> {
-        return (await this.db.selectFrom("careers_pages").selectAll().where("company_key", "=", companyKey).executeTakeFirst()) ?? null;
+    /** Returns the careers page on a company's record, or null when it has none. */
+    async careersPage(companyKey: string): Promise<string | null> {
+        const row = await this.db.selectFrom("companies").select("careers_url").where("company_key", "=", companyKey).executeTakeFirst();
+        return row?.careers_url ?? null;
     }
 
-    /** Remembers the careers page that led to a found job, replacing any page remembered for that company. */
-    async rememberPage(page: RememberedPage, at: string): Promise<void> {
-        const values = { company: page.company, url: page.url, found_at: at, last_used_at: at };
+    /** Keeps the careers page that led to a found job on its company's record, unless the company's careers page is its configured board. */
+    async setLookupPage(page: CompanyPage, at: string): Promise<void> {
+        await ensureCompany(this.db, page, at);
         await this.db
-            .insertInto("careers_pages")
-            .values({ company_key: page.companyKey, ...values })
-            .onDuplicateKeyUpdate(values)
+            .updateTable("companies")
+            .set({ careers_url: page.url, careers_source: "lookup", careers_reason: null, careers_rejected: null })
+            .where("company_key", "=", page.key)
+            .where((eb) => eb.or([eb("careers_source", "is", null), eb("careers_source", "<>", "board")]))
             .execute();
     }
 
-    /** Records that a remembered careers page was offered to a lookup. */
-    async usePage(companyKey: string, at: string): Promise<void> {
-        await this.db.updateTable("careers_pages").set({ last_used_at: at }).where("company_key", "=", companyKey).execute();
-    }
-
-    /** Forgets a company's careers page once it stops working. */
-    async forgetPage(companyKey: string): Promise<void> {
-        await this.db.deleteFrom("careers_pages").where("company_key", "=", companyKey).execute();
+    /** Clears a company's careers page once it stops working, keeping it among the turned-down addresses so a search never stores it again; a board page is never cleared. */
+    async clearLookupPage(companyKey: string): Promise<void> {
+        const row = await this.db.selectFrom("companies").select(["careers_url", "careers_rejected"]).where("company_key", "=", companyKey).where("careers_source", "in", ["lookup", "search"]).executeTakeFirst();
+        if (row === undefined || row.careers_url === null) return;
+        const rejected = JSON.stringify([...parseRejected(row.careers_rejected), row.careers_url]);
+        await this.db
+            .updateTable("companies")
+            .set({ careers_url: null, careers_source: null, careers_rejected: rejected })
+            .where("company_key", "=", companyKey)
+            .where("careers_url", "=", row.careers_url)
+            .where("careers_source", "in", ["lookup", "search"])
+            .execute();
     }
 
     /** Appends one step of a careers lookup to the audit log, keeping only addresses and counts, never page text. */
@@ -83,4 +90,9 @@ function auditRow(entry: AuditEntry) {
     const what = { chars: entry.chars ?? null, cut: flag(entry.cut), more_pages: flag(entry.morePages), outcome: entry.outcome, reason: entry.reason, warning: flag(entry.warning) };
     const read = { page_source: entry.pageSource ?? null, fallback: entry.fallback ?? null, board: entry.board ?? null };
     return { ...where, ...what, ...read, detail: entry.detail?.slice(0, MAX_DETAIL) ?? null };
+}
+
+/** Reads a stored list of turned-down addresses, empty when there is none. */
+function parseRejected(stored: string | null): string[] {
+    return stored === null ? [] : (JSON.parse(stored) as string[]);
 }
