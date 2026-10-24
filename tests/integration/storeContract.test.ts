@@ -46,6 +46,10 @@ careersStoreContract(emptyStores, {
         await storesOver(db).careers.audit(entry);
         await db.updateTable("careers_audit").set({ retry_once: 1 }).where("job_id", "=", entry.jobId).where("step", "=", "finish").execute();
     },
+    careersRejected: async (key) => {
+        const row = await db.selectFrom("companies").select("careers_rejected").where("company_key", "=", key).executeTakeFirst();
+        return JSON.parse(row?.careers_rejected ?? "[]") as string[];
+    },
 });
 
 const JOB = makeJob({ ats: "greenhouse", jobId: "race", company: "Acme", title: "Backend Engineer", url: "u" }, {});
@@ -80,6 +84,10 @@ function companyHooks(): CompanyHooks {
         seedUnlinked: async (jobs) => {
             const rows = jobs.map((job) => ({ ats: "greenhouse", job_id: job.jobId, company: job.company, source: job.company, title: "Engineer", normalized_title: "engineer", url: "u", first_seen: job.firstSeen, last_seen: job.lastSeen }));
             await db.insertInto("jobs").values(rows).execute();
+        },
+        seedBoardPage: async (key, url) => {
+            const at = "2026-10-01T00:00:00.000Z";
+            await db.insertInto("companies").values({ company_key: key, name: key, created_date: at, last_found_date: at, careers_url: url, careers_source: "board" }).execute();
         },
     };
 }

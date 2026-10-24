@@ -265,7 +265,7 @@ Every lookup that ends without a description has `warning = 1` and a fixed `reas
 ```sql
 SELECT reason, COUNT(*) FROM careers_audit WHERE warning = 1 GROUP BY reason;
 SELECT at, company, step, outcome, reason, url FROM careers_audit ORDER BY id DESC LIMIT 50;
-SELECT * FROM careers_pages;
+SELECT name, careers_url, careers_source FROM companies WHERE careers_url IS NOT NULL;
 ```
 
 ## Develop

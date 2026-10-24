@@ -27,15 +27,18 @@ companyContract(
     memoryCompanyHooks(() => companyTables),
 );
 appliedContract(async () => memoryStores());
-let careers = new MemoryCareersStore();
+let careersTables = newTables();
+let careers = new MemoryCareersStore(careersTables);
 
 careersStoreContract(
     async () => {
-        careers = new MemoryCareersStore();
-        return { ...memoryStores(), careers };
+        careersTables = newTables();
+        careers = new MemoryCareersStore(careersTables);
+        return { ...memoryStores(careersTables), careers };
     },
     {
         pageFields: async () => careers.rows.map((row) => ({ pageSource: row.pageSource ?? null, fallback: row.fallback ?? null, board: row.board ?? null })),
         plantRetryOnce: async (entry) => void careers.rows.push({ ...entry, retryOnce: true }),
+        careersRejected: async (key) => JSON.parse(String(careersTables.companies.find((row) => row.company_key === key)?.careers_rejected ?? "[]")) as string[],
     },
 );

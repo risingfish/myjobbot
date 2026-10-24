@@ -1,27 +1,30 @@
-import type { AuditEntry, CareersPageRow, CareersStore, JobKey, RememberedPage } from "../../src/db/store.js";
+import type { AuditEntry, CareersStore, CompanyPage, JobKey } from "../../src/db/store.js";
+import { recordMemoryCompanies } from "./memoryCompanies.js";
+import { newTables, type Row, type Tables } from "./memoryJobViews.js";
 
 const RETRYABLE_REASONS = ["lookup_error", "search_unavailable"];
 
 export class MemoryCareersStore implements CareersStore {
     readonly rows: Array<AuditEntry & { retryOnce?: boolean }> = [];
-    private readonly pages = new Map<string, CareersPageRow>();
 
-    async rememberedPage(companyKey: string): Promise<CareersPageRow | null> {
-        const page = this.pages.get(companyKey);
-        return page === undefined ? null : { ...page };
+    constructor(private readonly tables: Tables = newTables()) {}
+
+    async careersPage(companyKey: string): Promise<string | null> {
+        const url = this.company(companyKey)?.careers_url;
+        return url === undefined || url === null ? null : String(url);
     }
 
-    async rememberPage(page: RememberedPage, at: string): Promise<void> {
-        this.pages.set(page.companyKey, { company_key: page.companyKey, company: page.company, url: page.url, found_at: at, last_used_at: at });
+    async setLookupPage(page: CompanyPage, at: string): Promise<void> {
+        if (!this.company(page.key)) recordMemoryCompanies(this.tables, [{ key: page.key, name: page.name, firstSeen: at, lastSeen: at }]);
+        const company = this.company(page.key);
+        if (company && company.careers_source !== "board") Object.assign(company, { careers_url: page.url, careers_source: "lookup", careers_reason: null, careers_rejected: null });
     }
 
-    async usePage(companyKey: string, at: string): Promise<void> {
-        const page = this.pages.get(companyKey);
-        if (page) page.last_used_at = at;
-    }
-
-    async forgetPage(companyKey: string): Promise<void> {
-        this.pages.delete(companyKey);
+    async clearLookupPage(companyKey: string): Promise<void> {
+        const company = this.company(companyKey);
+        if (!company || company.careers_url === null || !["lookup", "search"].includes(String(company.careers_source))) return;
+        const rejected = [...(JSON.parse(String(company.careers_rejected ?? "[]")) as string[]), String(company.careers_url)];
+        Object.assign(company, { careers_url: null, careers_source: null, careers_rejected: JSON.stringify(rejected) });
     }
 
     async audit(entry: AuditEntry): Promise<void> {
@@ -41,6 +44,10 @@ export class MemoryCareersStore implements CareersStore {
     async pruneAuditBefore(cutoff: string): Promise<void> {
         const kept = this.rows.filter((row) => row.at >= cutoff);
         this.rows.splice(0, this.rows.length, ...kept);
+    }
+
+    private company(companyKey: string): Row | undefined {
+        return this.tables.companies.find((row) => row.company_key === companyKey);
     }
 }
 
