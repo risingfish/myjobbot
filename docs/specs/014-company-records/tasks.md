@@ -77,8 +77,8 @@ and the existing tests its change breaks, which are updated in that same test ta
 
 Nothing visible changes; the table exists and every job's `company_id` is null.
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1a.
-- [ ] T005 [P] Integration test in `tests/integration/migrate.test.ts` (one new `test()`), on a
+- [X] T004 Per-PR flow steps 1–3, for sitting S1a.
+- [X] T005 [P] Integration test in `tests/integration/migrate.test.ts` (one new `test()`), on a
   database migrated to 008:
   - seed two jobs with a Kysely `insertInto("jobs")`, run 009, and check that `companies` exists and
     is empty and both jobs' `company_id` is null;
@@ -91,7 +91,7 @@ Nothing visible changes; the table exists and every job's `company_id` is null.
   - add `"companies utf8mb4_bin"` to the exact collation list at `:58`;
   - add `companies` to `TABLES` in `tests/helpers/testDb.ts`, ordered so `emptyTables` empties
     `jobs` before `companies` (the foreign key).
-- [ ] T006 Add `src/db/migrations/009_companies.ts`, exported as `companies`:
+- [X] T006 Add `src/db/migrations/009_companies.ts`, exported as `companies`:
   - `createTable("companies")` with the columns of data-model.md, an auto-increment primary key
     `id`, and a unique constraint on `company_key`;
   - the table options every table has (`001_initial.ts:4`'s `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -102,9 +102,9 @@ Nothing visible changes; the table exists and every job's `company_id` is null.
     `addForeignKeyConstraint("jobs_company", ["company_id"], "companies", ["id"])`.
 
   List it as `"009_companies"` in `src/db/migrations/index.ts`.
-- [ ] T007 Add `CompaniesTable` (data-model.md) to `Database`, and `company_id: Count` to
+- [X] T007 Add `CompaniesTable` (data-model.md) to `Database`, and `company_id: Count` to
   `JobsTable`, in `src/db/schema.ts`.
-- [ ] T008 Per-PR flow steps 4–6 ("Add the companies table (014 PR 1a)").
+- [X] T008 Per-PR flow steps 4–6 ("Add the companies table (014 PR 1a)").
 
 ---
 
