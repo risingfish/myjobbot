@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | `id` | `int` auto-increment, primary key | no | — | the company's id |
 | `company_key` | `varchar(255)`, unique | no | — | `normalizeCompany(name)` (research R2) |
-| `name` | `varchar(255)` | no | — | the name as first seen |
+| `name` | `varchar(255)` | no | — | the name of the company's earliest-seen job (research R2) |
 | `website_url` | `varchar(2048)` | yes | `NULL` | the company's website (an origin, e.g. `https://acme.com`) |
 | `careers_url` | `varchar(2048)` | yes | `NULL` | its careers page |
 | `careers_source` | `varchar(16)` | yes | `NULL` | `board`, `lookup` or `search`; null exactly when `careers_url` is |
@@ -65,19 +65,30 @@ not fully found --24 h later, found again--> due again (FR-010)
 both addresses found --> never due again
 careers_source board --> careers_url never replaced; only the website is searched
 careers_source lookup|search --lookup finds another page--> lookup page
-careers_source lookup|search --lookup finds the page dead--> careers_url null, due again
+careers_source lookup|search --lookup finds the page dead--> careers_url and careers_source null,
+    the dead address added to careers_rejected (never stored again), due under the 24-hour rule
 ```
 
 ## Store contract (`tests/helpers/companyContract.ts`)
 
-One bundled case, run on memory and on `myjobbot_test`, whose steps grow with the PRs:
+One bundled case, run on memory and on `myjobbot_test`, whose steps grow with the PRs. Its hooks
+(`listCompanies`, `seedUnlinked`, `seedBoardPage`) are described in research R11.
 
-1. **PR 1:** jobs from three sources naming one company in different spellings make one record;
-   `last_found_date` moves forward, through `markSeen` too, and `created_date` and `name` stay; an
-   empty-key name gets no
-   record; excluded companies are recorded; the backfill links unlinked jobs with the earliest and
-   latest times; pruning jobs keeps companies.
-2. **PR 2:** a lookup page is read back, replaced and cleared; it never replaces a board page.
-3. **PR 3:** a board page is set and never replaced.
-4. **PR 4:** due-for-search order and the 24-hour rule; a search result stores addresses and
-   outcome; `markUnavailable`.
+1. **PR 1b (`recordSteps`):**
+   - jobs from three sources naming one company in different spellings make one record;
+   - `last_found_date` moves forward, through `markSeen` too, while `created_date` and `name` stay;
+   - an empty-key name gets no record;
+   - the backfill links unlinked jobs with the earliest and latest times and the oldest job's name;
+   - pruning jobs keeps companies.
+
+   Excluded companies are checked in the fetch and alert tests instead, since the store doesn't
+   know about exclusion.
+2. **PR 2 (`careersSteps`):** a lookup page never replaces or clears a seeded board page. The read,
+   replace and clear behaviour stays in `careersStoreContract`.
+3. **PR 3 (`boardSteps`):** `setBoardPage` sets a board page, clearing the careers reason and list,
+   and it is never replaced.
+4. **PR 4 (`searchSteps`, in `companySearchSteps.ts`):**
+   - due-for-search order and the 24-hour rule;
+   - a search result stores addresses and outcome;
+   - `markUnavailable`;
+   - a cleared dead page stays in `careers_rejected`.

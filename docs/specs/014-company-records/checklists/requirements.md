@@ -41,6 +41,7 @@
   comments): all four of its points are covered (FR-001; FR-002 and FR-007; FR-006, FR-009 and
   FR-011; FR-005). Made explicit: the `companies` table name the issue asks for (Key Entities), and
   which existing records point 3's "any existing tables" covers (Assumptions). All items still pass.
-- Left for `/speckit-clarify` or the plan: the per-run search limit's default (FR-012), the exact
-  matching rules for picking a website and a careers page (FR-007), and whether a configured
+- Answered on 2026-10-23 by `/speckit-clarify` (spec Clarifications Q4–Q6): the three items below.
+- Formerly left for `/speckit-clarify` or the plan: the per-run search limit's default (FR-012),
+  the exact matching rules for picking a website and a careers page (FR-007), and whether a configured
   board's own address should be the careers page outright (Assumptions).

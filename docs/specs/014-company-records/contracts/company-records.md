@@ -25,14 +25,20 @@ returning malformed JSON means "SearXNG unavailable" (R8).
 | Rule | Accepts | Example accepted | Example turned down |
 |---|---|---|---|
 | Website | first result whose main host name contains the key without spaces; not a skip host; storable | `https://www.acme.co.uk/about` → `https://www.acme.co.uk` for "Acme Ltd" | `https://www.linkedin.com/company/acme` |
-| Careers | first storable result on the website's host or a subdomain with `career`/`jobs` in its address or title, or a board page whose slug matches the key | `https://careers.acme.com/`, `https://jobs.lever.co/acme` | `https://acme-reviews.example/acme-careers` |
+| Careers | first storable result not in the company's `careers_rejected`, either on the website's host without `www.` or a subdomain with `career`/`jobs` in its address or title, or a board page whose slug matches the key | `https://careers.acme.com/` (website `https://www.acme.com`), `https://jobs.lever.co/acme` | `https://acme-reviews.example/acme-careers` |
 
 ## Trace events (`data/runs/*.jsonl`)
 
 ```json
 { "type": "company_search", "company": "Acme", "website": "found", "careers": "no_match" }
 { "type": "company_search_unavailable", "reason": "not_configured", "skipped": 12 }
+{ "type": "companies_linked", "jobs": 1040 }
+{ "type": "company_search_failed", "error": "…" }
 ```
+
+- `companies_linked` is written by the backfill step only when it linked at least one job.
+- `company_search_failed` is written when the search step throws an error it doesn't expect; the
+  run carries on.
 
 `website` and `careers` are each `found`, `kept` (already set, not searched), `search_unavailable`,
 `no_results` or `no_match`. The `reason` of an unavailable search is `not_configured` or `failed`.

@@ -13,8 +13,11 @@ Every decision below follows the code on `main` after features 013 and the depen
   (`src/tools/searchFetch.ts:19`), and LinkedIn alert emails (`src/gmail/alertFetch.ts:74`).
   Recording there covers every source (FR-002), and excluded companies too (FR-005): their jobs are
   stored, only kept from scoring. No caller can forget the step. (Checked: boards store every job;
-  JSearch drops only excluded *publishers* and board duplicates; the alert path stores every fresh
-  alert job and uses `exclude_companies` only to skip the description lookup.)
+  JSearch drops only excluded *publishers* and board duplicates; the alert path uses
+  `exclude_companies` only to skip the description lookup, and stores every fresh alert job except
+  those `withoutCopies` (`src/gmail/alertStore.ts:37`) drops as copies of another source's job. Those
+  copies' companies are recorded through that other job; their `last_found_date` doesn't move for
+  the copy, which is accepted.)
 - **Jobs seen again without an upsert**: an alert job already stored is not upserted.
   `sortAlertJobs` marks it seen through `JobStore.markSeen(keys, seen)`, which moves only its
   `last_seen`. `markSeen` therefore also moves its companies' `last_found_date` forward (FR-004),
@@ -29,8 +32,13 @@ Every decision below follows the code on `main` after features 013 and the depen
 - **Decision**: a company's key is `normalizeCompany(name)` (`src/jobs/company.ts`): lowercased,
   punctuation removed by `normalizeTitle`, and a trailing legal suffix (`inc`, `llc`, `ltd`, `corp`,
   `corporation`, `co`, `gmbh`, `plc`) dropped. It is stored in a unique `company_key` column. A name
-  whose key is empty gets no record and no link (Edge Cases). The pure `companyKeys(jobs, seen)`
-  groups a fetch's jobs by key, keeping the first name seen for each and the batch's time.
+  whose key is empty gets no record and no link (Edge Cases). The pure `companyKeys(entries)` groups
+  entries by key. Each entry is a name with its first-seen and last-seen times. For a fetch, every
+  entry has the fetch's time; for the backfill, each job's own times. A key keeps the earliest
+  first-seen and the latest last-seen. **Its name is the name of the entry with the earliest
+  first-seen, ties broken by the entries' order.** `linkUnlinkedJobs` reads jobs ordered by
+  `first_seen, ats, job_id`, so a fetch keeps its first job's name and the backfill keeps the name
+  of the company's oldest job, whatever order the rows come in.
 - **Rationale**: the careers lookup already keys its remembered pages by this exact function, so
   folding them in (R5) keeps every key, and alert matching compares names the same way.
 
@@ -61,7 +69,10 @@ Every decision below follows the code on `main` after features 013 and the depen
     keeps the earlier `created_date` and the later `last_found_date`.
 - **Rationale**: "at upgrade" in practice means "before anything else uses the records": the first
   run after the migration links every stored job before it fetches anything. Later the step finds
-  nothing to do, at the cost of one indexed query.
+  only jobs whose key is empty, which stay unlinked for good, at the cost of one indexed query.
+- **Where it runs**: `runWithStores` (`src/app/run.ts`) is at 9 lines of a 20-line limit, so the
+  steps around the agent go in two helpers there: `beforeAgent(context)` (linking, then board pages,
+  R6) and `afterAgent(context)` (the search, R8, then pruning).
 - **Alternatives**: copying `normalizeCompany` into the migration (a frozen duplicate that jscpd
   flags, and that drifts from the real one); a one-off CLI command like `import-sqlite` (an extra
   step the owner must remember).
@@ -75,8 +86,19 @@ Every decision below follows the code on `main` after features 013 and the depen
   `setLookupPage(key, name, url, at)` and `clearLookupPage(key)`, which read and write the company
   record. `last_used_at` is dropped: nothing reads it.
 - **Rule**: a page the lookup finds replaces a `search` or `lookup` careers page, never a `board`
-  one. Clearing only clears a `lookup` or `search` page, and leaves the company due for a search
-  (FR-010).
+  one. The SQL condition is `careers_source IS NULL OR careers_source <> 'board'`, because `NULL <>
+  'board'` is not true.
+- **Clearing** a dead page (`clearLookupPage`) only touches a `lookup` or `search` page. It nulls
+  `careers_url` and `careers_source` together (null exactly when the URL is), adds the dead address
+  to `careers_rejected`, and leaves `searched_at` alone. The company is then due under the usual
+  24-hour rule (FR-010), and the search skips any address already in `careers_rejected` (R7), so
+  the dead page is never stored again.
+- **Migration 010's upsert order**: MariaDB applies `ON DUPLICATE KEY UPDATE` assignments left to
+  right. That's why `jobStore.ts:18` notes it for `scoredAtAfterRefresh`. So `careers_source` is
+  assigned before `careers_url`, while the CASE can still see the old null URL.
+- **The memory store**: `MemoryCareersStore` keeps its pages on the shared memory `Tables`, taking
+  them as a constructor argument that defaults to a fresh set (`newTables()`). The six places that
+  build it on its own keep working.
 - **Rationale**: the keys are already normalized in `careers_pages.company_key`, so this data step
   needs no application code (a builder `insertInto ... select`, then `dropTable`).
 
@@ -85,11 +107,15 @@ Every decision below follows the code on `main` after features 013 and the depen
 - **Decision**: a pure `boardPageUrl(company)` (`src/companies/boardPage.ts`) gives the public board
   address for a configured company: `https://job-boards.greenhouse.io/<slug>`,
   `https://jobs.lever.co/<slug>` or `https://jobs.ashbyhq.com/<slug>`. `parseBoardLink` already
-  recognizes each of these. After `boardFetch` upserts a board's jobs, it calls
-  `companies.setBoardPage(key, url)`, which sets `careers_url` and `careers_source = 'board'`. That
-  overwrites any `search` or `lookup` page, and nothing overwrites a `board` page afterwards. The
-  same call runs for every configured board at the start of each run, so the upgrade backfill gets
-  board addresses too.
+  recognizes each of these. At the start of each run, `beforeAgent` calls
+  `companies.setBoardPage(key, name, url, at)` for every configured board. That inserts the record if
+  there is none, sets `careers_url` with `careers_source = 'board'`, and clears the careers reason
+  and list. It overwrites any `search` or `lookup` page, and nothing overwrites a `board` page
+  afterwards. The configured boards are fixed for a run, so this one call covers boards fetched
+  later in the run and the upgrade backfill alike; `fetchBoard` doesn't repeat it.
+- **Reaching the store**: `ToolContext` (`src/tools/context.ts`) gains `companies: CompanyStore`, set
+  in `buildContext` (`src/app/run.ts`) and in `testContext` (`tests/helpers/context.ts`), so the run
+  steps reach it.
 - **Rationale**: the board's address is where myjobbot reads that company's jobs; it is certain and
   costs no search.
 
@@ -105,13 +131,16 @@ Every decision below follows the code on `main` after features 013 and the depen
     is not on a `skip_hosts` host. The website is stored as the result's origin (`https://acme.com`).
   - **`pickCareers(results, { website, key, skipHosts })`**: the first result that passes
     `storableUrl` and either:
-    - is on the website's host or one of its subdomains, with `career` or `jobs` in its address or
-      title; or
+    - is on the website's host without a leading `www.`, or one of its subdomains (so
+      `careers.acme.com` counts for `www.acme.com`), with `career` or `jobs` in its address or title;
+      or
     - is a recognized board page (`parseBoardLink`: Greenhouse, Lever, Ashby, Workday) whose slug,
       with dashes and underscores removed, equals the key with its spaces removed.
   - **`storableUrl`**: `allowedUrl` (http(s), default port, no credentials), and a host that is
     neither an IP address nor a single label like `localhost`. Nothing is fetched, so no DNS check
     is made here; the careers lookup checks every address again when it opens one (`assertPublic`).
+  - `pickCareers` also skips any address in the company's `careers_rejected` list. That is how a dead
+    page cleared by the careers lookup (R5) is never stored again.
   - Each function also returns up to five addresses it turned down, and why the result was empty
     (`no_results` or `no_match`), for FR-015.
 - **Rationale**: these are the owner's rules. Every decision is a plain function, which makes the
@@ -122,8 +151,10 @@ Every decision below follows the code on `main` after features 013 and the depen
 
 ## R8. The search step
 
-- **Decision**: `searchCompanies(context)` (`src/companies/searchCompanies.ts`) runs after the agent
-  and before pruning (`runWithStores` in `src/app/run.ts`):
+- **Decision**: `searchCompanies(context)` (`src/companies/searchCompanies.ts`) runs in `afterAgent`,
+  after the agent and before pruning. Its `searchWeb` calls use the careers lookup's
+  `search_results` (10) and `page_chars` (12,000) as `max` and `maxChars`. An error it doesn't expect
+  is traced as `company_search_failed` and doesn't fail the run (SC-004):
   1. The store lists companies **due** for a search, the most recently found first, up to
      `company_search.max_per_run` (default 50). A company is due when it lacks a website or a
      careers page, and its `searched_at` is null or more than 24 hours old.
@@ -165,22 +196,37 @@ Every decision below follows the code on `main` after features 013 and the depen
 - **Decision**: `src/db/store.ts` is at 195 lines, so the new `CompanyStore` interface and its types
   go in `src/db/companyStore.ts`, reached through `Stores.companies`. The upsert's company part
   goes in `src/db/kysely/companyRows.ts`, called from `jobStore.ts` (138 lines). The memory version
-  is `tests/helpers/memoryCompanyStore.ts`, with the jobs upsert in `tests/helpers/memoryStore.ts`
-  (131 lines) calling it. The store contract for companies is `tests/helpers/companyContract.ts`,
-  run on both stores like `appliedContract`.
+  is in two files. `tests/helpers/memoryCompanies.ts` (PR 1b) holds the memory
+  `recordCompanies`, which the jobs upsert in `tests/helpers/memoryStore.ts` (131 lines) calls.
+  `tests/helpers/memoryCompanyStore.ts` (PR 3) holds `MemoryCompanyStore`. `memoryStores(tables =
+  newTables())` takes the shared `Tables`, so a test can read them.
+- **The store contract** is one bundled case in `tests/helpers/companyContract.ts`, run on both
+  stores like `appliedContract`. Its S4 steps go in `tests/helpers/companySearchSteps.ts` so neither
+  file passes 200 lines, and the single `test()` calls one group of steps per sitting (`recordSteps`,
+  `careersSteps`, `boardSteps`, `searchSteps`). The case takes a hooks argument, as
+  `careersStoreContract` takes `pageFields`:
+  - `listCompanies()` reads every record;
+  - `seedUnlinked(rows)` inserts jobs with no `company_id`;
+  - `seedBoardPage(key, url)` sets a board page before `setBoardPage` exists (S2).
+
+  The memory wiring implements them over the shared `Tables`, and the MariaDB wiring with Kysely.
+  No store method exists only for the test.
 
 ## R12. Delivery and test split
 
-- **Delivery**: five code PRs after the docs PR (plan, Delivery). Each new module has a production
+- **Delivery**: six code PRs after the docs PR (plan, Delivery): PR 1 is split into 1a (migration
+  009 and the schema) and 1b (recording and the backfill), at the owner's request. Each new module has a production
   caller in the PR that adds it. The address rules (R7) land with the search step (R8), because
   nothing calls them before then.
-- **Test split (new tests, by count)**: at least 38 unit, exactly 3 integration and 0 UI.
+- **Test split (new tests, by count)**: 43 unit planned (37 is the floor), exactly 3 integration
+  and 0 UI.
   - **Unit:** the memory run of the company contract; `companyKeys`, `boardPageUrl`, `mainName`,
     `pickWebsite`, `pickCareers`, `storableUrl`; due-for-search ordering; the outcome mapping; the
     step's handling of SearXNG being unavailable.
   - **Integration:** one test each for migrations 009 and 010, and one bundled company contract
     case on MariaDB (each step a helper, as 013's `appliedContract` is). Each contract case runs once
     per store, so a second case would be a fourth integration test.
-  - From today's 575 / 52 / 57 (84.1 / 7.60 / 8.3%), 40 unit and 3 integration tests give 615 / 55 /
-    57 (84.6 / 7.57 / 7.8%), so every share moves toward 95 / 4 / 1. A fourth integration test, or
-    fewer than 37 unit tests, would raise the integration share, which the constitution forbids.
+  - From today's 575 / 52 / 57 (84.1 / 7.602 / 8.3%), 43 unit and 3 integration tests give 618 /
+    55 / 57 (84.7 / 7.534 / 7.8%), so every share moves toward 95 / 4 / 1. With 3 integration tests,
+    fewer than 37 unit tests (55 / 724 = 7.597%, just under 7.602%) or a fourth integration test
+    would raise the integration share, which the constitution forbids.

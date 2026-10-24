@@ -5,17 +5,23 @@ passes `npm run check` and `npm run check:db` before it is opened. Queries run a
 `myjobbot` database. Storage is in [data-model.md](data-model.md), and the queries and trace events
 in [contracts/company-records.md](contracts/company-records.md).
 
-## PR 1: records and links
+## PR 1a: the table
 
-1. Before the next run, `SELECT COUNT(*) FROM companies;` is `0` and every job's `company_id` is
-   null.
+`SHOW CREATE TABLE companies;` shows the table, and every job's `company_id` is null. Nothing else
+changes.
+
+## PR 1b: records and links
+
+1. Before the next run, `SELECT COUNT(*) FROM companies;` is `0`.
 2. After one run (`npm start -- run`):
-   - `SELECT COUNT(*) FROM jobs WHERE company_id IS NULL AND company <> '';` is `0` (SC-001);
+   - `SELECT company, COUNT(*) FROM jobs WHERE company_id IS NULL GROUP BY company;` lists only names
+     with no letters or digits, which can't have a record (SC-001);
    - `SELECT company_key, COUNT(*) FROM companies GROUP BY company_key HAVING COUNT(*) > 1;`
      returns nothing.
 3. A company on `exclude_companies` has a record, and its jobs are still missing from Recommended
    (SC-002).
-4. `created_date` of an old company is its earliest job's `first_seen`.
+4. `created_date` of an old company is its earliest job's `first_seen`, and its `name` is that job's
+   company name.
 
 ## PR 2: the careers lookup's pages folded in
 
@@ -26,8 +32,9 @@ in [contracts/company-records.md](contracts/company-records.md).
 
 ## PR 3: board addresses
 
-With a board configured in `companies`, after one run that company's `careers_url` is its board's
-public address, with `careers_source = 'board'`.
+`data/config.json` has `"companies": []` today, so add one board first, for example `{ "name":
+"Ashby", "ats": "ashby", "slug": "ashby" }`. After one run, that company's `careers_url` is its
+board's public address, with `careers_source = 'board'`.
 
 ## PR 4: the search
 

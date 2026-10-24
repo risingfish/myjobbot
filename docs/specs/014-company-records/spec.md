@@ -173,19 +173,23 @@ same company makes no further search for it.
     careers page from the run that first records it, and a search never replaces it; only its
     website is searched. A company later removed from the config keeps the address it has.
   - **Careers page**: for any other company, the first result of a search for "<company name>
-    careers" that is either on the website's host or one of its subdomains, with "career" or "jobs"
+    careers" that is either on the website's host (without a leading `www.`) or one of its
+    subdomains, so `careers.acme.com` counts for `www.acme.com`, with "career" or "jobs"
     in its address or title, or a recognized job board page (Greenhouse, Lever, Ashby, Workday)
     whose board names this company. A careers page can be found even when no website is.
 - **FR-008**: Only public `http(s)` addresses may be stored, and never an address on a host in the
-  careers lookup's `skip_hosts`. Search results never reach the model in this feature.
+  careers lookup's `skip_hosts`. The search step sends nothing to the model; a careers page it
+  stores may later be offered to the careers lookup's model as its remembered page, inside the run's
+  data markers like every page the lookup reads.
 - **FR-009**: When the careers lookup finds a careers page that led to a job, that page MUST become
   (or stay) the company's careers page address, replacing one found by search (but never a
-  configured board's address, FR-007); when the lookup finds
-  the remembered page no longer works, the company's careers page address is cleared (as the
-  remembered page is forgotten today) and is searched for again per FR-010.
-- **FR-010**: A company whose search found nothing, or whose search could not run, MUST be searched
-  again on a later run that finds it, at most once per day per company, so a run doesn't repeat
-  failed searches.
+  configured board's address, FR-007); when the lookup finds the remembered page no longer works,
+  the company's careers page address is cleared (as the remembered page is forgotten today), the
+  dead address is kept among the turned-down addresses so a search never stores it again, and the
+  company is searched for again per FR-010.
+- **FR-010**: A company missing an address, whose search found nothing, could not run, or whose
+  careers page was cleared, MUST be searched again on a later run, whether or not that run finds the
+  company, at most once per day per company, so runs don't repeat failed searches.
 - **FR-011**: Jobs already stored when this feature is installed MUST be linked to company records at
   upgrade time: one record per company among them (created time = the earliest first-seen of its
   jobs, last-found time = the latest last-seen), with the careers page taken from the configured
