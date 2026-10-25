@@ -4,6 +4,7 @@ import type { MakeStores } from "./storeContract.js";
 
 export interface SearchSettingsHooks {
     owners(): Promise<number[]>;
+    seedUser(id: number): Promise<void>;
 }
 
 const AT = "2026-10-25T00:00:00.000Z";
@@ -31,13 +32,24 @@ async function roundTripsExactly(store: SearchSettingsStore): Promise<void> {
     expect(JSON.stringify(await store.load(OWNER_ID))).toBe(JSON.stringify(DOCUMENT));
 }
 
+async function savesWholePerUser(store: SearchSettingsStore, hooks: SearchSettingsHooks): Promise<void> {
+    await store.save(OWNER_ID, { match_threshold: 50 }, AT);
+    expect(await store.load(OWNER_ID)).toEqual({ match_threshold: 50 });
+    await expect(store.save(2, { match_threshold: 40 }, AT)).rejects.toThrow();
+    expect(await store.load(2)).toBeNull();
+    await hooks.seedUser(2);
+    await store.save(2, { match_threshold: 40 }, AT);
+    expect([await store.load(2), await store.load(OWNER_ID)]).toEqual([{ match_threshold: 40 }, { match_threshold: 50 }]);
+}
+
 export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHooks): void {
-    test("search settings are imported once, round-trip exactly, and create the one owner with them", async () => {
+    test("search settings are imported once, round-trip exactly, create the one owner with them, and are replaced whole per user", async () => {
         const stores = await make();
         await nothingStoredYet(stores.searchSettings);
         await importsOnce(stores.searchSettings);
         await roundTripsExactly(stores.searchSettings);
         expect(await hooks.owners()).toEqual([OWNER_ID]);
+        await savesWholePerUser(stores.searchSettings, hooks);
         await stores.close();
     });
 }

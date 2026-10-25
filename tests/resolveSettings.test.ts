@@ -49,13 +49,13 @@ test("a rule spanning both places is checked against the file's runtime settings
 });
 
 test("losing the import race uses the settings the other process stored", async () => {
-    const store: SearchSettingsStore = { load: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(STORED), importIfAbsent: async () => false };
+    const store: SearchSettingsStore = { load: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(STORED), importIfAbsent: async () => false, save: async () => {} };
     const resolved = await resolveSettings(FULL_CONFIG, store, AT);
     expect([resolved.file.companies, resolved.notices.map((notice) => notice.kind)]).toEqual([STORED.companies, ["file_ignored"]]);
 });
 
 test("an import that stored nothing and left nothing stored is refused", async () => {
-    const store: SearchSettingsStore = { load: async () => null, importIfAbsent: async () => false };
+    const store: SearchSettingsStore = { load: async () => null, importIfAbsent: async () => false, save: async () => {} };
     await expect(resolveSettings(FULL_CONFIG, store, AT)).rejects.toThrow("search settings could not be stored");
 });
 
