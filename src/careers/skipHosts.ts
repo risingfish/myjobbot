@@ -6,7 +6,7 @@ export function dropSkipped(results: SearchResult[], hosts: string[]): SearchRes
 }
 
 /** Tells whether an address is on a host or one of its subdomains. */
-function onHost(url: string, host: string): boolean {
+export function onHost(url: string, host: string): boolean {
     const name = new URL(url).hostname.toLowerCase();
     return name === host || name.endsWith(`.${host}`);
 }

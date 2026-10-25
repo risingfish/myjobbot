@@ -154,3 +154,8 @@ test("the browser service address is optional and must be a WebSocket address", 
     for (const url of ["ws://browser:3000/", "wss://browser.example/"]) expect(configFrom({ ...LLM_ENV, MYJOBBOT_BROWSER_URL: url }).env.MYJOBBOT_BROWSER_URL).toBe(url);
     expect(() => configFrom({ ...LLM_ENV, MYJOBBOT_BROWSER_URL: "http://browser:3000/" })).toThrow();
 });
+
+test("the company search makes at most 50 searches a run by default, and refuses a negative limit", () => {
+    expect(parseFileConfig(JSON.stringify(SAMPLE_CONFIG)).company_search.max_per_run).toBe(50);
+    expect(() => parseFileConfig(JSON.stringify({ ...SAMPLE_CONFIG, company_search: { max_per_run: -1 } }))).toThrow();
+});
