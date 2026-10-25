@@ -9,7 +9,7 @@ import { createChat, type ChatFn } from "../agent/llm.js";
 import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { fileTrace, type Trace } from "../agent/trace.js";
-import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
+import { loadConfig, type AppConfig, type Environment, type LoadedConfig } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
@@ -25,6 +25,7 @@ import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
 import { dataMarkers } from "../agent/markers.js";
+import { settingsForRun } from "./runSettings.js";
 
 interface RunSeams {
     chat?: ChatFn;
@@ -59,12 +60,13 @@ interface RunReport extends AgentResult {
 
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
-/** Runs one full agent session end to end: loads config, runs the agent, and prunes stale jobs afterward. */
+/** Runs one full agent session end to end: loads config and the stored search settings, runs the agent, and prunes stale jobs afterward. */
 export async function runOnce(environment: Environment, seams: RunSeams = {}): Promise<RunReport> {
-    const config = loadConfig(environment);
-    const logs = openRunLogs(config);
+    const loaded = loadConfig(environment);
+    const logs = openRunLogs(loaded);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
+        const config = await settingsForRun(loaded, stores.searchSettings, logs.trace);
         return await runWithStores(config, seams, { logs, stores, key: secretKeyStatus(environment) });
     } finally {
         await stores.close();
@@ -161,7 +163,7 @@ function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, 
 }
 
 /** Opens the trace, LLM, and job JSONL log files used to record one run. */
-function openRunLogs(config: AppConfig): RunLogs {
+function openRunLogs(config: LoadedConfig): RunLogs {
     const runId = randomUUID();
     const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
     const logDir = config.env.MYJOBBOT_LOG_DIR;

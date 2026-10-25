@@ -1,10 +1,11 @@
 import { expect, test } from "vitest";
 import type { Environment } from "../src/config/load.js";
-import { appConfigFrom, parseFileConfig } from "../src/config/parse.js";
+import { appConfigFrom, parseJson } from "../src/config/parse.js";
+import { envSchema, fileConfigSchema } from "../src/config/schema.js";
 import { LLM_ENV, SAMPLE_CONFIG, TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 
 function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
-    return appConfigFrom(environment, { configText: JSON.stringify(config), resume: "# Jane Doe", dataDir: "data" });
+    return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, fileConfigSchema.parse(config));
 }
 
 test("the app config applies defaults", () => {
@@ -17,7 +18,7 @@ test("the app config applies defaults", () => {
 });
 
 test("config.json parses without any LLM settings", () => {
-    const file = parseFileConfig(JSON.stringify(SAMPLE_CONFIG));
+    const file = fileConfigSchema.parse(SAMPLE_CONFIG);
     expect(file.companies).toHaveLength(2);
     expect(file.match_threshold).toBe(70);
 });
@@ -84,7 +85,7 @@ test("config rejects retention not longer than ghost threshold", () => {
 });
 
 test("config.json that isn't valid JSON is reported readably", () => {
-    expect(() => parseFileConfig("{ not json")).toThrow(/config.json is not valid JSON/);
+    expect(() => parseJson("{ not json", "config.json")).toThrow(/config.json is not valid JSON/);
 });
 
 test("config applies search and JSearch defaults", () => {
@@ -156,6 +157,6 @@ test("the browser service address is optional and must be a WebSocket address", 
 });
 
 test("the company search makes at most 50 searches a run by default, and refuses a negative limit", () => {
-    expect(parseFileConfig(JSON.stringify(SAMPLE_CONFIG)).company_search.max_per_run).toBe(50);
-    expect(() => parseFileConfig(JSON.stringify({ ...SAMPLE_CONFIG, company_search: { max_per_run: -1 } }))).toThrow();
+    expect(fileConfigSchema.parse(SAMPLE_CONFIG).company_search.max_per_run).toBe(50);
+    expect(() => fileConfigSchema.parse({ ...SAMPLE_CONFIG, company_search: { max_per_run: -1 } })).toThrow();
 });

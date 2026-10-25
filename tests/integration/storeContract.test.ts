@@ -11,6 +11,7 @@ import { alertStoreContract } from "../helpers/alertStoreContract.js";
 import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
 import { jobDetailContract } from "../helpers/jobDetailContract.js";
+import { searchSettingsContract } from "../helpers/searchSettingsContract.js";
 import { storeContract } from "../helpers/storeContract.js";
 import { connectTestDb, emptyTables } from "../helpers/testDb.js";
 
@@ -21,7 +22,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-    if (db) await db.destroy();
+    if (!db) return;
+    await emptyTables(db);
+    await db.destroy();
 });
 
 async function emptyStores() {
@@ -37,6 +40,7 @@ descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
+searchSettingsContract(emptyStores, { owners: async () => (await db.selectFrom("users").select("id").orderBy("id").execute()).map((row) => row.id) });
 careersStoreContract(emptyStores, {
     pageFields: async () => {
         const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();

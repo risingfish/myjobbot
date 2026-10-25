@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { loadFileConfig } from "../../src/config/load.js";
+import { resolveSettings, type SettingsNotice } from "../../src/config/resolve.js";
 import type { FileConfig } from "../../src/config/schema.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
@@ -12,6 +13,7 @@ interface UiState {
     alerts: AlertStore;
     key: SecretKeyStatus;
     config: FileConfig;
+    notices: SettingsNotice[];
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -52,8 +54,9 @@ function secretKey(): SecretKeyStatus {
     return cache.__myjobbotKey;
 }
 
-/** Returns the database views, the Gmail store, the sealing key and the freshly loaded file config for one request. */
+/** Returns the database views, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
 export async function getUiState(): Promise<UiState> {
     const opened = await stores();
-    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key: secretKey(), config: loadFileConfig(dataDir()) };
+    const { file, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings, new Date().toISOString());
+    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key: secretKey(), config: file, notices };
 }

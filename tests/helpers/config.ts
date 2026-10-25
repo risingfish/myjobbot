@@ -24,3 +24,16 @@ export function testAppConfig(overrides: Record<string, unknown> = {}): AppConfi
     const env = envSchema.parse(LLM_ENV);
     return { env, file: testFileConfig(overrides), resume: "# Jane Doe\nSenior backend engineer, Go and TypeScript.\n", dataDir: "unused" };
 }
+
+export const FULL_CONFIG = {
+    companies: SAMPLE_CONFIG.companies,
+    searches: [TEST_SEARCH],
+    preferences: "Remote US, senior backend",
+    match_threshold: 60,
+    title_filter: { extra_exclude: ["staff"] },
+    title_boosts: { typescript: 10, golang: 5 },
+    exclude_companies: ["acme"],
+    jsearch: { monthly_request_cap: 100, refresh_hours: 48, exclude_publishers: ["jobmesh.io"] },
+    http: { timeout_s: 20 },
+    ghost_threshold_days: 30,
+};

@@ -10,7 +10,9 @@ import { chatThenCrash, scriptedChat, toolCallsReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
 import { newTables } from "./helpers/memoryJobViews.js";
+import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { memoryStores } from "./helpers/memoryStore.js";
+import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
 
 test("runOnce finishes when the model calls finish and writes a trace", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);
@@ -91,4 +93,14 @@ test("a company search that fails unexpectedly is traced, and the run still fini
     const [trace] = readdirSync(join(dataDir, "runs")).filter((name) => name.endsWith(".jsonl"));
     expect(report.status).toBe("finished");
     expect(readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")).toContain('"type":"company_search_failed"');
+});
+
+test("a run whose store already holds search settings fetches from the stored company, not the file's", async () => {
+    const searchSettings = new MemorySearchSettingsStore();
+    searchSettings.put(OWNER_ID, { companies: [{ name: "Acme", ats: "greenhouse", slug: "acme" }] });
+    const http = fakeBoard(greenhouseBoard([]));
+    const replies = [toolCallsReply(["fetch_jobs", { source: "Acme" }], ["finish", { summary: "done" }])];
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat(replies).chat, http, openStores: async () => ({ ...memoryStores(), searchSettings }) });
+    expect(report.status).toBe("finished");
+    expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/acme/jobs?content=true"]);
 });

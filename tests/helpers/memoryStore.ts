@@ -8,6 +8,7 @@ import { recordMemoryCompanies, touchMemoryCompany } from "./memoryCompanies.js"
 import { MemoryCompanyStore } from "./memoryCompanyStore.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
+import { MemorySearchSettingsStore } from "./memorySearchSettingsStore.js";
 import { asc, MemoryJobViews, newTables, type Row, type Tables } from "./memoryJobViews.js";
 
 const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, company_id: null, emailed_at: null, injection_seen_at: null };
@@ -142,5 +143,5 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), close };
 }

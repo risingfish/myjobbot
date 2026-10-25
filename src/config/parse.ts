@@ -1,18 +1,11 @@
 import { describeError } from "../errors.js";
-import type { AppConfig, Environment } from "./load.js";
-import { envSchema, fileConfigSchema, type Env, type FileConfig } from "./schema.js";
+import type { AppConfig, LoadedConfig } from "./load.js";
+import type { Env, FileConfig } from "./schema.js";
 
-/** Builds the app's configuration from the environment and the already-read config and resume files. */
-export function appConfigFrom(environment: Environment, files: { configText: string; resume: string; dataDir: string }): AppConfig {
-    const env = envSchema.parse(environment);
-    const file = parseFileConfig(files.configText);
-    requireSearchKey(env, file);
-    return { env, file, resume: files.resume, dataDir: files.dataDir };
-}
-
-/** Parses and validates config.json's text, explaining invalid JSON readably. */
-export function parseFileConfig(text: string): FileConfig {
-    return fileConfigSchema.parse(parseJson(text));
+/** Builds the app's configuration from the loaded environment, resume and data folder and the resolved config.json settings. */
+export function appConfigFrom(loaded: LoadedConfig, file: FileConfig): AppConfig {
+    requireSearchKey(loaded.env, file);
+    return { env: loaded.env, file, resume: loaded.resume, dataDir: loaded.dataDir };
 }
 
 /** Ensures a JSearch API key is configured whenever saved searches need it to run. */
@@ -22,11 +15,11 @@ function requireSearchKey(env: Env, file: FileConfig): void {
     }
 }
 
-/** Parses JSON text, wrapping any parse error with a clearer, config-specific message. */
-function parseJson(text: string): unknown {
+/** Parses JSON text, wrapping any parse error with a message naming the file it came from. */
+export function parseJson(text: string, name: string): unknown {
     try {
         return JSON.parse(text);
     } catch (error) {
-        throw new Error(`config.json is not valid JSON: ${describeError(error)}`, { cause: error });
+        throw new Error(`${name} is not valid JSON: ${describeError(error)}`, { cause: error });
     }
 }

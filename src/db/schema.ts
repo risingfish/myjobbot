@@ -1,4 +1,4 @@
-import type { Generated } from "kysely";
+import type { ColumnType, Generated } from "kysely";
 
 type Text = string | null;
 type Count = number | null;
@@ -66,7 +66,7 @@ interface UsersTable {
 
 interface UserSettingsTable {
     user_id: number;
-    settings: string;
+    settings: ColumnType<unknown, string, string>;
     updated_at: string;
 }
 
