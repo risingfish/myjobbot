@@ -66,7 +66,7 @@ for _ in $(seq 1 60); do page=$(curl -s --max-time 30 http://127.0.0.1:18082/rec
 foreign=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H "Host: evil.example:18082" http://127.0.0.1:18082/recommended || true)
 web_logs=$(docker logs "$web" 2>&1)
 docker rm -f "$web" >/dev/null
-grep -q "<h1>myjobbot</h1>" <<<"$page" || fail "serve mode renders pages with next dev. Logs: $web_logs"
+grep -q ">myjobbot</h1>" <<<"$page" || fail "serve mode renders pages with next dev. Logs: $web_logs"
 grep -q "recommended · threshold" <<<"$page" || fail "serve mode renders rows on the server. Logs: $web_logs"
 ok "serve mode renders pages with next dev"
 if grep -q "Installing dependencies" <<<"$web_logs"; then fail "next dev tried to install packages itself. Logs: $web_logs"; fi

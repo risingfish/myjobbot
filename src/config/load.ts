@@ -1,9 +1,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { appConfigFrom, parseFileConfig } from "./parse.js";
+import { parseJson } from "./parse.js";
 import { envSchema, type Env, type FileConfig } from "./schema.js";
 
 export type Environment = Readonly<Record<string, string | undefined>>;
+
+export interface LoadedConfig {
+    env: Env;
+    fileRaw: unknown;
+    resume: string;
+    dataDir: string;
+}
 
 export interface AppConfig {
     env: Env;
@@ -12,15 +19,16 @@ export interface AppConfig {
     dataDir: string;
 }
 
-/** Loads and validates the environment and on-disk config, returning the app's combined configuration. */
-export function loadConfig(environment: Environment): AppConfig {
-    const dataDir = envSchema.parse(environment).MYJOBBOT_DATA_DIR;
-    return appConfigFrom(environment, { configText: readConfigText(dataDir), resume: readText(dataDir, "resume.md"), dataDir });
+/** Validates the environment and reads config.json and the resume from the data folder, leaving config.json to be checked once the stored search settings are joined to it. */
+export function loadConfig(environment: Environment): LoadedConfig {
+    const env = envSchema.parse(environment);
+    const dataDir = env.MYJOBBOT_DATA_DIR;
+    return { env, fileRaw: loadFileConfig(dataDir), resume: readText(dataDir, "resume.md"), dataDir };
 }
 
-/** Loads and validates only the on-disk config, for readers such as the web UI that need no agent settings. */
-export function loadFileConfig(dataDir: string): FileConfig {
-    return parseFileConfig(readConfigText(dataDir));
+/** Reads config.json from the data folder as raw JSON, for readers such as the web UI that join it to the stored search settings themselves. */
+export function loadFileConfig(dataDir: string): unknown {
+    return parseJson(readConfigText(dataDir), "config.json");
 }
 
 /** Reads the JSON config file's text, rejecting a legacy YAML config with a migration hint. */
