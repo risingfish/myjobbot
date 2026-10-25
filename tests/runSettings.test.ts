@@ -37,3 +37,11 @@ test("a run keeps the settings it started with when the stored ones change", asy
     const next = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
     expect([started.file.companies[0]?.name, next.file.companies[0]?.name]).toEqual(["Stripe", "Acme"]);
 });
+
+test("a run with a bad stored match threshold scores with the default and traces the fallback", async () => {
+    const store = new MemorySearchSettingsStore();
+    store.put(OWNER_ID, { ...ACME, match_threshold: 150 });
+    const trace = memoryTrace();
+    const config = await settingsForRun(loaded({}), store, trace);
+    expect([config.file.match_threshold, trace.events]).toEqual([70, [{ type: "settings_fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
+});

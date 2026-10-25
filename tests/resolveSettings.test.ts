@@ -58,3 +58,12 @@ test("an import that stored nothing and left nothing stored is refused", async (
     const store: SearchSettingsStore = { load: async () => null, importIfAbsent: async () => false };
     await expect(resolveSettings(FULL_CONFIG, store, AT)).rejects.toThrow("search settings could not be stored");
 });
+
+test("a bad stored setting falls back on its own and the rest are used as stored", async () => {
+    const resolved = await resolveSettings({}, storedWith({ ...STORED, match_threshold: 150, preferences: "Remote" }), AT);
+    expect([resolved.file.match_threshold, resolved.file.preferences, resolved.file.companies, resolved.notices]).toEqual([70, "Remote", STORED.companies, [{ kind: "fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
+});
+
+test("a cross-setting rule that still fails after falling back is refused with today's message", async () => {
+    await expect(resolveSettings({}, storedWith({ companies: [{ name: "X", ats: "workday", slug: "x" }] }), AT)).rejects.toThrow(/at least one company or search/);
+});

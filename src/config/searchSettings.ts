@@ -1,15 +1,50 @@
+import { z } from "zod";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
+import { boostPoints, company, fileConfigSchema, filterTerm, publisherTerm, search } from "./schema.js";
 
 const PUBLISHERS = "exclude_publishers";
 
-const TOP_LEVEL_KEYS = new Set(["companies", "searches", "preferences", "match_threshold", "title_filter", "title_boosts", "exclude_companies"]);
+const DOMAIN_REASON = "not a valid domain entry";
+
+const NOT_SEARCH = "not a search setting";
+
+const FILTER_LISTS = new Set(["include", "exclude", "extra_exclude"]);
+
+const BOOST_ENTRY = z.tuple([filterTerm, boostPoints]);
 
 type RawObject = Record<string, unknown>;
+
+type Sanitizer = (value: unknown, fallbacks: Fallbacks) => unknown;
+
+interface ListRule {
+    name: string;
+    entry: z.ZodType;
+    reason?: (entry: unknown, error: z.ZodError) => string;
+}
 
 export interface SplitSettings {
     search: RawSearchSettings;
     runtime: unknown;
 }
+
+export interface FallbackNotice {
+    kind: "fallback";
+    setting: string;
+    reason: string;
+}
+
+const SANITIZERS: Record<string, Sanitizer> = {
+    companies: (value, fallbacks) => fallbacks.list(value, { name: "companies", entry: company }),
+    searches: (value, fallbacks) => fallbacks.list(value, { name: "searches", entry: search }),
+    preferences: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.preferences, value, "preferences"),
+    match_threshold: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.match_threshold, value, "match_threshold"),
+    title_filter: (value, fallbacks) => fallbacks.titleFilter(value),
+    title_boosts: (value, fallbacks) => fallbacks.boosts(value),
+    exclude_companies: (value, fallbacks) => fallbacks.list(value, { name: "exclude_companies", entry: filterTerm }),
+    [PUBLISHERS]: (value, fallbacks) => fallbacks.list(value, { name: `jsearch.${PUBLISHERS}`, entry: publisherTerm, reason: publisherReason }),
+};
+
+const TOP_LEVEL_KEYS = new Set(Object.keys(SANITIZERS).filter((key) => key !== PUBLISHERS));
 
 /** Reports whether a raw JSON value is an object of named values, not a list or a scalar. */
 function isRawObject(value: unknown): value is RawObject {
@@ -44,6 +79,74 @@ export function mergeSettings(runtime: unknown, search: RawSearchSettings): unkn
 /** Names the settings in a search part as config.json does, with the excluded publishers inside jsearch. */
 export function settingNames(search: RawSearchSettings): string[] {
     return Object.keys(search)
-        .filter((key) => TOP_LEVEL_KEYS.has(key) || key === PUBLISHERS)
+        .filter((key) => Object.hasOwn(SANITIZERS, key))
         .map((key) => (key === PUBLISHERS ? `jsearch.${PUBLISHERS}` : key));
+}
+
+/** Checks each stored search setting against its own rules, dropping bad values and entries so their defaults apply, with one notice per drop and never the dropped value. */
+export function sanitizeSearchSettings(stored: RawSearchSettings): { settings: RawSearchSettings; notices: FallbackNotice[] } {
+    const fallbacks = new Fallbacks();
+    const settings: RawSearchSettings = {};
+    for (const [key, value] of Object.entries(stored)) {
+        const sanitizer = Object.hasOwn(SANITIZERS, key) ? SANITIZERS[key] : undefined;
+        const kept = sanitizer === undefined ? fallbacks.report(key, NOT_SEARCH) : sanitizer(value, fallbacks);
+        if (kept !== undefined) settings[key] = kept;
+    }
+    return { settings, notices: fallbacks.notices };
+}
+
+/** Returns the zod issue message that says why a value failed. */
+function firstIssue(error: z.ZodError): string {
+    return error.issues[0]?.message ?? "invalid";
+}
+
+/** Says why an excluded publisher failed without repeating it, since the domain check's own message holds the entry. */
+function publisherReason(entry: unknown, error: z.ZodError): string {
+    return filterTerm.safeParse(entry).success ? DOMAIN_REASON : firstIssue(error);
+}
+
+class Fallbacks {
+    readonly notices: FallbackNotice[] = [];
+
+    /** Records that a stored setting or entry fell back, and why, returning nothing to keep. */
+    report(setting: string, reason: string): undefined {
+        this.notices.push({ kind: "fallback", setting, reason });
+        return undefined;
+    }
+
+    /** Returns a value that passes its schema, or records it as fallen back under its name. */
+    checked(schema: z.ZodType, value: unknown, name: string): unknown {
+        const result = schema.safeParse(value);
+        return result.success ? value : this.report(name, firstIssue(result.error));
+    }
+
+    /** Keeps the entries of a stored list that pass, recording each other one by its position; a list with none left takes its default. */
+    list(value: unknown, rule: ListRule): unknown {
+        if (!Array.isArray(value)) return this.checked(z.array(z.unknown()), value, rule.name);
+        const kept = value.filter((entry, index) => this.keeps(entry, `${rule.name}[${index}]`, rule));
+        return kept.length === 0 && value.length > 0 ? undefined : kept;
+    }
+
+    /** Keeps the passing terms of each stored title filter list, dropping a list with none left so its default applies. */
+    titleFilter(value: unknown): unknown {
+        if (!isRawObject(value)) return this.checked(z.object({}), value, "title_filter");
+        const parts = Object.entries(value).map(([key, terms]) => [key, FILTER_LISTS.has(key) ? this.list(terms, { name: `title_filter.${key}`, entry: filterTerm }) : terms]);
+        return Object.fromEntries(parts.filter(([, terms]) => terms !== undefined));
+    }
+
+    /** Keeps the stored title boosts whose term and points both pass, recording each other one by its position. */
+    boosts(value: unknown): unknown {
+        if (!isRawObject(value)) return this.checked(z.record(z.string(), z.unknown()), value, "title_boosts");
+        const entries = Object.entries(value);
+        const kept = entries.filter((entry, index) => this.keeps(entry, `title_boosts[${index}]`, { name: "title_boosts", entry: BOOST_ENTRY }));
+        return kept.length === 0 && entries.length > 0 ? undefined : Object.fromEntries(kept);
+    }
+
+    /** Reports whether one entry passes its rule, recording it under its position when it doesn't. */
+    private keeps(entry: unknown, setting: string, rule: ListRule): boolean {
+        const result = rule.entry.safeParse(entry);
+        if (result.success) return true;
+        this.report(setting, rule.reason === undefined ? firstIssue(result.error) : rule.reason(entry, result.error));
+        return false;
+    }
 }

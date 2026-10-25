@@ -8,13 +8,13 @@ import { isDomainEntry, isValidDomainEntry } from "../jobs/publisherDomain.js";
 const DEFAULT_INCLUDE = ["engineer", "developer", "software", "sre", "devops", "platform", "backend", "frontend", "full stack", "fullstack", "programmer"];
 const DEFAULT_EXCLUDE = ["intern", "internship", "manager", "director", "sales", "recruiter", "recruiting", "recruitment"];
 
-const company = z.object({
+export const company = z.object({
     name: z.string().min(1),
     ats: z.enum(ATS_NAMES),
     slug: z.string().min(1),
 });
 
-const search = z.object({
+export const search = z.object({
     name: z.string().min(1),
     query: z.string().min(1),
     remote_only: z.boolean().default(false),
@@ -24,11 +24,13 @@ const search = z.object({
 const HOURS_PER_MONTH = 30 * 24;
 export const REFRESH_GRACE_HOURS = 0.25;
 
-const filterTerm = z.string().refine((term) => normalizeTitle(term) !== "", { message: "filter terms need at least one letter or digit" });
+export const filterTerm = z.string().refine((term) => normalizeTitle(term) !== "", { message: "filter terms need at least one letter or digit" });
 
-const publisherTerm = filterTerm.refine((entry) => !isDomainEntry(entry) || isValidDomainEntry(entry), {
+export const publisherTerm = filterTerm.refine((entry) => !isDomainEntry(entry) || isValidDomainEntry(entry), {
     error: (issue) => `'${String(issue.input)}' is not a valid domain entry; use a host like 'jobmesh.io' or '*.trabajo.org'`,
 });
+
+export const boostPoints = z.number().int().min(1).max(100);
 
 const jsearch = z.object({
     monthly_request_cap: z.number().int().min(1).default(190),
@@ -91,7 +93,7 @@ export const fileConfigSchema = z
         job_retention_days: z.number().int().min(1).default(90),
         title_filter: titleFilter.prefault({}),
         exclude_companies: z.array(filterTerm).default([]),
-        title_boosts: z.record(filterTerm, z.number().int().min(1).max(100)).default({}),
+        title_boosts: z.record(filterTerm, boostPoints).default({}),
         agent: agent.prefault({}),
         http: http.prefault({}),
         gmail: gmail.prefault({}),
