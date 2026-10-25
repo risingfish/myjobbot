@@ -1,8 +1,8 @@
 import { OWNER_ID, type RawSearchSettings, type SearchSettingsStore } from "../db/searchSettingsStore.js";
 import { fileConfigSchema, type FileConfig } from "./schema.js";
-import { mergeSettings, settingNames, splitSettings, type SplitSettings } from "./searchSettings.js";
+import { mergeSettings, sanitizeSearchSettings, settingNames, splitSettings, type FallbackNotice, type SplitSettings } from "./searchSettings.js";
 
-export type SettingsNotice = { kind: "imported"; keys: string[] } | { kind: "file_ignored"; keys: string[] };
+export type SettingsNotice = { kind: "imported"; keys: string[] } | FallbackNotice | { kind: "file_ignored"; keys: string[] };
 
 interface ResolvedSettings {
     file: FileConfig;
@@ -27,9 +27,10 @@ async function importFromFile(split: SplitSettings, store: SearchSettingsStore, 
     return fromStored(split, stored);
 }
 
-/** Joins stored search settings with config.json's runtime settings, noting any search settings the file still holds. */
+/** Joins stored search settings, each bad one fallen back, with config.json's runtime settings, noting the fallbacks and any search settings the file still holds. */
 function fromStored(split: SplitSettings, stored: RawSearchSettings): ResolvedSettings {
-    const file = fileConfigSchema.parse(mergeSettings(split.runtime, stored));
+    const { settings, notices } = sanitizeSearchSettings(stored);
+    const file = fileConfigSchema.parse(mergeSettings(split.runtime, settings));
     const ignored = settingNames(split.search);
-    return { file, notices: ignored.length > 0 ? [{ kind: "file_ignored", keys: ignored }] : [] };
+    return { file, notices: ignored.length > 0 ? [...notices, { kind: "file_ignored", keys: ignored }] : notices };
 }
