@@ -58,6 +58,18 @@ interface CompaniesTable {
     careers_rejected: Text;
 }
 
+interface UsersTable {
+    id: Generated<number>;
+    name: string;
+    created_at: string;
+}
+
+interface UserSettingsTable {
+    user_id: number;
+    settings: string;
+    updated_at: string;
+}
+
 interface VerdictsTable {
     id: Generated<number>;
     ats: string;
@@ -127,4 +139,6 @@ export interface Database {
     gmail_connection: GmailConnectionTable;
     gmail_alert_state: GmailAlertStateTable;
     careers_audit: CareersAuditTable;
+    users: UsersTable;
+    user_settings: UserSettingsTable;
 }
