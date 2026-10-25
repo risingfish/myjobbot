@@ -31,16 +31,21 @@
 
 ## Notes
 
-- The owner answered three questions on 2026-10-25 (recorded under Clarifications in the spec):
-  - the upgrade imports `config.json` automatically, once
-  - settings are changed through command-line export and import; the Settings page editor comes
-    later
-  - bad stored settings fall back one at a time, with a warning
+- The owner answered five questions on 2026-10-25 (recorded under Clarifications in the spec):
+  - the upgrade imports `config.json`'s search settings automatically, once
+  - search settings are changed through command-line export and import; the Settings page editor
+    comes later
+  - bad stored search settings fall back one at a time, with a warning
+  - only the search settings move; runtime settings stay in `config.json`
+  - search settings belong to a user, ready for a later multi-user feature
 - The spec names setting keys, `config.json`, `.env` and today's checks file. The feature is about
-  moving those, so they are the domain's own terms, not a chosen design. How the settings are laid
-  out in the database is left to the plan.
-- For `/speckit-clarify` or the plan:
-  - how fine-grained a fallback is inside nested groups (FR-005): one field, such as
-    `http.timeout_s`, or the whole `http` group
-  - the names of the export and import commands
-  - whether the upgrade import renames the old file
+  moving some of those, so they are the domain's own terms, not a chosen design. How the settings
+  are laid out in the database is left to the plan.
+- Settled by the plan (research R2–R7): fallbacks are per entry inside lists and maps, and per key
+  otherwise (runtime settings are never sanitized); the commands are `export-settings` and
+  `import-settings`; the upgrade import never renames or rewrites the file.
+- Revised on 2026-10-25 after the deep analysis: a fresh install shows the web UI's error page
+  until settings are imported, an exported `{}` is refused on import, runtime keys are refused only
+  by the command-line import, and fallback reports name an entry's position, never its value. After the second analysis: the
+upgrade import happens on the first read of settings (a run or a page load), not at process start,
+and a list whose entries all fall back takes its default (owner's analysis fixes, 2026-10-25).

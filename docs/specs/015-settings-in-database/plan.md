@@ -53,10 +53,10 @@ and on `myjobbot_test`
 
 | Principle | Status |
 |---|---|
-| I. Habit-hooks clean | Pass. New logic is small pure functions in `src/config/searchSettings.ts`, `resolve.ts` and `importSettings.ts`. `schema.ts` (160 lines) only exports four element schemas it already defines. `src/db/store.ts` gains one line (`Stores.settings`); the interface goes in `src/db/settingsStore.ts`. `run.ts` calls `resolveSettings` from its existing `runOnce`, via a helper if `runOnce` would pass 20 lines. |
-| II. Test-first | Pass. Tests precede code in every sitting. The split is about 32 unit, exactly 2 integration and 1 UI, which moves every share toward 95 / 4 / 1 (84.7 / 7.50 / 7.78 → 85.0 / 7.43 / 7.57%). The decisions (split, merge, sanitize, import checks) are plain functions, and the store's behaviour is one bundled contract case (R9). |
+| I. Habit-hooks clean | Pass. New logic is small pure functions in `src/config/searchSettings.ts`, `resolve.ts` and `importSettings.ts`. `schema.ts` (160 lines) exports four element schemas it already defines, plus `boostPoints` lifted out of `title_boosts`. `src/db/store.ts` gains two lines (the import and `Stores.searchSettings`); the interface goes in `src/db/searchSettingsStore.ts`. `run.ts` (180 lines) gains one call: the resolving and tracing live in a new `src/app/runSettings.ts`. Each export and store method lands with its production caller (`save` in PR 3, with the import command). |
+| II. Test-first | Pass. Tests precede code in every sitting. The split is 43 unit, 3 integration and 1 UI, which moves every share toward 95 / 4 / 1 (84.72 / 7.50 / 7.78 → 85.13 / 7.44 / 7.44%). Tests that write files (the one `runOnce` test) count as integration; the run's trace events are unit-tested through `settingsForRun` with the memory trace. The decisions (split, merge, sanitize, import checks) are plain functions, and the store's behaviour is one bundled contract case (R9). |
 | III. Purpose comments | Pass. Every new function gets its one-line doc comment. `loadConfig`'s and `getUiState`'s are updated, since they no longer validate or read search settings from the file. |
-| IV. Bounded, locked dependencies | Pass. No new library. zod's own `safeParse` on the element schemas drives the fallback. Migration 011 uses the schema builder; the store uses `insertInto(...).onDuplicateKeyUpdate` as the other stores do. |
+| IV. Bounded, locked dependencies | Pass. No new library. zod's own `safeParse` on the element schemas drives the fallback. Migration 011 uses the schema builder, with its own `"json"` column type; the table options passed to `modifyEnd` are its one `sql` fragment, as in `009_companies.ts`. The store uses `onDuplicateKeyUpdate` for `save`, as the other stores do, and `insertInto(...).ignore()` for the import-once write, which no store uses yet: it is Kysely's own form of `INSERT IGNORE`, and the import only needs "stored or not". |
 | V. Specs in docs/specs | Pass. |
 
 ## Project Structure
@@ -79,17 +79,18 @@ docs/specs/015-settings-in-database/
 ```text
 src/
 ├── config/
-│   ├── schema.ts            # export company, search, filterTerm, publisherTerm (PR 1b, 2)
-│   ├── searchSettings.ts    # SEARCH_KEYS, splitSettings, mergeSettings (PR 1b); sanitizeSearchSettings (PR 2)
-│   ├── resolve.ts           # resolveSettings: import once, sanitize, merge, parse; notices (PR 1b, 2)
-│   ├── importSettings.ts    # the import command's checks (PR 3)
-│   ├── load.ts, parse.ts    # read config.json raw; validate only after merging (PR 1b)
+│   ├── schema.ts            # export company, search, filterTerm, publisherTerm, boostPoints (PR 2)
+│   ├── searchSettings.ts    # splitSettings, mergeSettings (PR 1b); sanitizeSearchSettings (PR 2); SEARCH_KEYS exported (PR 3)
+│   ├── resolve.ts           # resolveSettings, SettingsNotice: import once, sanitize, merge, parse (PR 1b, 2)
+│   ├── importSettings.ts    # the import command's checks, exportDocument (PR 3)
+│   ├── load.ts, parse.ts    # LoadedConfig, config.json read raw, parseJson(text, name); validate only after merging (PR 1b)
 ├── db/
 │   ├── migrations/011_user_settings.ts, migrations/index.ts, schema.ts   # PR 1a
-│   ├── settingsStore.ts     # SettingsStore, RawSearchSettings, OWNER_ID (PR 1b)
-│   ├── store.ts             # Stores.settings (PR 1b)
-│   └── kysely/settingsStore.ts, kysely/stores.ts   # PR 1b
-├── app/run.ts               # resolve settings after opening the stores; trace notices (PR 1b, 2)
+│   ├── searchSettingsStore.ts   # SearchSettingsStore (load, importIfAbsent; save in PR 3), RawSearchSettings, OWNER_ID (PR 1b)
+│   ├── store.ts             # Stores.searchSettings (PR 1b)
+│   └── kysely/searchSettingsStore.ts, kysely/stores.ts   # PR 1b, 3
+├── app/runSettings.ts       # settingsForRun: resolve after the stores open, trace the notices, build AppConfig (PR 1b, 2)
+├── app/run.ts               # calls it from runOnce (PR 1b)
 └── cli.ts                   # export-settings, import-settings (PR 3)
 
 web/
@@ -97,30 +98,40 @@ web/
 └── app/settings/page.tsx, components/settings/SettingsNotices.tsx   # notices panel (PR 2)
 
 tests/
-├── searchSettings.test.ts, resolveSettings.test.ts, importSettings.test.ts   # unit
-├── helpers/settingsContract.ts, memorySettingsStore.ts   # one bundled case
+├── searchSettings.test.ts, resolveSettings.test.ts, runSettings.test.ts, importSettings.test.ts   # unit
+├── helpers/searchSettingsContract.ts, memorySearchSettingsStore.ts   # one bundled case (step 3 in PR 3)
+├── helpers/config.ts        # FULL_CONFIG: every search key plus runtime keys
 ├── integration/companyMigrations.test.ts or migrate.test.ts   # migration 011
 ├── client/settingsNotices.test.tsx   # 1 UI test
-└── config.test.ts, configFiles.test.ts, run.test.ts   # updated for the new load path
+├── run.test.ts              # 1 new (integration): a run reads the stored sources
+├── integration/storeContract.test.ts   # the contract on MariaDB; afterAll empties the tables
+├── client/settings.test.tsx # notices: [] in the getUiState mock
+└── config.test.ts, configFiles.test.ts   # updated for the new load path
 ```
 
 **Structure Decision**: the settings logic stays in `src/config/`, beside the schema it applies.
 Storage follows the store pattern: an interface, a Kysely store, a memory store and a contract run
-on both.
+on both. The store is `searchSettings` (`SearchSettingsStore`), named for what it holds:
+`settings` alone already means the database connection settings (`src/db/settings.ts`).
 
 ## Delivery (research R9)
 
 | PR | Sitting | Content | Owner can test |
 |---|---|---|---|
 | docs | S0 | spec, plan, research, data model, contract, quickstart, tasks | — |
-| 1a | S1a | Migration 011: `users`, `user_settings` (~5 files) | The tables exist, empty |
-| 1b | S1b | Store, split and merge, upgrade import, agent and web UI read from the database (~14) | Settings imported once; search settings edited in the file no longer apply |
-| 2 | S2 | Fallback per setting, notices in the trace and on the Settings page (~9) | A bad stored value falls back and is reported |
-| 3 | S3 | `export-settings` and `import-settings` (~6) | Change settings by export, edit, import |
-| 4 | S4 | README, `examples/`, CLAUDE.md, the test ledger (~5) | — |
+| 1a | S1a | Migration 011: `users`, `user_settings` (~6 files) | The tables exist, empty |
+| 1b | S1b | Store, split and merge, upgrade import, agent and web UI read from the database (~23) | Settings imported once; search settings edited in the file no longer apply |
+| 2 | S2 | Fallback per setting, notices in the trace and on the Settings page (~11) | A bad stored value falls back and is reported |
+| 3 | S3 | `export-settings`, `import-settings` and the store's `save` (~8) | Change settings by export, edit, import |
+| 4 | S4 | README, `examples/`, `tests/docker.sh`, CLAUDE.md, the test ledger (~7) | — |
 
-PR 1b can't be split further: if the readers moved to the database before the upgrade import
-existed, the owner's settings would be lost on the first run.
+PR 1b is over the usual size, and stays whole by the owner's choice (2026-10-25). Its readers must
+not move to the database before the upgrade import exists, or the owner's settings would be lost on
+the first run. A split would put the store, split and merge, and the import in one PR, and the
+readers in the next.
+
+FR-008 and SC-004 (each page load and run uses the current stored settings) are checked by the
+quickstart only (tasks, Coverage notes).
 
 ## Complexity Tracking
 

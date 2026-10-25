@@ -113,10 +113,10 @@ settings, value by value, and check that a run gives the same result as before t
 **Acceptance Scenarios**:
 
 1. **Given** a valid `config.json` and no stored search settings, **When** the agent or the web UI
-   starts, **Then** every search setting in the file is stored as it was, unset ones stay unset so
+   first reads its settings (a run, or a page load), **Then** every search setting in the file is stored as it was, unset ones stay unset so
    their defaults apply, and the runtime settings are not copied.
-2. **Given** the agent and the web UI start at the same time on an upgraded database, **When** both
-   find the file, **Then** its search settings are imported exactly once.
+2. **Given** the agent and the web UI first read their settings at the same time on an upgraded
+   database, **When** both find the file, **Then** its search settings are imported exactly once.
 3. **Given** a `config.json` whose search settings are invalid and no stored search settings,
    **When** the import is tried, **Then** nothing is stored and the message names each bad value the
    way loading the file does today. The import is tried again on the next start, so fixing the file
@@ -188,8 +188,9 @@ and report both.
 ### Edge Cases
 
 - **No search settings stored and none in the file** (a fresh install): the defaults apply. A run
-  refuses to start with "configure at least one company or search", as an empty file does today.
-  The web pages still load.
+  refuses to start with "configure at least one company or search", and the web UI shows its error
+  page with that message, as an empty file does today. The owner adds search settings with the
+  command-line import (User Story 3); the README's Setup says so.
 - **The database cannot be reached**: runs and pages fail as they do today when the database is
   down. They never fall back to the file's search settings.
 - **A stored value no longer passes the rules** (for example, after an upgrade tightens one): it
@@ -200,7 +201,8 @@ and report both.
   timing (`config.json`). It is checked at the start of each run and on every import, against the
   current file. Editing the cap in the file so the stored searches no longer fit refuses the next run
   with today's message, as the same edit does today.
-- **Export with nothing stored**: the file is empty (`{}`), and importing it changes nothing.
+- **Export with nothing stored**: the file is empty (`{}`). Importing it is refused with "configure
+  at least one company or search", like any import that leaves no source, and nothing changes.
 - **Import of a file that is not JSON**: refused with today's "not valid JSON" message, and nothing
   is changed.
 - **Concurrent changes**: if two imports race, one wins whole. Search settings are never a mix of
@@ -232,29 +234,34 @@ and report both.
 - **FR-004**: An import of search settings (including the upgrade import) MUST be checked as a whole,
   against the current runtime settings for the rules that span both, before it is saved. An invalid
   import MUST be refused with the same messages loading the file gives today, and MUST leave the
-  stored search settings exactly as they were. A file holding any runtime setting MUST be refused.
+  stored search settings exactly as they were. A command-line import of a file holding any runtime
+  setting MUST be refused; the upgrade import takes only the file's search settings and leaves its
+  runtime settings in place.
 - **FR-005**: When stored search settings are read and one fails its checks, it MUST fall back on
   its own and leave the rest as stored:
   - a bad value takes its default
   - a bad entry in a list or map (one company, one search, one title boost) is left out, and the
     other entries are kept
+  - a list or map whose entries are all bad takes its default, as if it were unset (an empty
+    `title_filter.include` would otherwise match no title and hide every job)
 
   The cross-setting rules (FR-003) are checked after falling back. A run MUST refuse to start if
   one still fails, and the web UI MUST show its error page. Runtime settings in `config.json` keep
   today's behaviour: a bad value there stops the run with today's message.
-- **FR-005a**: Every fallback MUST be reported, naming the setting and the reason:
+- **FR-005a**: Every fallback MUST be reported, naming the setting (for a list or map entry, the
+  setting and the entry's position) and the reason:
   - in the run's trace, for a run
   - on the Settings page, for the web UI
 
-  Reports MUST NOT include the preferences text or other free text beyond the setting's name and
-  the rule it broke.
+  Reports MUST NOT include the preferences text, the bad value, or other free text beyond the
+  setting's name, the entry's position and the rule it broke.
 - **FR-006**: An unset search setting MUST behave exactly as the same key missing from `config.json`
   does today. Defaults stay defined in one place and are not copied into storage as fixed values, so
   a later change to a default reaches unset settings.
 - **FR-007**: A run MUST use the settings as they were when it started, for the whole run.
 - **FR-008**: The web UI MUST use the stored search settings as of each page load or action.
-- **FR-009**: When the agent or the web UI starts on a database with no stored search settings and
-  `config.json` holds any, the system MUST import them once, without loss. This covers every search
+- **FR-009**: When the agent or the web UI first reads its settings (a run, or a page load) on a
+  database with no stored search settings and `config.json` holds any, the system MUST import them once, without loss. This covers every search
   setting, including the order of lists and the free-text preferences. Search settings missing from
   the file stay unset, and runtime settings are not copied. The import happens once per database,
   even when the agent and the web UI start together.
@@ -278,7 +285,8 @@ and report both.
   - exact text comparison
   - added through a numbered migration step
   - the step runs once per database, even when the agent and the web UI start together
-- **FR-014**: The README, `examples/` and the agent's architecture notes MUST describe the new home
+- **FR-014**: The README (its Setup, Storage, Deploy with Docker and "Configuration knobs"
+  sections), `examples/` and the agent's architecture notes (`CLAUDE.md`) MUST describe the new home
   of the search settings and how to change them, and which settings stay in `config.json`. Nothing
   may tell the owner to edit search settings in `data/config.json`.
 - **FR-015**: Search settings MUST belong to a user. This feature MUST create exactly one user, the
@@ -298,7 +306,7 @@ and report both.
   - scoring and filtering values: the match threshold, the title filter, title boosts, excluded
     companies and excluded JSearch publishers
 
-  Each user has exactly one set; in this feature that means one set, the owner's. It may be empty, in
+  Each user has exactly one set; in this feature that means one set, the owner's. It may be unset, in
   which case every value takes its default. Each import replaces the whole set or none of it.
 - **Runtime settings**: everything else in `config.json` (limits and tuning for the agent, HTTP,
   JSearch, the careers lookup and the company search; job lifetimes; the Gmail alert senders). They
@@ -311,8 +319,8 @@ and report both.
 - **SC-001**: With the search settings removed from `data/config.json`, an agent run and every web
   page work using the stored search settings and the file's runtime settings.
 - **SC-002**: The owner's current `config.json`, brought in, gives stored search settings that match
-  the file value for value (2 searches, 10 title boosts, 5 excluded companies, the preferences text,
-  match threshold 60). Recommended shows the same jobs in the same order before and after the
+  the file value for value (2 searches, 10 title boosts, 5 excluded companies, 2 excluded publishers,
+  the title filter, the preferences text, match threshold 60). Recommended shows the same jobs in the same order before and after the
   upgrade.
 - **SC-003**: Every rule the file's search settings are checked against today is enforced on every
   import. Each invalid example in today's config tests that concerns a search setting is refused
