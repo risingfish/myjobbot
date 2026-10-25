@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { normalizeCompany } from "../jobs/company.js";
+import { boardPageUrl } from "../companies/boardPage.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
@@ -81,10 +83,12 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     }
 }
 
-/** Prepares the stored data before the agent starts: links any job not yet linked to its company's record, which after an upgrade is every stored job. */
+/** Prepares the stored data before the agent starts: links any job not yet linked to its company's record, which after an upgrade is every stored job, and gives each configured board's company its board as careers page. */
 async function beforeAgent(context: ToolContext): Promise<void> {
     const linked = await context.store.linkUnlinkedJobs();
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
+    const at = context.now().toISOString();
+    for (const board of context.config.companies) await context.companies.setBoardPage({ key: normalizeCompany(board.name), name: board.name, url: boardPageUrl(board) }, at);
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */
@@ -118,6 +122,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
         trace: logs.trace,
         chat,
+        companies: stores.companies,
         careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client, boards: client.withoutRedirects(), renderer: pageRenderer(config, seams, { logs, stores }) },
     };
 }

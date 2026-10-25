@@ -1,4 +1,5 @@
 import type { ChatFn } from "../agent/llm.js";
+import type { CompanyStore } from "../db/companyStore.js";
 import type { Trace } from "../agent/trace.js";
 import type { DataMarkers } from "../agent/markers.js";
 import type { HostLookup } from "../careers/fetchPage.js";
@@ -31,6 +32,7 @@ export interface ToolContext {
     trace: Trace;
     chat: ChatFn;
     careers: CareersAccess;
+    companies: CompanyStore;
     markers: DataMarkers;
 }
 

@@ -255,20 +255,20 @@ unlinked, and no company key has two records (quickstart PR 1b).
 
 ### Sitting S3, PR 3: board addresses (T027–T033), branch `014-pr3-board-pages`
 
-- [ ] T027 [US1] Per-PR flow steps 1–3, for sitting S3.
-- [ ] T028 [P] [US1] Unit tests in a new `tests/boardPage.test.ts` (four `test()`s) for
+- [X] T027 [US1] Per-PR flow steps 1–3, for sitting S3.
+- [X] T028 [P] [US1] Unit tests in a new `tests/boardPage.test.ts` (four `test()`s) for
   `boardPageUrl(company)` in `src/companies/boardPage.ts`:
   - Greenhouse gives `https://job-boards.greenhouse.io/<slug>`;
   - Lever gives `https://jobs.lever.co/<slug>`;
   - Ashby gives `https://jobs.ashbyhq.com/<slug>`;
   - each address is recognized by `parseBoardLink` with the same slug.
-- [ ] T029 [P] [US1] Unit test in `tests/run.test.ts` (one new `test()`): after `runOnce` with
+- [X] T029 [P] [US1] Unit test in `tests/run.test.ts` (one new `test()`): after `runOnce` with
   `ONE_COMPANY` (Stripe on Greenhouse) over `memoryStores(tables)`, Stripe's record has its
   Greenhouse board page with `careers_source = 'board'` (FR-007, FR-011). Add `boardSteps` to the
   company contract (no new `test()`): `setBoardPage` sets the page, clearing the careers reason and
   list, and a later `setLookupPage` doesn't replace it.
-- [ ] T030 [US1] Add `src/companies/boardPage.ts` (T028).
-- [ ] T031 [US1] Add the company store and wire it everywhere it is needed:
+- [X] T030 [US1] Add `src/companies/boardPage.ts` (T028).
+- [X] T031 [US1] Add the company store and wire it everywhere it is needed:
   - **The interface:** `src/db/companyStore.ts`, with `CompanyStore` and its first method,
     `setBoardPage(page, at)`. Add `companies: CompanyStore` to `Stores` in
     `src/db/store.ts`.
@@ -280,10 +280,10 @@ unlinked, and no company key has two records (quickstart PR 1b).
   - **The run's tools:** add `companies: CompanyStore` to `ToolContext` (`src/tools/context.ts`), set
     in `buildContext` (`src/app/run.ts`) and in `testContext` (`tests/helpers/context.ts`).
   - **Hand-built `Stores`:** fix the test files that build one, if the typecheck names any.
-- [ ] T032 [US1] In `beforeAgent` (`src/app/run.ts`), after linking, call `setBoardPage` once for
+- [X] T032 [US1] In `beforeAgent` (`src/app/run.ts`), after linking, call `setBoardPage` once for
   every configured board, with `normalizeCompany(company.name)` and `boardPageUrl(company)`.
   `fetchBoard` doesn't repeat it (research R6). Update `beforeAgent`'s doc comment.
-- [ ] T033 [US1] Per-PR flow steps 4–6 ("Use a configured board's address as its careers page (014 PR
+- [X] T033 [US1] Per-PR flow steps 4–6 ("Use a configured board's address as its careers page (014 PR
   3)"). The PR description notes that `data/config.json` needs a board in `companies` to show it
   (quickstart PR 3).
 

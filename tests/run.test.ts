@@ -9,6 +9,7 @@ import { greenhouseBoard } from "./helpers/boards.js";
 import { chatThenCrash, scriptedChat, toolCallsReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
+import { newTables } from "./helpers/memoryJobViews.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
 test("runOnce finishes when the model calls finish and writes a trace", async () => {
@@ -72,4 +73,11 @@ test("the stores are closed after a finished run and after an aborted one", asyn
         await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => stores });
         expect(close).toHaveBeenCalledOnce();
     }
+});
+
+test("before the agent starts, each configured board's public address becomes its company's careers page", async () => {
+    const tables = newTables();
+    const { chat } = scriptedChat([toolCallsReply(["finish", { summary: "done" }])]);
+    await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => memoryStores(tables) });
+    expect(tables.companies).toMatchObject([{ company_key: "stripe", name: "Stripe", careers_url: "https://job-boards.greenhouse.io/stripe", careers_source: "board" }]);
 });

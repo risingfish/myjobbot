@@ -85,6 +85,16 @@ async function lookupNeverTouchesBoardPages({ stores, hooks }: Contract): Promis
     expect(await stores.careers.careersPage("gamma")).toBe(board);
 }
 
+async function boardPagesWin({ stores }: Contract): Promise<void> {
+    const board = "https://jobs.ashbyhq.com/acme";
+    await stores.companies.setBoardPage({ key: "acme", name: "Acme", url: board }, DAY_THREE);
+    expect(await stores.careers.careersPage("acme")).toBe(board);
+    await stores.careers.setLookupPage({ key: "acme", name: "Acme", url: "https://acme.example/jobs" }, DAY_THREE);
+    await stores.careers.clearLookupPage("acme");
+    await stores.companies.setBoardPage({ key: "delta", name: "Delta", url: "https://jobs.lever.co/delta" }, DAY_THREE);
+    expect([await stores.careers.careersPage("acme"), await stores.careers.careersPage("delta")]).toEqual([board, "https://jobs.lever.co/delta"]);
+}
+
 async function keptThroughPruning({ stores, hooks }: Contract): Promise<void> {
     await stores.jobStore.pruneLastSeenBefore("2027-01-01T00:00:00.000Z");
     expect([(await hooks.jobLinks()).length, (await hooks.listCompanies()).length]).toEqual([0, 2]);
@@ -99,5 +109,6 @@ export function companyContract(make: MakeStores, hooks: CompanyHooks): void {
         await backfillsUnlinkedJobs(contract);
         await keptThroughPruning(contract);
         await lookupNeverTouchesBoardPages(contract);
+        await boardPagesWin(contract);
     });
 }

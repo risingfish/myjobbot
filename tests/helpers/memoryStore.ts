@@ -5,6 +5,7 @@ import { normalizeCompany } from "../../src/jobs/company.js";
 import type { Job } from "../../src/jobs/job.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
 import { recordMemoryCompanies, touchMemoryCompany } from "./memoryCompanies.js";
+import { MemoryCompanyStore } from "./memoryCompanyStore.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
 import { asc, MemoryJobViews, newTables, type Row, type Tables } from "./memoryJobViews.js";
@@ -141,5 +142,5 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), close };
 }
