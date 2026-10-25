@@ -28,7 +28,9 @@ data_dir() {
   local dir; dir=$(mktemp -d)
   chmod 777 "$dir"
   if [ "${1:-}" = "with-config" ]; then
-    cp examples/config.json examples/resume.md "$dir/"
+    cp examples/resume.md "$dir/"
+    # Search settings live in the database now; a config.json holding them too is imported on first read.
+    node -e 'const [c, s] = process.argv.slice(1).map((f) => JSON.parse(require("fs").readFileSync(f, "utf8"))); console.log(JSON.stringify({ ...c, ...s }))' examples/config.json examples/settings.json > "$dir/config.json"
   fi
   echo "$dir"
 }

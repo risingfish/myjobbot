@@ -57,12 +57,12 @@ and the existing tests its change breaks, which are updated in that same sitting
 
 ### Sitting S0: planning docs PR (T001–T003), branch `015-settings-in-database`
 
-- [ ] T001 Per-PR flow step 1 (done on 2026-10-25: the stack is stopped). Create
+- [X] T001 Per-PR flow step 1 (done on 2026-10-25: the stack is stopped). Create
   `.specify/sitting-in-progress` naming S0.
-- [ ] T002 Run `npm run check` and `npm run check:db`, and correct the ledger's baseline row below if
+- [X] T002 Run `npm run check` and `npm run check:db`, and correct the ledger's baseline row below if
   the counts differ (and the planned-after row and the percentages in plan.md and research R9 with
   it).
-- [ ] T003 Delete the marker, and commit only `docs/specs/015-settings-in-database/` ("Plan search
+- [X] T003 Delete the marker, and commit only `docs/specs/015-settings-in-database/` ("Plan search
   settings in the database (015)"). Push it and open a docs-only PR. **Wait for the owner to merge
   it.**
 
@@ -72,8 +72,8 @@ and the existing tests its change breaks, which are updated in that same sitting
 
 ### Sitting S1a, PR 1a: the tables (T004–T008), branch `015-pr1a-user-settings-tables`
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1a.
-- [ ] T005 [P] Integration test in `tests/integration/companyMigrations.test.ts` (one new `test()`,
+- [X] T004 Per-PR flow steps 1–3, for sitting S1a.
+- [X] T005 [P] Integration test in `tests/integration/companyMigrations.test.ts` (one new `test()`,
   named for step 011; move the file's name to `laterMigrations.test.ts` only if it would pass 200
   lines): `migrateBefore(db, "011")`, run 011, check both tables exist and are empty, and
   `columnTypes` for every column in data-model.md. Add `011_user_settings` to the exact migration
@@ -82,15 +82,15 @@ and the existing tests its change breaks, which are updated in that same sitting
   `migrate.test.ts:59`, in the order that list already follows (as MariaDB returns them; check it
   against the run rather than assuming `user_settings` before `users`). Add `user_settings` then `users` to `TABLES` in `tests/helpers/testDb.ts`,
   ordered so `emptyTables` empties `user_settings` before `users` (the foreign key).
-- [ ] T006 Add `src/db/migrations/011_user_settings.ts` (exported as `userSettings`): `users` (`id`
+- [X] T006 Add `src/db/migrations/011_user_settings.ts` (exported as `userSettings`): `users` (`id`
   int auto-increment primary key, `name` `varchar(255)` not null, `created_at` `varchar(32)` not
   null) and `user_settings` (`user_id` int primary key, `settings` `"json"` not null, `updated_at`
   `varchar(32)` not null; T005's `columnTypes` expects `settings` as MariaDB reports a `json`
   column, `longtext`), with the table options of `009_companies.ts` and
   `addForeignKeyConstraint("user_settings_user_fk", ["user_id"], "users", ["id"])`. List it in
   `src/db/migrations/index.ts`.
-- [ ] T007 Add `UsersTable` and `UserSettingsTable` to `Database` in `src/db/schema.ts`.
-- [ ] T008 Per-PR flow steps 4–6 ("Add the users and user settings tables (015 PR 1a)").
+- [X] T007 Add `UsersTable` and `UserSettingsTable` to `Database` in `src/db/schema.ts`.
+- [X] T008 Per-PR flow steps 4–6 ("Add the users and user settings tables (015 PR 1a)").
 
 ---
 
@@ -105,15 +105,15 @@ does (quickstart PR 1b).
 
 ### Sitting S1b, PR 1b: the store, the import and both readers (T009–T021), branch `015-pr1b-settings-store`
 
-- [ ] T009 [US1] Per-PR flow steps 1–3, for sitting S1b.
-- [ ] T010 [US1] Add `FULL_CONFIG` to `tests/helpers/config.ts`: a raw `config.json` object with
+- [X] T009 [US1] Per-PR flow steps 1–3, for sitting S1b.
+- [X] T010 [US1] Add `FULL_CONFIG` to `tests/helpers/config.ts`: a raw `config.json` object with
   all eight search keys set (two companies, one search, preferences, `match_threshold: 60`,
   `title_filter` with `extra_exclude`, two title boosts, `exclude_companies`,
   `jsearch.exclude_publishers`) plus runtime keys, `jsearch.monthly_request_cap` and
   `refresh_hours` among them, so a split leaves runtime values beside `exclude_publishers`. T011
   and T012 use it; it has a search, so a run on it would need `JSEARCH_API_KEY` (T014 uses
   `ONE_COMPANY`). Do this first: the other S1b test tasks build on it.
-- [ ] T011 [P] [US1] Unit tests in a new `tests/searchSettings.test.ts` (eight `test()`s) for
+- [X] T011 [P] [US1] Unit tests in a new `tests/searchSettings.test.ts` (eight `test()`s) for
   `splitSettings(raw)` and `mergeSettings(runtime, search)` in `src/config/searchSettings.ts`
   (research R2), on `FULL_CONFIG`:
   - the eight search keys go to the search part, everything else to runtime;
@@ -128,7 +128,7 @@ does (quickstart PR 1b).
   - `splitSettings` then `mergeSettings` gives back the original object, deep-equal;
   - `fileConfigSchema.parse(mergeSettings(...))` equals parsing the original file, and a raw value
     that isn't an object (`[]`) passes through split and merge so the schema gives today's error.
-- [ ] T012 [P] [US1] Unit tests in a new `tests/resolveSettings.test.ts` (eight `test()`s) for
+- [X] T012 [P] [US1] Unit tests in a new `tests/resolveSettings.test.ts` (eight `test()`s) for
   `resolveSettings(fileRaw, store, at)` in `src/config/resolve.ts`, with the memory settings store:
   - nothing stored and search settings in the file: they are imported once, the result parses as
     the file would, and the notices are one `imported` naming the keys, with no `file_ignored`;
@@ -144,13 +144,13 @@ does (quickstart PR 1b).
     process stored first gives the stored settings, not the file's, and no `imported` notice;
   - a store whose `importIfAbsent` returns `false` and whose `load` still gives `null` throws
     "search settings could not be stored".
-- [ ] T013 [P] [US1] One bundled contract case in a new `tests/helpers/searchSettingsContract.ts`
+- [X] T013 [P] [US1] One bundled contract case in a new `tests/helpers/searchSettingsContract.ts`
   (one `test()`, each step a helper; data-model "Store contract" steps 1, 2, 4 and 5; step 3 comes
   with `save` in S3), wired into `tests/storeContract.test.ts` and
   `tests/integration/storeContract.test.ts` like `companyContract`, with an `owners()` hook that
   returns the `users` rows' ids (expected `[1]`). Add `afterAll(() => emptyTables(db))` to
   `tests/integration/storeContract.test.ts`, so no contract's leftover rows reach `tests/docker.sh`.
-- [ ] T014 [P] [US1] Tests for the run's settings (research R4), on `ONE_COMPANY`:
+- [X] T014 [P] [US1] Tests for the run's settings (research R4), on `ONE_COMPANY`:
   - unit, in a new `tests/runSettings.test.ts` (three `test()`s) for `settingsForRun(loaded, store,
     trace)` in `src/app/runSettings.ts`, with `memoryTrace()` (`tests/helpers/trace.ts`) and the
     memory store, no files: a first call imports and traces `settings_imported` with no
@@ -162,7 +162,7 @@ does (quickstart PR 1b).
 
   The existing run tests keep passing unchanged: each fresh `memoryStores()` imports `ONE_COMPANY`
   on its first run.
-- [ ] T015 [P] [US1] Update the tests the new load path changes (no new `test()`):
+- [X] T015 [P] [US1] Update the tests the new load path changes (no new `test()`):
   - `tests/configFiles.test.ts:7`: `loadConfig` returns `{ env, fileRaw, resume, dataDir }` and
     `loadFileConfig` the raw object (`.companies` still has length 2), unvalidated;
   - `tests/config.test.ts:20`, `:159` and `:160`: parse through `fileConfigSchema.parse(JSON.parse(...))`
@@ -171,7 +171,7 @@ does (quickstart PR 1b).
     from `src/config/parse.ts`;
   - every `appConfigFrom` call in `tests/config.test.ts` takes the loaded parts and a `FileConfig`;
   - any other test the typecheck names that builds an `AppConfig` by hand.
-- [ ] T016 [US1] Add `src/db/searchSettingsStore.ts` (`SearchSettingsStore` with `load(userId)` and
+- [X] T016 [US1] Add `src/db/searchSettingsStore.ts` (`SearchSettingsStore` with `load(userId)` and
   `importIfAbsent(settings, at)`, `RawSearchSettings = Record<string, unknown>`, `OWNER_ID = 1`),
   `searchSettings: SearchSettingsStore` in `Stores` in `src/db/store.ts` (two lines), and
   `src/db/kysely/searchSettingsStore.ts`: `load` parses the stored JSON; `importIfAbsent` runs,
@@ -181,13 +181,13 @@ does (quickstart PR 1b).
   and returns `numInsertedOrUpdatedRows === 1n`. Wire it into `src/db/kysely/stores.ts`. Add
   `tests/helpers/memorySearchSettingsStore.ts` (same behaviour, the owner row included, `OWNER_ID`
   never the literal) and wire it into `memoryStores()` in `tests/helpers/memoryStore.ts`.
-- [ ] T017 [US1] Add `src/config/searchSettings.ts` (T011): a private `SEARCH_KEYS`, and exported
+- [X] T017 [US1] Add `src/config/searchSettings.ts` (T011): a private `SEARCH_KEYS`, and exported
   `splitSettings` and `mergeSettings`, both called from `resolve.ts`.
-- [ ] T018 [US1] Add `src/config/resolve.ts` (T012): `SettingsNotice` (`imported` and `file_ignored`
+- [X] T018 [US1] Add `src/config/resolve.ts` (T012): `SettingsNotice` (`imported` and `file_ignored`
   in this PR) and `resolveSettings(fileRaw, store, at)` returning `{ file, notices }` (research R4,
   R6), including the fixed "search settings could not be stored" when an import returns `false`
   and nothing is stored.
-- [ ] T019 [US1] Change `src/config/load.ts` and `parse.ts` (research R4):
+- [X] T019 [US1] Change `src/config/load.ts` and `parse.ts` (research R4):
   - `loadConfig(environment)` keeps parsing `envSchema` first (so a bad `LLM_BASE_URL` still stops a
     run before the database opens) and returns a `LoadedConfig` (`{ env, fileRaw, resume, dataDir
     }`, exported from `load.ts`);
@@ -199,14 +199,14 @@ does (quickstart PR 1b).
     `FileConfig`, and runs `requireSearchKey`; `parseFileConfig` is removed.
 
   Update the doc comments.
-- [ ] T020 [US1] Add `src/app/runSettings.ts` with `settingsForRun(loaded, store, trace)` (T014),
+- [X] T020 [US1] Add `src/app/runSettings.ts` with `settingsForRun(loaded, store, trace)` (T014),
   called from `runOnce` in `src/app/run.ts` after the stores and the trace open: it calls
   `resolveSettings`, writes `settings_imported` and `settings_file_ignored` to the `Trace`
   (contract), and returns the `AppConfig` from `appConfigFrom`. `openRunLogs` takes the
   `LoadedConfig`, since it runs before the settings are resolved. `runOnce` builds the run from the
   `AppConfig` and stays within 20 lines, and `run.ts` within 200. In `web/lib/uiState.ts`, `getUiState` resolves the settings on every request
   and returns `notices` beside `config`. Update the doc comments.
-- [ ] T021 [US1] Per-PR flow steps 4–6 ("Read search settings from the database (015 PR 1b)"),
+- [X] T021 [US1] Per-PR flow steps 4–6 ("Read search settings from the database (015 PR 1b)"),
   including `tests/docker.sh` (its `examples/config.json` still holds search settings, so the web
   check imports them into `myjobbot_test`, which T013's `afterAll` leaves empty). It is about 23 files: tell the owner when opening it.
 
@@ -223,8 +223,8 @@ Settings page and in the trace (quickstart PR 2).
 
 ### Sitting S2, PR 2: fallbacks and notices (T022–T030), branch `015-pr2-settings-fallback`
 
-- [ ] T022 [US4] Per-PR flow steps 1–3, for sitting S2.
-- [ ] T023 [P] [US4] Unit tests in `tests/searchSettings.test.ts` (twelve `test()`s) for
+- [X] T022 [US4] Per-PR flow steps 1–3, for sitting S2.
+- [X] T023 [P] [US4] Unit tests in `tests/searchSettings.test.ts` (twelve `test()`s) for
   `sanitizeSearchSettings(stored)` (research R5). Each notice's `setting` is the key, plus the
   entry's position for an entry:
   - a bad `match_threshold` is dropped with a notice naming `match_threshold`;
@@ -242,29 +242,29 @@ Settings page and in the trace (quickstart PR 2).
     the key;
   - a key that isn't a search setting (`http`) is dropped with a notice naming it;
   - valid settings give no notices, and no notice holds a value or the preferences text.
-- [ ] T024 [P] [US4] Unit tests in `tests/resolveSettings.test.ts` (two `test()`s): a fallback
+- [X] T024 [P] [US4] Unit tests in `tests/resolveSettings.test.ts` (two `test()`s): a fallback
   leaves the rest as stored and returns a `fallback` notice; a cross-setting rule that still fails
   after falling back (no source left) throws today's message.
-- [ ] T025 [P] [US4] Unit test in `tests/runSettings.test.ts` (one `test()`): with `match_threshold:
+- [X] T025 [P] [US4] Unit test in `tests/runSettings.test.ts` (one `test()`): with `match_threshold:
   150` stored, `settingsForRun` returns the default 70 and traces one `settings_fallback` naming
   `match_threshold`.
-- [ ] T026 [P] [US4] UI test in a new `tests/client/settingsNotices.test.tsx` (one `test()`): the
+- [X] T026 [P] [US4] UI test in a new `tests/client/settingsNotices.test.tsx` (one `test()`): the
   panel lists each fallback (setting and reason) and the file-ignored notice, and renders nothing
   for no notices or an `imported` one alone. In `tests/client/settings.test.tsx:8`, add
   `notices: []` to the `getUiState` mock; its panel list (`["Scoring", "Gmail"]`, :14) is unchanged,
   since the panel renders nothing without notices.
-- [ ] T027 [US4] Export `company`, `search`, `filterTerm` and `publisherTerm` from
+- [X] T027 [US4] Export `company`, `search`, `filterTerm` and `publisherTerm` from
   `src/config/schema.ts`, and a new exported `boostPoints` (`z.number().int().min(1).max(100)`) that
   `title_boosts` uses in place of its inline schema. Add `sanitizeSearchSettings` to
   `src/config/searchSettings.ts`, checking scalars with `fileConfigSchema.shape[key]` and entries
   with the element schemas.
-- [ ] T028 [US4] Call it in `resolveSettings` before merging, add the `fallback` kind to
+- [X] T028 [US4] Call it in `resolveSettings` before merging, add the `fallback` kind to
   `SettingsNotice`, and return its notices. Write each to the run's trace as `settings_fallback` in
   `src/app/runSettings.ts`.
-- [ ] T029 [US4] Add `web/components/settings/SettingsNotices.tsx`, and render it first in
+- [X] T029 [US4] Add `web/components/settings/SettingsNotices.tsx`, and render it first in
   `web/app/settings/page.tsx`, above Scoring. The page calls `getUiState` once and passes its
   `notices` to the panel and its Gmail state to `gmailView`.
-- [ ] T030 [US4] Per-PR flow steps 4–6 ("Fall back per setting and report it (015 PR 2)").
+- [X] T030 [US4] Per-PR flow steps 4–6 ("Fall back per setting and report it (015 PR 2)").
 
 ---
 
@@ -277,8 +277,8 @@ runtime key is refused (quickstart PR 3).
 
 ### Sitting S3, PR 3: export and import (T031–T037), branch `015-pr3-settings-commands`
 
-- [ ] T031 [US3] Per-PR flow steps 1–3, for sitting S3.
-- [ ] T032 [P] [US3] Unit tests in a new `tests/importSettings.test.ts` (eight `test()`s) for
+- [X] T031 [US3] Per-PR flow steps 1–3, for sitting S3.
+- [X] T032 [P] [US3] Unit tests in a new `tests/importSettings.test.ts` (eight `test()`s) for
   `checkImport(text, name, runtime)` and `exportDocument(stored)` in `src/config/importSettings.ts`:
   - valid search settings are accepted and returned raw, `exclude_publishers` at the top level;
   - text that isn't JSON is refused with "`<name>` is not valid JSON";
@@ -293,26 +293,26 @@ runtime key is refused (quickstart PR 3).
     the runtime part, so it is refused for the rule, not the key;
   - `exportDocument` writes `exclude_publishers` inside `jsearch`, and `checkImport` of that
     output gives back the stored document exactly (SC-006); `exportDocument(null)` gives `{}`.
-- [ ] T033 [P] [US3] Add contract step 3 to the bundled case in
+- [X] T033 [P] [US3] Add contract step 3 to the bundled case in
   `tests/helpers/searchSettingsContract.ts` (no new `test()`): `save` replaces the whole document, a
   key absent from the new one is gone, and `save` for a user id with no `users` row is refused and
   stores nothing. Then a `seedUser(2)` hook (a `users` row on MariaDB, a known id in memory) lets
   `save(2, …)` store that user's document, and `load(1)` is unchanged (SC-008).
-- [ ] T034 [US3] Add `save` to `SearchSettingsStore` in `src/db/searchSettingsStore.ts`, to
+- [X] T034 [US3] Add `save` to `SearchSettingsStore` in `src/db/searchSettingsStore.ts`, to
   `src/db/kysely/searchSettingsStore.ts` (the same owner-row transaction when the id is `OWNER_ID`,
   then `onDuplicateKeyUpdate` replacing `settings` and `updated_at`; for an id with no user the
   foreign key refuses it) and to `tests/helpers/memorySearchSettingsStore.ts` (throws for an id with
   no user; `seedUser` adds one).
-- [ ] T035 [US3] Add `src/config/importSettings.ts` (T032), using `parseJson`, `splitSettings`,
+- [X] T035 [US3] Add `src/config/importSettings.ts` (T032), using `parseJson`, `splitSettings`,
   `mergeSettings` and `fileConfigSchema`. Export `SEARCH_KEYS` from `src/config/searchSettings.ts`
   for its key check.
-- [ ] T036 [US3] Add `export-settings <path>` and `import-settings <path>` to `src/cli.ts` (`USAGE`
+- [X] T036 [US3] Add `export-settings <path>` and `import-settings <path>` to `src/cli.ts` (`USAGE`
   and `COMMANDS`), each a small command function: export loads the owner's settings and writes
   `exportDocument`'s pretty JSON; import reads the file, takes the runtime part from
   `loadFileConfig` and `splitSettings`, runs `checkImport`, and `save`s. A refusal prints each
   message and exits 1. If `src/cli.ts` (54 lines) would pass 200, the two commands go in
   `src/app/settingsCommands.ts`.
-- [ ] T037 [US3] Per-PR flow steps 4–6 ("Export and import search settings (015 PR 3)").
+- [X] T037 [US3] Per-PR flow steps 4–6 ("Export and import search settings (015 PR 3)").
 
 ---
 
@@ -320,8 +320,8 @@ runtime key is refused (quickstart PR 3).
 
 ### Sitting S4, PR 4: docs (T038–T042), branch `015-pr4-docs`
 
-- [ ] T038 Per-PR flow steps 1–3, for sitting S4.
-- [ ] T039 [P] Update `README.md` (FR-014):
+- [X] T038 Per-PR flow steps 1–3, for sitting S4.
+- [X] T039 [P] Update `README.md` (FR-014):
   - **Setup** and **Deploy with Docker**: copy `examples/config.json` (runtime settings) and
     `examples/settings.json`, edit the second, and `npm start -- import-settings data/settings.json`
     (`docker compose exec myjobbot npm start -- import-settings /data/settings.json` in Docker).
@@ -336,17 +336,17 @@ runtime key is refused (quickstart PR 3).
     bad stored entry falls back instead;
   - nothing may tell the owner to edit search settings in `config.json` (lines 17, 124, 341 and 659
     today).
-- [ ] T040 [P] Update `examples/config.json` to runtime settings only, and add
+- [X] T040 [P] Update `examples/config.json` to runtime settings only, and add
   `examples/settings.json` with the search settings in export shape. In `tests/docker.sh`'s
   `data_dir with-config`, write the data folder's `config.json` as the two examples merged (a
   `node -e` one-liner), so the web check still finds a source on an empty `myjobbot_test`. Update
   `tests/configFiles.test.ts` if it loads the examples.
-- [ ] T041 Add one line to `CLAUDE.md`'s Conventions: search settings live in `user_settings` (one
+- [X] T041 Add one line to `CLAUDE.md`'s Conventions: search settings live in `user_settings` (one
   raw document per user, owner id 1), runtime settings in `config.json`, and `fileConfigSchema`
   validates the merged whole, changed with the two commands. Under Commands, add
   `npm start -- export-settings <path>` and `npm start -- import-settings <path>`. Fill the ledger's
   last row.
-- [ ] T042 Per-PR flow steps 4–6 ("Document search settings in the database (015 PR 4)"), including
+- [X] T042 Per-PR flow steps 4–6 ("Document search settings in the database (015 PR 4)"), including
   `tests/docker.sh`.
 
 ---
@@ -410,4 +410,4 @@ T015 load-path updates  tests/configFiles.test.ts, tests/config.test.ts
 | Baseline (after 014, T002) | 621 (84.72%) | 55, 1 skipped without a browser (7.50%) | 57 (7.78%) |
 | Planned new | 43 (T011 8, T012 8, T013's memory run 1, T014 3, T023 12, T024 2, T025 1, T032 8) | 3 (T005, T013's MariaDB run, T014's `runOnce`) | 1 (T026) |
 | Planned after | 664 (85.13%) | 58 (7.44%) | 58 (7.44%) |
-| After PR 4 (T041) | | | |
+| After PR 4 (T041) | 664 (85.13%): the `node` project's 665 less T014's `runOnce` | 58 (7.44%): the `integration` project's 57 (1 skipped without a browser) plus T014's `runOnce` | 58 (7.44%) |

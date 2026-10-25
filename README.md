@@ -14,19 +14,29 @@ Design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`
 npm ci
 cp .env.example .env            # set LLM_API_KEY and the MYJOBBOT_DB_* settings (see Storage)
 mkdir -p data
-cp examples/config.json data/   # list your target companies
+cp examples/config.json data/   # runtime settings: limits, JSearch budget, job lifetimes
+cp examples/settings.json data/ # search settings: list your target companies
 cp examples/resume.md data/     # replace with your resume
 ```
+
+Once the database is set up (see Storage), store your search settings in it:
+
+```bash
+npm start -- import-settings data/settings.json
+```
+
+Until then a run refuses to start and the web UI shows "configure at least one company or search".
+See [Configuration knobs](#configuration-knobs) for which settings live where.
 
 The LLM server must be llama.cpp `llama-server` started with `--jinja` and a
 tool-calling model.
 
 ## Storage
 
-Jobs, the companies they come from, scores, verdict history and the JSearch request log live in
-MariaDB (10.11 or later),
-reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `config.json`,
-`resume.md`, run traces and logs.
+Jobs, the companies they come from, scores, verdict history, the JSearch request log and your
+search settings live in MariaDB (10.11 or later),
+reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `config.json` (the
+runtime settings), `resume.md`, run traces and logs.
 
 1. **Create two databases**, `myjobbot` and `myjobbot_test`, both `CHARACTER SET utf8mb4` with the
    same collation (any; the tables set their own), and a user with rights on just those two.
@@ -37,7 +47,8 @@ reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `
 
 Every table compares text exactly (`utf8mb4_bin`), so job IDs that differ only in letter case
 stay distinct, and every connection sets `utf8mb4`, so accents and emoji survive. Backups are the
-MariaDB server's job.
+MariaDB server's job, and a database backup holds your search settings too (`users` and
+`user_settings`).
 
 **Coming from SQLite?** Copy the old database across once, with the agent stopped:
 
@@ -120,8 +131,8 @@ bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 c
 "…", with the full title on hover. See
 [How scoring works](#how-scoring-works) for what the numbers mean.
 
-Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Edits to
-`data/config.json` show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
+Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Search settings
+you import, and edits to `data/config.json`, show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
 is no login: keep it on your LAN. The web UI needs no LLM settings, only `data/`.
 
 **Which hosts may connect.** Every request must name the UI in its `Host`, or it gets 421; that
@@ -338,9 +349,11 @@ On the server:
 git clone <repo> myjobbot && cd myjobbot
 cp .env.example .env              # set LLM_API_KEY, MYJOBBOT_HOSTS and MYJOBBOT_DB_*; optionally SCHEDULE and TZ
 mkdir -p data
-cp examples/config.json data/     # your companies
+cp examples/config.json data/     # runtime settings
+cp examples/settings.json data/   # your companies and searches
 cp examples/resume.md data/       # your resume
 docker compose up -d --build
+docker compose exec myjobbot npm start -- import-settings /data/settings.json
 ```
 
 The container runs `myjobbot run` on `SCHEDULE` (default `0 1/8 * * *`, every 8 hours from
@@ -354,6 +367,7 @@ container.
 |---|---|
 | Open the web UI | `http://<server>:8080` (the `web` service; `MYJOBBOT_PORT` in `.env` changes the port) |
 | Run once now | `docker compose run --rm myjobbot run` |
+| Change search settings | `docker compose exec myjobbot npm start -- export-settings /data/settings.json`, edit `data/settings.json` on the host, then the same with `import-settings` |
 | Watch runs | `docker compose logs -f myjobbot` |
 | Update after `git pull` | Nothing for code under `src/` or `web/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile`, `docker/`, `web/next.config.ts` or `web/tsconfig.json` changed (or leave `npm run docker:watch` running) |
 | Start (or update) the stack | `npm run docker:up` (`docker compose up -d --build`) |
@@ -414,7 +428,8 @@ look-alike Unicode characters or a typed-out escape sequence isn't caught.
 ```mermaid
 flowchart TD
     CLI["src/cli.ts<br/>load .env, call runOnce()"] --> CFG
-    CFG["config/load.ts<br/>config.json + resume.md + env<br/>(validated with zod)"] --> CTX
+    CFG["config/load.ts<br/>env (validated with zod), config.json, resume.md"] --> SET
+    SET["app/runSettings.ts<br/>stored search settings + config.json runtime settings<br/>(validated with zod; a bad stored value falls back)"] --> CTX
     CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LINK
     LINK["app/run.ts beforeAgent<br/>link unlinked jobs to companies,<br/>set configured boards' careers pages"] --> LOOP
     LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> SEARCH
@@ -619,6 +634,17 @@ erDiagram
         text careers_rejected "JSON array of turned-down addresses"
     }
     COMPANIES ||--o{ JOBS : "has"
+    USERS {
+        int id PK "the owner is 1"
+        text name
+        text created_at
+    }
+    USER_SETTINGS {
+        int user_id PK, FK
+        json settings "the search settings you set, as imported (no defaults)"
+        text updated_at
+    }
+    USERS ||--o| USER_SETTINGS : "searches with"
 ```
 
 Company boards and JSearch save the job description (see below). Alert emails carry none: an alert job takes the description of a matching JSearch result,
@@ -656,7 +682,7 @@ plain text and always show as plain text.
   link reduced to its words, so a link to `aws.example.com` doesn't count as "aws".
 - **Scored again once.** The first time a scored job's description changes to Markdown, it is marked
   for scoring again, keeping its current score until then.
-- **Only configured boards change.** Stored jobs from companies no longer in `data/config.json` are
+- **Only configured boards change.** Stored jobs from companies no longer in your search settings are
   never fetched again, so they keep their plain text.
 
 **Fishing-post detection:** "days open" counts from the oldest date the bot has, either
@@ -764,24 +790,48 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 5. **Everything is traced.** Every model reply, tool call, nudge and compaction is appended
    to `data/runs/<timestamp>-<run_id>.jsonl`.
 
-### Configuration knobs (`data/config.json`)
+### Configuration knobs
+
+Settings live in two places:
+- **Search settings** (what you look for, and how jobs are filtered and ranked) are stored in the
+  database, one set per user (today just you, the owner). Change them by export, edit, import:
+  `npm start -- export-settings data/settings.json`, edit the file, then
+  `npm start -- import-settings data/settings.json`. The file has the same shape these keys had in
+  `config.json`, and holds only what you set, so defaults still apply. An import is checked as a
+  whole, against the current `config.json` too, and replaces the stored set or changes nothing.
+- **Runtime settings** (limits, budgets, lifetimes, Gmail senders) stay in `data/config.json`. Edit
+  the file; a bad value stops the run with its message.
+
+**Upgrading** from a `config.json` that still holds search settings: the first run or page load
+copies them into the database once, after checking them. From then on they are ignored there, and
+the Settings page (and each run's trace) says they can be removed from the file. A stored search
+setting that later breaks a rule (say, after an upgrade tightens one) falls back on its own: a bad
+value takes its default and a bad list entry is left out. The Settings page's notices panel and
+the run's trace (`settings_fallback`) say which and why.
+
+**Search settings (stored in the database)**
 
 | Setting | Default | What it controls |
 |---|---|---|
 | `companies` | `[]` | `{name, ats, slug}` per company board (at least one company or search) |
 | `searches` | `[]` | Saved JSearch searches: `{name, query, remote_only, country}`. Needs `JSEARCH_API_KEY` |
-| `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
-| `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
-| `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
-| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, stops the app at startup |
+| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, is refused on import; one already stored is left out, with a notice |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
-| `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
-| `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold); jobs marked applied are never pruned |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
 | `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |
 | `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title or description (each term counted once) |
+
+**Runtime settings (`data/config.json`)**
+
+| Setting | Default | What it controls |
+|---|---|---|
+| `jsearch.monthly_request_cap` | 190 | JSearch requests allowed per calendar month (free tier is 200) |
+| `jsearch.refresh_hours` | 24 | Each search calls JSearch at most once per this many hours (with 15 minutes' leeway, so runs exactly this far apart always refresh). Set it to the gap between scheduled runs to refresh on every run |
+| `jsearch.date_posted` | `3days` | Only postings this recent: `today`, `3days`, `7days`, `30days` |
+| `ghost_threshold_days` | 60 | Days open before `possible_ghost` |
+| `job_retention_days` | 90 | Days unseen before a job row is pruned (must exceed the ghost threshold); jobs marked applied are never pruned |
 | `agent.max_steps` | 600 | Step cap per run |
 | `agent.max_wall_clock_min` | 120 | Time cap per run |
 | `agent.max_consecutive_tool_errors` | 3 | Errors in a row before aborting |

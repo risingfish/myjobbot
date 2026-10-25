@@ -1,9 +1,5 @@
 {
-    "companies": [
-        { "name": "Stripe", "ats": "greenhouse", "slug": "stripe" },
-        { "name": "Palantir", "ats": "lever", "slug": "palantir" },
-        { "name": "OpenAI", "ats": "ashby", "slug": "openai" }
-    ],
-    "preferences": "Senior or staff backend / platform roles. Remote (US) preferred.",
-    "match_threshold": 70
+    "jsearch": { "monthly_request_cap": 190, "refresh_hours": 24 },
+    "ghost_threshold_days": 60,
+    "job_retention_days": 90
 }
