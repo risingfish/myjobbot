@@ -121,6 +121,15 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
   on a repeat. The cleanup after each run never prunes an applied job. Hide and Applied save through
   `useSave` and show `SaveFailedNote`; a new job action should too.
+- Companies (feature 014) live in `companies`, one row per `normalizeCompany` key, and every job
+  points at its row (`jobs.company_id`). Records are written only through the Kysely stores: jobs
+  record and link them (`JobStore.upsertAll`, `markSeen`, the backfill `linkUnlinkedJobs`, all via
+  `recordCompanies` in `companyRows.ts`), `CompanyStore` sets board pages and search outcomes, and
+  `CareersStore` sets and clears lookup pages. Pruning never deletes a record. A careers page's
+  source (`careers_source`) ranks `board` over `lookup` and `search`, and nothing replaces a
+  `board` page. The company search (`src/companies/`) makes no model calls and stores addresses and
+  fixed reasons only, never result text; its address rules are plain functions in
+  `pickAddresses.ts` and `hosts.ts`.
 
 ## Commands
 

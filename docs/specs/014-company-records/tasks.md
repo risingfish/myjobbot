@@ -401,17 +401,17 @@ second run the same day searches none of them (quickstart PR 4).
 
 ### Sitting S5, PR 5: docs (T047–T051), branch `014-pr5-docs`
 
-- [ ] T047 Per-PR flow steps 1–3, for sitting S5.
-- [ ] T048 [P] Update `README.md`:
+- [X] T047 Per-PR flow steps 1–3, for sitting S5.
+- [X] T048 [P] Update `README.md`:
   - the `companies` table and `jobs.company_id` in the data model diagram;
   - the careers lookup's pages now living on the company;
   - the search step, and `company_search.max_per_run` in the config table;
   - the SC-006 query for listing misses.
-- [ ] T049 [P] Add one line to `CLAUDE.md`'s Conventions: companies are recorded only through
+- [X] T049 [P] Add one line to `CLAUDE.md`'s Conventions: companies are recorded only through
   `JobStore.upsertAll` and `markSeen` (keyed by `normalizeCompany`); the search makes no model calls
   and stores addresses only; a configured board's page is never replaced.
-- [ ] T050 Fill the ledger's last row with the final counts, and the SC-005 result from T046.
-- [ ] T051 Per-PR flow steps 4–6 ("Document company records (014 PR 5)").
+- [X] T050 Fill the ledger's last row with the final counts, and the SC-005 result from T046.
+- [X] T051 Per-PR flow steps 4–6 ("Document company records (014 PR 5)").
 
 ---
 
@@ -465,4 +465,8 @@ share moves toward 95 / 4 / 1.
 | Baseline (after 013 and #41, T002) | 575 | 52 (1 skipped without a browser) | 57 |
 | Planned new | 46 (T010 5, T011's memory run 1, T028 4, T029 1, T035 26, T036 7, T037 1, T038 1) | 3 (T005, T020, T011's MariaDB run) | 0 |
 | Planned after | 621 (84.7%) | 55 (7.50%) | 57 (7.8%) |
-| After PR 5 (T050) | | | |
+| After PR 5 (T050) | 621 (+46; 84.7%) | 55 (+3, 1 skipped without a browser; 7.50%) | 57 (+0; 7.8%) |
+
+**SC-005 (T046, T050):** the live check of 20 well-known companies' websites runs on the real stack
+after PR 4, by the owner. It hadn't been reported when this ledger was filled (2026-10-24); record the
+count here when it is.

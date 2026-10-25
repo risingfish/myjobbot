@@ -23,7 +23,8 @@ tool-calling model.
 
 ## Storage
 
-Jobs, scores, verdict history and the JSearch request log live in MariaDB (10.11 or later),
+Jobs, the companies they come from, scores, verdict history and the JSearch request log live in
+MariaDB (10.11 or later),
 reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `config.json`,
 `resume.md`, run traces and logs.
 
@@ -216,8 +217,10 @@ on the employer's own careers page before the agent scores them:
 4. **Results**: a found job page becomes the job's description, as Markdown converted from the
    page's HTML without its navigation, header, footer or hidden parts (or, from a board's own data,
    the posting's own description), and the agent scores it as usual (`get_job_details` says
-   `description_from: "careers page"`). The careers page that
-   led to it is remembered for the company, so later jobs there skip the search.
+   `description_from: "careers page"`). The careers page that led to it is kept on the company's
+   record (`companies.careers_url`), so later jobs there skip the search. A configured board's page
+   is never replaced. A remembered page that stops working is cleared and added to the company's
+   turned-down addresses, so the company search never stores it again.
 
 **How a page is read**, in order (each open's audit row says which, in `page_source`):
 
@@ -266,6 +269,43 @@ Every lookup that ends without a description has `warning = 1` and a fixed `reas
 SELECT reason, COUNT(*) FROM careers_audit WHERE warning = 1 GROUP BY reason;
 SELECT at, company, step, outcome, reason, url FROM careers_audit ORDER BY id DESC LIMIT 50;
 SELECT name, careers_url, careers_source FROM companies WHERE careers_url IS NOT NULL;
+```
+
+### Company records
+
+Every company myjobbot finds jobs from has one row in `companies`, and every stored job points at
+it (`jobs.company_id`). Names are matched loosely: "Acme", "ACME, Inc." and "Acme LLC" are one
+company. Excluded companies are recorded too, though their jobs stay out of scoring. A record is
+kept after its jobs are pruned.
+
+- **Recording**: each fetch records its companies before storing the jobs; seeing a job again moves
+  the company's `last_found_date` forward. On the first run after the upgrade, every stored job is
+  linked, oldest first, so a record created then is named after its oldest job. A record keeps the
+  name it was created with. Jobs whose company name has no letters or digits get no record and stay
+  unlinked.
+- **Careers pages** come from three places, in this order of precedence (`careers_source`):
+  - `board`: a configured board's public address (`companies` in the config);
+  - `lookup`: the page the careers lookup found a job on;
+  - `search`: the search below.
+- **Search**: after each run's agent, up to `company_search.max_per_run` (50) companies still
+  missing an address are searched in SearXNG, most recently found first, at most once a day each.
+  It sends at most two queries per company (`"<name>"`, then `"<name> careers"`) and makes no model
+  calls. The rules:
+  - **Website**: the first result whose site name equals the company's name, or starts with it when
+    the name has four or more characters.
+  - **Careers page**: a careers or jobs page on that site or a subdomain, or the company's own job
+    board page.
+  - **Never stored**: job aggregators (`careers_lookup.skip_hosts`), IP or local addresses, and, for
+    careers pages, an address already turned down.
+- **Misses** keep why: `website_reason` / `careers_reason` (`search_unavailable`, `no_results` or
+  `no_match`), plus the addresses turned down: up to five from the last website search, and for
+  careers pages up to 20 remembered across searches (five per search, plus any dead page the
+  careers lookup cleared). Each search is in the run's trace as a
+  `company_search` event. When SearXNG is down or unset, the run still finishes.
+
+```sql
+SELECT name, careers_reason, careers_rejected, searched_at FROM companies WHERE careers_url IS NULL ORDER BY last_found_date DESC;
+SELECT careers_source, COUNT(*) FROM companies GROUP BY careers_source;
 ```
 
 ## Develop
@@ -375,8 +415,10 @@ look-alike Unicode characters or a typed-out escape sequence isn't caught.
 flowchart TD
     CLI["src/cli.ts<br/>load .env, call runOnce()"] --> CFG
     CFG["config/load.ts<br/>config.json + resume.md + env<br/>(validated with zod)"] --> CTX
-    CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LOOP
-    LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> PRUNE
+    CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LINK
+    LINK["app/run.ts beforeAgent<br/>link unlinked jobs to companies,<br/>set configured boards' careers pages"] --> LOOP
+    LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> SEARCH
+    SEARCH["companies/searchCompanies.ts<br/>find missing websites and careers pages"] --> PRUNE
     PRUNE["app/run.ts<br/>prune postings not seen in 90 days"] --> OUT
     OUT["print status, steps, reason<br/>and the model's summary"]
 ```
@@ -559,7 +601,24 @@ erDiagram
         text applied_on "when you marked it applied (UTC), set with applied"
         text emailed_at "reserved for the email digest"
         text injection_seen_at "first time its text tried to escape the data markers"
+        int company_id FK "the company's record"
     }
+    COMPANIES {
+        int id PK
+        text company_key "the normalized name, unique"
+        text name "as when the record was created"
+        text website_url
+        text careers_url
+        text careers_source "board, lookup or search"
+        text created_date
+        text last_found_date
+        text searched_at
+        text website_reason "why the last search found no website"
+        text website_rejected "JSON array of turned-down addresses"
+        text careers_reason "why the last search found no careers page"
+        text careers_rejected "JSON array of turned-down addresses"
+    }
+    COMPANIES ||--o{ JOBS : "has"
 ```
 
 Company boards and JSearch save the job description (see below). Alert emails carry none: an alert job takes the description of a matching JSearch result,
@@ -605,7 +664,7 @@ plain text and always show as plain text.
 That way a job reposted under a new ID still shows its true age. Over 60 days
 (`ghost_threshold_days`) sets `possible_ghost: true`, and the model lowers its score a
 little. Rows not seen for 90 days (`job_retention_days`) are pruned after each run, except jobs
-you've marked applied, which are kept with their scoring history.
+you've marked applied, which are kept with their scoring history. Company records are never pruned.
 
 ### Context compaction
 
@@ -736,6 +795,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 | `careers_lookup.render_seconds` | 15 | Time limit for rendering one page (5–60) |
 | `careers_lookup.skip_hosts` | aggregators | Hosts (and their subdomains) whose search results are dropped |
 | `careers_lookup.lan_probe_url` | unset | A LAN address the browser service must not reach, checked once per run |
+| `company_search.max_per_run` | 50 | Companies searched for a website and careers page per run (0 turns the search off) |
 | `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no company or search may use it |
 
 ### Saved searches (JSearch)
