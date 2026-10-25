@@ -5,7 +5,7 @@ import { migrateToLatest } from "../../src/db/migrate.js";
 import type { Database } from "../../src/db/schema.js";
 import { describeConnectionError, parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 
-export const TABLES = ["verdicts", "jobs", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit"] as const;
+export const TABLES = ["verdicts", "jobs", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "user_settings", "users"] as const;
 
 export function testSettings(): DbSettings {
     if (existsSync(".env")) process.loadEnvFile(".env");
