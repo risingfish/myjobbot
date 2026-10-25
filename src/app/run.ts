@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { searchCompanies } from "../companies/searchCompanies.js";
+import { describeError } from "../errors.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { boardPageUrl } from "../companies/boardPage.js";
 import { mkdirSync } from "node:fs";
@@ -69,14 +71,14 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
     }
 }
 
-/** Links stored jobs to their companies, runs the agent against open stores, then prunes stale jobs, reporting the run's outcome. */
+/** Links stored jobs to their companies, runs the agent against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
     try {
         await beforeAgent(context);
         const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
-        await pruneOldJobs(context);
+        await afterAgent(context);
         return { ...result, runId: parts.logs.runId, summary: context.run.summary };
     } finally {
         await context.careers.renderer.close();
@@ -89,6 +91,16 @@ async function beforeAgent(context: ToolContext): Promise<void> {
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
     const at = context.now().toISOString();
     for (const board of context.config.companies) await context.companies.setBoardPage({ key: normalizeCompany(board.name), name: board.name, url: boardPageUrl(board) }, at);
+}
+
+/** Finishes the run's stored data after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run, then prunes. */
+async function afterAgent(context: ToolContext): Promise<void> {
+    try {
+        await searchCompanies(context);
+    } catch (error) {
+        context.trace.write({ type: "company_search_failed", error: describeError(error) });
+    }
+    await pruneOldJobs(context);
 }
 
 /** Deletes jobs and API call records older than the configured retention window. */

@@ -56,6 +56,9 @@ This is v1 of a cache that later features build on; it adds no new screen.
 - Q: For a company configured as a job board, should its board address be its careers page outright,
   instead of searching for one? → A: Yes: the configured board's address becomes the careers page at
   once and is never replaced by a search result; only the website is searched.
+- Q (raised in review, 2026-10-24): The website rule "the main name contains the company's name"
+  matches too much for short names ('box' in dropbox.com). How strict should it be? → A: Equal, or
+  starts with the name when it has four or more characters.
 
 ## Delivery
 
@@ -167,8 +170,10 @@ same company makes no further search for it.
   chosen by fixed rules, with no model calls: the same results always give the same addresses, and
   when no result passes the rules the address stays empty. The rules:
   - **Website**: the first result of a search for the company's name whose host's main name (the
-    part before the public suffix, e.g. `acme` in `www.acme.co.uk`) contains the company's
-    normalized name with its spaces removed, skipping `skip_hosts`.
+    part before the public suffix, e.g. `acme` in `www.acme.co.uk`) equals the company's normalized
+    name with its spaces removed, or starts with it when that name has four or more characters
+    (`acmecorp.io` for Acme, but not `dropbox.com` for Box), skipping `skip_hosts`. A company whose
+    name has no letters or digits gets no website or board page.
   - **Configured boards**: for a company configured as a job board, the board's own address is its
     careers page from the run that first records it, and a search never replaces it; only its
     website is searched. A company later removed from the config keeps the address it has.

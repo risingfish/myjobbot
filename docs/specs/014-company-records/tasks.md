@@ -299,9 +299,10 @@ second run the same day searches none of them (quickstart PR 4).
 
 ### Sitting S4, PR 4: the search (T034–T046), branch `014-pr4-company-search`
 
-- [ ] T034 [US2] Per-PR flow steps 1–3, for sitting S4.
-- [ ] T035 [P] [US2] Unit tests in a new `tests/pickAddresses.test.ts` for
-  `src/companies/pickAddresses.ts` (research R7). There are 23 `test()`s:
+- [X] T034 [US2] Per-PR flow steps 1–3, for sitting S4.
+- [X] T035 [P] [US2] Unit tests in a new `tests/pickAddresses.test.ts` for
+  `src/companies/pickAddresses.ts` (research R7). There are 26 `test()`s (23 planned, plus three
+  from the review: short names, an empty key, and no remembering without a website):
   - **`mainName`** (5):
     - `www.acme.com` gives `acme`;
     - `www.acme.co.uk` gives `acme`;
@@ -314,7 +315,7 @@ second run the same day searches none of them (quickstart PR 4).
     - an IP-address host or a single-label host fails;
     - an address with credentials or a port fails.
   - **`pickWebsite`** (6):
-    - takes the first result whose main name contains the key, stored as its origin;
+    - takes the first result whose main name is the key, stored as its origin;
     - removes the key's spaces to match `acmewidgets.com`;
     - skips `skip_hosts`;
     - skips non-storable results;
@@ -329,7 +330,7 @@ second run the same day searches none of them (quickstart PR 4).
     - turns down a board page for another slug;
     - turns down a careers-looking page on an unrelated host or on a `skip_hosts` host;
     - finds a board page when there is no website.
-- [ ] T036 [P] [US2] Unit tests in a new `tests/searchCompanies.test.ts` (seven `test()`s) for
+- [X] T036 [P] [US2] Unit tests in a new `tests/searchCompanies.test.ts` (seven `test()`s) for
   `searchCompanies(context)` in `src/companies/searchCompanies.ts`, with a fake SearXNG and the
   memory stores:
   - a due company with neither address gets two queries (`"<name>"`, then `"<name> careers"`), both
@@ -342,14 +343,14 @@ second run the same day searches none of them (quickstart PR 4).
   - no `MYJOBBOT_SEARXNG_URL` searches nothing and marks them the same way, with reason
     `not_configured`;
   - `max_per_run: 0` does nothing, not even marking.
-- [ ] T037 [P] [US2] Unit test in `tests/run.test.ts` (one new `test()`): when the search step throws
+- [X] T037 [P] [US2] Unit test in `tests/run.test.ts` (one new `test()`): when the search step throws
   an error it doesn't expect, the run still completes and the trace has `company_search_failed`
   (SC-004).
-- [ ] T038 [P] [US2] Unit test in `tests/config.test.ts` (one new `test()`):
+- [X] T038 [P] [US2] Unit test in `tests/config.test.ts` (one new `test()`):
   `company_search.max_per_run` defaults to 50 and refuses `-1`. In `tests/careersSearxng.test.ts`,
   update the existing `searchCareers` tests to `searchWeb`. The first one checks that the query it
   is given is sent (no new `test()`).
-- [ ] T039 [P] [US2] Add `searchSteps` to the company contract, in a new
+- [X] T039 [P] [US2] Add `searchSteps` to the company contract, in a new
   `tests/helpers/companySearchSteps.ts` (no new `test()`):
   - `dueForSearch(limit, cutoff)` returns companies missing an address, never searched or searched
     before the cutoff, the most recently found first, up to the limit, and never a company with both
@@ -357,34 +358,35 @@ second run the same day searches none of them (quickstart PR 4).
   - `recordSearch` stores the found addresses, reasons, turned-down lists and `searched_at`, and
     clears a reason once its address is found;
   - `markUnavailable(ids, at)` sets both missing reasons to `search_unavailable` and `searched_at`;
-  - a dead page cleared by `clearLookupPage` is still in `careers_rejected` after a later
-    `recordSearch` that finds nothing.
-- [ ] T040 [US2] In `src/careers/searxng.ts`, rename `searchCareers` to `searchWeb` and give
+  - (moved to T035) a dead page cleared by `clearLookupPage` stays in `careers_rejected`: `pickCareers`
+    returns the company's existing turned-down list plus the new addresses, so the store writes the
+    list it is given and this is a unit test rather than a contract step.
+- [X] T040 [US2] In `src/careers/searxng.ts`, rename `searchCareers` to `searchWeb` and give
   `SearchRequest` a `query` in place of `company`. `src/careers/lookUpJobs.ts:57` passes
   `` `${company} careers` ``, so its behaviour is unchanged. Update the doc comments.
-- [ ] T041 [US2] Add `src/companies/pickAddresses.ts` (T035): `mainName`, `storableUrl`,
+- [X] T041 [US2] Add `src/companies/pickAddresses.ts` (T035): `mainName`, `storableUrl`,
   `pickWebsite` and `pickCareers`.
   - `storableUrl` is built on `allowedUrl` from `src/careers/addresses.ts`;
   - the picks use `dropSkipped`'s host rule and `parseBoardLink`;
   - `pickCareers` also takes the company's `careers_rejected` list to skip;
   - each pick returns `{ url, reason, rejected }`.
-- [ ] T042 [US2] Add `dueForSearch`, `recordSearch` and `markUnavailable`, with the `CompanyRow` and
+- [X] T042 [US2] Add `dueForSearch`, `recordSearch` and `markUnavailable`, with the `CompanyRow` and
   `SearchRecord` types, in three places:
   - the interface, `src/db/companyStore.ts`;
   - Kysely, `src/db/kysely/companyStore.ts`, where the caller passes the 24-hour cutoff as an ISO
     time, so the query stays a plain `where`;
   - memory, `tests/helpers/memoryCompanyStore.ts`.
-- [ ] T043 [US2] Add `company_search: z.object({ max_per_run: z.number().int().min(0).default(50)
+- [X] T043 [US2] Add `company_search: z.object({ max_per_run: z.number().int().min(0).default(50)
   }).prefault({})` to `src/config/schema.ts`.
-- [ ] T044 [US2] Add `src/companies/searchCompanies.ts` (T036). It reads `context.companies`,
+- [X] T044 [US2] Add `src/companies/searchCompanies.ts` (T036). It reads `context.companies`,
   `context.http`, `context.careers.searxngUrl`, `skip_hosts`, `search_results`, `page_chars`,
   `company_search.max_per_run`, the clock and the trace.
   - It writes one `company_search` event per company (contract) and stops on `SearchUnavailable`.
   - Keep each function within 20 lines: one per company, one per address, one for marking the rest.
-- [ ] T045 [US2] Add `afterAgent(context)` to `src/app/run.ts`: `searchCompanies`, with an error it
+- [X] T045 [US2] Add `afterAgent(context)` to `src/app/run.ts`: `searchCompanies`, with an error it
   doesn't expect traced as `company_search_failed`, then the existing `pruneOldJobs`.
   `runWithStores` calls it in place of `pruneOldJobs`.
-- [ ] T046 [US2] Per-PR flow steps 4–6 ("Find companies' websites and careers pages by rule (014 PR
+- [X] T046 [US2] Per-PR flow steps 4–6 ("Find companies' websites and careers pages by rule (014 PR
   4)"). It is about 14 files: tell the owner when opening it.
   - **After merging:** once the owner merges and rebuilds, they run quickstart PR 4 steps 3–5
     (SC-004 to SC-006) on the real stack.
@@ -461,6 +463,6 @@ share moves toward 95 / 4 / 1.
 | | Unit | Integration | UI |
 |---|---|---|---|
 | Baseline (after 013 and #41, T002) | 575 | 52 (1 skipped without a browser) | 57 |
-| Planned new | 43 (T010 5, T011's memory run 1, T028 4, T029 1, T035 23, T036 7, T037 1, T038 1) | 3 (T005, T020, T011's MariaDB run) | 0 |
-| Planned after | 618 (84.7%) | 55 (7.53%) | 57 (7.8%) |
+| Planned new | 46 (T010 5, T011's memory run 1, T028 4, T029 1, T035 26, T036 7, T037 1, T038 1) | 3 (T005, T020, T011's MariaDB run) | 0 |
+| Planned after | 621 (84.7%) | 55 (7.50%) | 57 (7.8%) |
 | After PR 5 (T050) | | | |

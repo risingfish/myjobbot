@@ -126,9 +126,11 @@ Every decision below follows the code on `main` after features 013 and the depen
     common second-level label (`co`, `com`, `org`, `net`, `ac`, `gov`, `edu`) when the last label is
     two letters. The last remaining label is the main name, for example `acme` in
     `www.acme.co.uk` and `acmecorp` in `jobs.acmecorp.io`.
-  - **`pickWebsite(results, key, skipHosts)`**: the first result whose `mainName` contains the key
-    with its spaces removed (`acme widgets` → `acmewidgets`), that passes `storableUrl`, and that
-    is not on a `skip_hosts` host. The website is stored as the result's origin (`https://acme.com`).
+  - **`pickWebsite(results, key, skipHosts)`**: the first result whose `mainName` equals the key with
+    its spaces removed (`acme widgets` → `acmewidgets`), or starts with it when the key has four or
+    more characters (owner decision in review, 2026-10-24: "contains" matched `dropbox.com` for Box).
+    The result must also pass `storableUrl` and not be on a `skip_hosts` host. An empty key matches
+    nothing. The website is stored as the result's origin (`https://acme.com`).
   - **`pickCareers(results, { website, key, skipHosts })`**: the first result that passes
     `storableUrl` and either:
     - is on the website's host without a leading `www.`, or one of its subdomains (so
@@ -140,7 +142,11 @@ Every decision below follows the code on `main` after features 013 and the depen
     neither an IP address nor a single label like `localhost`. Nothing is fetched, so no DNS check
     is made here; the careers lookup checks every address again when it opens one (`assertPublic`).
   - `pickCareers` also skips any address in the company's `careers_rejected` list. That is how a dead
-    page cleared by the careers lookup (R5) is never stored again.
+    page cleared by the careers lookup (R5) is never stored again. It adds new turned-down addresses
+    to that list only when the website is known, because without it a real careers page on the
+    website would be turned down and then never found.
+  - `storableUrl` refuses addresses over 2,000 characters, so a record never fails to save into its
+    `varchar(2048)` column.
   - Each function also returns up to five addresses it turned down, and why the result was empty
     (`no_results` or `no_match`), for FR-015.
 - **Rationale**: these are the owner's rules. Every decision is a plain function, which makes the

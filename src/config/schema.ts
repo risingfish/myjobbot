@@ -68,6 +68,10 @@ const careersLookup = z.object({
     skip_hosts: z.array(z.string().min(1).toLowerCase()).default(["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"]),
 });
 
+const companySearch = z.object({
+    max_per_run: z.number().int().min(0).default(50),
+});
+
 const http = z.object({
     min_interval_ms: z.number().int().min(0).default(1000),
     max_requests_per_host_per_run: z.number().int().min(1).default(300),
@@ -92,6 +96,7 @@ export const fileConfigSchema = z
         http: http.prefault({}),
         gmail: gmail.prefault({}),
         careers_lookup: careersLookup.prefault({}),
+        company_search: companySearch.prefault({}),
     })
     .refine(hasAtLeastOneSource, { message: "configure at least one company or search" })
     .refine(hasUniqueSourceNames, { message: "company and search names must be unique" })

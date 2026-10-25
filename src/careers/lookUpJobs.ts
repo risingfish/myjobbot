@@ -4,7 +4,7 @@ import { normalizeCompany } from "../jobs/company.js";
 import { auditSkipped } from "./audit.js";
 import { lookUpJob, type LookupDeps } from "./lookUpJob.js";
 import type { LookupOutcome } from "./outcome.js";
-import { SEARCH_FAILED, searchCareers, SearchUnavailable, type SearchResult } from "./searxng.js";
+import { SEARCH_FAILED, searchWeb, SearchUnavailable, type SearchResult } from "./searxng.js";
 import type { SoughtJob } from "./session.js";
 import { dropSkipped } from "./skipHosts.js";
 
@@ -54,7 +54,7 @@ function cachedSearch(deps: CareersDeps, base: string): (company: string) => Pro
     const cache = new Map<string, Promise<SearchResult[]>>();
     return (company) => {
         const key = normalizeCompany(company);
-        const cached = cache.get(key) ?? searchCareers(deps.http, { base, company, max: deps.settings.search_results, maxChars: deps.settings.page_chars }).then((results) => dropSkipped(results, deps.settings.skip_hosts));
+        const cached = cache.get(key) ?? searchWeb(deps.http, { base, query: `${company} careers`, max: deps.settings.search_results, maxChars: deps.settings.page_chars }).then((results) => dropSkipped(results, deps.settings.skip_hosts));
         cache.set(key, cached);
         return cached;
     };

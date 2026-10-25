@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import type { Stores } from "../../src/db/store.js";
 import { makeJob, type Ats } from "../../src/jobs/job.js";
+import { searchSteps } from "./companySearchSteps.js";
 import type { MakeStores } from "./storeContract.js";
 
 export interface CompanyRecord {
@@ -23,9 +24,20 @@ export interface CompanyHooks {
     jobLinks(): Promise<Array<{ job_id: string; company_id: number | null }>>;
     seedUnlinked(jobs: UnlinkedJob[]): Promise<void>;
     seedBoardPage(key: string, url: string): Promise<void>;
+    searchOutcome(key: string): Promise<SearchOutcome | undefined>;
 }
 
-interface Contract {
+export interface SearchOutcome {
+    website_url: string | null;
+    website_reason: string | null;
+    website_rejected: string | null;
+    careers_url: string | null;
+    careers_reason: string | null;
+    careers_rejected: string | null;
+    searched_at: string | null;
+}
+
+export interface Contract {
     stores: Stores;
     hooks: CompanyHooks;
 }
@@ -110,5 +122,6 @@ export function companyContract(make: MakeStores, hooks: CompanyHooks): void {
         await keptThroughPruning(contract);
         await lookupNeverTouchesBoardPages(contract);
         await boardPagesWin(contract);
+        await searchSteps(contract);
     });
 }

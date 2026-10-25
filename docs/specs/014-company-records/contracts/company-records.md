@@ -24,7 +24,7 @@ returning malformed JSON means "SearXNG unavailable" (R8).
 
 | Rule | Accepts | Example accepted | Example turned down |
 |---|---|---|---|
-| Website | first result whose main host name contains the key without spaces; not a skip host; storable | `https://www.acme.co.uk/about` → `https://www.acme.co.uk` for "Acme Ltd" | `https://www.linkedin.com/company/acme` |
+| Website | first result whose main host name equals the key without spaces, or starts with it when the key has 4+ characters; not a skip host; storable | `https://www.acme.co.uk/about` → `https://www.acme.co.uk` for "Acme Ltd" | `https://www.linkedin.com/company/acme` |
 | Careers | first storable result not in the company's `careers_rejected`, either on the website's host without `www.` or a subdomain with `career`/`jobs` in its address or title, or a board page whose slug matches the key | `https://careers.acme.com/` (website `https://www.acme.com`), `https://jobs.lever.co/acme` | `https://acme-reviews.example/acme-careers` |
 
 ## Trace events (`data/runs/*.jsonl`)

@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, vi } from "vitest";
 import { runOnce } from "../src/app/run.js";
@@ -80,4 +80,15 @@ test("before the agent starts, each configured board's public address becomes it
     const { chat } = scriptedChat([toolCallsReply(["finish", { summary: "done" }])]);
     await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => memoryStores(tables) });
     expect(tables.companies).toMatchObject([{ company_key: "stripe", name: "Stripe", careers_url: "https://job-boards.greenhouse.io/stripe", careers_source: "board" }]);
+});
+
+test("a company search that fails unexpectedly is traced, and the run still finishes", async () => {
+    const dataDir = makeDataDir(ONE_COMPANY);
+    const stores = memoryStores();
+    stores.companies.dueForSearch = () => Promise.reject(new Error("search store down"));
+    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, http: fakeBoard(greenhouseBoard([])), openStores: async () => stores });
+    const [trace] = readdirSync(join(dataDir, "runs")).filter((name) => name.endsWith(".jsonl"));
+    expect(report.status).toBe("finished");
+    expect(readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")).toContain('"type":"company_search_failed"');
 });

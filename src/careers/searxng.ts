@@ -9,7 +9,7 @@ export interface SearchResult {
 
 export interface SearchRequest {
     base: string;
-    company: string;
+    query: string;
     max: number;
     maxChars: number;
 }
@@ -27,19 +27,19 @@ const responseSchema = z.object({
     results: z.array(z.object({ url: z.string(), title: z.string().nullish(), content: z.string().nullish() })),
 });
 
-/** Builds the SearXNG query address for a company's careers search, asking for JSON. */
-function searchUrl(base: string, company: string): string {
+/** Builds the SearXNG query address for a search, asking for JSON. */
+function searchUrl(base: string, query: string): string {
     const url = new URL("search", base.endsWith("/") ? base : `${base}/`);
-    url.searchParams.set("q", `${company} careers`);
+    url.searchParams.set("q", query);
     url.searchParams.set("format", "json");
     return url.href;
 }
 
-/** Searches SearXNG for a company's careers page, reporting any failure to use SearXNG as SearchUnavailable. */
-export async function searchCareers(http: JsonGetter, request: SearchRequest): Promise<SearchResult[]> {
+/** Searches SearXNG for a query, reporting any failure to use SearXNG as SearchUnavailable. */
+export async function searchWeb(http: JsonGetter, request: SearchRequest): Promise<SearchResult[]> {
     let json: unknown;
     try {
-        json = await http.getJson(searchUrl(request.base, request.company));
+        json = await http.getJson(searchUrl(request.base, request.query));
     } catch (error) {
         throw new SearchUnavailable(SEARCH_FAILED, { cause: error });
     }

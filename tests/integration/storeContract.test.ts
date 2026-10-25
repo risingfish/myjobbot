@@ -85,6 +85,7 @@ function companyHooks(): CompanyHooks {
             const rows = jobs.map((job) => ({ ats: "greenhouse", job_id: job.jobId, company: job.company, source: job.company, title: "Engineer", normalized_title: "engineer", url: "u", first_seen: job.firstSeen, last_seen: job.lastSeen }));
             await db.insertInto("jobs").values(rows).execute();
         },
+        searchOutcome: (key) => db.selectFrom("companies").select(["website_url", "website_reason", "website_rejected", "careers_url", "careers_reason", "careers_rejected", "searched_at"]).where("company_key", "=", key).executeTakeFirst(),
         seedBoardPage: async (key, url) => {
             const at = "2026-10-01T00:00:00.000Z";
             await db.insertInto("companies").values({ company_key: key, name: key, created_date: at, last_found_date: at, careers_url: url, careers_source: "board" }).execute();
