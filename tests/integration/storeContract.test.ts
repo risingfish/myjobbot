@@ -40,7 +40,10 @@ descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
-searchSettingsContract(emptyStores, { owners: async () => (await db.selectFrom("users").select("id").orderBy("id").execute()).map((row) => row.id) });
+searchSettingsContract(emptyStores, {
+    owners: async () => (await db.selectFrom("users").select("id").orderBy("id").execute()).map((row) => row.id),
+    seedUser: async (id) => void (await db.insertInto("users").values({ id, name: `user ${id}`, created_at: "2026-10-25T00:00:00.000Z" }).execute()),
+});
 careersStoreContract(emptyStores, {
     pageFields: async () => {
         const rows = await db.selectFrom("careers_audit").select(["page_source", "fallback", "board"]).orderBy("id").execute();

@@ -47,7 +47,7 @@ const SANITIZERS: Record<string, Sanitizer> = {
 const TOP_LEVEL_KEYS = new Set(Object.keys(SANITIZERS).filter((key) => key !== PUBLISHERS));
 
 /** Reports whether a raw JSON value is an object of named values, not a list or a scalar. */
-function isRawObject(value: unknown): value is RawObject {
+export function isRawObject(value: unknown): value is RawObject {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

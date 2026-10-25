@@ -16,6 +16,12 @@ export class MemorySearchSettingsStore implements SearchSettingsStore {
         return true;
     }
 
+    async save(userId: number, settings: RawSearchSettings): Promise<void> {
+        if (userId === OWNER_ID && !this.users.includes(OWNER_ID)) this.users.push(OWNER_ID);
+        if (!this.users.includes(userId)) throw new Error(`no user ${userId}`);
+        this.rows.set(userId, JSON.stringify(settings));
+    }
+
     put(userId: number, settings: RawSearchSettings): void {
         this.rows.set(userId, JSON.stringify(settings));
     }

@@ -35,7 +35,7 @@ searchSettingsContract(
         searchSettings = new MemorySearchSettingsStore();
         return { ...memoryStores(), searchSettings };
     },
-    { owners: async () => searchSettings.users },
+    { owners: async () => searchSettings.users, seedUser: async (id) => void searchSettings.users.push(id) },
 );
 let careersTables = newTables();
 let careers = new MemoryCareersStore(careersTables);

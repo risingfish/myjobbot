@@ -9,4 +9,5 @@ export type RawSearchSettings = z.infer<typeof rawSearchSettings>;
 export interface SearchSettingsStore {
     load(userId: number): Promise<RawSearchSettings | null>;
     importIfAbsent(settings: RawSearchSettings, at: string): Promise<boolean>;
+    save(userId: number, settings: RawSearchSettings, at: string): Promise<void>;
 }
