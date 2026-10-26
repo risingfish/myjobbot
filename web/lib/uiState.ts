@@ -1,11 +1,14 @@
 import { existsSync } from "node:fs";
 import { loadFileConfig } from "../../src/config/load.js";
-import { resolveSettings, type SettingsNotice } from "../../src/config/resolve.js";
+import { resolveSettings, settingsNotices, type SettingsNotice } from "../../src/config/resolve.js";
 import type { FileConfig } from "../../src/config/schema.js";
+import { splitSettings } from "../../src/config/searchSettings.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
+import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
+import { gmailSettings, settingsView, type SettingsView } from "../../src/web/settingsView.js";
 
 interface UiState {
     views: JobViews;
@@ -14,6 +17,19 @@ interface UiState {
     key: SecretKeyStatus;
     config: FileConfig;
     notices: SettingsNotice[];
+}
+
+interface OpenStores {
+    stores: Stores;
+    key: SecretKeyStatus;
+}
+
+interface SettingsState {
+    gmail: GmailStore;
+    alerts: AlertStore;
+    key: SecretKeyStatus;
+    notices: SettingsNotice[];
+    view: SettingsView;
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -54,9 +70,27 @@ function secretKey(): SecretKeyStatus {
     return cache.__myjobbotKey;
 }
 
+/** Returns the open stores and the sealing key without resolving any settings, for what must work before search settings are stored. */
+export async function getStores(): Promise<OpenStores> {
+    return { stores: await stores(), key: secretKey() };
+}
+
 /** Returns the database views, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
 export async function getUiState(): Promise<UiState> {
-    const opened = await stores();
+    const { stores: opened, key } = await getStores();
     const { file, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings, new Date().toISOString());
-    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key: secretKey(), config: file, notices };
+    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key, config: file, notices };
+}
+
+/** Returns what the Settings page shows for one request: the search settings in effect, what they report and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
+export async function getSettingsState(): Promise<SettingsState> {
+    const { stores: opened, key } = await getStores();
+    const stored = await opened.searchSettings.load(OWNER_ID);
+    const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored, Boolean(process.env.JSEARCH_API_KEY)) };
+}
+
+/** Returns the senders whose mail counts as a job alert, from config.json's runtime settings alone. */
+export function alertSenders(): string[] {
+    return gmailSettings(loadFileConfig(dataDir())).alert_senders;
 }

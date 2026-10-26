@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest";
-import { resolveSettings } from "../src/config/resolve.js";
+import { resolveSettings, settingsNotices } from "../src/config/resolve.js";
+import { splitSettings } from "../src/config/searchSettings.js";
 import { fileConfigSchema } from "../src/config/schema.js";
 import { OWNER_ID, type SearchSettingsStore } from "../src/db/searchSettingsStore.js";
 import { FULL_CONFIG, TEST_SEARCH } from "./helpers/config.js";
@@ -66,4 +67,14 @@ test("a bad stored setting falls back on its own and the rest are used as stored
 
 test("a cross-setting rule that still fails after falling back is refused with today's message", async () => {
     await expect(resolveSettings({}, storedWith({ companies: [{ name: "X", ats: "workday", slug: "x" }] }), AT)).rejects.toThrow(/at least one company or search/);
+});
+
+test("the settings notices are the fallbacks and the file's leftover search settings, the same ones resolving reports", async () => {
+    const stored = { ...STORED, match_threshold: 150 };
+    const notices = settingsNotices(splitSettings(FULL_CONFIG), stored);
+    expect(notices).toEqual([
+        { kind: "fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" },
+        { kind: "file_ignored", keys: SEARCH_KEYS },
+    ]);
+    expect((await resolveSettings(FULL_CONFIG, storedWith(stored), AT)).notices).toEqual(notices);
 });

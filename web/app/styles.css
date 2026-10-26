@@ -97,6 +97,9 @@ small,
 footer {
     color: var(--muted);
 }
+.preferences {
+    white-space: pre-wrap;
+}
 .ghost,
 .injection {
     color: var(--warn);

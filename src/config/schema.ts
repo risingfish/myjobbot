@@ -43,13 +43,13 @@ const gmail = z.object({
     alert_senders: z.array(z.string().refine(isAlertSender, { error: (issue) => `'${String(issue.input)}' is not a valid alert sender; use an email address or a domain` })).default(DEFAULT_ALERT_SENDERS),
 });
 
-const titleFilter = z
-    .object({
-        include: z.array(filterTerm).default(DEFAULT_INCLUDE),
-        exclude: z.array(filterTerm).default(DEFAULT_EXCLUDE),
-        extra_exclude: z.array(filterTerm).default([]),
-    })
-    .transform(({ include, exclude, extra_exclude }) => ({ include, exclude: [...exclude, ...extra_exclude] }));
+export const titleFilterTerms = z.object({
+    include: z.array(filterTerm).default(DEFAULT_INCLUDE),
+    exclude: z.array(filterTerm).default(DEFAULT_EXCLUDE),
+    extra_exclude: z.array(filterTerm).default([]),
+});
+
+const titleFilter = titleFilterTerms.transform(({ include, exclude, extra_exclude }) => ({ include, exclude: [...exclude, ...extra_exclude] }));
 
 const agent = z.object({
     max_steps: z.number().int().min(1).default(600),
