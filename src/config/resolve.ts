@@ -29,8 +29,14 @@ async function importFromFile(split: SplitSettings, store: SearchSettingsStore, 
 
 /** Joins stored search settings, each bad one fallen back, with config.json's runtime settings, noting the fallbacks and any search settings the file still holds. */
 function fromStored(split: SplitSettings, stored: RawSearchSettings): ResolvedSettings {
-    const { settings, notices } = sanitizeSearchSettings(stored);
-    const file = fileConfigSchema.parse(mergeSettings(split.runtime, settings));
+    const { settings } = sanitizeSearchSettings(stored);
+    return { file: fileConfigSchema.parse(mergeSettings(split.runtime, settings)), notices: settingsNotices(split, stored) };
+}
+
+/** Lists what the stored search settings report: each value that fell back, and the search settings config.json still holds once some are stored. */
+export function settingsNotices(split: SplitSettings, stored: RawSearchSettings | null): SettingsNotice[] {
+    if (stored === null) return [];
     const ignored = settingNames(split.search);
-    return { file, notices: ignored.length > 0 ? [...notices, { kind: "file_ignored", keys: ignored }] : notices };
+    const fallbacks: SettingsNotice[] = sanitizeSearchSettings(stored).notices;
+    return ignored.length > 0 ? [...fallbacks, { kind: "file_ignored", keys: ignored }] : fallbacks;
 }

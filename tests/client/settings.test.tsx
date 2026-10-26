@@ -5,13 +5,16 @@ import { expect, test, vi } from "vitest";
 import SettingsPage, { metadata } from "../../web/app/settings/page.js";
 import { memoryStores } from "../helpers/memoryStore.js";
 
-vi.mock("../../web/lib/uiState.js", () => ({ getUiState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [] }) }));
+vi.mock("../../web/lib/uiState.js", async () => {
+    const { settingsView } = await import("../../src/web/settingsView.js");
+    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null, false) }) };
+});
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 
-test("the settings page holds the Scoring and Gmail panels and is labelled", async () => {
+test("the settings page holds the search settings sections and the Gmail panel, and is labelled", async () => {
     const { container } = render(await SettingsPage());
     expect(container.querySelector("table")).toBeNull();
-    expect([...container.querySelectorAll("main > div > h4")].map((title) => title.textContent)).toEqual(["Scoring", "Gmail"]);
+    expect([...container.querySelectorAll("main > div > h4")].map((title) => title.textContent)).toEqual(["Sources", "Preferences", "Scoring", "Filters", "Gmail"]);
     expect(screen.getByRole("main").getAttribute("aria-label")).toBe("Settings");
 });
 

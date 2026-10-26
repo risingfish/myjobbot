@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache.js";
 import { check, type CheckResult } from "../../src/gmail/check.js";
 import { connect, disconnect, type ConnectResult } from "../../src/gmail/connection.js";
 import { gmailDeps } from "./gmailDeps.js";
-import { getUiState } from "./uiState.js";
+import { alertSenders } from "./uiState.js";
 
 const KEY_NOT_SET = "Set MYJOBBOT_SECRET_KEY first.";
 
@@ -22,7 +22,7 @@ export async function connectGmail(_previous: ConnectResult, form: FormData): Pr
 export async function checkGmail(): Promise<CheckResult> {
     const deps = await gmailDeps();
     if (deps === null) return { ok: false, reason: KEY_NOT_SET };
-    const result = await check(deps, (await getUiState()).config.gmail.alert_senders);
+    const result = await check(deps, alertSenders());
     if (!result.ok) revalidatePath("/settings");
     return result;
 }
