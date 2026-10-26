@@ -100,6 +100,14 @@ footer {
 .preferences {
     white-space: pre-wrap;
 }
+.setting + .setting {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+}
+.setting h5 {
+    margin-bottom: 4px;
+}
 .ghost,
 .injection {
     color: var(--warn);

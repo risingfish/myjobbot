@@ -84,7 +84,7 @@ function TermField({ label, field }: { label: string; field: FieldView<string[]>
 /** Renders one setting under its label, saying when it takes its default. */
 function Field({ label, field, children }: { label: string; field: FieldView<unknown>; children: ReactNode }) {
     return (
-        <section>
+        <section className="setting">
             <h5>
                 {label}
                 {field.isDefault && <small className="note"> (default)</small>}
