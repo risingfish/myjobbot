@@ -28,6 +28,7 @@ type SettingsFields = { [K in FieldName]: FieldView<FieldValues[K]> };
 
 export interface SettingsView {
     fields: SettingsFields;
+    defaults: { [K in FieldName]: FieldValues[K] };
     needsSource: boolean;
     needsSearchKey: boolean;
 }
@@ -66,7 +67,7 @@ export function settingsView(stored: RawSearchSettings | null, hasSearchKey: boo
     const { settings } = sanitizeSearchSettings(stored ?? {});
     const fields = shownFields(settings);
     const sources = fields.companies.value.length + fields.searches.value.length;
-    return { fields, needsSource: sources === 0, needsSearchKey: fields.searches.value.length > 0 && !hasSearchKey };
+    return { fields, defaults: defaultValues(), needsSource: sources === 0, needsSearchKey: fields.searches.value.length > 0 && !hasSearchKey };
 }
 
 /** Reads config.json's Gmail settings from its runtime part alone, so they can be used before any search settings are stored. */
@@ -88,6 +89,23 @@ function shownFields(settings: RawSearchSettings): SettingsFields {
         extra_exclude: shownField("extra_exclude", settings),
         exclude_companies: shownField("exclude_companies", settings),
         exclude_publishers: shownField("exclude_publishers", settings),
+    };
+}
+
+/** Gives every field's default as the page shows it, for resetting a field on the page. */
+function defaultValues(): SettingsView["defaults"] {
+    const empty = shownFields({});
+    return {
+        companies: empty.companies.value,
+        searches: empty.searches.value,
+        preferences: empty.preferences.value,
+        match_threshold: empty.match_threshold.value,
+        title_boosts: empty.title_boosts.value,
+        include: empty.include.value,
+        exclude: empty.exclude.value,
+        extra_exclude: empty.extra_exclude.value,
+        exclude_companies: empty.exclude_companies.value,
+        exclude_publishers: empty.exclude_publishers.value,
     };
 }
 

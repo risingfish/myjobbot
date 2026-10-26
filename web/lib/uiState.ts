@@ -90,6 +90,11 @@ export async function getSettingsState(): Promise<SettingsState> {
     return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored, Boolean(process.env.JSEARCH_API_KEY)) };
 }
 
+/** Returns config.json's runtime settings, the part a search settings save is checked against. */
+export function runtimeSettings(): unknown {
+    return splitSettings(loadFileConfig(dataDir())).runtime;
+}
+
 /** Returns the senders whose mail counts as a job alert, from config.json's runtime settings alone. */
 export function alertSenders(): string[] {
     return gmailSettings(loadFileConfig(dataDir())).alert_senders;
