@@ -1,8 +1,10 @@
-type SectionName = "sources" | "preferences" | "scoring" | "filters";
+export const SECTION_NAMES = ["sources", "preferences", "scoring", "filters"] as const;
+
+export type SectionName = (typeof SECTION_NAMES)[number];
 
 export type FieldName = "companies" | "searches" | "preferences" | "match_threshold" | "title_boosts" | "include" | "exclude" | "extra_exclude" | "exclude_companies" | "exclude_publishers";
 
-interface FieldSpec {
+export interface FieldSpec {
     name: FieldName;
     section: SectionName;
     stored: string[];
@@ -21,3 +23,8 @@ export const SECTIONS: readonly FieldSpec[] = [
     { name: "exclude_companies", section: "filters", stored: ["exclude_companies"], check: ["exclude_companies"] },
     { name: "exclude_publishers", section: "filters", stored: ["exclude_publishers"], check: ["jsearch", "exclude_publishers"] },
 ];
+
+/** Lists the fields one section of the Settings page owns. */
+export function fieldsOf(section: SectionName): FieldSpec[] {
+    return SECTIONS.filter((field) => field.section === section);
+}

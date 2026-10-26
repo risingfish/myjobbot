@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { Panel } from "../sections/Panel.js";
+import { PreferencesSection } from "./PreferencesSection.js";
+import { ScoringSection } from "./ScoringSection.js";
 
 const NEEDS_SOURCE = "Add a company board or a saved search: runs and the other pages need one.";
 const NEEDS_SEARCH_KEY = "Saved searches need JSEARCH_API_KEY in .env; runs refuse to start without it.";
@@ -10,8 +12,8 @@ export function SettingsSections({ view }: { view: SettingsView }) {
     return (
         <>
             <SourcesPanel view={view} />
-            <PreferencesPanel view={view} />
-            <ScoringPanel view={view} />
+            <PreferencesSection view={view} />
+            <ScoringSection view={view} />
             <FiltersPanel view={view} />
         </>
     );
@@ -29,31 +31,6 @@ function SourcesPanel({ view }: { view: SettingsView }) {
             </Field>
             <Field label="Saved searches" field={searches}>
                 <Lines items={searches.value.map((search) => `${String(search.name)}: ${String(search.query)}`)} />
-            </Field>
-        </Panel>
-    );
-}
-
-/** Renders the Preferences section: the free-text preferences the model reads. */
-function PreferencesPanel({ view: { fields } }: { view: SettingsView }) {
-    return (
-        <Panel title="Preferences">
-            <Field label="Preferences" field={fields.preferences}>
-                <p className="preferences">{fields.preferences.value}</p>
-            </Field>
-        </Panel>
-    );
-}
-
-/** Renders the Scoring section: the match threshold and the title boosts. */
-function ScoringPanel({ view: { fields } }: { view: SettingsView }) {
-    return (
-        <Panel title="Scoring">
-            <Field label="Match threshold" field={fields.match_threshold}>
-                <p>{fields.match_threshold.value}</p>
-            </Field>
-            <Field label="Title boosts" field={fields.title_boosts}>
-                <Lines items={fields.title_boosts.value.map(([term, points]) => `${term}: +${points}`)} />
             </Field>
         </Panel>
     );

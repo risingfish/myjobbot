@@ -10,6 +10,7 @@ vi.mock("../../web/lib/uiState.js", async () => {
     return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null, false) }) };
 });
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
+vi.mock("../../web/lib/settingsActions.js", () => ({ saveSettingsSection: vi.fn() }));
 
 test("the settings page holds the search settings sections and the Gmail panel, and is labelled", async () => {
     const { container } = render(await SettingsPage());
