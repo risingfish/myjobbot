@@ -11,6 +11,13 @@ every PR also passes `npm run check` and `npm run check:db`. The page's layout a
 2. The old "Match threshold: 70" placeholder is gone; Scoring shows your real threshold.
 3. **SC-002**: every value in `SELECT settings FROM user_settings WHERE user_id = 1;` appears on the
    page.
+4. Against an empty test database and a data folder whose `config.json` holds only runtime settings
+   (the automatic import still runs until PR 5a), Settings loads and Sources says a company or search
+   is needed. The Gmail panel's Check now still works:
+
+   ```bash
+   MYJOBBOT_DB_NAME=myjobbot_test MYJOBBOT_DATA_DIR=/tmp/runtime-only npm run web
+   ```
 
 ## PR 2: saving Scoring and Preferences
 
@@ -23,6 +30,9 @@ every PR also passes `npm run check` and `npm run check:db`. The page's layout a
    page shows 70 (default).
 5. Edit Preferences and Scoring, then Save only Preferences: the Scoring edit is still on the page,
    unsaved.
+6. **SC-006**: Save Scoring with no edits. `SELECT settings …` is the same before and after.
+7. Stop MariaDB's network briefly (or point the web UI at a wrong host), then Save: "Couldn't save —
+   try again", and the edit stays.
 
 ## PR 3: Sources
 
@@ -35,10 +45,15 @@ every PR also passes `npm run check` and `npm run check:db`. The page's layout a
 1. Add an excluded company and Save Filters. That company drops out of Recommended.
 2. Add a malformed publisher domain (`trabajo.*`) and Save: refused beside that row.
 
-## PR 5: removals and docs
+## PR 5a: removals
 
 1. `npm start -- import-settings x` and `export-settings x` print the usage line (exit 2).
 2. On an empty test database with search settings in `config.json`, nothing is imported. The Settings
    page loads, says a company or search is needed, and notes the file's search settings can be
-   removed.
-3. The README's Setup tells you to add the first board or search on the Settings page.
+   removed. A Preferences save is refused with "configure at least one company or search".
+3. Add a board in Sources: the other pages work again.
+
+## PR 5b: docs
+
+The README's Setup tells you to add the first board or search on the Settings page, and nothing
+mentions `export-settings`, `import-settings` or `examples/settings.json`.

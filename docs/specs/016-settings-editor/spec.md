@@ -157,9 +157,11 @@ longer hold a threshold, and that the page shows 70 marked as the default.
 
 - **Unsaved edits in another section**: a save of one section leaves them on the page, unsaved. The
   owner saves each section separately.
-- **Saving a section with no edits**: nothing changes. The exception is a setting that fell back: the page
-  shows the value in effect, so saving stores that value. The bad stored value is replaced and its
-  notice goes away.
+- **Saving a section with no edits**: nothing changes, with two exceptions:
+  - a setting of that section that fell back: the page shows the value in effect, so saving stores
+    that value. The bad stored value is replaced and its notice goes away;
+  - keys that aren't search settings (only possible by editing the database by hand) are dropped on
+    any save.
 - **Search settings still in `config.json`**: they are never imported or used, even on an empty
   database, and a save doesn't touch the file. The notices panel keeps saying they can be removed.
 - **Before the first board or search is saved** (a fresh install): runs refuse to start and the other
@@ -169,7 +171,16 @@ longer hold a threshold, and that the page shows 70 marked as the default.
   refresh timing at the moment of saving. A later edit to the file can still refuse runs, as with an
   import today.
 - **Saved searches need a JSearch key**: a search can be saved without `JSEARCH_API_KEY` in `.env`.
-  Runs then refuse to start, as today, and the page says the key is missing.
+  Runs then refuse to start, as today, and the Sources section says the key is missing.
+- **Before the first source is saved**: a save of Preferences, Scoring or Filters is refused with
+  "configure at least one company or search", shown on that section, because every save is checked
+  with the rest. The owner saves a board or search in Sources first.
+- **A rule that spans sections or `config.json`** (unique names, the JSearch budget, a bad runtime
+  value in `config.json`): its problem is shown at the top of the section that was saved.
+- **A saved entry with optional fields left blank** (a search with no country, say): the blank
+  fields stay unset, and the entry's own defaults apply (remote only off, country `us`). Saving with
+  no edits doesn't fill them in.
+- **The same boost term twice**: the save is refused on the second row.
 - **An entry left half filled in**, such as a new board with no board id: the save is refused, naming
   that entry.
 - **Long preferences text**: kept exactly as typed, line breaks included.
@@ -259,8 +270,8 @@ longer hold a threshold, and that the page shows 70 marked as the default.
 - **SC-004**: A saved change is used by the next page load and the next run, with no restart.
 - **SC-005**: A save never stores a set that breaks a rule, whatever was saved before it, in this tab
   or another.
-- **SC-006**: Saving with no edits leaves the stored settings unchanged, unless a setting had fallen
-  back.
+- **SC-006**: Saving with no edits leaves the stored settings unchanged, entries' blank fields
+  included, unless a setting had fallen back or a key isn't a search setting.
 - **SC-007**: A setting the owner never set stays unset through any number of saves of other
   settings.
 

@@ -43,4 +43,7 @@
   - each section's save is whole or nothing;
   - runtime settings are not shown;
   - no login, the same trust as the Gmail panel.
+- After the deep analysis (2026-10-25), the edge cases also cover: saves refused until a source
+  exists, where rule problems show, blank entry fields staying unset, repeated boost terms, and
+  non-search keys dropped on save.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
