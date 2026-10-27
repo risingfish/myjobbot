@@ -3,36 +3,17 @@ import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { Panel } from "../sections/Panel.js";
 import { PreferencesSection } from "./PreferencesSection.js";
 import { ScoringSection } from "./ScoringSection.js";
-
-const NEEDS_SOURCE = "Add a company board or a saved search: runs and the other pages need one.";
-const NEEDS_SEARCH_KEY = "Saved searches need JSEARCH_API_KEY in .env; runs refuse to start without it.";
+import { SourcesSection } from "./SourcesSection.js";
 
 /** Renders the search settings in effect, section by section, marking each one that takes its default. */
 export function SettingsSections({ view }: { view: SettingsView }) {
     return (
         <>
-            <SourcesPanel view={view} />
+            <SourcesSection view={view} />
             <PreferencesSection view={view} />
             <ScoringSection view={view} />
             <FiltersPanel view={view} />
         </>
-    );
-}
-
-/** Renders the Sources section: the company boards and saved searches, with what a run still needs. */
-function SourcesPanel({ view }: { view: SettingsView }) {
-    const { companies, searches } = view.fields;
-    return (
-        <Panel title="Sources">
-            {view.needsSource && <p className="note">{NEEDS_SOURCE}</p>}
-            {view.needsSearchKey && <p className="note">{NEEDS_SEARCH_KEY}</p>}
-            <Field label="Company boards" field={companies}>
-                <Lines items={companies.value.map((board) => `${String(board.name)}: ${String(board.ats)} / ${String(board.slug)}`)} />
-            </Field>
-            <Field label="Saved searches" field={searches}>
-                <Lines items={searches.value.map((search) => `${String(search.name)}: ${String(search.query)}`)} />
-            </Field>
-        </Panel>
     );
 }
 

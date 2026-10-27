@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { addRow, editedField, removeRow, resetField, saveRequest, sectionRequest, updateRow } from "../src/web/settingsForm.js";
+import { addRow, blankBoard, blankSearch, editedField, removeRow, resetField, saveRequest, sectionRequest, updateRow } from "../src/web/settingsForm.js";
 
 const BOOSTS = { value: [["go", 5] as [string, number]], isDefault: false };
 
@@ -42,4 +42,8 @@ test("a request holding another section's field is refused", () => {
 test("a row with extra keys is refused rather than stored", () => {
     const companies = { kind: "value", value: [{ name: "Stripe", ats: "greenhouse", slug: "stripe", admin: true }] };
     expect(saveRequest.safeParse({ section: "sources", edits: { companies, searches: { kind: "default" } } }).success).toBe(false);
+});
+
+test("a new board row has a name, a board type and a board id, and a new search row only a name and a query", () => {
+    expect([blankBoard(), blankSearch()]).toEqual([{ name: "", ats: "greenhouse", slug: "" }, { name: "", query: "" }]);
 });
