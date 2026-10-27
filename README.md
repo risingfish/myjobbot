@@ -15,18 +15,15 @@ npm ci
 cp .env.example .env            # set LLM_API_KEY and the MYJOBBOT_DB_* settings (see Storage)
 mkdir -p data
 cp examples/config.json data/   # runtime settings: limits, JSearch budget, job lifetimes
-cp examples/settings.json data/ # search settings: list your target companies
 cp examples/resume.md data/     # replace with your resume
 ```
 
-Once the database is set up (see Storage), store your search settings in it:
-
-```bash
-npm start -- import-settings data/settings.json
-```
-
-Until then a run refuses to start and the web UI shows "configure at least one company or search".
-See [Configuration knobs](#configuration-knobs) for which settings live where.
+Once the database is set up (see Storage), open the web UI's **Settings** page (`npm run web`) and
+add your first company board or saved search in **Sources**. For a Greenhouse board, that's a name
+(`Stripe`), the board type `greenhouse` and the board id from its address
+(`boards.greenhouse.io/stripe` → `stripe`). Until a source is saved, a run refuses to start and the
+other pages show "configure at least one company or search". See
+[Configuration knobs](#configuration-knobs) for which settings live where.
 
 The LLM server must be llama.cpp `llama-server` started with `--jinja` and a
 tool-calling model.
@@ -84,7 +81,9 @@ npm run web          # development server, http://localhost:8080
 npm run web:build && npm run web:start   # production build and server
 ```
 
-A Next.js app for browsing the database, with three tabs and a Settings page (see [Gmail](#gmail)):
+A Next.js app for browsing the database, with three tabs and a Settings page. Settings is where your
+search settings are made and changed (see [Configuration knobs](#configuration-knobs)), and where
+Gmail is connected (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
@@ -132,7 +131,7 @@ bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 c
 [How scoring works](#how-scoring-works) for what the numbers mean.
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Search settings
-you import, and edits to `data/config.json`, show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
+you save on the Settings page, and edits to `data/config.json`, show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
 is no login: keep it on your LAN. The web UI needs no LLM settings, only `data/`.
 
 **Which hosts may connect.** Every request must name the UI in its `Host`, or it gets 421; that
@@ -350,11 +349,11 @@ git clone <repo> myjobbot && cd myjobbot
 cp .env.example .env              # set LLM_API_KEY, MYJOBBOT_HOSTS and MYJOBBOT_DB_*; optionally SCHEDULE and TZ
 mkdir -p data
 cp examples/config.json data/     # runtime settings
-cp examples/settings.json data/   # your companies and searches
 cp examples/resume.md data/       # your resume
 docker compose up -d --build
-docker compose exec myjobbot npm start -- import-settings /data/settings.json
 ```
+
+Then open the web UI's Settings page and add your first company board or saved search in Sources.
 
 The container runs `myjobbot run` on `SCHEDULE` (default `0 1/8 * * *`, every 8 hours from
 1 a.m.: 01:00, 09:00, 17:00) in `TZ` (default `America/Los_Angeles`, Pacific time). After a board's backlog is scored,
@@ -367,7 +366,7 @@ container.
 |---|---|
 | Open the web UI | `http://<server>:8080` (the `web` service; `MYJOBBOT_PORT` in `.env` changes the port) |
 | Run once now | `docker compose run --rm myjobbot run` |
-| Change search settings | `docker compose exec myjobbot npm start -- export-settings /data/settings.json`, edit `data/settings.json` on the host, then the same with `import-settings` |
+| Change search settings | The web UI's Settings page: Sources, Preferences, Scoring and Filters, each with its own Save |
 | Watch runs | `docker compose logs -f myjobbot` |
 | Update after `git pull` | Nothing for code under `src/` or `web/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile`, `docker/`, `web/next.config.ts` or `web/tsconfig.json` changed (or leave `npm run docker:watch` running) |
 | Start (or update) the stack | `npm run docker:up` (`docker compose up -d --build`) |
@@ -641,7 +640,7 @@ erDiagram
     }
     USER_SETTINGS {
         int user_id PK, FK
-        json settings "the search settings you set, as imported (no defaults)"
+        json settings "the search settings you set on the Settings page (no defaults)"
         text updated_at
     }
     USERS ||--o| USER_SETTINGS : "searches with"
@@ -794,20 +793,27 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 Settings live in two places:
 - **Search settings** (what you look for, and how jobs are filtered and ranked) are stored in the
-  database, one set per user (today just you, the owner). Change them by export, edit, import:
-  `npm start -- export-settings data/settings.json`, edit the file, then
-  `npm start -- import-settings data/settings.json`. The file has the same shape these keys had in
-  `config.json`, and holds only what you set, so defaults still apply. An import is checked as a
-  whole, against the current `config.json` too, and replaces the stored set or changes nothing.
+  database, one set per user (today just you, the owner), and changed only on the web UI's
+  **Settings** page. It has four sections:
+  - **Sources**: company boards and saved searches;
+  - **Preferences**: the preferences text;
+  - **Scoring**: the match threshold and title boosts;
+  - **Filters**: the title filter and excluded companies and publishers.
+
+  Each section has its own Save, and each setting shows "(default)" until you change it, or offers
+  **Reset to default** once you have. Only what you set is stored, so defaults still apply. A save
+  is checked together with the rest of your settings and the current `config.json`, then stores
+  that section whole or changes nothing. A refused save shows each problem beside its field or row
+  and keeps your edits. The last save wins.
 - **Runtime settings** (limits, budgets, lifetimes, Gmail senders) stay in `data/config.json`. Edit
   the file; a bad value stops the run with its message.
 
-**Upgrading** from a `config.json` that still holds search settings: the first run or page load
-copies them into the database once, after checking them. From then on they are ignored there, and
-the Settings page (and each run's trace) says they can be removed from the file. A stored search
-setting that later breaks a rule (say, after an upgrade tightens one) falls back on its own: a bad
-value takes its default and a bad list entry is left out. The Settings page's notices panel and
-the run's trace (`settings_fallback`) say which and why.
+Search settings left in `data/config.json` (from before they moved to the database) are never used.
+The Settings page, and each run's trace (`settings_file_ignored`), says they can be removed from
+the file. A stored search setting that later breaks a rule (say, after an upgrade tightens one)
+falls back on its own: a bad value takes its default and a bad list entry is left out. The Settings
+page's notices panel and the run's trace (`settings_fallback`) say which and why; saving that
+section stores the value in effect and clears the notice.
 
 **Search settings (stored in the database)**
 
@@ -815,7 +821,7 @@ the run's trace (`settings_fallback`) say which and why.
 |---|---|---|
 | `companies` | `[]` | `{name, ats, slug}` per company board (at least one company or search) |
 | `searches` | `[]` | Saved JSearch searches: `{name, query, remote_only, country}`. Needs `JSEARCH_API_KEY` |
-| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, is refused on import; one already stored is left out, with a notice |
+| `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, is refused when you save it on the Settings page; one already stored is left out, with a notice |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
