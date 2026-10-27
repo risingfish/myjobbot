@@ -136,8 +136,10 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by
   `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `fileConfigSchema`,
   once per run and on every web request. A bad stored value falls back per setting
-  (`sanitizeSearchSettings`) with a notice that never holds the value; the owner changes them with
-  `export-settings` and `import-settings`, which checks the file as a whole.
+  (`sanitizeSearchSettings`) with a notice that never holds the value. They change only on the
+  Settings page (feature 016): one section at a time (`src/web/settingsSections.ts`), each save
+  checked with the rest by `saveSection` and stored through the `saveSettingsSection` server action;
+  search settings left in `config.json` are never imported or used.
 
 ## Commands
 
@@ -146,6 +148,5 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
-- `npm start -- export-settings <path>` / `import-settings <path>`: write the owner's stored search settings to a file in `config.json`'s shape, and replace them from an edited one (refused whole when invalid)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

@@ -51,11 +51,11 @@ Existing tests a change breaks are updated in that same sitting, before the code
 
 ### Sitting S0: planning docs PR (T001–T003), branch `016-settings-editor`
 
-- [ ] T001 Per-PR flow step 1 is done (2026-10-25: the stack and the watcher are stopped). Create
+- [X] T001 Per-PR flow step 1 is done (2026-10-25: the stack and the watcher are stopped). Create
   `.specify/sitting-in-progress` naming S0.
-- [ ] T002 Run `npm run check` and `npm run check:db`, and correct the ledger's baseline row below if
+- [X] T002 Run `npm run check` and `npm run check:db`, and correct the ledger's baseline row below if
   the counts differ.
-- [ ] T003 Delete the marker, and commit any changes under `docs/specs/016-settings-editor/` (the
+- [X] T003 Delete the marker, and commit any changes under `docs/specs/016-settings-editor/` (the
   spec and plan are already committed on the branch). Push it and open a docs-only PR ("Plan the
   Settings page editor (016)"). **Wait for the owner to merge it.**
 
@@ -70,8 +70,8 @@ included) with nothing stored.
 
 ### Sitting S1, PR 1: the settings in view (T004–T013), branch `016-pr1-settings-view`
 
-- [ ] T004 [US1] Per-PR flow steps 1–3, for sitting S1.
-- [ ] T005 [P] [US1] Unit tests in a new `tests/settingsView.test.ts` (ten `test()`s) for
+- [X] T004 [US1] Per-PR flow steps 1–3, for sitting S1.
+- [X] T005 [P] [US1] Unit tests in a new `tests/settingsView.test.ts` (ten `test()`s) for
   `settingsView(stored, hasSearchKey)` and `gmailSettings(fileRaw)` in `src/web/settingsView.ts`
   (research R1, data model):
   - stored values are shown as stored and not marked default;
@@ -90,35 +90,35 @@ included) with nothing stored.
     comes from its stored top-level key with `[]` as its default;
   - `gmailSettings` reads `gmail.alert_senders` from the runtime part, with its default, when no
     source is set.
-- [ ] T006 [P] [US1] Unit test in a new `tests/settingsSections.test.ts` (one `test()`) for `SECTIONS`
+- [X] T006 [P] [US1] Unit test in a new `tests/settingsSections.test.ts` (one `test()`) for `SECTIONS`
   in `src/web/settingsSections.ts` (data model, Fields and sections):
   - the ten fields cover the eight search keys, each key once;
   - every field has one section, a stored path and a check path;
   - no two fields share a check path.
-- [ ] T007 [P] [US1] Unit test in `tests/resolveSettings.test.ts` (one `test()`) for
+- [X] T007 [P] [US1] Unit test in `tests/resolveSettings.test.ts` (one `test()`) for
   `settingsNotices(split, stored)` in `src/config/resolve.ts`. It gives the fallback and
   `file_ignored` notices, and they are the same ones `resolveSettings` returns for those inputs.
-- [ ] T008 [P] [US1] Update `tests/client/settings.test.tsx` (no new `test()`):
+- [X] T008 [P] [US1] Update `tests/client/settings.test.tsx` (no new `test()`):
   - at :8, mock `getSettingsState` instead of `getUiState`. It returns `settingsView(null, false)`,
     no notices and the Gmail stores;
   - change the panel list at :14 to `["Sources", "Preferences", "Scoring", "Filters", "Gmail"]`.
-- [ ] T009 [US1] In `src/config/schema.ts`, export `titleFilterTerms`, the untransformed title filter
+- [X] T009 [US1] In `src/config/schema.ts`, export `titleFilterTerms`, the untransformed title filter
   object. `titleFilter` becomes `titleFilterTerms.transform(...)`. Add
   `src/web/settingsSections.ts` and `src/web/settingsView.ts` (T005, T006).
-- [ ] T010 [US1] In `src/config/resolve.ts`, add `settingsNotices` (T007), and use it in
+- [X] T010 [US1] In `src/config/resolve.ts`, add `settingsNotices` (T007), and use it in
   `fromStored`.
-- [ ] T011 [US1] In `web/lib/uiState.ts`, add `getStores()`, which gives the stores and the key
+- [X] T011 [US1] In `web/lib/uiState.ts`, add `getStores()`, which gives the stores and the key
   without resolving settings, and build `getUiState` on it. Add `getSettingsState()`: the stores,
   `settingsNotices` and `settingsView(stored, hasSearchKey)`, never running the cross-setting rules
   (research R7). `web/lib/gmailDeps.ts` uses `getStores()`. `web/lib/gmailActions.ts` Check now
   reads the senders through `gmailSettings`. Update the doc comments.
-- [ ] T012 [US1] In `web/app/settings/page.tsx`, render the notices, then read-only Sources,
+- [X] T012 [US1] In `web/app/settings/page.tsx`, render the notices, then read-only Sources,
   Preferences, Scoring and Filters panels, then Gmail. Use `getSettingsState`, and drop the
   placeholder Scoring panel.
   - Each field shows its value, plus "(default)" when `isDefault`.
   - Sources shows the "needs a source" and "needs JSEARCH_API_KEY" notes (contract).
   - The panels go in `web/components/settings/SettingsSections.tsx`.
-- [ ] T013 [US1] Per-PR flow steps 4–6 ("Show the search settings on the Settings page (016 PR 1)").
+- [X] T013 [US1] Per-PR flow steps 4–6 ("Show the search settings on the Settings page (016 PR 1)").
 
 **Checkpoint**: User Story 1 works: the page shows the real settings.
 
@@ -136,8 +136,8 @@ default.
 The save decisions are generic over `SECTIONS` (research R2), so their tests cover every section
 here. S3 and S4 add only components.
 
-- [ ] T014 [US2] Per-PR flow steps 1–3, for sitting S2.
-- [ ] T015 [P] [US2] Unit tests in a new `tests/settingsApply.test.ts` (eight `test()`s) for
+- [X] T014 [US2] Per-PR flow steps 1–3, for sitting S2.
+- [X] T015 [P] [US2] Unit tests in a new `tests/settingsApply.test.ts` (eight `test()`s) for
   `applySection(stored, request)` in `src/web/settingsApply.ts` (research R3):
   - it replaces only the section's fields, and keeps other sections exactly as stored, a value that
     fell back included;
@@ -151,7 +151,7 @@ here. S3 and S4 add only components.
   - title filter fields are stored inside `title_filter`, and resetting one leaves the others;
   - a `title_filter` left with no lists is removed whole; with nothing stored (`null`), the
     document is built from the section alone.
-- [ ] T016 [P] [US2] Unit tests in a new `tests/settingsProblems.test.ts` (eight `test()`s) for
+- [X] T016 [P] [US2] Unit tests in a new `tests/settingsProblems.test.ts` (eight `test()`s) for
   `sectionProblems(issues, request)` in `src/web/settingsProblems.ts` (research R4):
   - a field's problem goes on its field (`match_threshold`);
   - a list entry's goes on its row: `companies[1].slug` → `companies`, row 1;
@@ -164,7 +164,7 @@ here. S3 and S4 add only components.
   - the JSearch budget on a Sources save goes to the top of Sources;
   - a bad runtime value (`http.timeout_s`) goes to the top of the saved section, and every message
     is zod's own, unprefixed.
-- [ ] T017 [P] [US2] Unit tests in a new `tests/settingsSave.test.ts` (seven `test()`s) for
+- [X] T017 [P] [US2] Unit tests in a new `tests/settingsSave.test.ts` (seven `test()`s) for
   `saveSection(stored, runtime, request)` in `src/web/settingsSave.ts`:
   - it returns the document to store when the check passes;
   - it returns the problems, and nothing to store, when the check fails;
@@ -176,7 +176,7 @@ here. S3 and S4 add only components.
     as the rest. Each is refused with its field and row, and a message regex for zod's bare
     reason. The "three refreshes a day" row's `refresh_hours` goes in the runtime part;
   - the runtime part passed in is used, for example a lower JSearch cap.
-- [ ] T018 [P] [US2] Unit tests in a new `tests/settingsForm.test.ts` (nine `test()`s) for
+- [X] T018 [P] [US2] Unit tests in a new `tests/settingsForm.test.ts` (nine `test()`s) for
   `src/web/settingsForm.ts` (research R6):
   - `addRow` appends a row;
   - `removeRow` drops the row at its index;
@@ -188,29 +188,29 @@ here. S3 and S4 add only components.
   - `saveRequest` refuses an unknown section;
   - it refuses a field of another section;
   - it refuses a row with extra keys.
-- [ ] T019 [P] [US2] UI test in a new `tests/client/settingsScoring.test.tsx` (one `test()`), with
+- [X] T019 [P] [US2] UI test in a new `tests/client/settingsScoring.test.tsx` (one `test()`), with
   `web/lib/settingsActions.js` mocked:
   - editing the threshold and saving sends a `scoring` request;
   - a refusal shows "Too big: expected number to be <=100" beside the threshold, and the typed
     value stays;
   - a stored field shows Reset to default, and a default one doesn't;
   - a `failed` result shows "Couldn't save — try again".
-- [ ] T020 [P] [US2] Update `tests/client/settings.test.tsx` (no new `test()`): add a `vi.mock` of
+- [X] T020 [P] [US2] Update `tests/client/settings.test.tsx` (no new `test()`): add a `vi.mock` of
   `web/lib/settingsActions.js`. Each section form sits inside its `Panel`, so the `main > div > h4`
   selector at :14 still finds the titles.
-- [ ] T021 [US2] Add `src/web/settingsApply.ts` (T015), `src/web/settingsProblems.ts` (T016) and
+- [X] T021 [US2] Add `src/web/settingsApply.ts` (T015), `src/web/settingsProblems.ts` (T016) and
   `src/web/settingsSave.ts` (T017). `saveSection` imports the other two and is their production
   caller. `importSettings.ts` is left alone until S5a.
-- [ ] T022 [US2] Add `src/web/settingsForm.ts` (T018), including `sectionRequest` and the
+- [X] T022 [US2] Add `src/web/settingsForm.ts` (T018), including `sectionRequest` and the
   `saveRequest` schema.
-- [ ] T023 [US2] Add `web/lib/settingsActions.ts` with
+- [X] T023 [US2] Add `web/lib/settingsActions.ts` with
   `saveSettingsSection(previous: SaveResult, request: SaveRequest)` (research R5):
   - it checks the request with `saveRequest`, loads the stored document and the runtime part, and
     calls `saveSection`;
   - then it saves through `store.save(OWNER_ID, …)` with `revalidatePath("/settings")`, or returns
     the problems;
   - a thrown failure returns `{ ok: false, failed: true }`.
-- [ ] T024 [US2] Add the client components `web/components/settings/ScoringSection.tsx` (threshold,
+- [X] T024 [US2] Add the client components `web/components/settings/ScoringSection.tsx` (threshold,
   boost rows) and `PreferencesSection.tsx` (a textarea). Each wraps its form in `Panel` and uses
   `settingsForm.ts` and `useActionState`. Each shows (contract):
   - "(default)" and Reset to default;
@@ -218,36 +218,36 @@ here. S3 and S4 add only components.
   - problems beside fields and rows, or at the section's top.
 
   Render them from the page in place of the read-only panels.
-- [ ] T025 [US2] Check every file is within 200 lines. If a section component would pass the limit,
+- [X] T025 [US2] Check every file is within 200 lines. If a section component would pass the limit,
   split the row editor into `web/components/settings/RowList.tsx`.
-- [ ] T026 [US2] Per-PR flow steps 4–6 ("Save Scoring and Preferences from the Settings page (016
+- [X] T026 [US2] Per-PR flow steps 4–6 ("Save Scoring and Preferences from the Settings page (016
   PR 2)"). It is about 15 files: tell the owner when opening it.
 
 ### Sitting S3, PR 3: Sources (T027–T031), branch `016-pr3-settings-sources`
 
-- [ ] T027 [US2] Per-PR flow steps 1–3, for sitting S3.
-- [ ] T028 [P] [US2] Unit test in `tests/settingsForm.test.ts` (one `test()`): `blankBoard()` has a
+- [X] T027 [US2] Per-PR flow steps 1–3, for sitting S3.
+- [X] T028 [P] [US2] Unit test in `tests/settingsForm.test.ts` (one `test()`): `blankBoard()` has a
   name, a board type and a board id, and `blankSearch()` only a name and a query, so a new search
   leaves remote only and country unset.
-- [ ] T029 [US2] Add `blankBoard` and `blankSearch` to `src/web/settingsForm.ts` (T028).
-- [ ] T030 [US2] Add `web/components/settings/SourcesSection.tsx`, using the blank rows (contract):
+- [X] T029 [US2] Add `blankBoard` and `blankSearch` to `src/web/settingsForm.ts` (T028).
+- [X] T030 [US2] Add `web/components/settings/SourcesSection.tsx`, using the blank rows (contract):
   - board rows: a name, a board-type select of `ATS_NAMES`, and a board id;
   - search rows: a name, a query, a remote-only checkbox and a country, which show their defaults
     while unset;
   - the two notes.
 
   Render it from the page.
-- [ ] T031 [US2] Per-PR flow steps 4–6 ("Edit sources from the Settings page (016 PR 3)").
+- [X] T031 [US2] Per-PR flow steps 4–6 ("Edit sources from the Settings page (016 PR 3)").
 
 ### Sitting S4, PR 4: Filters (T032–T035), branch `016-pr4-settings-filters`
 
-- [ ] T032 [US2] Per-PR flow steps 1–3, for sitting S4.
-- [ ] T033 [US2] Add `web/components/settings/FiltersSection.tsx`, with five term lists. Each has its
+- [X] T032 [US2] Per-PR flow steps 1–3, for sitting S4.
+- [X] T033 [US2] Add `web/components/settings/FiltersSection.tsx`, with five term lists. Each has its
   own "(default)" and Reset to default. Render it from the page. Its save logic and tests landed in
   S2.
-- [ ] T034 [US2] Delete the read-only panels in `web/components/settings/SettingsSections.tsx`, now
+- [X] T034 [US2] Delete the read-only panels in `web/components/settings/SettingsSections.tsx`, now
   that every section is a form, and the file if nothing else uses it.
-- [ ] T035 [US2] Per-PR flow steps 4–6 ("Edit filters from the Settings page (016 PR 4)").
+- [X] T035 [US2] Per-PR flow steps 4–6 ("Edit filters from the Settings page (016 PR 4)").
 
 **Checkpoint**: User Stories 2 and 3 work: every search setting can be changed and reset on the
 page.
@@ -258,8 +258,8 @@ page.
 
 ### Sitting S5a, PR 5a: the removals (T036–T041), branch `016-pr5a-remove-imports`
 
-- [ ] T036 Per-PR flow steps 1–3, for sitting S5a.
-- [ ] T037 [P] Update the tests the removals break, before the code (no new `test()`):
+- [X] T036 Per-PR flow steps 1–3, for sitting S5a.
+- [X] T037 [P] Update the tests the removals break, before the code (no new `test()`):
   - delete `tests/importSettings.test.ts` (8 unit; its SC-003 table lives in
     `settingsSave.test.ts`);
   - in `tests/resolveSettings.test.ts`:
@@ -276,7 +276,7 @@ page.
     at `tests/helpers/searchSettingsContract.ts:46` drops "imported once". The memory store loses
     `importIfAbsent`;
   - `tests/client/settingsNotices.test.tsx` drops its `imported` case.
-- [ ] T038 Remove the automatic import (research R8):
+- [X] T038 Remove the automatic import (research R8):
   - `importFromFile` and the `at` parameter of `resolveSettings` in `src/config/resolve.ts`, and its
     callers in `src/app/runSettings.ts` and `web/lib/uiState.ts`;
   - the `imported` kind of `SettingsNotice`, and `importIfAbsent` in
@@ -284,23 +284,23 @@ page.
   - `SettingsNotices.tsx`'s "only traced" branch.
 
   Update the doc comments of `resolveSettings`, `getUiState` and `SettingsNotices`.
-- [ ] T039 Remove the commands: `export-settings`, `import-settings` and `withStores` from
+- [X] T039 Remove the commands: `export-settings`, `import-settings` and `withStores` from
   `src/cli.ts`. Delete `src/app/settingsCommands.ts` and `src/config/importSettings.ts`, which takes
   `issueMessages` with it. Remove any export left without a caller, such as `isRawObject` in
   `src/config/searchSettings.ts` if only `importSettings.ts` used it.
-- [ ] T040 [P] In `tests/docker.sh`, check `/settings`, which loads with "Sources", instead of
+- [X] T040 [P] In `tests/docker.sh`, check `/settings`, which loads with "Sources", instead of
   `/recommended`:
   - the comment at :32;
   - the merge at :33, which now copies only `examples/config.json`;
   - the fetch at :67 and the foreign-host check at :68;
   - the "renders rows" check at :72, which becomes a check for "Sources".
-- [ ] T041 Per-PR flow steps 4–6 ("Stop importing search settings outside the Settings page (016
+- [X] T041 Per-PR flow steps 4–6 ("Stop importing search settings outside the Settings page (016
   PR 5a)"), including `tests/docker.sh`. It is about 26 files: tell the owner when opening it.
 
 ### Sitting S5b, PR 5b: docs (T042–T045), branch `016-pr5b-docs`
 
-- [ ] T042 Per-PR flow steps 1–3, for sitting S5b.
-- [ ] T043 [P] Update `README.md` (FR-010):
+- [X] T042 Per-PR flow steps 1–3, for sitting S5b.
+- [X] T043 [P] Update `README.md` (FR-010):
   - **Setup** and **Deploy with Docker**: add the first board or search on the Settings page; drop
     `settings.json` and `import-settings`;
   - **Web UI** (:134–135): "Search settings you import" becomes search settings saved on the
@@ -309,10 +309,10 @@ page.
     remove the upgrade import and the commands;
   - the Docker task table: point "Change search settings" at the page;
   - the data model (:644): drop "as imported".
-- [ ] T044 [P] Delete `examples/settings.json`. Update `CLAUDE.md`: the 015 line says search settings
+- [X] T044 [P] Delete `examples/settings.json`. Update `CLAUDE.md`: the 015 line says search settings
   change only on the Settings page, and the two commands come out of Commands. Fill the ledger's last
   row.
-- [ ] T045 Per-PR flow steps 4–6 ("Document the Settings page editor (016 PR 5b)").
+- [X] T045 Per-PR flow steps 4–6 ("Document the Settings page editor (016 PR 5b)").
 
 ---
 
@@ -368,4 +368,4 @@ T020 page test       tests/client/settings.test.tsx
 | Planned new | 45 (T005 10, T006 1, T007 1, T015 8, T016 8, T017 7, T018 9, T028 1) | 0 | 1 (T019) |
 | Planned removed | 11 (T037: `importSettings.test.ts` 8, `resolveSettings.test.ts` 3) | 0 | 0 |
 | Planned after | 698 (85.64%) | 58 (7.12%) | 59 (7.24%) |
-| After PR 5b (T044) | | | |
+| After PR 5b (T044) | 698 (85.64%): the `node` project's 699 less the `runOnce` test counted as integration | 58 (7.12%): the `integration` project's 57 (1 skipped without a browser) plus that `runOnce` test | 59 (7.24%) |
