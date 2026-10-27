@@ -3,7 +3,10 @@ import { keyChanged } from "../../../src/gmail/connection.js";
 import { gmailPanelView, type GmailPanelView } from "../../../src/web/gmailPanel.js";
 import { GmailPanel } from "../../components/settings/GmailPanel.js";
 import { SettingsNotices } from "../../components/settings/SettingsNotices.js";
-import { SettingsSections } from "../../components/settings/SettingsSections.js";
+import { FiltersSection } from "../../components/settings/FiltersSection.js";
+import { PreferencesSection } from "../../components/settings/PreferencesSection.js";
+import { ScoringSection } from "../../components/settings/ScoringSection.js";
+import { SourcesSection } from "../../components/settings/SourcesSection.js";
 import { getSettingsState } from "../../lib/uiState.js";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -11,13 +14,16 @@ export const dynamic = "force-dynamic";
 
 type SettingsState = Awaited<ReturnType<typeof getSettingsState>>;
 
-/** Renders the Settings page: what the stored search settings report, the search settings in effect, and the Gmail connection, even before any search settings are stored. */
+/** Renders the Settings page: what the stored search settings report, an editor for each section of them, and the Gmail connection, even before any search settings are stored. */
 export default async function SettingsPage() {
     const state = await getSettingsState();
     return (
         <main aria-label="Settings">
             <SettingsNotices notices={state.notices} />
-            <SettingsSections view={state.view} />
+            <SourcesSection view={state.view} />
+            <PreferencesSection view={state.view} />
+            <ScoringSection view={state.view} />
+            <FiltersSection view={state.view} />
             <GmailPanel view={await gmailView(state)} />
         </main>
     );
