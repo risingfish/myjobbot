@@ -28,9 +28,8 @@ data_dir() {
   local dir; dir=$(mktemp -d)
   chmod 777 "$dir"
   if [ "${1:-}" = "with-config" ]; then
-    cp examples/resume.md "$dir/"
-    # Search settings live in the database now; a config.json holding them too is imported on first read.
-    node -e 'const [c, s] = process.argv.slice(1).map((f) => JSON.parse(require("fs").readFileSync(f, "utf8"))); console.log(JSON.stringify({ ...c, ...s }))' examples/config.json examples/settings.json > "$dir/config.json"
+    # Search settings live in the database and are made on the Settings page, so config.json holds runtime settings only.
+    cp examples/config.json examples/resume.md "$dir/"
   fi
   echo "$dir"
 }
@@ -64,12 +63,12 @@ expect_exit 1 "set MYJOBBOT_HOSTS" "serve refuses to start without MYJOBBOT_HOST
 web="myjobbot-web-test-$$"
 docker run -d --name "$web" -p 127.0.0.1:18082:8080 -v "$configured:/data" --env-file "$db_env" -e MYJOBBOT_HOSTS=127.0.0.1:18082 "$IMAGE" serve >/dev/null
 page=""
-for _ in $(seq 1 60); do page=$(curl -s --max-time 30 http://127.0.0.1:18082/recommended || true); [ -n "$page" ] && break; sleep 1; done
-foreign=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H "Host: evil.example:18082" http://127.0.0.1:18082/recommended || true)
+for _ in $(seq 1 60); do page=$(curl -s --max-time 30 http://127.0.0.1:18082/settings || true); [ -n "$page" ] && break; sleep 1; done
+foreign=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H "Host: evil.example:18082" http://127.0.0.1:18082/settings || true)
 web_logs=$(docker logs "$web" 2>&1)
 docker rm -f "$web" >/dev/null
 grep -q ">myjobbot</h1>" <<<"$page" || fail "serve mode renders pages with next dev. Logs: $web_logs"
-grep -q "recommended · threshold" <<<"$page" || fail "serve mode renders rows on the server. Logs: $web_logs"
+grep -q "<h4>Sources</h4>" <<<"$page" || fail "serve mode renders the Settings page on the server with no search settings stored. Logs: $web_logs"
 ok "serve mode renders pages with next dev"
 if grep -q "Installing dependencies" <<<"$web_logs"; then fail "next dev tried to install packages itself. Logs: $web_logs"; fi
 ok "next dev finds every package it needs in the image"

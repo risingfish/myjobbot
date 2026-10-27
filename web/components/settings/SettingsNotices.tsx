@@ -21,9 +21,8 @@ function wholeFallback({ setting, reason }: { setting: string; reason: string })
     return !setting.endsWith("]") && reason !== "not a search setting";
 }
 
-/** Words one notice for the panel, or nothing for a notice that is only traced. */
+/** Words one notice for the panel. */
 function noticeLines(notice: SettingsNotice): string[] {
     if (notice.kind === "fallback") return [`${notice.setting} ${wholeFallback(notice) ? "fell back to its default" : "was left out"}: ${notice.reason}`];
-    if (notice.kind === "file_ignored") return [`config.json still holds search settings (${notice.keys.join(", ")}), which are no longer used. They can be removed from the file.`];
-    return [];
+    return [`config.json still holds search settings (${notice.keys.join(", ")}), which are no longer used. They can be removed from the file.`];
 }

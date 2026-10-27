@@ -78,7 +78,7 @@ export async function getStores(): Promise<OpenStores> {
 /** Returns the database views, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
 export async function getUiState(): Promise<UiState> {
     const { stores: opened, key } = await getStores();
-    const { file, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings, new Date().toISOString());
+    const { file, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings);
     return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key, config: file, notices };
 }
 

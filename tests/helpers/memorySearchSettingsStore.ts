@@ -9,13 +9,6 @@ export class MemorySearchSettingsStore implements SearchSettingsStore {
         return row === undefined ? null : rawSearchSettings.parse(JSON.parse(row));
     }
 
-    async importIfAbsent(settings: RawSearchSettings): Promise<boolean> {
-        if (!this.users.includes(OWNER_ID)) this.users.push(OWNER_ID);
-        if (this.rows.has(OWNER_ID)) return false;
-        this.rows.set(OWNER_ID, JSON.stringify(settings));
-        return true;
-    }
-
     async save(userId: number, settings: RawSearchSettings): Promise<void> {
         if (userId === OWNER_ID && !this.users.includes(OWNER_ID)) this.users.push(OWNER_ID);
         if (!this.users.includes(userId)) throw new Error(`no user ${userId}`);
