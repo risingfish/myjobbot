@@ -14,11 +14,10 @@ function loaded(fileRaw: unknown): LoadedConfig {
     return { env: envSchema.parse(LLM_ENV), fileRaw, resume: "# Jane Doe", dataDir: "unused" };
 }
 
-test("a run's first read imports the file's search settings and traces the import", async () => {
-    const trace = memoryTrace();
-    const config = await settingsForRun(loaded(ONE_COMPANY), new MemorySearchSettingsStore(), trace);
-    expect(config.file.companies.map((company) => company.name)).toEqual(["Stripe"]);
-    expect(trace.events).toEqual([{ type: "settings_imported", keys: ["companies", "preferences"] }]);
+test("a run with nothing stored refuses, and never imports the file's search settings", async () => {
+    const store = new MemorySearchSettingsStore();
+    await expect(settingsForRun(loaded(ONE_COMPANY), store, memoryTrace())).rejects.toThrow(/at least one company or search/);
+    expect(await store.load(OWNER_ID)).toBeNull();
 });
 
 test("with settings stored, a run uses them and traces the file's search settings as ignored", async () => {
@@ -32,6 +31,7 @@ test("with settings stored, a run uses them and traces the file's search setting
 
 test("a run keeps the settings it started with when the stored ones change", async () => {
     const store = new MemorySearchSettingsStore();
+    store.put(OWNER_ID, ONE_COMPANY);
     const started = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
     store.put(OWNER_ID, ACME);
     const next = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());

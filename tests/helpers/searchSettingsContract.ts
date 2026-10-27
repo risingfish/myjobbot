@@ -23,9 +23,8 @@ async function nothingStoredYet(store: SearchSettingsStore): Promise<void> {
     expect(await store.load(OWNER_ID)).toBeNull();
 }
 
-async function importsOnce(store: SearchSettingsStore): Promise<void> {
-    expect(await store.importIfAbsent(DOCUMENT, AT)).toBe(true);
-    expect(await store.importIfAbsent({ match_threshold: 50 }, AT)).toBe(false);
+async function savesFirst(store: SearchSettingsStore): Promise<void> {
+    await store.save(OWNER_ID, DOCUMENT, AT);
 }
 
 async function roundTripsExactly(store: SearchSettingsStore): Promise<void> {
@@ -43,10 +42,10 @@ async function savesWholePerUser(store: SearchSettingsStore, hooks: SearchSettin
 }
 
 export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHooks): void {
-    test("search settings are imported once, round-trip exactly, create the one owner with them, and are replaced whole per user", async () => {
+    test("search settings round-trip exactly, create the one owner with the first save, and are replaced whole per user", async () => {
         const stores = await make();
         await nothingStoredYet(stores.searchSettings);
-        await importsOnce(stores.searchSettings);
+        await savesFirst(stores.searchSettings);
         await roundTripsExactly(stores.searchSettings);
         expect(await hooks.owners()).toEqual([OWNER_ID]);
         await savesWholePerUser(stores.searchSettings, hooks);

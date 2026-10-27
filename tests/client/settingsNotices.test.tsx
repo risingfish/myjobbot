@@ -19,5 +19,5 @@ test("the notices panel lists each fallback and the search settings config.json 
             "config.json still holds search settings (searches, title_boosts), which are no longer used. They can be removed from the file.",
         ],
     ]);
-    expect([render(<SettingsNotices notices={[]} />).container.innerHTML, render(<SettingsNotices notices={[{ kind: "imported", keys: ["companies"] }]} />).container.innerHTML]).toEqual(["", ""]);
+    expect(render(<SettingsNotices notices={[]} />).container.innerHTML).toBe("");
 });
