@@ -12,15 +12,21 @@ counts. Nothing visible changes.
 
 ## PR 2: Workday, and the careers lookup on modules
 
-1. An alert job whose company uses Workday still gets its description from the careers lookup. The
-   trace shows `page_source: "board"` with `board: "workday:…"`.
+1. An alert job whose company uses Workday still gets its description from the careers lookup:
+   `SELECT page_source, board FROM careers_audit ORDER BY id DESC LIMIT 5;` shows `board` and
+   `workday:…`.
 2. A Greenhouse, Lever or Ashby alert job is read the same way as before.
 
 ## PR 3: the table
 
 `SHOW TABLES LIKE 'user_sources';` lists it, empty. Nothing else changes.
 
-## PR 4: your boards and searches become saved sources
+## PR 4a: jobs linked to their source
+
+Nothing visible changes. `SHOW COLUMNS FROM jobs LIKE 'source_id';` shows the column, and
+`SELECT COUNT(*) FROM jobs WHERE source_id IS NOT NULL;` is 0 until PR 4b.
+
+## PR 4b: your boards and searches become saved sources
 
 1. `SELECT module, name, params, enabled FROM user_sources WHERE user_id = 1;` lists one row per
    former board and search, plus `gmail_alerts`, with the same names and fields (SC-002).
@@ -29,6 +35,8 @@ counts. Nothing visible changes.
 3. `SELECT COUNT(*) FROM jobs WHERE source_id IS NULL;` counts only jobs from sources you had already
    removed.
 4. Recommended shows the same jobs in the same order as before the upgrade (SC-002).
+5. The Settings page lists your saved sources, read-only for now, and the notices panel says any
+   `companies` or `searches` left in `config.json` are no longer used.
 
 ## PR 5: the run fetches every source that is on
 

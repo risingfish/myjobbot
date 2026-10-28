@@ -47,4 +47,7 @@
   - scraping is out of scope, though the interface allows it;
   - JSearch stays app-wide;
   - Workday's ATS side becomes a module.
+- After the deep analysis (2026-10-28), the spec also covers: a suggested name's rule, Gmail alerts
+  created when Gmail connects, duplicate boards merged on the upgrade, and a fresh install's upgrade
+  doing nothing.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

@@ -67,7 +67,7 @@ The owner finds a company they want to watch, opens its jobs page, copies the ad
 
 **Acceptance Scenarios**:
 
-1. **Given** the Settings page, **When** the owner pastes a recognised board link, **Then** the platform and its fields are filled in, and a name is suggested.
+1. **Given** the Settings page, **When** the owner pastes a recognised board link, **Then** the platform and its fields are filled in, and a name is suggested: the board's company id, or Workday's company, capitalised (`stripe` → "Stripe").
 2. **Given** a recognised link, **When** the owner saves it, **Then** the source is tested by fetching its first page. It is saved, and the page says how many jobs the test found, or, when the test fails, that the source is failing and why.
 3. **Given** a link no module recognises, **When** the owner pastes it, **Then** the page says which platforms are supported and offers to fill in a source by hand.
 4. **Given** a saved board, **When** the next run starts, **Then** it fetches that board's jobs and stores them as from that source.
@@ -85,7 +85,8 @@ The owner's current boards and saved searches become saved sources without anyth
 
 **Acceptance Scenarios**:
 
-1. **Given** boards and searches in the stored search settings, **When** the upgrade runs, **Then** each becomes a saved source of its module with the same name and fields, and they no longer appear in the settings document.
+1. **Given** boards and searches in the stored search settings, **When** the upgrade runs, **Then** each becomes a saved source of its module with the same name and fields, and they no longer appear in the settings document. Two entries pointing at the same board become one source, keeping the first one's name.
+4. **Given** a fresh install with no search settings stored, **When** the upgrade runs, **Then** it does nothing and stops nothing.
 2. **Given** jobs already stored from a board or search, **When** the upgrade runs, **Then** each stays linked to the saved source it came from, with its scores, verdicts and marks unchanged.
 3. **Given** the upgrade has run, **When** it runs again, **Then** nothing changes.
 
@@ -134,7 +135,7 @@ Gmail alerts appears in the list of sources once Gmail is connected. It can be t
 
 **Acceptance Scenarios**:
 
-1. **Given** Gmail is connected, **When** the owner opens Settings, **Then** Gmail alerts is listed as a source.
+1. **Given** Gmail is connected, **When** the owner opens Settings, **Then** Gmail alerts is listed as a source. On an install that connects Gmail for the first time, connecting creates it, on.
 2. **Given** Gmail alerts is turned off, **When** a run starts, **Then** no alert emails are read.
 
 ---
