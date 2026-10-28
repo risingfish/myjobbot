@@ -1,6 +1,12 @@
-import type { JsonGetter } from "../../src/http/client.js";
+import type { JsonGetter, JsonPoster } from "../../src/http/client.js";
 
-export function fakeBoard(body: unknown): JsonGetter & { urls: string[] } {
+type FakeHttp = JsonGetter & JsonPoster;
+
+async function noPosts(url: string): Promise<never> {
+    throw new Error(`no fake POST for ${url}`);
+}
+
+export function fakeBoard(body: unknown): FakeHttp & { urls: string[] } {
     const urls: string[] = [];
     return {
         urls,
@@ -8,10 +14,11 @@ export function fakeBoard(body: unknown): JsonGetter & { urls: string[] } {
             urls.push(url);
             return structuredClone(body);
         },
+        postJson: noPosts,
     };
 }
 
-export function flakyBoard(body: unknown): JsonGetter & { urls: string[] } {
+export function flakyBoard(body: unknown): FakeHttp & { urls: string[] } {
     const board = fakeBoard(body);
     return {
         urls: board.urls,
@@ -21,6 +28,7 @@ export function flakyBoard(body: unknown): JsonGetter & { urls: string[] } {
             if (isFirstRequest) throw new Error("board temporarily unavailable");
             return result;
         },
+        postJson: noPosts,
     };
 }
 
@@ -54,7 +62,7 @@ export interface RecordedRequest {
     headers: Record<string, string>;
 }
 
-export function routedHttp(routes: Record<string, unknown>): JsonGetter & { requests: RecordedRequest[] } {
+export function routedHttp(routes: Record<string, unknown>): FakeHttp & { requests: RecordedRequest[] } {
     const requests: RecordedRequest[] = [];
     return {
         requests,
@@ -64,5 +72,6 @@ export function routedHttp(routes: Record<string, unknown>): JsonGetter & { requ
             if (body === undefined) throw new Error(`no fake route for ${url}`);
             return structuredClone(body);
         },
+        postJson: noPosts,
     };
 }

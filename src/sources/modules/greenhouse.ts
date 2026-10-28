@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { markdownDescription } from "../descriptions/toMarkdown.js";
-import { makeJob, type Job } from "../jobs/job.js";
-import { defineBoard } from "./board.js";
-import { optionalDate, optionalText } from "./fields.js";
-import { decodeEntities } from "./htmlText.js";
+import { markdownDescription } from "../../descriptions/toMarkdown.js";
+import { makeJob, type Job } from "../../jobs/job.js";
+import { optionalDate, optionalText } from "../fields.js";
+import { decodeEntities } from "../htmlText.js";
+import { slugBoard } from "./slugBoard.js";
 
 const posting = z.object({
     id: z.number(),
@@ -15,7 +15,11 @@ const posting = z.object({
 });
 const postings = z.object({ jobs: z.array(posting) }).transform((board) => board.jobs);
 
-export const fetchGreenhouse = defineBoard({
+export const greenhouse = slugBoard({
+    id: "greenhouse",
+    name: "Greenhouse",
+    description: "A company's job board on Greenhouse.",
+    origin: "https://job-boards.greenhouse.io",
     url: (slug) => `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(slug)}/jobs?content=true`,
     postings,
     toJob,

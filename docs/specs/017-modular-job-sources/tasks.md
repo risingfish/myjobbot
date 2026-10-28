@@ -78,8 +78,8 @@ new file or rewritten for the new shape counts as rewritten, not new.
 
 No behaviour changes: a run fetches the same boards the same way (quickstart PR 1).
 
-- [ ] T004 Per-PR flow steps 1–3, for sitting S1.
-- [ ] T005 [P] Unit tests in a new `tests/sourceModules.test.ts` (eight `test()`s) for
+- [x] T004 Per-PR flow steps 1–3, for sitting S1.
+- [x] T005 [P] Unit tests in a new `tests/sourceModules.test.ts` (eight `test()`s) for
   `src/sources/module.ts`, `src/sources/registry.ts`, `src/sources/sourceHttp.ts` and the three
   modules (contracts/source-module.md):
   - `MODULES` lists `greenhouse`, `lever` and `ashby`, with unique ids;
@@ -97,25 +97,30 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
 
   Rewrite `tests/boardPage.test.ts` (4 tests) into this file as the modules' `company()` tests, and
   delete it.
-- [ ] T006 [P] Unit test in a new `tests/sourceFailure.test.ts` (one `test()`): `failureReason` maps
+- [ ] T006 [P] (Moved to S5, done with T047: nothing in S1 calls `failureReason` until the fetch phase
+  records outcomes.) Unit test in a new `tests/sourceFailure.test.ts` (one `test()`): `failureReason` maps
   an `HttpStatusError` 404 to "not found", 401 and 403 to "refused", other statuses and a zod failure
   to "unexpected answer", a `NetworkError` to "unreachable", and a missing requirement to "not set
   up". It never returns an error's own message.
-- [ ] T007 [P] Rewrite `tests/sources.test.ts` (6 declarations, including one `test.each`; no new
+- [x] T007 [P] Rewrite `tests/sources.test.ts` (6 declarations, including one `test.each`; no new
   `test()`) to fetch through each module's `fetch`, not `fetcherFor`.
-- [ ] T008 Add `src/sources/module.ts`: `SourceModule`, `SourcePage`, `SourceField`, `SourceContext`,
+- [x] T008 Add `src/sources/module.ts`: `SourceModule`, `SourcePage`, `SourceField`, `SourceContext`,
   `Cursor` and `CompanyHint` (research R1). `kind` includes `web`, with no module.
-- [ ] T009 Add `src/sources/sourceHttp.ts` (`checked()`, moved from `src/careers/boardPages.ts`, which
-  reuses it) and `src/sources/failure.ts` (T006). Make `src/http/client.ts` throw `HttpStatusError`
+- [x] T009 Add `src/sources/sourceHttp.ts` (`checked()`, moved from `src/careers/boardPages.ts`, which
+  reuses it). `src/sources/failure.ts` (T006) and the typed errors below move to S5, with T047. Make `src/http/client.ts` throw `HttpStatusError`
   and `NetworkError`.
-- [ ] T010 Move the readers into `src/sources/modules/greenhouse.ts`, `lever.ts` and `ashby.ts`. Each
+- [x] T010 (Done with two changes: the `company` zod object stays in `src/config/schema.ts` until
+  S4b removes `companies` from the settings, and the modules share `src/sources/modules/slugBoard.ts`
+  in place of `defineBoard`.) Move the readers into `src/sources/modules/greenhouse.ts`, `lever.ts` and `ashby.ts`. Each
   is a `SourceModule<{ slug }>` built with `defineBoard`, and has:
   - `params`, with the `company` zod object moved from `src/config/schema.ts`;
   - `fields`: one "Board id" text field;
   - `fromUrl`, through `parseBoardLink`;
   - `target`, `suggestName` and `limits` (`every_run`, no job limit);
   - `company`, folding `src/companies/boardPage.ts` into the modules.
-- [ ] T011 Add `src/sources/registry.ts` with `MODULES` and `moduleFor` (T005).
+- [x] T011 Add `src/sources/registry.ts` with `MODULES` and `moduleFor` (T005). `MODULES` stays
+  unexported until S6's `sourceChoices` reads it, so T005's first test checks each module through
+  `moduleFor`.
   - Switch every caller of `fetcherFor` and `boardPageUrl` to the modules: `src/tools/boardFetch.ts`,
     `src/careers/boardPages.ts` and `beforeAgent` in `src/app/run.ts`.
   - Give the run's board fetch `sourceHttp`.
@@ -335,7 +340,8 @@ keep their history.
 
   Restructure `src/gmail/alertFetch.ts` to yield jobs and its mail state, storing nothing (research
   R2). Delete `src/sources/jsearch.ts`.
-- [ ] T047 [US4] Add `src/sources/ingest.ts` (T043; research R4) and `src/sources/fetchPhase.ts`
+- [ ] T047 [US4] Add `src/sources/failure.ts` and make `src/http/client.ts` throw `HttpStatusError` and
+  `NetworkError` (moved from T009, with T006's test). Add `src/sources/ingest.ts` (T043; research R4) and `src/sources/fetchPhase.ts`
   (T042). Call `fetchSources` from `src/app/beforeAgent.ts`. It records each outcome with
   `SourceStore.recordFetch`, writes alert state through `AlertStore.recordRead`, and runs
   `lookUpAlertJobs` after the alerts source.

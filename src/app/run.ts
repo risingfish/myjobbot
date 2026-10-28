@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { searchCompanies } from "../companies/searchCompanies.js";
 import { describeError } from "../errors.js";
 import { normalizeCompany } from "../jobs/company.js";
-import { boardPageUrl } from "../companies/boardPage.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
@@ -15,9 +14,11 @@ import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
-import { HttpClient, type JsonGetter, type TextGetter } from "../http/client.js";
+import { HttpClient, type JsonGetter, type JsonPoster, type TextGetter } from "../http/client.js";
 import { connectBrowser, type BrowserPort } from "../careers/browser.js";
-import { systemLookup } from "../careers/fetchPage.js";
+import { systemLookup, type HostLookup } from "../careers/fetchPage.js";
+import { sourceHttp } from "../sources/sourceHttp.js";
+import { boardCareersPage } from "../tools/boardFetch.js";
 import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { alertsUsability } from "../gmail/alertJobs/usable.js";
@@ -29,8 +30,9 @@ import { settingsForRun } from "./runSettings.js";
 
 interface RunSeams {
     chat?: ChatFn;
-    http?: JsonGetter;
+    http?: JsonGetter & JsonPoster;
     pages?: TextGetter;
+    lookup?: HostLookup;
     openStores?: () => Promise<Stores>;
     browser?: (url: string) => Promise<BrowserPort>;
 }
@@ -44,6 +46,13 @@ interface RunParts {
 interface ContextParts extends RunParts {
     usable: true | string;
     chat: ChatFn;
+    clients: RunClients;
+}
+
+interface RunClients {
+    client: HttpClient;
+    boards: JsonGetter & JsonPoster;
+    lookup: HostLookup;
 }
 
 interface RunLogs {
@@ -76,7 +85,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 /** Links stored jobs to their companies, runs the agent against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
-    const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts) });
+    const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts), clients: runClients(config, seams) });
     try {
         await beforeAgent(context);
         const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
@@ -92,7 +101,7 @@ async function beforeAgent(context: ToolContext): Promise<void> {
     const linked = await context.store.linkUnlinkedJobs();
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
     const at = context.now().toISOString();
-    for (const board of context.config.companies) await context.companies.setBoardPage({ key: normalizeCompany(board.name), name: board.name, url: boardPageUrl(board) }, at);
+    for (const board of context.config.companies) await context.companies.setBoardPage({ key: normalizeCompany(board.name), name: board.name, url: boardCareersPage(board) }, at);
 }
 
 /** Finishes the run's stored data after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run, then prunes. */
@@ -120,8 +129,7 @@ async function gmailUsable({ stores, key }: RunParts): Promise<true | string> {
 }
 
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat }: ContextParts): ToolContext {
-    const client = new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat, clients: { client, boards, lookup } }: ContextParts): ToolContext {
     return {
         config: config.file,
         run: newRunState(),
@@ -130,6 +138,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         store: stores.jobStore,
         apiCalls: stores.apiCalls,
         http: seams.http ?? client,
+        sources: sourceHttp({ http: seams.http ?? boards, lookup }),
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
@@ -137,8 +146,14 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         trace: logs.trace,
         chat,
         companies: stores.companies,
-        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup: systemLookup, pages: seams.pages ?? client, boards: client.withoutRedirects(), renderer: pageRenderer(config, seams, { logs, stores }) },
+        careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup, pages: seams.pages ?? client, boards, renderer: pageRenderer(config, seams, { logs, stores }) },
     };
+}
+
+/** Creates the run's HTTP clients, one following redirects and one for job boards that doesn't, with the address lookup they're checked against. */
+function runClients(config: AppConfig, seams: RunSeams): RunClients {
+    const client = new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
+    return { client, boards: client.withoutRedirects(), lookup: seams.lookup ?? systemLookup };
 }
 
 /** Creates the run's page renderer, connected to the browser service only when one is configured. */

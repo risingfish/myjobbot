@@ -4,6 +4,7 @@ import { lookUpCareers, type CareersDeps } from "../src/careers/lookUpJobs.js";
 import { SEARCH_FAILED } from "../src/careers/searxng.js";
 import type { SoughtJob } from "../src/careers/session.js";
 import type { AuditEntry } from "../src/db/store.js";
+import type { JsonGetter } from "../src/http/client.js";
 import { jobPage, scriptOnlyPage, searxngJson } from "./helpers/careersPages.js";
 import { finish, JOB, lookupSetup, open, POSTING_URL, search } from "./helpers/careersLookup.js";
 import { scriptedChat } from "./helpers/chat.js";
@@ -28,7 +29,7 @@ const GAMMA: SoughtJob = { ...JOB, jobId: "li_3", company: "Gamma" };
 const NOT_FOUND = [search(), finish(false, "job_not_found")];
 const BLANK = "https://acme.example/careers/blank";
 
-async function careersSetup(options: { replies: ReturnType<typeof search>[]; settings?: object; chat?: ChatFn; http?: ReturnType<typeof fakeBoard>; pages?: Record<string, string> }) {
+async function careersSetup(options: { replies: ReturnType<typeof search>[]; settings?: object; chat?: ChatFn; http?: JsonGetter & { urls: string[] }; pages?: Record<string, string> }) {
     const setup = await lookupSetup({ replies: options.replies, chat: options.chat, pages: options.pages ?? { [POSTING_URL]: jobPage(JOB.title, ["Build APIs."]) } });
     const http = options.http ?? fakeBoard(searxngJson([{ url: POSTING_URL, title: JOB.title }]));
     const settings = testFileConfig({ careers_lookup: options.settings ?? {} }).careers_lookup;
@@ -110,7 +111,12 @@ test("the summary says when rendering was needed but off, joined to any other no
 });
 
 test("search results on skipped hosts never reach the model", async () => {
-    const http = fakeBoard(searxngJson([{ url: "https://www.glassdoor.com/acme-jobs", title: "Acme jobs" }, { url: POSTING_URL, title: JOB.title }]));
+    const http = fakeBoard(
+        searxngJson([
+            { url: "https://www.glassdoor.com/acme-jobs", title: "Acme jobs" },
+            { url: POSTING_URL, title: JOB.title },
+        ]),
+    );
     const { deps, requests } = await careersSetup({ replies: [search(), finish(false, "job_not_found")], http });
     await lookUpCareers(deps, [JOB]);
     const shown = String(requests[1]?.at(-1)?.content);
