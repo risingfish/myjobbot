@@ -22,7 +22,7 @@ export class KyselySearchSettingsStore implements SearchSettingsStore {
 }
 
 /** Creates the owner's user row unless it exists. */
-async function ensureOwner(trx: Transaction<Database>, at: string): Promise<void> {
+export async function ensureOwner(trx: Transaction<Database>, at: string): Promise<void> {
     await trx.insertInto("users").values({ id: OWNER_ID, name: "owner", created_at: at }).onDuplicateKeyUpdate({ id: OWNER_ID }).execute();
 }
 

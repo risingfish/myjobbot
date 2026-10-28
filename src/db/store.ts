@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { CompanyStore } from "./companyStore.js";
 import type { SearchSettingsStore } from "./searchSettingsStore.js";
+import type { SourceStore } from "./sourceStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 import type { jobDetailSchema, jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
 
@@ -187,5 +188,6 @@ export interface Stores {
     careers: CareersStore;
     companies: CompanyStore;
     searchSettings: SearchSettingsStore;
+    sources: SourceStore;
     close(): Promise<void>;
 }
