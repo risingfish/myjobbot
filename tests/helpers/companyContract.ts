@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Stores } from "../../src/db/store.js";
-import { makeJob, type Ats } from "../../src/jobs/job.js";
+import { makeJob, type Job } from "../../src/jobs/job.js";
 import { searchSteps } from "./companySearchSteps.js";
 import type { MakeStores } from "./storeContract.js";
 
@@ -47,7 +47,7 @@ const DAY_TWO = "2026-10-02T00:00:00.000Z";
 const DAY_THREE = "2026-10-03T00:00:00.000Z";
 const LONG_AGO = "2026-09-01T00:00:00.000Z";
 
-function job(jobId: string, company: string, ats: Ats | "jsearch" | "linkedin" = "greenhouse") {
+function job(jobId: string, company: string, ats: Job["ats"] = "greenhouse") {
     return makeJob({ ats, jobId, company, title: "Backend Engineer", url: `https://example.com/${jobId}` }, {});
 }
 

@@ -1,19 +1,18 @@
-import type { JsonGetter, JsonPoster } from "../http/client.js";
 import type { BoardKind, BoardLink } from "../sources/boardLink.js";
-import { fetcherFor } from "../sources/index.js";
+import { readAll, type SourceHttp } from "../sources/module.js";
+import { moduleFor } from "../sources/registry.js";
+import { sourceHttp } from "../sources/sourceHttp.js";
 import { searchWorkday, workdayPosting } from "../sources/workday.js";
-import { assertPublic, type HostLookup } from "./fetchPage.js";
+import type { HostLookup } from "./fetchPage.js";
 import { fitPage } from "./fitPage.js";
 import { postingPage, type Posting, type Shown } from "./postingPage.js";
 import type { PageRead } from "./readPage.js";
 import type { PageKind } from "./tools.js";
 
-type BoardHttp = JsonGetter & JsonPoster;
-
 type BoardCache = Map<string, Promise<Posting[]>>;
 
 export interface BoardAccess {
-    http: BoardHttp;
+    http: SourceHttp;
     cache: BoardCache;
 }
 
@@ -34,29 +33,15 @@ const BOARD_NAMES: Record<BoardKind, string> = { ashby: "Ashby", greenhouse: "Gr
 
 /** Reads a job board's own data for a link, as its job list for a careers page or as one posting for a job page. */
 export async function boardPage(deps: BoardDeps, request: BoardRequest): Promise<PageRead> {
-    const http = checked(deps);
+    const http = sourceHttp({ http: deps.boards.http, lookup: deps.lookup });
     const page = request.kind === "careers_page" ? listing(request, await postings(http, deps.boards.cache, request)) : postingPage(await findPosting(http, deps.boards.cache, request));
     const fitted = fitPage(page, { maxChars: deps.maxChars, sought: request.sought });
     const read = { url: request.url, ...fitted, morePages: false, source: "board" as const, fallback: null, board: boardName(request.link), description: page.description };
     return page.note === undefined ? read : { ...read, note: page.note };
 }
 
-/** Wraps the board client so every request it makes passes the same public-address check as a page download. */
-function checked(deps: BoardDeps): BoardHttp {
-    return {
-        getJson: async (url, headers) => {
-            await assertPublic(deps.lookup, url);
-            return deps.boards.http.getJson(url, headers);
-        },
-        postJson: async (url, body) => {
-            await assertPublic(deps.lookup, url);
-            return deps.boards.http.postJson(url, body);
-        },
-    };
-}
-
 /** Lists a board's postings, once per board (and per Workday search) per run. */
-function postings(http: BoardHttp, cache: BoardCache, request: BoardRequest): Promise<Posting[]> {
+function postings(http: SourceHttp, cache: BoardCache, request: BoardRequest): Promise<Posting[]> {
     const { link } = request;
     const key = link.kind === "workday" ? `${boardName(link)}:${request.sought}` : boardName(link);
     const cached = cache.get(key) ?? (link.kind === "workday" ? workdayPostings(http, link, request.sought) : boardPostings(http, link, link.kind));
@@ -65,18 +50,20 @@ function postings(http: BoardHttp, cache: BoardCache, request: BoardRequest): Pr
 }
 
 /** Reads every posting on an Ashby, Greenhouse or Lever board through that board's job-board reader. */
-async function boardPostings(http: BoardHttp, link: BoardLink, kind: Exclude<BoardKind, "workday">): Promise<Posting[]> {
-    const jobs = await fetcherFor(kind)({ name: link.slug, slug: link.slug }, http);
+async function boardPostings(http: SourceHttp, link: BoardLink, kind: Exclude<BoardKind, "workday">): Promise<Posting[]> {
+    const board = moduleFor(kind);
+    if (board === null) throw new Error(`no source module for ${kind}`);
+    const jobs = await readAll(board, board.params.parse({ slug: link.slug }), { http, sourceName: link.slug });
     return jobs.map((job) => ({ title: job.title, location: job.location, url: job.url, postingId: job.jobId, description: job.description, format: job.descriptionFormat }));
 }
 
 /** Searches a Workday board for the sought title. */
-async function workdayPostings(http: BoardHttp, link: BoardLink, sought: string): Promise<Posting[]> {
+async function workdayPostings(http: SourceHttp, link: BoardLink, sought: string): Promise<Posting[]> {
     return (await searchWorkday(http, workdayBoard(link), sought)).map((found) => ({ ...found, description: null, format: "text" as const }));
 }
 
 /** Finds the posting a job link names, or null when the board no longer lists it. */
-async function findPosting(http: BoardHttp, cache: BoardCache, request: BoardRequest): Promise<Posting | null> {
+async function findPosting(http: SourceHttp, cache: BoardCache, request: BoardRequest): Promise<Posting | null> {
     const { link } = request;
     if (link.postingId === null) return null;
     if (link.kind === "workday") return { ...(await workdayPosting(http, workdayBoard(link), link.postingId)), postingId: link.postingId };

@@ -1,7 +1,7 @@
 import { capDescription } from "../descriptions/cap.js";
 
 export const ATS_NAMES = ["greenhouse", "lever", "ashby"] as const;
-export type Ats = (typeof ATS_NAMES)[number];
+type Ats = (typeof ATS_NAMES)[number];
 export const DESCRIPTION_FORMATS = ["markdown", "text"] as const;
 export type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
 

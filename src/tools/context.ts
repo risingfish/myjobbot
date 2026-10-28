@@ -9,6 +9,7 @@ import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from 
 import type { ImapFactory } from "../gmail/imap.js";
 import type { SecretKeyStatus } from "../gmail/secretKey.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
+import type { SourceHttp } from "../sources/module.js";
 import type { FetchOutcome } from "./sources.js";
 
 interface RunState {
@@ -25,6 +26,7 @@ export interface ToolContext {
     store: JobStore;
     apiCalls: ApiCallLog;
     http: JsonGetter;
+    sources: SourceHttp;
     now: () => Date;
     jobLog: Trace;
     jsearchApiKey: string | null;

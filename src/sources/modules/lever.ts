@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { markdownDescription } from "../descriptions/toMarkdown.js";
-import { makeJob, type Job } from "../jobs/job.js";
-import { defineBoard } from "./board.js";
-import { optionalDate, optionalText } from "./fields.js";
+import { markdownDescription } from "../../descriptions/toMarkdown.js";
+import { makeJob, type Job } from "../../jobs/job.js";
+import { optionalDate, optionalText } from "../fields.js";
+import { slugBoard } from "./slugBoard.js";
 
 const categories = z.object({ location: optionalText, team: optionalText, department: optionalText }).nullish();
 
@@ -19,7 +19,11 @@ const posting = z.object({
 });
 const postings = z.array(posting);
 
-export const fetchLever = defineBoard({
+export const lever = slugBoard({
+    id: "lever",
+    name: "Lever",
+    description: "A company's job board on Lever.",
+    origin: "https://jobs.lever.co",
     url: (slug) => `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}?mode=json`,
     postings,
     toJob,

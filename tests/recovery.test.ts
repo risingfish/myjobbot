@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
 import { runOnce } from "../src/app/run.js";
 import type { Stores } from "../src/db/store.js";
-import type { JsonGetter } from "../src/http/client.js";
+import type { JsonGetter, JsonPoster } from "../src/http/client.js";
+import { publicDns } from "./helpers/fakeDns.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { chatThenCrash, scriptedChat, toolCallReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
@@ -15,15 +16,15 @@ function envFor(dataDir: string) {
 
 const stores: Stores = storesWithSettings(ONE_COMPANY);
 
-function runAndCrash(dataDir: string, http: JsonGetter) {
+function runAndCrash(dataDir: string, http: JsonGetter & JsonPoster) {
     const crash = chatThenCrash([toolCallReply("fetch_jobs", { source: "Stripe" })], new Error("LLM down"));
-    return runOnce(envFor(dataDir), { chat: crash, http, openStores: async () => stores });
+    return runOnce(envFor(dataDir), { chat: crash, http, lookup: publicDns(), openStores: async () => stores });
 }
 
-function runToCompletion(dataDir: string, http: JsonGetter) {
+function runToCompletion(dataDir: string, http: JsonGetter & JsonPoster) {
     const score = toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 30, bonus: 25 }] });
     const replies = [toolCallReply("fetch_jobs", { source: "Stripe" }), score, toolCallReply("finish", { summary: "done" })];
-    return runOnce(envFor(dataDir), { chat: scriptedChat(replies).chat, http, openStores: async () => stores });
+    return runOnce(envFor(dataDir), { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => stores });
 }
 
 test("a job left unscored by a crashed run is re-offered on the next run", async () => {

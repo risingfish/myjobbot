@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Stores } from "../../src/db/store.js";
-import { makeJob, type Ats } from "../../src/jobs/job.js";
+import { makeJob, type Job } from "../../src/jobs/job.js";
 
 export type MakeStores = () => Promise<Stores>;
 
@@ -10,7 +10,7 @@ const PAGE = { offset: 0, limit: 100 };
 
 interface Sample {
     id: string;
-    ats?: Ats | "jsearch";
+    ats?: Job["ats"];
     company?: string;
     title?: string;
     postedAt?: string | null;

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { markdownDescription } from "../descriptions/toMarkdown.js";
-import { makeJob, type Job } from "../jobs/job.js";
-import { defineBoard } from "./board.js";
-import { optionalDate, optionalFlag, optionalText } from "./fields.js";
+import { markdownDescription } from "../../descriptions/toMarkdown.js";
+import { makeJob, type Job } from "../../jobs/job.js";
+import { optionalDate, optionalFlag, optionalText } from "../fields.js";
+import { slugBoard } from "./slugBoard.js";
 
 const posting = z.object({
     id: z.string(),
@@ -20,7 +20,11 @@ const posting = z.object({
 });
 const postings = z.object({ jobs: z.array(posting) }).transform((board) => board.jobs);
 
-export const fetchAshby = defineBoard({
+export const ashby = slugBoard({
+    id: "ashby",
+    name: "Ashby",
+    description: "A company's job board on Ashby.",
+    origin: "https://jobs.ashbyhq.com",
     url: (slug) => `https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(slug)}?includeCompensation=true`,
     postings,
     toJob,

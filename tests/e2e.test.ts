@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { runOnce } from "../src/app/run.js";
+import { publicDns } from "./helpers/fakeDns.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { scriptedChat, toolCallReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
@@ -17,7 +18,7 @@ test("a scripted model drives a full run and its verdicts land in the stores", a
     const dataDir = makeDataDir(ONE_COMPANY);
     const http = fakeBoard(greenhouseBoard(["Backend Engineer", "Platform Engineer"]));
     const stores = storesWithSettings(ONE_COMPANY);
-    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(SCRIPT).chat, http, openStores: async () => stores });
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(SCRIPT).chat, http, lookup: publicDns(), openStores: async () => stores });
     expect(report).toMatchObject({ status: "finished", steps: 5, summary: "Scored 2 Stripe jobs." });
     const rows = (await stores.jobViews.allJobs({ offset: 0, limit: 10 })).map(({ job_id, score }) => ({ job_id, score }));
     expect(rows.sort((a, b) => a.job_id.localeCompare(b.job_id))).toEqual([
