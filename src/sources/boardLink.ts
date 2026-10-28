@@ -1,4 +1,4 @@
-export type BoardKind = "ashby" | "greenhouse" | "lever" | "workday";
+type BoardKind = "ashby" | "greenhouse" | "lever" | "workday";
 
 export interface BoardLink {
     kind: BoardKind;
@@ -10,7 +10,7 @@ export interface BoardLink {
 
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
 const GREENHOUSE_HOSTS = new Set(["boards.greenhouse.io", "job-boards.greenhouse.io"]);
-const WORKDAY_HOST = /^([a-z0-9-]+)\.wd\d+\.myworkdayjobs\.com$/;
+export const WORKDAY_HOST = /^([a-z0-9-]+)\.wd\d+\.myworkdayjobs\.com$/;
 const LOCALE = /^[a-z]{2}-[A-Z]{2}$/;
 
 /** Recognises an address on a job board that publishes its postings as data, naming the board and any posting. */

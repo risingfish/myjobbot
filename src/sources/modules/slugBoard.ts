@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Job } from "../../jobs/job.js";
 import { parseBoardLink } from "../boardLink.js";
-import type { SourceContext, SourceModule, SourcePage } from "../module.js";
+import type { BoardPosting, SourceContext, SourceHttp, SourceModule, SourcePage } from "../module.js";
 
 type SlugBoardId = "greenhouse" | "lever" | "ashby";
 
@@ -39,6 +39,7 @@ export function slugBoard<T>(def: SlugBoardDef<T>): SourceModule<BoardParams> {
         target: ({ slug }) => `${def.id}:${slug.toLowerCase()}`,
         company: ({ slug }, name) => ({ name, careersPage: `${def.origin}/${encodeURIComponent(slug)}` }),
         fetch: (board, ctx) => boardPages(def, board, ctx),
+        postings: { list: (board, http) => boardPostings(def, board, http) },
     };
 }
 
@@ -48,8 +49,19 @@ function boardParams(id: SlugBoardId, url: URL): BoardParams | null {
     return link?.kind === id ? { slug: link.slug } : null;
 }
 
-/** Downloads a company's postings, validates them, and yields them as one page of jobs. */
+/** Yields a company's whole board as one page of jobs. */
 async function* boardPages<T>(def: SlugBoardDef<T>, board: BoardParams, ctx: SourceContext): AsyncGenerator<SourcePage> {
+    yield { jobs: await boardJobs(def, board, ctx), cost: 0, next: null };
+}
+
+/** Lists every posting on a board for the careers lookup, with its description. */
+async function boardPostings<T>(def: SlugBoardDef<T>, board: BoardParams, http: SourceHttp): Promise<BoardPosting[]> {
+    const jobs = await boardJobs(def, board, { http, sourceName: board.slug });
+    return jobs.map((job) => ({ title: job.title, location: job.location, url: job.url, postingId: job.jobId, description: job.description, format: job.descriptionFormat }));
+}
+
+/** Downloads a company's postings, validates them, and maps each listed one into a Job. */
+async function boardJobs<T>(def: SlugBoardDef<T>, board: BoardParams, ctx: SourceContext): Promise<Job[]> {
     const posts = def.postings.parse(await ctx.http.getJson(def.url(board.slug)));
-    yield { jobs: posts.filter(def.keep ?? (() => true)).map((post) => def.toJob(ctx.sourceName, post)), cost: 0, next: null };
+    return posts.filter(def.keep ?? (() => true)).map((post) => def.toJob(ctx.sourceName, post));
 }
