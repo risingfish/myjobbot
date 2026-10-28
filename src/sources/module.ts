@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
-import type { Job } from "../jobs/job.js";
+import type { DescriptionFormat, Job } from "../jobs/job.js";
 
 export type SourceHttp = JsonGetter & JsonPoster;
 
@@ -38,6 +38,21 @@ interface SourceLimits {
     refresh: "every_run" | "jsearch_refresh_hours";
 }
 
+export interface BoardPosting {
+    title: string;
+    location: string | null;
+    url: string;
+    postingId: string;
+    description: string | null;
+    format: DescriptionFormat;
+}
+
+interface BoardPostings<P> {
+    list?(params: P, http: SourceHttp): Promise<BoardPosting[]>;
+    search?(params: P, text: string, http: SourceHttp): Promise<BoardPosting[]>;
+    one?(params: P, postingId: string, http: SourceHttp): Promise<BoardPosting>;
+}
+
 export interface SourceModule<P> {
     readonly id: string;
     readonly name: string;
@@ -53,6 +68,7 @@ export interface SourceModule<P> {
     target(params: P): string;
     fetch(params: P, ctx: SourceContext, from: Cursor | null): AsyncIterable<SourcePage>;
     company?(params: P, name: string): CompanyHint;
+    readonly postings?: BoardPostings<P>;
 }
 
 /** Reads every page a source yields from its first page and gives back all of its jobs. */

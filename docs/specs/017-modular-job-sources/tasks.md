@@ -135,8 +135,8 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
 
 ### Sitting S2, PR 2: the Workday module, and the careers lookup on modules (T013–T018), branch `017-pr2-workday-module`
 
-- [ ] T013 [US1] Per-PR flow steps 1–3, for sitting S2.
-- [ ] T014 [P] [US1] Unit tests in a new `tests/workdayModule.test.ts` (four `test()`s) for
+- [x] T013 [US1] Per-PR flow steps 1–3, for sitting S2.
+- [x] T014 [P] [US1] Unit tests in a new `tests/workdayModule.test.ts` (four `test()`s) for
   `src/sources/modules/workday.ts`, with a fake HTTP client (research R6):
   - `fromUrl` recognises `<tenant>.wd<N>.myworkdayjobs.com/<site>`, with or without a locale, and a
     posting link, giving `{ host, tenant, site }`;
@@ -146,15 +146,17 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
   - each job takes its description from its posting's detail, as Markdown within the stored limit.
     Its `ats` is `"workday"`, and its job id is `<tenant>/<site>/<posting id>`, or a SHA-256 digest
     when that would pass 255 characters.
-- [ ] T015 [P] [US1] Rewrite `tests/careersBoardPages.test.ts` (6 tests) and `tests/careersWorkday.test.ts`
+- [x] T015 [P] [US1] (Done: `careersWorkday.test.ts` now calls `workday.postings`, and
+  `careersBoardPages.test.ts` needed no change, since `boardPage` reads every board through the
+  modules.) Rewrite `tests/careersBoardPages.test.ts` (6 tests) and `tests/careersWorkday.test.ts`
   (4 tests) to read through the modules' `postings` (no new `test()`; the existing test at :55
   becomes the module-read case).
-- [ ] T016 [US1] Add `src/sources/modules/workday.ts` (T014). Move `searchWorkday` and
+- [x] T016 [US1] Add `src/sources/modules/workday.ts` (T014). Move `searchWorkday` and
   `workdayPosting` into it as `postings.search(params, text, http)` and `postings.one(params, id,
   http)`, and delete `src/sources/workday.ts`. Give Greenhouse, Lever and Ashby
   `postings.list(params, http)`. Add `workday` to the `Job` type's `ats`, but not to `ATS_NAMES`
   (research R6). List Workday in `MODULES`.
-- [ ] T017 [US1] In `src/careers/boardPages.ts`, read every board through `moduleFor(link.kind)` and
+- [x] T017 [US1] In `src/careers/boardPages.ts`, read every board through `moduleFor(link.kind)` and
   its `postings`, passing the lookup's own checked client.
 - [ ] T018 [US1] Per-PR flow steps 4–6 ("Add a Workday source module, and read careers boards through
   the modules (017 PR 2)").
