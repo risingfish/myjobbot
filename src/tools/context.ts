@@ -5,6 +5,7 @@ import type { DataMarkers } from "../agent/markers.js";
 import type { HostLookup } from "../careers/fetchPage.js";
 import type { PageRenderer } from "../careers/renderState.js";
 import type { FileConfig } from "../config/schema.js";
+import type { SavedSource, SourceStore } from "../db/sourceStore.js";
 import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
 import type { SecretKeyStatus } from "../gmail/secretKey.js";
@@ -27,6 +28,7 @@ export interface ToolContext {
     apiCalls: ApiCallLog;
     http: JsonGetter;
     sources: SourceHttp;
+    saved: SavedSources;
     now: () => Date;
     jobLog: Trace;
     jsearchApiKey: string | null;
@@ -36,6 +38,11 @@ export interface ToolContext {
     careers: CareersAccess;
     companies: CompanyStore;
     markers: DataMarkers;
+}
+
+interface SavedSources {
+    store: SourceStore;
+    list: SavedSource[];
 }
 
 interface CareersAccess {

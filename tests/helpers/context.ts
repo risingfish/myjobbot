@@ -6,10 +6,12 @@ import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testFileConfig } from "./config.js";
 import { publicDns } from "./fakeDns.js";
+import { savedSources, STRIPE_BOARD } from "./savedSources.js";
 import { memoryStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";
 
 export const TEST_NOW = new Date("2026-10-03T12:00:00.000Z");
+export const ALERTS_REF = { id: 2, name: "Gmail alerts" };
 export const TEST_RUN_ID = "3f2b8c1e-9a7d-4e21-b0c3-5d6e7f8a9b0c";
 
 const NO_HTTP: JsonGetter = { getJson: () => Promise.reject(new Error("unexpected HTTP request in test")) };
@@ -22,6 +24,7 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         ...storeFields(stores),
         http: NO_HTTP,
         sources: testSources(overrides.http ?? NO_HTTP),
+        saved: { store: stores.sources, list: savedSources({ companies: [STRIPE_BOARD] }) },
         now: () => TEST_NOW,
         jobLog: memoryTrace(),
         jsearchApiKey: "test-jsearch-key",

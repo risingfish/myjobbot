@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ToolContext } from "./context.js";
 import { unscoredJobs } from "./unscored.js";
-import { configuredSources, type FetchOutcome, type Source } from "./sources.js";
+import { configuredSources, sourceRef, type FetchOutcome, type Source } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 
 /** Builds the list_sources tool, letting the model see every configured source and its run progress. */
@@ -50,7 +50,7 @@ async function sourceStatus(context: ToolContext, source: Source) {
 async function fetchedStatus(context: ToolContext, source: Source, cached: Promise<FetchOutcome>) {
     try {
         const outcome = await cached;
-        return { ...describeSource(source), fetched: true, total_unscored: (await unscoredJobs(context, source.name, outcome)).length };
+        return { ...describeSource(source), fetched: true, total_unscored: (await unscoredJobs(context, sourceRef(source), outcome)).length };
     } catch {
         return notFetched(context, source);
     }

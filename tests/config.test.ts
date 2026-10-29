@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import type { Environment } from "../src/config/load.js";
 import { appConfigFrom, parseJson } from "../src/config/parse.js";
 import { envSchema, fileConfigSchema } from "../src/config/schema.js";
-import { LLM_ENV, SAMPLE_CONFIG, TEST_SEARCH, testFileConfig } from "./helpers/config.js";
+import { LLM_ENV, SAMPLE_CONFIG, testFileConfig } from "./helpers/config.js";
 
 function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
     return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, fileConfigSchema.parse(config));
@@ -10,7 +10,7 @@ function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
 
 test("the app config applies defaults", () => {
     const config = configFrom(LLM_ENV);
-    expect(config.file.companies).toHaveLength(2);
+    expect(config.file).not.toHaveProperty("companies");
     expect(config.file.match_threshold).toBe(70);
     expect(config.file.http.min_interval_ms).toBe(1000);
     expect(config.file.title_filter.include).toContain("engineer");
@@ -19,12 +19,8 @@ test("the app config applies defaults", () => {
 
 test("config.json parses without any LLM settings", () => {
     const file = fileConfigSchema.parse(SAMPLE_CONFIG);
-    expect(file.companies).toHaveLength(2);
+    expect(file).not.toHaveProperty("searches");
     expect(file.match_threshold).toBe(70);
-});
-
-test("config rejects an unknown board type", () => {
-    expect(() => configFrom(LLM_ENV, { companies: [{ name: "X", ats: "workday", slug: "x" }] })).toThrow(/ats/);
 });
 
 test("config rejects filter terms without a letter or digit", () => {
@@ -67,14 +63,6 @@ test("extra_exclude adds to a custom exclude list", () => {
     expect(testFileConfig({ title_filter: filter }).title_filter.exclude).toEqual(["sales", "lead"]);
 });
 
-test("config rejects duplicate company names ignoring case", () => {
-    const companies = [
-        { name: "Stripe", ats: "greenhouse", slug: "stripe" },
-        { name: "stripe", ats: "greenhouse", slug: "stripe-two" },
-    ];
-    expect(() => testFileConfig({ companies })).toThrow(/names must be unique/);
-});
-
 test("the app config requires LLM settings", () => {
     expect(() => configFrom({})).toThrow(/LLM_BASE_URL/);
 });
@@ -86,48 +74,6 @@ test("config rejects retention not longer than ghost threshold", () => {
 
 test("config.json that isn't valid JSON is reported readably", () => {
     expect(() => parseJson("{ not json", "config.json")).toThrow(/config.json is not valid JSON/);
-});
-
-test("config applies search and JSearch defaults", () => {
-    const config = testFileConfig({ searches: [TEST_SEARCH] });
-    expect(config.searches[0]).toEqual({ ...TEST_SEARCH, country: "us" });
-    expect(config.jsearch).toEqual({ monthly_request_cap: 190, refresh_hours: 24, date_posted: "3days", exclude_publishers: [] });
-});
-
-test("config accepts searches without companies", () => {
-    expect(testFileConfig({ companies: [], searches: [TEST_SEARCH] }).companies).toEqual([]);
-});
-
-test("config needs at least one company or search", () => {
-    expect(() => testFileConfig({ companies: [] })).toThrow(/at least one company or search/);
-});
-
-test("config rejects a search named like a company", () => {
-    expect(() => testFileConfig({ searches: [{ ...TEST_SEARCH, name: "stripe" }] })).toThrow(/names must be unique/);
-});
-
-test("config rejects more searches than the JSearch budget allows", () => {
-    const searches = Array.from({ length: 7 }, (_, index) => ({ ...TEST_SEARCH, name: `Search ${index}` }));
-    expect(() => testFileConfig({ searches })).toThrow(/monthly_request_cap/);
-    expect(testFileConfig({ searches: searches.slice(0, 6) }).searches).toHaveLength(6);
-});
-
-test("three refreshes a day fit the budget for two searches but not three", () => {
-    const searches = Array.from({ length: 3 }, (_, index) => ({ ...TEST_SEARCH, name: `Search ${index}` }));
-    const jsearch = { refresh_hours: 8 };
-    expect(testFileConfig({ searches: searches.slice(0, 2), jsearch }).jsearch.refresh_hours).toBe(8);
-    expect(() => testFileConfig({ searches, jsearch })).toThrow(/monthly_request_cap/);
-});
-
-test("the app config requires JSEARCH_API_KEY when searches are configured", () => {
-    const config = { ...SAMPLE_CONFIG, searches: [TEST_SEARCH] };
-    expect(() => configFrom(LLM_ENV, config)).toThrow("JSEARCH_API_KEY is required when searches are configured");
-    expect(configFrom({ ...LLM_ENV, JSEARCH_API_KEY: "k" }, config).file.searches).toHaveLength(1);
-});
-
-test("config refuses a company or search named like the Gmail alerts source", () => {
-    expect(() => testFileConfig({ companies: [{ name: "gmail ALERTS", ats: "greenhouse", slug: "x" }] })).toThrow(/reserved/);
-    expect(() => testFileConfig({ searches: [{ ...TEST_SEARCH, name: "Gmail alerts" }] })).toThrow(/reserved/);
 });
 
 test("careers lookup settings default to small, 16GB-friendly limits and reject out-of-range values", () => {

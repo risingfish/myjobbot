@@ -2,17 +2,10 @@ import type { AppConfig } from "../../src/config/load.js";
 import { envSchema, fileConfigSchema, type FileConfig } from "../../src/config/schema.js";
 
 export function testFileConfig(overrides: Record<string, unknown> = {}): FileConfig {
-    return fileConfigSchema.parse({
-        companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }],
-        ...overrides,
-    });
+    return fileConfigSchema.parse(overrides);
 }
 
 export const SAMPLE_CONFIG = {
-    companies: [
-        { name: "Stripe", ats: "greenhouse", slug: "stripe" },
-        { name: "Palantir", ats: "lever", slug: "palantir" },
-    ],
     preferences: "Remote US, senior backend",
 };
 
@@ -26,8 +19,6 @@ export function testAppConfig(overrides: Record<string, unknown> = {}): AppConfi
 }
 
 export const FULL_CONFIG = {
-    companies: SAMPLE_CONFIG.companies,
-    searches: [TEST_SEARCH],
     preferences: "Remote US, senior backend",
     match_threshold: 60,
     title_filter: { extra_exclude: ["staff"] },

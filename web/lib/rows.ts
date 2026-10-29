@@ -3,7 +3,7 @@ import type { FileConfig } from "../../src/config/schema.js";
 import type { JobViews } from "../../src/db/store.js";
 import type { JobDetailView, PageData } from "../../src/web/api.js";
 import { toJobDetailView } from "../../src/web/jobDetail.js";
-import { loadPageData, rowContext } from "../../src/web/pageData.js";
+import { loadPageData, rowContext, type PageSettings } from "../../src/web/pageData.js";
 import { PAGE_NAMES } from "./pages.js";
 
 export type HideResult = { ok: true } | { ok: false; error: string };
@@ -17,11 +17,11 @@ const hideChange = jobChange.extend({ hidden: z.boolean() });
 const appliedChange = jobChange.extend({ applied: z.boolean() });
 
 /** Loads one page of rows for a web UI page, refusing an unknown page or an out-of-range offset. */
-export async function loadRows(views: JobViews, config: FileConfig, request: unknown): Promise<PageData> {
+export async function loadRows(views: JobViews, settings: PageSettings, request: unknown): Promise<PageData> {
     const parsed = rowsRequest.safeParse(request);
     if (!parsed.success) throw new Error("Invalid page request");
     const { name, offset } = parsed.data;
-    return loadPageData(name, { views, config, page: { offset, limit: PAGE_SIZE }, now: new Date() });
+    return loadPageData(name, { views, ...settings, page: { offset, limit: PAGE_SIZE }, now: new Date() });
 }
 
 /** Hides or unhides one job, refusing a malformed change and reporting a job that doesn't exist. */

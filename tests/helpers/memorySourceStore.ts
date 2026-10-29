@@ -11,6 +11,11 @@ export class MemorySourceStore implements SourceStore {
 
     constructor(private readonly tables: Tables) {}
 
+    seed(userId: number, sources: SavedSource[]): void {
+        for (const source of sources) this.rows.push({ ...structuredClone(source), userId });
+        this.nextId = Math.max(this.nextId, ...this.rows.map((row) => row.id + 1));
+    }
+
     async list(userId: number): Promise<SavedSource[]> {
         return this.rows.filter((row) => row.userId === userId).map(({ userId: _userId, ...saved }) => structuredClone(saved));
     }

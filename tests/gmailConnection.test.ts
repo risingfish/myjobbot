@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
+import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { check } from "../src/gmail/check.js";
 import { connect, disconnect, keyChanged, type GmailDeps } from "../src/gmail/connection.js";
 import { GmailError } from "../src/gmail/imapErrors.js";
@@ -14,7 +15,7 @@ const PASSWORD = "abcd efgh ijkl mnop";
 
 function deps(fake: FakeImap = fakeImap()): GmailDeps {
     const stores = memoryStores();
-    return { gmail: stores.gmail, alerts: stores.alerts, key: KEY, imap: fake.factory };
+    return { gmail: stores.gmail, alerts: stores.alerts, sources: stores.sources, key: KEY, imap: fake.factory };
 }
 
 async function connectedDeps(script: FakeImapScript = {}): Promise<{ gmail: GmailDeps; fake: FakeImap }> {
@@ -46,8 +47,15 @@ test("a rejected, unreachable or malformed sign-in stores nothing and says why",
         const fake = fakeImap(script);
         const gmail = deps(fake);
         expect(await connect(gmail, input, NOW)).toEqual({ ok: false, error });
-        expect(await gmail.gmail.connection()).toBeNull();
+        expect([await gmail.gmail.connection(), await gmail.sources.list(OWNER_ID)]).toEqual([null, []]);
     }
+});
+
+test("connecting Gmail adds the owner's Gmail alerts source once, on, and connecting again adds no second one", async () => {
+    const gmail = deps();
+    await connect(gmail, { email: "me@example.com", appPassword: PASSWORD }, NOW);
+    await connect(gmail, { email: "me@example.com", appPassword: PASSWORD }, NOW);
+    expect((await gmail.sources.list(OWNER_ID)).map(({ module, name, enabled }) => ({ module, name, enabled }))).toEqual([{ module: "gmail_alerts", name: "Gmail alerts", enabled: true }]);
 });
 
 test("a key change is noticed when the saved password no longer opens", () => {

@@ -13,6 +13,7 @@ import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
 import { MemorySearchSettingsStore } from "./memorySearchSettingsStore.js";
 import { MemorySourceStore } from "./memorySourceStore.js";
+import { savedSources, type SourceLists } from "./savedSources.js";
 import { asc, MemoryJobViews, newTables, type Row, type Tables } from "./memoryJobViews.js";
 
 const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, company_id: null, source_id: null, emailed_at: null, injection_seen_at: null };
@@ -156,8 +157,10 @@ export function memoryStores(tables: Tables = newTables()): Stores {
     return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), close };
 }
 
-export function storesWithSettings(config: object, tables: Tables = newTables()): Stores {
+export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): Stores {
     const searchSettings = new MemorySearchSettingsStore();
     searchSettings.put(OWNER_ID, splitSettings(config).search);
-    return { ...memoryStores(tables), searchSettings };
+    const sources = new MemorySourceStore(tables);
+    sources.seed(OWNER_ID, savedSources(config));
+    return { ...memoryStores(tables), searchSettings, sources };
 }
