@@ -1,4 +1,5 @@
 import { splitSettings } from "../../src/config/searchSettings.js";
+import { sourceParts, type JobSource } from "../../src/db/jobSource.js";
 import { jobRowSchema, toParams } from "../../src/db/rows.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { ApiCallLog, FoundDescription, JobKey, JobRow, JobStore, Stores, Verdict, VerdictStamp } from "../../src/db/store.js";
@@ -14,10 +15,15 @@ import { MemorySearchSettingsStore } from "./memorySearchSettingsStore.js";
 import { MemorySourceStore } from "./memorySourceStore.js";
 import { asc, MemoryJobViews, newTables, type Row, type Tables } from "./memoryJobViews.js";
 
-const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, company_id: null, emailed_at: null, injection_seen_at: null };
+const UNSCORED = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null, company_id: null, source_id: null, emailed_at: null, injection_seen_at: null };
 
 function companies(rows: Row[]): string[] {
     return [...new Set(rows.map((job) => String(job.company)))];
+}
+
+function fromSource(job: Row, source: JobSource): boolean {
+    const { label, id } = sourceParts(source);
+    return id === null ? job.source === label : job.source_id === id;
 }
 
 function minimum(values: Array<string | number | null | undefined>): string | null {
@@ -28,9 +34,10 @@ function minimum(values: Array<string | number | null | undefined>): string | nu
 class MemoryJobStore implements JobStore {
     constructor(private readonly tables: Tables) {}
 
-    async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
+    async upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void> {
         const ids = recordMemoryCompanies(this.tables, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
-        for (const job of jobs) this.upsert({ ...toParams(job, seen, source), company_id: ids.get(normalizeCompany(job.company)) ?? null }, seen);
+        const { label, id } = sourceParts(source);
+        for (const job of jobs) this.upsert({ ...toParams(job, seen, label), company_id: ids.get(normalizeCompany(job.company)) ?? null, source_id: id }, seen);
     }
 
     async linkUnlinkedJobs(): Promise<number> {
@@ -40,11 +47,11 @@ class MemoryJobStore implements JobStore {
         return unlinked.filter((job) => job.company_id !== null).length;
     }
 
-    async unscoredSince(source: string, seen: string): Promise<JobRow[]> {
+    async unscoredSince(source: JobSource, seen: string): Promise<JobRow[]> {
         return this.unscored(source).filter((row) => row.last_seen === seen);
     }
 
-    async unscoredForSource(source: string): Promise<JobRow[]> {
+    async unscoredForSource(source: JobSource): Promise<JobRow[]> {
         return this.unscored(source);
     }
 
@@ -52,8 +59,8 @@ class MemoryJobStore implements JobStore {
         return companies(this.tables.jobs.filter((job) => job.ats !== "jsearch" && job.ats !== "linkedin" && job.normalized_title === normalizedTitle));
     }
 
-    async companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]> {
-        return companies(this.tables.jobs.filter((job) => job.source !== source && job.normalized_title === normalizedTitle));
+    async companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]> {
+        return companies(this.tables.jobs.filter((job) => !fromSource(job, source) && job.normalized_title === normalizedTitle));
     }
 
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
@@ -104,8 +111,8 @@ class MemoryJobStore implements JobStore {
         return job === undefined ? null : jobRowSchema.parse(job);
     }
 
-    private unscored(source: string): JobRow[] {
-        const rows = this.tables.jobs.filter((job) => job.source === source && job.scored_at === null);
+    private unscored(source: JobSource): JobRow[] {
+        const rows = this.tables.jobs.filter((job) => fromSource(job, source) && job.scored_at === null);
         return rows.sort((a, b) => asc(a.job_id, b.job_id)).map((row) => jobRowSchema.parse(row));
     }
 
@@ -146,7 +153,7 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), close };
 }
 
 export function storesWithSettings(config: object, tables: Tables = newTables()): Stores {

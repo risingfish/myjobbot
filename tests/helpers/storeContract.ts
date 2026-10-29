@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { Stores } from "../../src/db/store.js";
 import { makeJob, type Job } from "../../src/jobs/job.js";
 
@@ -50,13 +51,19 @@ async function case01(make: MakeStores): Promise<void> {
 }
 
 async function case02(make: MakeStores): Promise<void> {
-    const { jobStore } = await make();
+    const { jobStore, sources } = await make();
     await jobStore.upsertAll([sample({ id: "b" }), sample({ id: "a" })], DAY_ONE, "Stripe");
     await jobStore.upsertAll([sample({ id: "b" })], DAY_TWO, "Stripe");
     expect((await jobStore.unscoredSince("Stripe", DAY_TWO)).map((row) => row.job_id)).toEqual(["b"]);
     await jobStore.recordVerdict(score("b", 70), { scoredAt: DAY_TWO, runId: "r" });
     expect((await jobStore.unscoredForSource("Stripe")).map((row) => row.job_id)).toEqual(["a"]);
     expect(await jobStore.unscoredForSource("Other")).toEqual([]);
+    const saved = await sources.save(OWNER_ID, { module: "greenhouse", name: "Stripe", params: { slug: "stripe" }, target: "greenhouse:stripe", enabled: true }, DAY_TWO);
+    const stripe = { id: saved.id, name: "Stripe" };
+    await jobStore.upsertAll([sample({ id: "c", company: "Acme" })], DAY_TWO, stripe);
+    expect([(await jobStore.unscoredForSource(stripe)).map((row) => row.job_id), (await jobStore.unscoredSince(stripe, DAY_TWO)).map((row) => row.job_id)]).toEqual([["c"], ["c"]]);
+    expect((await jobStore.unscoredForSource("Stripe")).map((row) => row.job_id)).toEqual(["a", "c"]);
+    expect([await jobStore.companiesWithTitleOutside(stripe, "backend engineer"), await jobStore.companiesWithTitleOutside("Stripe", "backend engineer")]).toEqual([["Stripe"], []]);
 }
 
 async function case03(make: MakeStores): Promise<void> {
@@ -162,7 +169,7 @@ async function case13(make: MakeStores): Promise<void> {
 
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [
     ["an upsert refreshes the posting but keeps first seen, score and hidden", case01],
-    ["unscored jobs are filtered by fetch and source, ordered by job id", case02],
+    ["unscored jobs are filtered by fetch and source, by name or by saved source, ordered by job id", case02],
     ["board companies with a title skip search results and repeat each company once", case03],
     ["a verdict scores every job with that id and is kept as history", case04],
     ["earliest seen takes the older of first seen and posted date across reposts", case05],

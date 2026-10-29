@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { CompanyStore } from "./companyStore.js";
+import type { JobSource } from "./jobSource.js";
 import type { SearchSettingsStore } from "./searchSettingsStore.js";
 import type { SourceStore } from "./sourceStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
@@ -48,15 +49,15 @@ export interface Verdict {
 }
 
 export interface JobStore {
-    upsertAll(jobs: Job[], seen: string, source: string): Promise<void>;
-    unscoredSince(source: string, seen: string): Promise<JobRow[]>;
-    unscoredForSource(source: string): Promise<JobRow[]>;
+    upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void>;
+    unscoredSince(source: JobSource, seen: string): Promise<JobRow[]>;
+    unscoredForSource(source: JobSource): Promise<JobRow[]>;
     boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]>;
     recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean>;
     earliestSeen(company: string, normalizedTitle: string): Promise<string>;
     pruneLastSeenBefore(cutoff: string): Promise<number>;
     findJob(jobId: string): Promise<JobRow | null>;
-    companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]>;
+    companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]>;
     markSeen(keys: JobKey[], seen: string): Promise<void>;
     linkUnlinkedJobs(): Promise<number>;
     setDescription(key: JobKey, found: FoundDescription): Promise<void>;

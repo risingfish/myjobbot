@@ -1,3 +1,4 @@
+import type { Tables } from "./memoryJobViews.js";
 import type { AccountSource, NewSource, SavedSource, SourceKey, SourceOutcome, SourceStore } from "../../src/db/sourceStore.js";
 
 interface Row extends SavedSource {
@@ -7,6 +8,8 @@ interface Row extends SavedSource {
 export class MemorySourceStore implements SourceStore {
     private readonly rows: Row[] = [];
     private nextId = 1;
+
+    constructor(private readonly tables: Tables) {}
 
     async list(userId: number): Promise<SavedSource[]> {
         return this.rows.filter((row) => row.userId === userId).map(({ userId: _userId, ...saved }) => structuredClone(saved));
@@ -18,9 +21,9 @@ export class MemorySourceStore implements SourceStore {
         if (taken !== undefined) throw new Error("duplicate saved source");
         const fields = { module: source.module, name: source.name, params: structuredClone(source.params), target: source.target, enabled: source.enabled, cursor: null };
         const existing = this.rows.find((row) => row.userId === userId && row.id === id);
-        if (existing !== undefined) Object.assign(existing, fields);
-        else if ("id" in source) throw new Error("no such saved source");
-        else this.rows.push({ ...fields, id, userId, companyId: null, last: null });
+        if (existing === undefined && "id" in source) throw new Error("no such saved source");
+        if (existing === undefined) this.rows.push({ ...fields, id, userId, companyId: null, last: null });
+        else this.rename(existing, fields);
         return (await this.list(userId)).find((row) => row.id === id) as SavedSource;
     }
 
@@ -30,7 +33,9 @@ export class MemorySourceStore implements SourceStore {
 
     async remove(key: SourceKey): Promise<void> {
         const index = this.rows.findIndex((row) => row.userId === key.userId && row.id === key.id);
-        if (index >= 0) this.rows.splice(index, 1);
+        if (index < 0) return;
+        this.rows.splice(index, 1);
+        for (const job of this.tables.jobs) if (job.source_id === key.id) job.source_id = null;
     }
 
     async recordFetch(key: SourceKey, outcome: SourceOutcome, cursor: unknown): Promise<void> {
@@ -44,6 +49,11 @@ export class MemorySourceStore implements SourceStore {
     async ensureAccountSource(userId: number, { module, name }: AccountSource): Promise<void> {
         if (this.rows.some((row) => row.userId === userId && (row.target === module || row.name === name))) return;
         this.rows.push({ id: this.nextId++, userId, module, name, params: {}, target: module, enabled: true, companyId: null, cursor: null, last: null });
+    }
+
+    private rename(row: Row, fields: Partial<SavedSource>): void {
+        Object.assign(row, fields);
+        for (const job of this.tables.jobs) if (job.source_id === row.id) job.source = row.name;
     }
 
     private update(key: SourceKey, change: Partial<SavedSource>): void {

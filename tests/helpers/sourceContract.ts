@@ -1,10 +1,13 @@
 import { expect, test } from "vitest";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { NewSource, SavedSource, SourceOutcome, SourceStore } from "../../src/db/sourceStore.js";
+import type { Stores } from "../../src/db/store.js";
+import { makeJob } from "../../src/jobs/job.js";
 import type { MakeStores } from "./storeContract.js";
 
 export interface SourceHooks {
     seedCompany(): Promise<number>;
+    jobLinks(): Promise<Array<{ job_id: string; source: string; source_id: number | null }>>;
 }
 
 const AT = "2026-10-28T00:00:00.000Z";
@@ -63,15 +66,24 @@ async function addsAccountSourceOnce(store: SourceStore): Promise<void> {
     expect(alerts).toEqual([{ id: expect.any(Number), module: "gmail_alerts", name: "Gmail alerts", params: {}, target: "gmail_alerts", enabled: true, companyId: null, cursor: null, last: null }]);
 }
 
+async function relabelsThenUnlinksJobs(stores: Stores, hooks: SourceHooks, board: SavedSource): Promise<void> {
+    const job = makeJob({ ats: "greenhouse", jobId: "g1", company: "Stripe", title: "Engineer", url: "https://example.com/g1" }, {});
+    await stores.jobStore.upsertAll([job], AT, { id: board.id, name: board.name });
+    await stores.sources.save(OWNER_ID, { ...board, name: "Stripe, Inc." }, AT);
+    expect(await hooks.jobLinks()).toEqual([{ job_id: "g1", source: "Stripe, Inc.", source_id: board.id }]);
+    await stores.sources.remove(key(board));
+    expect(await hooks.jobLinks()).toEqual([{ job_id: "g1", source: "Stripe, Inc.", source_id: null }]);
+}
+
 export function sourceContract(make: MakeStores, hooks: SourceHooks): void {
-    test("saved sources are added, edited, refused when repeated, switched, recorded and removed", async () => {
+    test("saved sources are added, edited, refused when repeated, switched, recorded, renamed with their jobs, and removed", async () => {
         const stores = await make();
         const board = await savesAndEdits(stores.sources);
         await refusesRepeats(stores.sources, board);
         await switchesOffAndOn(stores.sources, board);
         const search = await keepsFetchesExactly(stores.sources, hooks, { ...board, enabled: true });
         await addsAccountSourceOnce(stores.sources);
-        await stores.sources.remove(key(board));
+        await relabelsThenUnlinksJobs(stores, hooks, board);
         expect((await stores.sources.list(OWNER_ID)).map((source) => source.id)).not.toContain(board.id);
         expect((await stores.sources.list(OWNER_ID)).map((source) => source.id)).toContain(search.id);
         await stores.close();
