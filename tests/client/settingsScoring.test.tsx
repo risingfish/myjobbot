@@ -11,7 +11,7 @@ vi.mock("../../web/lib/settingsActions.js", () => ({ saveSettingsSection: save }
 test("the Scoring section saves its edits, shows a refusal beside the field with the edit kept, offers reset only on stored fields, and says when a save couldn't run", async () => {
     const user = userEvent.setup();
     save.mockResolvedValueOnce({ ok: false, problems: [{ field: "match_threshold", entry: null, message: "Too big: expected number to be <=100" }] }).mockResolvedValueOnce({ ok: false, failed: true });
-    render(<ScoringSection view={settingsView({ companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], match_threshold: 60 }, false)} />);
+    render(<ScoringSection view={settingsView({ match_threshold: 60 })} />);
     const threshold = screen.getByLabelText("Match threshold");
     await user.clear(threshold);
     await user.type(threshold, "150");

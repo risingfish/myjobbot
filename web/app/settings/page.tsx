@@ -14,13 +14,13 @@ export const dynamic = "force-dynamic";
 
 type SettingsState = Awaited<ReturnType<typeof getSettingsState>>;
 
-/** Renders the Settings page: what the stored search settings report, an editor for each section of them, and the Gmail connection, even before any search settings are stored. */
+/** Renders the Settings page: what the stored search settings report, the saved sources, an editor for each section of the search settings, and the Gmail connection, even before any search settings are stored. */
 export default async function SettingsPage() {
     const state = await getSettingsState();
     return (
         <main aria-label="Settings">
             <SettingsNotices notices={state.notices} />
-            <SourcesSection view={state.view} />
+            <SourcesSection rows={state.sources} />
             <PreferencesSection view={state.view} />
             <ScoringSection view={state.view} />
             <FiltersSection view={state.view} />

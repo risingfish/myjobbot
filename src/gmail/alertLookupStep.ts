@@ -69,7 +69,7 @@ function plans(deps: LookupDeps, work: { read: ReadEmail[]; fresh: AlertJob[] })
 /** Runs one JSearch search for an email, logging the request against the budget; a failed search finds nothing. */
 async function search(deps: LookupDeps, request: { query: string; apiKey: string; now: Date }): Promise<Job[]> {
     await deps.apiCalls.record("jsearch", ALERTS_SOURCE, request.now.toISOString());
-    const query = { search: { name: ALERTS_SOURCE, query: request.query, remote_only: false, country: "us" }, settings: { ...deps.settings, date_posted: "7days" as const }, apiKey: request.apiKey };
+    const query = { search: { query: request.query, remote_only: false, country: "us" }, settings: { ...deps.settings, date_posted: "7days" as const }, apiKey: request.apiKey };
     return fetchJsearch(query, deps.http).catch((error: unknown) => failedSearch(error));
 }
 

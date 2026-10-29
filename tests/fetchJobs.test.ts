@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { testFileConfig } from "./helpers/config.js";
-import { testContext } from "./helpers/context.js";
+import { ALERTS_REF, testContext } from "./helpers/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
 import { fetchPage } from "./helpers/tools.js";
 import { newTables } from "./helpers/memoryJobViews.js";
@@ -81,7 +81,7 @@ test("fetch_jobs logs the jobs each board download returned, without description
 test("fetch_jobs pages every unscored alert job, including ones an earlier run left unscored", async () => {
     const context = await alertContext({}, [alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(2), "senior engineer"))]);
     const earlier = makeJob({ ats: "linkedin", jobId: "li_1", company: "Old Co", title: "Senior Engineer", url: "https://x" }, {});
-    await context.store.upsertAll([earlier], "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    await context.store.upsertAll([earlier], "2026-10-01T00:00:00.000Z", ALERTS_REF);
     const page = await fetchPage(context, "Gmail alerts");
     expect([page.total_unscored, page.jobs.map((job) => job.job_id).sort()]).toEqual([3, ["li_1", "li_4100000000", "li_4100000001"]]);
     expect(page).toMatchObject({ alerts: { emails: 1, jobs_found: 2, stored: 2 } });
@@ -90,7 +90,7 @@ test("fetch_jobs pages every unscored alert job, including ones an earlier run l
 test("fetching Gmail alerts looks up careers pages only for unscored jobs without a description that weren't tried before", async () => {
     const base = await alertContext();
     const jobs = ["li_new", "li_described", "li_tried"].map((jobId) => makeJob({ ats: "linkedin", jobId, company: "Acme", title: "Senior Engineer", url: "https://x" }, { description: jobId === "li_described" ? "Known." : null }));
-    await base.store.upsertAll(jobs, "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    await base.store.upsertAll(jobs, "2026-10-01T00:00:00.000Z", ALERTS_REF);
     await base.careers.store.audit({ runId: "old", at: "2026-10-01T00:00:00.000Z", ats: "linkedin", jobId: "li_tried", company: "Acme", step: "finish", url: null, outcome: "failed", reason: "job_not_found" });
     const { chat, requests } = scriptedChat([search(), open(1, "job_page"), finish(true)]);
     const careers = { ...base.careers, searxngUrl: "https://search.example", lookup: publicDns(), pages: fakePages({ [POSTING_URL]: jobPage("Senior Engineer", ["Build APIs."]) }) };

@@ -1,8 +1,8 @@
 import { OWNER_ID, type RawSearchSettings, type SearchSettingsStore } from "../db/searchSettingsStore.js";
 import { fileConfigSchema, type FileConfig } from "./schema.js";
-import { mergeSettings, sanitizeSearchSettings, settingNames, splitSettings, type FallbackNotice, type SplitSettings } from "./searchSettings.js";
+import { mergeSettings, retiredKeys, sanitizeSearchSettings, settingNames, splitSettings, type FallbackNotice, type SplitSettings } from "./searchSettings.js";
 
-export type SettingsNotice = FallbackNotice | { kind: "file_ignored"; keys: string[] };
+export type SettingsNotice = FallbackNotice | { kind: "file_ignored"; keys: string[] } | { kind: "retired"; keys: string[] };
 
 interface ResolvedSettings {
     file: FileConfig;
@@ -17,9 +17,12 @@ export async function resolveSettings(fileRaw: unknown, store: SearchSettingsSto
     return { file: fileConfigSchema.parse(mergeSettings(split.runtime, settings)), notices: settingsNotices(split, stored) };
 }
 
-/** Lists what the search settings report: each stored value that fell back, and the search settings config.json still holds, which are never used. */
+/** Lists what the search settings report: each stored value that fell back, the search settings config.json still holds, which are never used, and the boards and searches left behind by the move to saved sources. */
 export function settingsNotices(split: SplitSettings, stored: RawSearchSettings | null): SettingsNotice[] {
     const ignored = settingNames(split.search);
-    const fallbacks: SettingsNotice[] = stored === null ? [] : sanitizeSearchSettings(stored).notices;
-    return ignored.length > 0 ? [...fallbacks, { kind: "file_ignored", keys: ignored }] : fallbacks;
+    const retired = retiredKeys(split, stored);
+    const notices: SettingsNotice[] = stored === null ? [] : sanitizeSearchSettings(stored).notices;
+    if (ignored.length > 0) notices.push({ kind: "file_ignored", keys: ignored });
+    if (retired.length > 0) notices.push({ kind: "retired", keys: retired });
+    return notices;
 }

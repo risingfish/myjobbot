@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ATS_NAMES } from "../jobs/job.js";
 import { fieldsOf, SECTION_NAMES, type FieldName, type SectionName } from "./settingsSections.js";
 import type { FieldView } from "./settingsView.js";
 
@@ -7,8 +6,6 @@ const anything = z.unknown();
 const termList = z.array(anything);
 
 const ROW_SHAPES: Record<FieldName, z.ZodType> = {
-    companies: z.array(z.strictObject({ name: anything, ats: anything, slug: anything }).partial()),
-    searches: z.array(z.strictObject({ name: anything, query: anything, remote_only: anything, country: anything }).partial()),
     preferences: anything,
     match_threshold: anything,
     title_boosts: z.array(z.tuple([anything, anything])),
@@ -69,14 +66,4 @@ export function sectionRequest(section: SectionName, fields: Partial<Record<Fiel
         return [name, field === undefined || field.isDefault ? { kind: "default" } : { kind: "value", value: field.value }];
     });
     return { section, edits: Object.fromEntries(edits) };
-}
-
-/** Gives a new company board row: a name, the first board type and a board id, all to fill in. */
-export function blankBoard(): Record<string, unknown> {
-    return { name: "", ats: ATS_NAMES[0], slug: "" };
-}
-
-/** Gives a new saved search row with only a name and a query, so remote only and country stay unset until the owner sets them. */
-export function blankSearch(): Record<string, unknown> {
-    return { name: "", query: "" };
 }

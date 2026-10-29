@@ -6,7 +6,9 @@ import type { JsonGetter } from "../http/client.js";
 import { makeJob, type Job } from "../jobs/job.js";
 import { optionalDate, optionalFlag, optionalText, textList } from "./fields.js";
 
-type Search = FileConfig["searches"][number];
+export const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
+
+type Search = z.infer<typeof savedSearch>;
 type JsearchSettings = FileConfig["jsearch"];
 
 const ENDPOINT = "https://api.openwebninja.com/jsearch/search-v2";

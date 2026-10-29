@@ -1,14 +1,17 @@
 import { expect, test } from "vitest";
 import type { JobRowView, PageData, PageName, VerdictRowView } from "../src/web/api.js";
-import { loadPageData } from "../src/web/pageData.js";
+import { loadPageData, sourceNames } from "../src/web/pageData.js";
 import { testFileConfig } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
+import { savedSources, STRIPE_BOARD } from "./helpers/savedSources.js";
 import { seededStores, type SeedJob } from "./helpers/views.js";
+
+const SOURCE_NAMES = ["Stripe", "Gmail alerts"];
 
 function pagesOf(jobs: SeedJob[], overrides: Parameters<typeof testFileConfig>[0] = {}) {
     const views = seededStores(jobs).then((stores) => stores.jobViews);
     const config = testFileConfig(overrides);
-    return async (name: PageName, offset = 0) => loadPageData(name, { views: await views, config, now: TEST_NOW, page: { offset, limit: 100 } });
+    return async (name: PageName, offset = 0) => loadPageData(name, { views: await views, config, sourceNames: SOURCE_NAMES, now: TEST_NOW, page: { offset, limit: 100 } });
 }
 
 function jobRows(data: PageData): JobRowView[] {
@@ -118,4 +121,10 @@ test("a scored Gmail alerts job at or above the threshold is recommended", async
 
 test("a stored job's row is not applied until marked", async () => {
     expect(jobRows(await pagesOf([{ id: "a", score: 90 }])("jobs"))[0]).toMatchObject({ applied: false, appliedOn: null });
+});
+
+test("page filters list every saved source's name, including sources that are off, so their jobs stay on Recommended", () => {
+    const [stripe, search, alerts] = savedSources({ companies: [STRIPE_BOARD], searches: [{ name: "Remote backend", query: "backend" }] });
+    const sources = [stripe, search && { ...search, enabled: false }, alerts].filter((source) => source !== undefined);
+    expect(sourceNames(sources)).toEqual(["Stripe", "Remote backend", "Gmail alerts"]);
 });

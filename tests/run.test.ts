@@ -13,7 +13,9 @@ import { fakeBoard } from "./helpers/http.js";
 import { newTables } from "./helpers/memoryJobViews.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { memoryStores, storesWithSettings } from "./helpers/memoryStore.js";
-import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
+import { TEST_SEARCH } from "./helpers/config.js";
+
+const ACME = { companies: [{ name: "Acme", ats: "greenhouse", slug: "acme" }] };
 
 test("runOnce finishes when the model calls finish and writes a trace", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);
@@ -96,12 +98,37 @@ test("a company search that fails unexpectedly is traced, and the run still fini
     expect(readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")).toContain('"type":"company_search_failed"');
 });
 
-test("a run whose store already holds search settings fetches from the stored company, not the file's", async () => {
-    const searchSettings = new MemorySearchSettingsStore();
-    searchSettings.put(OWNER_ID, { companies: [{ name: "Acme", ats: "greenhouse", slug: "acme" }] });
+test("a run fetches from the saved sources, not the companies left in the file", async () => {
     const http = fakeBoard(greenhouseBoard([]));
     const replies = [toolCallsReply(["fetch_jobs", { source: "Acme" }], ["finish", { summary: "done" }])];
-    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => ({ ...memoryStores(), searchSettings }) });
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => storesWithSettings(ACME) });
     expect(report.status).toBe("finished");
     expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/acme/jobs?content=true"]);
+});
+
+test("a run with no source on finishes at once, without asking the model", async () => {
+    const chat = () => Promise.reject(new Error("the model was asked"));
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, lookup: publicDns(), openStores: async () => memoryStores() });
+    expect(report).toMatchObject({ status: "finished", steps: 0, summary: "no sources are on" });
+});
+
+test("before the agent, each company source's company gets its board as careers page and the source is linked to it", async () => {
+    const tables = newTables();
+    const stores = storesWithSettings(ONE_COMPANY, tables);
+    const chat = scriptedChat([toolCallsReply(["finish", { summary: "done" }])]).chat;
+    await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, lookup: publicDns(), openStores: async () => stores });
+    const stripe = tables.companies.find((row) => row.company_key === "stripe");
+    expect([stripe?.careers_url, stripe?.careers_source]).toEqual(["https://job-boards.greenhouse.io/stripe", "board"]);
+    expect((await stores.sources.list(OWNER_ID)).map((source) => [source.name, source.companyId])).toEqual([
+        ["Stripe", stripe?.id],
+        ["Gmail alerts", null],
+    ]);
+});
+
+test("a run with a saved search on and no JSEARCH_API_KEY still starts, and the search reports it isn't set up", async () => {
+    const dataDir = makeDataDir(ONE_COMPANY);
+    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: TEST_SEARCH.name }], ["finish", { summary: "done" }])]);
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, lookup: publicDns(), openStores: async () => storesWithSettings({ searches: [TEST_SEARCH] }) });
+    const [trace] = readdirSync(join(dataDir, "runs"));
+    expect([report.status, readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")]).toEqual(["finished", expect.stringContaining("not set up: JSEARCH_API_KEY is not set")]);
 });

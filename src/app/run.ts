@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { searchCompanies } from "../companies/searchCompanies.js";
 import { describeError } from "../errors.js";
-import { normalizeCompany } from "../jobs/company.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
@@ -11,6 +10,8 @@ import { fileTrace, type Trace } from "../agent/trace.js";
 import { loadConfig, type AppConfig, type Environment, type LoadedConfig } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
+import { OWNER_ID } from "../db/searchSettingsStore.js";
+import type { SavedSource } from "../db/sourceStore.js";
 import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { systemClock } from "../http/clock.js";
@@ -18,7 +19,8 @@ import { HttpClient, type JsonGetter, type JsonPoster, type TextGetter } from ".
 import { connectBrowser, type BrowserPort } from "../careers/browser.js";
 import { systemLookup, type HostLookup } from "../careers/fetchPage.js";
 import { sourceHttp } from "../sources/sourceHttp.js";
-import { boardCareersPage } from "../tools/boardFetch.js";
+import { configuredSources } from "../tools/sources.js";
+import { beforeAgent } from "./beforeAgent.js";
 import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { alertsUsability } from "../gmail/alertJobs/usable.js";
@@ -44,6 +46,7 @@ interface RunParts {
 }
 
 interface ContextParts extends RunParts {
+    saved: SavedSource[];
     usable: true | string;
     chat: ChatFn;
     clients: RunClients;
@@ -67,6 +70,8 @@ interface RunReport extends AgentResult {
     summary: string | null;
 }
 
+const NO_SOURCES = "no sources are on";
+
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
 /** Runs one full agent session end to end: loads config and the stored search settings, runs the agent, and prunes stale jobs afterward. */
@@ -82,11 +87,13 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
     }
 }
 
-/** Links stored jobs to their companies, runs the agent against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
+/** Links stored jobs to their companies, runs the agent, or finishes at once when no source is on, against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
-    const context = buildContext(config, seams, { ...parts, chat, usable: await gmailUsable(parts), clients: runClients(config, seams) });
+    const saved = await parts.stores.sources.list(OWNER_ID);
+    const context = buildContext(config, seams, { ...parts, chat, saved, usable: await gmailUsable(parts), clients: runClients(config, seams) });
     try {
+        if (configuredSources(context).length === 0) return { status: "finished", reason: NO_SOURCES, steps: 0, runId: parts.logs.runId, summary: NO_SOURCES };
         await beforeAgent(context);
         const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
         await afterAgent(context);
@@ -94,14 +101,6 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     } finally {
         await context.careers.renderer.close();
     }
-}
-
-/** Prepares the stored data before the agent starts: links any job not yet linked to its company's record, which after an upgrade is every stored job, and gives each configured board's company its board as careers page. */
-async function beforeAgent(context: ToolContext): Promise<void> {
-    const linked = await context.store.linkUnlinkedJobs();
-    if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
-    const at = context.now().toISOString();
-    for (const board of context.config.companies) await context.companies.setBoardPage({ key: normalizeCompany(board.name), name: board.name, url: boardCareersPage(board) }, at);
 }
 
 /** Finishes the run's stored data after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run, then prunes. */
@@ -129,25 +128,29 @@ async function gmailUsable({ stores, key }: RunParts): Promise<true | string> {
 }
 
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat, clients: { client, boards, lookup } }: ContextParts): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat, saved, clients: { client, boards, lookup } }: ContextParts): ToolContext {
     return {
         config: config.file,
         run: newRunState(),
         runId: logs.runId,
         markers: dataMarkers(logs.runId),
-        store: stores.jobStore,
-        apiCalls: stores.apiCalls,
+        ...storeParts(stores),
         http: seams.http ?? client,
         sources: sourceHttp({ http: seams.http ?? boards, lookup }),
+        saved: { store: stores.sources, list: saved },
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
         gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
         trace: logs.trace,
         chat,
-        companies: stores.companies,
         careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup, pages: seams.pages ?? client, boards, renderer: pageRenderer(config, seams, { logs, stores }) },
     };
+}
+
+/** Gives the stores the tools read and write jobs, API calls and company records through. */
+function storeParts(stores: Stores): Pick<ToolContext, "store" | "apiCalls" | "companies"> {
+    return { store: stores.jobStore, apiCalls: stores.apiCalls, companies: stores.companies };
 }
 
 /** Creates the run's HTTP clients, one following redirects and one for job boards that doesn't, with the address lookup they're checked against. */

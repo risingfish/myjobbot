@@ -6,9 +6,10 @@ import { splitSettings } from "../../src/config/searchSettings.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { SavedSource } from "../../src/db/sourceStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
+import { sourceNames } from "../../src/web/pageData.js";
+import { sourceRows, type SourceRowView } from "../../src/web/sourceRows.js";
 import { gmailSettings, settingsView, type SettingsView } from "../../src/web/settingsView.js";
 
 interface UiState {
@@ -18,6 +19,7 @@ interface UiState {
     key: SecretKeyStatus;
     config: FileConfig;
     notices: SettingsNotice[];
+    sourceNames: string[];
 }
 
 interface OpenStores {
@@ -31,7 +33,7 @@ interface SettingsState {
     key: SecretKeyStatus;
     notices: SettingsNotice[];
     view: SettingsView;
-    sources: SavedSource[];
+    sources: SourceRowView[];
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -81,7 +83,8 @@ export async function getStores(): Promise<OpenStores> {
 export async function getUiState(): Promise<UiState> {
     const { stores: opened, key } = await getStores();
     const { file, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings);
-    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key, config: file, notices };
+    const names = sourceNames(await opened.sources.list(OWNER_ID));
+    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key, config: file, notices, sourceNames: names };
 }
 
 /** Returns what the Settings page shows for one request: the search settings in effect, what they report and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
@@ -89,8 +92,8 @@ export async function getSettingsState(): Promise<SettingsState> {
     const { stores: opened, key } = await getStores();
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
-    const sources = await opened.sources.list(OWNER_ID);
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored, Boolean(process.env.JSEARCH_API_KEY)), sources };
+    const sources = sourceRows(await opened.sources.list(OWNER_ID), Boolean(process.env.JSEARCH_API_KEY));
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources };
 }
 
 /** Returns config.json's runtime settings, the part a search settings save is checked against. */

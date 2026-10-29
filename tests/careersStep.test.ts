@@ -5,6 +5,7 @@ import { alertContext } from "./helpers/alertContext.js";
 import { jobPage, searxngJson } from "./helpers/careersPages.js";
 import { fakePages, finish, open, POSTING_URL, search } from "./helpers/careersLookup.js";
 import { scriptedChat } from "./helpers/chat.js";
+import { ALERTS_REF } from "./helpers/context.js";
 import { publicDns } from "./helpers/fakeDns.js";
 import { fakeBoard } from "./helpers/http.js";
 import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
@@ -18,7 +19,7 @@ function finished(jobId: string, reason: string): AuditEntry {
 
 async function scoredAlertJobs(jobIds: string[]) {
     const base = await alertContext();
-    await base.store.upsertAll(jobIds.map((jobId) => makeJob({ ats: "linkedin", jobId, company: "Acme", title: "Senior Engineer", url: "https://x" }, {})), SEEN, "Gmail alerts");
+    await base.store.upsertAll(jobIds.map((jobId) => makeJob({ ats: "linkedin", jobId, company: "Acme", title: "Senior Engineer", url: "https://x" }, {})), SEEN, ALERTS_REF);
     for (const jobId of jobIds) await base.store.recordVerdict({ job_id: jobId, score: 0, reasons: [], gaps: [] }, { scoredAt: SEEN, runId: "old" });
     const store = new MemoryCareersStore();
     const { chat, requests } = scriptedChat([search(), open(1, "job_page"), finish(true)]);

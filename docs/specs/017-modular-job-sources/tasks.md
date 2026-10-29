@@ -221,8 +221,8 @@ No behaviour changes yet: every caller still passes a plain name.
 This lands whole: once migration 013 moves `companies` and `searches` out of the settings document,
 every reader reads saved sources (plan, Delivery).
 
-- [ ] T030 [US2] Per-PR flow steps 1–3, for sitting S4b.
-- [ ] T031 [P] [US2] Integration test in `tests/integration/companyMigrations.test.ts` (one new
+- [x] T030 [US2] Per-PR flow steps 1–3, for sitting S4b.
+- [x] T031 [P] [US2] Integration test in `tests/integration/companyMigrations.test.ts` (one new
   `test()`; rename the file `laterMigrations.test.ts` only if it would pass 200 lines) for migrations
   012 and 013. After `migrateBefore(db, "012")`:
   - `columnTypes` for `user_sources` and `jobs.source_id` matches data-model.md;
@@ -233,7 +233,7 @@ every reader reads saved sources (plan, Delivery).
   - a database with no `user_settings` row (a fresh install) gives no saved sources and no error.
 
   Add `013_move_sources` to the exact migration lists.
-- [ ] T032 [P] [US2] Unit tests (six `test()`s), in the files named:
+- [x] T032 [P] [US2] Unit tests (six `test()`s), in the files named:
   - `tests/searchSettings.test.ts`: `companies` and `searches` in `config.json` or the stored
     document give one `retired` notice, never an error;
   - `tests/run.test.ts`: a run with no source on finishes at once with "no sources are on";
@@ -245,7 +245,7 @@ every reader reads saved sources (plan, Delivery).
     source's name, including sources that are off;
   - `tests/gmailConnection.test.ts`, or the Gmail actions' test file: connecting Gmail ensures the
     Gmail alerts source.
-- [ ] T033 [US2] Update the tests the move breaks, in its own pass (not [P]: it edits the same files
+- [x] T033 [US2] Update the tests the move breaks, in its own pass (not [P]: it edits the same files
   as T032). These 17 unit tests are **deleted** and counted in the ledger:
   - `tests/config.test.ts`: :26, :70, :91, :97, :101, :105, :109, :115, :122 and :128;
   - `tests/settingsView.test.ts`: :44, :48 and :52;
@@ -264,9 +264,9 @@ every reader reads saved sources (plan, Delivery).
     `client/settingsNotices.test.tsx` (:8);
   - `FULL_CONFIG` and `SAMPLE_CONFIG` lose `companies` and `searches`;
   - `storesWithSettings` seeds saved sources.
-- [ ] T034 [US2] Add `src/db/migrations/013_move_sources.ts` (data-model "The data step"), typed with
+- [x] T034 [US2] Add `src/db/migrations/013_move_sources.ts` (data-model "The data step"), typed with
   `db.withTables<…>()`, with its own frozen target rules. List it in `migrations/index.ts`.
-- [ ] T035 [US2] Take `companies` and `searches`, the four cross-source rules and `requireSearchKey`
+- [x] T035 [US2] Take `companies` and `searches`, the four cross-source rules and `requireSearchKey`
   out of:
   - `src/config/schema.ts` and `parse.ts`;
   - `searchSettings.ts`: `SANITIZERS`, and the new `retired` notice;
@@ -275,9 +275,12 @@ every reader reads saved sources (plan, Delivery).
     `settingsProblems.ts`.
 
   Show the `retired` notice in `web/components/settings/SettingsNotices.tsx`.
-- [ ] T036 [US2] Rewrite `web/components/settings/SourcesSection.tsx` as a read-only list of saved
+- [x] T036 [US2] Rewrite `web/components/settings/SourcesSection.tsx` as a read-only list of saved
   sources, keeping `<h4>Sources</h4>` (research R7).
-- [ ] T037 [US2] Move `beforeAgent` into `src/app/beforeAgent.ts`. Switch every reader to the owner's
+- [x] T037 [US2] (Done. The run keeps the owner's saved sources in `ToolContext.saved`, and
+  `configuredSources` reads the ones that are on. A saved search without `JSEARCH_API_KEY` refreshes
+  to a "not set up" note instead of failing. The careers lookup's alert read still goes by the
+  `Gmail alerts` name until S5.) Move `beforeAgent` into `src/app/beforeAgent.ts`. Switch every reader to the owner's
   saved sources (research R8):
   - `configuredSources` in `src/tools/sources.ts`;
   - the company sources' board pages, through `module.company()`, `setBoardPage` and `linkCompany`;
@@ -288,11 +291,11 @@ every reader reads saved sources (plan, Delivery).
   - every production `upsertAll` call passes `{ id, name }`.
 
   The model still fetches through `fetch_jobs` until S5.
-- [ ] T038 [US2] In `web/lib/gmailActions.ts`, connecting Gmail calls
+- [x] T038 [US2] In `web/lib/gmailActions.ts`, connecting Gmail calls
   `SourceStore.ensureAccountSource` for Gmail alerts.
-- [ ] T039 [US2] Check every file is within 200 lines, and run `tests/docker.sh`: its web check loads
+- [x] T039 [US2] Check every file is within 200 lines, and run `tests/docker.sh`: its web check loads
   `/settings`.
-- [ ] T040 [US2] Per-PR flow steps 4–6 ("Move boards and searches into saved sources (017 PR 4b)").
+- [ ] T040 [US2] (The PR touches 62 files, 34 of them in `src/` and `web/`.) Per-PR flow steps 4–6 ("Move boards and searches into saved sources (017 PR 4b)").
   It is about 22 files: tell the owner when opening it.
 
 **Checkpoint**: User Story 2 works: the owner's boards and searches are saved sources, and their jobs

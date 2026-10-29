@@ -1,18 +1,21 @@
 import type { FileConfig } from "../config/schema.js";
+import type { SavedSource } from "../db/sourceStore.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
-import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
 
 export interface PageInput {
     views: JobViews;
     config: FileConfig;
+    sourceNames: string[];
     page: Page;
     now: Date;
 }
+
+export type PageSettings = Pick<PageInput, "config" | "sourceNames">;
 
 const LOADERS: Record<PageName, (input: PageInput) => Promise<PageData>> = {
     recommended: loadRecommended,
@@ -26,17 +29,17 @@ export async function loadPageData(name: PageName, input: PageInput): Promise<Pa
 }
 
 /** Loads the page of jobs that meet the recommendation threshold, for the Recommended page. */
-async function loadRecommended({ views, config, page, now }: PageInput): Promise<PageData> {
-    const jobs = await recommendedJobs(views, config);
+async function loadRecommended({ views, config, sourceNames, page, now }: PageInput): Promise<PageData> {
+    const jobs = await recommendedJobs(views, { config, sourceNames });
     const rows = jobs.slice(page.offset, page.offset + page.limit).map((job) => toJobRowView(job, rowContext(config, now)));
     const text = { summary: `${jobs.length} recommended · threshold ${config.match_threshold}`, empty: "No recommendations yet: run myjobbot run." };
     return { kind: "jobs", rows, total: jobs.length, nextOffset: nextOffset(page, jobs.length), ...text };
 }
 
-/** Returns the jobs, from configured sources, whose boosted score meets the match threshold. */
-async function recommendedJobs(views: JobViews, config: FileConfig): Promise<JobView[]> {
+/** Returns the jobs, from saved sources, whose boosted score meets the match threshold. */
+async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
-    const scored = await views.scoredFrom({ sources: sourceNames(config), minScore: threshold - maxBoost(config.title_boosts) });
+    const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(config.title_boosts) });
     const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
     return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
 }
@@ -62,9 +65,9 @@ function nextOffset(page: Page, total: number): number | null {
     return next < total ? next : null;
 }
 
-/** Returns the names of all configured company and search sources. */
-function sourceNames(config: FileConfig): string[] {
-    return [...config.companies, ...config.searches].map((source) => source.name).concat(ALERTS_SOURCE);
+/** Names every saved source, including those that are off, so their jobs stay on Recommended. */
+export function sourceNames(saved: SavedSource[]): string[] {
+    return saved.map((source) => source.name);
 }
 
 /** Builds the context row views need from the current config and time. */

@@ -6,25 +6,23 @@ import { fetchJsearch, searchParams } from "../sources/jsearch.js";
 import type { ToolContext } from "./context.js";
 import { withoutDescription } from "./jobLog.js";
 import { refreshBlocker, requestsThisMonth } from "./searchBudget.js";
-import type { FetchOutcome, Search } from "./sources.js";
+import { sourceRef, type FetchOutcome, type Search } from "./sources.js";
+
+const NOT_SET_UP = "not set up: JSEARCH_API_KEY is not set";
 
 /** Refreshes a saved JSearch search against the API, storing new jobs and skipping excluded publishers and board duplicates. */
 export async function refreshSearch(context: ToolContext, search: Search): Promise<FetchOutcome> {
+    const apiKey = context.jsearchApiKey;
+    if (apiKey === null) return { seen: null, note: NOT_SET_UP };
     const blocker = await refreshBlocker(context, search.name);
-    if (blocker) return { seen: null, note: blocker };
+    if (blocker !== null) return { seen: null, note: blocker };
     await context.apiCalls.record("jsearch", search.name, context.now().toISOString());
-    const jobs = await fetchJsearch({ search, settings: context.config.jsearch, apiKey: requireKey(context) }, context.http);
+    const jobs = await fetchJsearch({ search, settings: context.config.jsearch, apiKey }, context.http);
     const wanted = jobs.filter((job) => !isExcludedPublisher(job, context.config.jsearch.exclude_publishers));
     const fresh = await withoutBoardCopies(context, wanted);
-    await context.store.upsertAll(fresh, context.now().toISOString(), search.name);
+    await context.store.upsertAll(fresh, context.now().toISOString(), sourceRef(search));
     await logSearchFetch(context, search, { fresh, skipped: wanted.length - fresh.length, skippedPublishers: jobs.length - wanted.length });
     return { seen: null, note: null };
-}
-
-/** Returns the configured JSearch API key, or throws if none is set. */
-function requireKey(context: ToolContext): string {
-    if (!context.jsearchApiKey) throw new Error("JSEARCH_API_KEY is not set");
-    return context.jsearchApiKey;
 }
 
 /** Returns the jobs no company board already supplied, so JSearch duplicates are skipped. */

@@ -6,8 +6,8 @@ import { getUiState } from "./uiState.js";
 
 /** Loads the next rows of a page for the browser as the owner scrolls. */
 export async function loadMoreRows(name: PageName, offset: number): Promise<PageData> {
-    const { views, config } = await getUiState();
-    return loadRows(views, config, { name, offset });
+    const { views, config, sourceNames } = await getUiState();
+    return loadRows(views, { config, sourceNames }, { name, offset });
 }
 
 /** Saves the owner hiding or unhiding a job from the browser. */

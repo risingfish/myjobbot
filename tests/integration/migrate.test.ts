@@ -54,7 +54,7 @@ test("on an empty database, two processes migrating at once run each step once, 
     try {
         for (const table of [...TABLES, ...LEGACY_TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(first);
         const ran = await Promise.all([migrateToLatest(first), migrateToLatest(second)]);
-        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources", "006_injection_flag", "007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources"]);
+        expect(ran.flat()).toEqual(["001_initial", "002_gmail", "003_gmail_alerts", "004_careers_lookup", "005_page_sources", "006_injection_flag", "007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources"]);
         expect(await migrateToLatest(first)).toEqual([]);
         expect(await tableCollations(first)).toEqual(["api_calls utf8mb4_bin", "careers_audit utf8mb4_bin", "companies utf8mb4_bin", "gmail_alert_state utf8mb4_bin", "gmail_connection utf8mb4_bin", "jobs utf8mb4_bin", "users utf8mb4_bin", "user_settings utf8mb4_bin", "user_sources utf8mb4_bin", "verdicts utf8mb4_bin"]);
     } finally {
@@ -70,7 +70,7 @@ test("step 005 adds how pages were read and marks earlier unreadable or gave-up 
         for (const table of [...TABLES, ...LEGACY_TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
         await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < "005")) });
         for (const [index, reason] of FINISHES.entries()) await sql`INSERT INTO careers_audit (run_id, at, ats, job_id, company, step, outcome, reason) VALUES ('r', 'now', 'linkedin', ${`li_${index}`}, 'Acme', 'finish', 'failed', ${reason})`.execute(db);
-        expect(await migrateToLatest(db)).toEqual(["005_page_sources", "006_injection_flag", "007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources"]);
+        expect(await migrateToLatest(db)).toEqual(["005_page_sources", "006_injection_flag", "007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources"]);
         const marked = await sql<{ job_id: string; retry_once: number }>`SELECT job_id, retry_once FROM careers_audit ORDER BY job_id`.execute(db);
         expect(marked.rows.map((row) => row.retry_once)).toEqual([1, 1, 1, 0, 0]);
         expect(await columnTypes(db, "careers_audit", ["page_source", "fallback", "board", "retry_once"])).toEqual(["board varchar(160) YES NULL utf8mb4_bin", "fallback varchar(32) YES NULL utf8mb4_bin", "page_source varchar(16) YES NULL utf8mb4_bin", "retry_once tinyint(4) NO 0 "]);
@@ -101,7 +101,7 @@ test("step 007 records the format of every stored description as plain text, and
             .insertInto("jobs")
             .values([storedJob("with", "Build APIs."), storedJob("without", null)])
             .execute();
-        expect(await migrateToLatest(db)).toEqual(["007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources"]);
+        expect(await migrateToLatest(db)).toEqual(["007_description_format", "008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources"]);
         const formats = await db.selectFrom("jobs").select(["job_id", "description_format"]).orderBy("job_id").execute();
         expect(formats).toEqual([
             { job_id: "with", description_format: "text" },
@@ -119,7 +119,7 @@ test("step 008 adds the applied mark to jobs, not applied for every job already 
         for (const table of [...TABLES, ...LEGACY_TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
         await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < "008")) });
         await db.insertInto("jobs").values(storedJob("before", null)).execute();
-        expect(await migrateToLatest(db)).toEqual(["008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources"]);
+        expect(await migrateToLatest(db)).toEqual(["008_applied", "009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources"]);
         await db.insertInto("jobs").values(storedJob("after", null)).execute();
         const marks = await db.selectFrom("jobs").select(["job_id", "applied", "applied_on"]).orderBy("job_id").execute();
         expect(marks).toEqual([

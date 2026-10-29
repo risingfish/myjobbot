@@ -1,8 +1,8 @@
 import type { Trace } from "../agent/trace.js";
+import type { JobSource } from "../db/jobSource.js";
 import type { AlertStateRow, AlertStore, GmailStore, JobStore } from "../db/store.js";
 import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type ParsedAlert } from "./alertJobs/parse.js";
-import { ALERTS_SOURCE } from "./alertJobs/source.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
 import { alertJobRecord, sortAlertJobs } from "./alertStore.js";
@@ -20,6 +20,7 @@ export interface AlertDeps {
     senders: string[];
     trace: Trace;
     now: Date;
+    source: JobSource;
     lookup?: LookupDeps;
 }
 
@@ -71,7 +72,7 @@ async function storeRead(deps: AlertDeps, read: ReadEmail[]): Promise<Counts> {
     );
     const looked = await lookUpDescriptions(deps.lookup, { read, fresh: sorted.fresh, now: deps.now });
     const jobs = sorted.fresh.map((job) => alertJobRecord(job, looked.matches.get(job.linkedinId)));
-    await deps.store.upsertAll(jobs, seen, ALERTS_SOURCE);
+    await deps.store.upsertAll(jobs, seen, deps.source);
     return { stored: jobs.length, seenAgain: sorted.seenAgain, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length, lookups: looked.stats };
 }
 

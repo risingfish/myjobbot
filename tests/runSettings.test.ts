@@ -8,25 +8,28 @@ import { ONE_COMPANY } from "./helpers/dataDir.js";
 import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
 import { memoryTrace } from "./helpers/trace.js";
 
-const ACME = { companies: [{ name: "Acme", ats: "lever", slug: "acme" }] };
+const ACME = { preferences: "Acme only" };
 
 function loaded(fileRaw: unknown): LoadedConfig {
     return { env: envSchema.parse(LLM_ENV), fileRaw, resume: "# Jane Doe", dataDir: "unused" };
 }
 
-test("a run with nothing stored refuses, and never imports the file's search settings", async () => {
+test("a run with nothing stored uses the defaults, and never imports the file's search settings", async () => {
     const store = new MemorySearchSettingsStore();
-    await expect(settingsForRun(loaded(ONE_COMPANY), store, memoryTrace())).rejects.toThrow(/at least one company or search/);
+    expect((await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace())).file.preferences).toBe("");
     expect(await store.load(OWNER_ID)).toBeNull();
 });
 
-test("with settings stored, a run uses them and traces the file's search settings as ignored", async () => {
+test("with settings stored, a run uses them and traces the file's search settings as ignored and its boards as retired", async () => {
     const store = new MemorySearchSettingsStore();
     store.put(OWNER_ID, ACME);
     const trace = memoryTrace();
     const config = await settingsForRun(loaded(ONE_COMPANY), store, trace);
-    expect(config.file.companies.map((company) => company.name)).toEqual(["Acme"]);
-    expect(trace.events).toEqual([{ type: "settings_file_ignored", keys: ["companies", "preferences"] }]);
+    expect(config.file.preferences).toBe("Acme only");
+    expect(trace.events).toEqual([
+        { type: "settings_file_ignored", keys: ["preferences"] },
+        { type: "settings_retired", keys: ["companies"] },
+    ]);
 });
 
 test("a run keeps the settings it started with when the stored ones change", async () => {
@@ -35,7 +38,7 @@ test("a run keeps the settings it started with when the stored ones change", asy
     const started = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
     store.put(OWNER_ID, ACME);
     const next = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
-    expect([started.file.companies[0]?.name, next.file.companies[0]?.name]).toEqual(["Stripe", "Acme"]);
+    expect([started.file.preferences, next.file.preferences]).toEqual(["Remote US, senior backend", "Acme only"]);
 });
 
 test("a run with a bad stored match threshold scores with the default and traces the fallback", async () => {

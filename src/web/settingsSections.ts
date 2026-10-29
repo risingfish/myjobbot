@@ -1,8 +1,8 @@
-export const SECTION_NAMES = ["sources", "preferences", "scoring", "filters"] as const;
+export const SECTION_NAMES = ["preferences", "scoring", "filters"] as const;
 
 export type SectionName = (typeof SECTION_NAMES)[number];
 
-export type FieldName = "companies" | "searches" | "preferences" | "match_threshold" | "title_boosts" | "include" | "exclude" | "extra_exclude" | "exclude_companies" | "exclude_publishers";
+export type FieldName = "preferences" | "match_threshold" | "title_boosts" | "include" | "exclude" | "extra_exclude" | "exclude_companies" | "exclude_publishers";
 
 export interface FieldSpec {
     name: FieldName;
@@ -12,8 +12,6 @@ export interface FieldSpec {
 }
 
 export const SECTIONS: readonly FieldSpec[] = [
-    { name: "companies", section: "sources", stored: ["companies"], check: ["companies"] },
-    { name: "searches", section: "sources", stored: ["searches"], check: ["searches"] },
     { name: "preferences", section: "preferences", stored: ["preferences"], check: ["preferences"] },
     { name: "match_threshold", section: "scoring", stored: ["match_threshold"], check: ["match_threshold"] },
     { name: "title_boosts", section: "scoring", stored: ["title_boosts"], check: ["title_boosts"] },

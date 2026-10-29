@@ -6,7 +6,7 @@ import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
 import { refreshSearch } from "./searchFetch.js";
 import { unscoredJobs } from "./unscored.js";
-import { findSource, type FetchOutcome, type Source } from "./sources.js";
+import { findSource, sourceRef, type FetchOutcome, type Source } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 
 const PAGE_SIZE = 25;
@@ -26,7 +26,7 @@ export function fetchJobsTool(context: ToolContext): Tool {
 /** Fetches a source, then builds the paginated fetch_jobs response of its unscored jobs. */
 async function jobPage(context: ToolContext, source: Source) {
     const outcome = await fetchOnce(context, source);
-    const unscored = await unscoredJobs(context, source.name, outcome);
+    const unscored = await unscoredJobs(context, sourceRef(source), outcome);
     const jobs = await Promise.all(unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row)));
     const page = { source: source.name, total_unscored: unscored.length, jobs };
     if (source.kind === "search") return { ...page, ...refreshFields(outcome) };
@@ -55,7 +55,7 @@ function fetchOnce(context: ToolContext, source: Source): Promise<FetchOutcome> 
 function startFetch(context: ToolContext, source: Source): Promise<FetchOutcome> {
     if (source.kind === "board") return fetchBoard(context, source.company);
     if (source.kind === "search") return refreshSearch(context, source.search);
-    return alertSource(context);
+    return alertSource(context, source);
 }
 
 /** Records that a source's fetch failed, with its fixed note when it has one, so status checks and finish report it. */

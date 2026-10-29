@@ -7,7 +7,7 @@ import { memoryStores } from "../helpers/memoryStore.js";
 
 vi.mock("../../web/lib/uiState.js", async () => {
     const { settingsView } = await import("../../src/web/settingsView.js");
-    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null, false) }) };
+    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null), sources: [] }) };
 });
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 vi.mock("../../web/lib/settingsActions.js", () => ({ saveSettingsSection: vi.fn() }));

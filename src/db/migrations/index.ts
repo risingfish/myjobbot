@@ -11,5 +11,6 @@ import { companies } from "./009_companies.js";
 import { foldCareersPages } from "./010_fold_careers_pages.js";
 import { userSettings } from "./011_user_settings.js";
 import { userSources } from "./012_user_sources.js";
+import { moveSources } from "./013_move_sources.js";
 
-export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied, "009_companies": companies, "010_fold_careers_pages": foldCareersPages, "011_user_settings": userSettings, "012_user_sources": userSources };
+export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied, "009_companies": companies, "010_fold_careers_pages": foldCareersPages, "011_user_settings": userSettings, "012_user_sources": userSources, "013_move_sources": moveSources };

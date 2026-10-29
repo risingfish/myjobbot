@@ -1,27 +1,11 @@
 import { z } from "zod";
 import { DEFAULT_ALERT_SENDERS, isAlertSender } from "../gmail/alerts.js";
-import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
-import { ATS_NAMES } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import { isDomainEntry, isValidDomainEntry } from "../jobs/publisherDomain.js";
 
 const DEFAULT_INCLUDE = ["engineer", "developer", "software", "sre", "devops", "platform", "backend", "frontend", "full stack", "fullstack", "programmer"];
 const DEFAULT_EXCLUDE = ["intern", "internship", "manager", "director", "sales", "recruiter", "recruiting", "recruitment"];
 
-export const company = z.object({
-    name: z.string().min(1),
-    ats: z.enum(ATS_NAMES),
-    slug: z.string().min(1),
-});
-
-export const search = z.object({
-    name: z.string().min(1),
-    query: z.string().min(1),
-    remote_only: z.boolean().default(false),
-    country: z.string().min(2).default("us"),
-});
-
-const HOURS_PER_MONTH = 30 * 24;
 export const REFRESH_GRACE_HOURS = 0.25;
 
 export const filterTerm = z.string().refine((term) => normalizeTitle(term) !== "", { message: "filter terms need at least one letter or digit" });
@@ -84,8 +68,6 @@ const http = z.object({
 
 export const fileConfigSchema = z
     .object({
-        companies: z.array(company).default([]),
-        searches: z.array(search).default([]),
         jsearch: jsearch.prefault({}),
         preferences: z.string().default(""),
         match_threshold: z.number().int().min(0).max(100).default(70),
@@ -99,12 +81,6 @@ export const fileConfigSchema = z
         gmail: gmail.prefault({}),
         careers_lookup: careersLookup.prefault({}),
         company_search: companySearch.prefault({}),
-    })
-    .refine(hasAtLeastOneSource, { message: "configure at least one company or search" })
-    .refine(hasUniqueSourceNames, { message: "company and search names must be unique" })
-    .refine(avoidsReservedName, { message: `"${ALERTS_SOURCE}" is a reserved source name; rename that company or search` })
-    .refine(fitsJsearchBudget, {
-        message: "too many searches for jsearch.monthly_request_cap at this jsearch.refresh_hours",
     })
     .refine(hasLongerRetentionThanGhostThreshold, {
         message: "job_retention_days must be greater than ghost_threshold_days so repost history survives long enough to flag ghosts",
@@ -120,38 +96,6 @@ export const envSchema = z.object({
     MYJOBBOT_SEARXNG_URL: z.url().optional(),
     MYJOBBOT_BROWSER_URL: z.url({ protocol: /^wss?$/ }).optional(),
 });
-
-interface SourceLists {
-    companies: Array<{ name: string }>;
-    searches: Array<{ name: string }>;
-}
-
-/** Validates that the config defines at least one company or saved-search source to work from. */
-function hasAtLeastOneSource(config: SourceLists): boolean {
-    return config.companies.length + config.searches.length > 0;
-}
-
-/** Validates that company and search names are unique across both lists, since names identify sources. */
-function hasUniqueSourceNames(config: SourceLists): boolean {
-    return hasUniqueNames([...config.companies, ...config.searches]);
-}
-
-/** Validates that no company or search takes the name of the Gmail alerts source. */
-function avoidsReservedName(config: SourceLists): boolean {
-    return [...config.companies, ...config.searches].every((source) => source.name.trim().toLowerCase() !== ALERTS_SOURCE.toLowerCase());
-}
-
-/** Validates that refreshing all configured searches won't exceed the JSearch monthly request cap. */
-function fitsJsearchBudget(config: SourceLists & { jsearch: { monthly_request_cap: number; refresh_hours: number } }): boolean {
-    const refreshesPerMonth = Math.ceil(HOURS_PER_MONTH / (config.jsearch.refresh_hours - REFRESH_GRACE_HOURS));
-    return config.searches.length * refreshesPerMonth <= config.jsearch.monthly_request_cap;
-}
-
-/** Reports whether a list of named entries has no duplicate names, ignoring case. */
-function hasUniqueNames(list: Array<{ name: string }>): boolean {
-    const names = list.map((entry) => entry.name.toLowerCase());
-    return new Set(names).size === names.length;
-}
 
 /** Validates job retention outlasts the ghost-job threshold so repost history survives for ghost detection. */
 function hasLongerRetentionThanGhostThreshold(config: { ghost_threshold_days: number; job_retention_days: number }): boolean {

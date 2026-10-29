@@ -1,12 +1,22 @@
-import type { FileConfig } from "../config/schema.js";
-import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import type { CareersSummary } from "../careers/lookUpJobs.js";
+import type { JobSource } from "../db/jobSource.js";
+import type { SavedSource } from "../db/sourceStore.js";
 import type { AlertSummary } from "../gmail/alertFetch.js";
+import { ATS_NAMES } from "../jobs/job.js";
+import { savedSearch } from "../sources/jsearch.js";
+import { z } from "zod";
 import type { ToolContext } from "./context.js";
 
-export type Company = FileConfig["companies"][number];
-export type Search = FileConfig["searches"][number];
-export type Source = { kind: "board"; name: string; company: Company } | { kind: "search"; name: string; search: Search } | { kind: "alerts"; name: typeof ALERTS_SOURCE };
+const boardParams = z.object({ slug: z.string().min(1) });
+
+interface SourceRef {
+    id: number;
+    name: string;
+}
+
+export type Company = SourceRef & { ats: (typeof ATS_NAMES)[number]; slug: string };
+export type Search = SourceRef & z.infer<typeof savedSearch>;
+export type Source = (SourceRef & { kind: "board"; company: Company }) | (SourceRef & { kind: "search"; search: Search }) | (SourceRef & { kind: "alerts" });
 
 export interface FetchOutcome {
     seen: string | null;
@@ -15,11 +25,27 @@ export interface FetchOutcome {
     careers?: CareersSummary;
 }
 
-/** Lists every configured company board and saved search, plus the Gmail alerts source, as a uniform Source list. */
+/** Lists the owner's saved sources that are on and that the run fetches through its tools: company boards, saved searches and Gmail alerts. */
 export function configuredSources(context: ToolContext): Source[] {
-    const boards = context.config.companies.map((company) => ({ kind: "board" as const, name: company.name, company }));
-    const searches = context.config.searches.map((search) => ({ kind: "search" as const, name: search.name, search }));
-    return [...boards, ...searches, { kind: "alerts" as const, name: ALERTS_SOURCE }];
+    return context.saved.list.filter((saved) => saved.enabled).flatMap(toolSource);
+}
+
+/** Gives the saved source a source's jobs are stored and read under. */
+export function sourceRef(source: SourceRef): JobSource {
+    return { id: source.id, name: source.name };
+}
+
+/** Turns one saved source into the shape the tools fetch, or nothing for a module the tools can't fetch yet or fields that no longer pass. */
+function toolSource(saved: SavedSource): Source[] {
+    const ref = { id: saved.id, name: saved.name };
+    if (saved.module === "gmail_alerts") return [{ ...ref, kind: "alerts" }];
+    if (saved.module === "jsearch") {
+        const search = savedSearch.safeParse(saved.params);
+        return search.success ? [{ ...ref, kind: "search", search: { ...ref, ...search.data } }] : [];
+    }
+    const ats = ATS_NAMES.find((name) => name === saved.module);
+    const board = boardParams.safeParse(saved.params);
+    return ats !== undefined && board.success ? [{ ...ref, kind: "board", company: { ...ref, ats, slug: board.data.slug } }] : [];
 }
 
 /** Looks up a configured source by name (case-insensitive), throwing if none matches. */

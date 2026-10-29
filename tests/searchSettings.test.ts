@@ -1,11 +1,10 @@
 import { expect, test } from "vitest";
 import { fileConfigSchema } from "../src/config/schema.js";
+import { settingsNotices } from "../src/config/resolve.js";
 import { mergeSettings, sanitizeSearchSettings, splitSettings } from "../src/config/searchSettings.js";
-import { FULL_CONFIG, TEST_SEARCH } from "./helpers/config.js";
+import { FULL_CONFIG } from "./helpers/config.js";
 
 const SEARCH_PART = {
-    companies: FULL_CONFIG.companies,
-    searches: FULL_CONFIG.searches,
     preferences: FULL_CONFIG.preferences,
     match_threshold: 60,
     title_filter: { extra_exclude: ["staff"] },
@@ -16,7 +15,7 @@ const SEARCH_PART = {
 
 const RUNTIME_PART = { jsearch: { monthly_request_cap: 100, refresh_hours: 48 }, http: { timeout_s: 20 }, ghost_threshold_days: 30 };
 
-test("the eight search keys go to the search part, and everything else to the runtime part", () => {
+test("the six search keys go to the search part, and everything else to the runtime part", () => {
     expect(splitSettings(FULL_CONFIG)).toEqual({ search: SEARCH_PART, runtime: RUNTIME_PART });
 });
 
@@ -25,7 +24,7 @@ test("jsearch.exclude_publishers moves to the search part, and a jsearch holding
 });
 
 test("unset keys stay absent from both parts", () => {
-    expect(splitSettings({ companies: [], agent: {} })).toEqual({ search: { companies: [] }, runtime: { agent: {} } });
+    expect(splitSettings({ match_threshold: 70, agent: {} })).toEqual({ search: { match_threshold: 70 }, runtime: { agent: {} } });
 });
 
 test("a file with only runtime keys gives an empty search part", () => {
@@ -57,6 +56,12 @@ test("the merged file parses exactly as the original, and a file that isn't an o
 
 const STRIPE = { name: "Stripe", ats: "greenhouse", slug: "stripe" };
 
+test("boards and searches in config.json or the stored document give one retired notice, are never used, and are never an error", () => {
+    expect(sanitizeSearchSettings({ companies: [STRIPE], searches: "anything", match_threshold: 60 })).toEqual({ settings: { match_threshold: 60 }, notices: [] });
+    expect(settingsNotices(splitSettings({ companies: [STRIPE], agent: {} }), { searches: [] })).toEqual([{ kind: "retired", keys: ["companies", "searches"] }]);
+    expect(fileConfigSchema.parse(mergeSettings(splitSettings({ companies: [STRIPE] }).runtime, {}))).not.toHaveProperty("companies");
+});
+
 function droppedFrom(stored: Record<string, unknown>) {
     const { settings, notices } = sanitizeSearchSettings(stored);
     return [settings, notices.map((notice) => notice.setting)];
@@ -68,14 +73,6 @@ test("a bad match threshold is dropped so its default applies, with a notice nam
 
 test("preferences of the wrong type are dropped", () => {
     expect(droppedFrom({ preferences: 5 })).toEqual([{}, ["preferences"]]);
-});
-
-test("one bad company is left out and the others kept", () => {
-    expect(droppedFrom({ companies: [STRIPE, { name: "X", ats: "workday", slug: "x" }] })).toEqual([{ companies: [STRIPE] }, ["companies[1]"]]);
-});
-
-test("one bad search is left out and the others kept", () => {
-    expect(droppedFrom({ searches: [{ name: "", query: "q" }, TEST_SEARCH] })).toEqual([{ searches: [TEST_SEARCH] }, ["searches[0]"]]);
 });
 
 test("a title boost with a bad term and one with bad points are each left out", () => {
@@ -113,7 +110,7 @@ test("a list whose entries all fail takes its default, while a list stored empty
 });
 
 test("a setting of the wrong shape is dropped whole with one notice naming it", () => {
-    expect(droppedFrom({ companies: 5, title_boosts: ["typescript"] })).toEqual([{}, ["companies", "title_boosts"]]);
+    expect(droppedFrom({ match_threshold: "high", title_boosts: ["typescript"] })).toEqual([{}, ["match_threshold", "title_boosts"]]);
 });
 
 test("a key that isn't a search setting is dropped with a notice naming it, even one named like an object's own members", () => {
@@ -128,7 +125,7 @@ test("a key that isn't a search setting is dropped with a notice naming it, even
 test("valid settings pass unchanged with no notices, and no notice holds a value or the preferences text", () => {
     const { search } = splitSettings(FULL_CONFIG);
     expect(sanitizeSearchSettings(search)).toEqual({ settings: search, notices: [] });
-    const { notices } = sanitizeSearchSettings({ preferences: ["secret plans"], companies: [{ name: "Hidden Co", ats: "x", slug: "hc" }], title_boosts: { "##": 5 } });
+    const { notices } = sanitizeSearchSettings({ preferences: ["secret plans"], exclude_publishers: ["Hidden.*"], title_boosts: { "##": 5 } });
     expect(notices).toHaveLength(3);
     expect(JSON.stringify(notices)).not.toMatch(/secret|Hidden|##/);
 });

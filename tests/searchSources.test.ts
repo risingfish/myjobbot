@@ -7,6 +7,8 @@ import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
 import { jsearchId } from "./helpers/jsearch.js";
 import { fetchPage, invokeTool } from "./helpers/tools.js";
+import { memoryStores } from "./helpers/memoryStore.js";
+import { savedSources, STRIPE_BOARD } from "./helpers/savedSources.js";
 import { memoryTrace } from "./helpers/trace.js";
 
 const JSEARCH_HOST = "api.openwebninja.com";
@@ -14,7 +16,8 @@ const SEARCH_NAME = TEST_SEARCH.name;
 
 function searchContext(overrides: Partial<ToolContext> = {}) {
     const http = routedHttp({ [JSEARCH_HOST]: loadFixture("jsearch.json"), "boards-api.greenhouse.io": greenhouseBoard(["Backend Engineer"]) });
-    const context = testContext({ config: testFileConfig({ searches: [TEST_SEARCH] }), http, ...overrides });
+    const saved = { store: memoryStores().sources, list: savedSources({ companies: [STRIPE_BOARD], searches: [TEST_SEARCH] }) };
+    const context = testContext({ config: testFileConfig(), http, saved, ...overrides });
     const jsearchRequests = () => http.requests.filter((sent) => new URL(sent.url).host === JSEARCH_HOST);
     return { context, jsearchRequests };
 }
@@ -35,7 +38,7 @@ test("a search is not refreshed again within refresh_hours", async () => {
 });
 
 test("a search refreshes on a schedule that lands seconds short of refresh_hours", async () => {
-    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+    const config = testFileConfig({ jsearch: { refresh_hours: 8 } });
     const { context, jsearchRequests } = searchContext({ config });
     const almostEightHoursAgo = new Date(TEST_NOW.getTime() - (8 * 3600 - 10) * 1000).toISOString();
     context.apiCalls.record("jsearch", SEARCH_NAME, almostEightHoursAgo);
@@ -44,7 +47,7 @@ test("a search refreshes on a schedule that lands seconds short of refresh_hours
 });
 
 test("a search is not refreshed well inside refresh_hours", async () => {
-    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { refresh_hours: 8 } });
+    const config = testFileConfig({ jsearch: { refresh_hours: 8 } });
     const { context, jsearchRequests } = searchContext({ config });
     context.apiCalls.record("jsearch", SEARCH_NAME, new Date(TEST_NOW.getTime() - 7 * 3600 * 1000).toISOString());
     expect(await fetchPage(context, SEARCH_NAME)).toMatchObject({ refreshed: false, refresh_note: "refreshed 7h ago; next refresh in 1h" });
@@ -83,7 +86,7 @@ test("each JSearch request is logged with its query and skipped duplicates", asy
 
 async function fetchExcluding(excludePublishers: string[]) {
     const jobLog = memoryTrace();
-    const config = testFileConfig({ searches: [TEST_SEARCH], jsearch: { exclude_publishers: excludePublishers } });
+    const config = testFileConfig({ jsearch: { exclude_publishers: excludePublishers } });
     const { context } = searchContext({ config, jobLog });
     const served = (await fetchPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
     return { served, stored: (await context.store.unscoredForSource(SEARCH_NAME)).length, log: jobLog.events.at(-1) };

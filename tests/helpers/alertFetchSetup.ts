@@ -1,3 +1,4 @@
+import { ALERTS_SOURCE } from "../../src/gmail/alertJobs/source.js";
 import { randomBytes } from "node:crypto";
 import type { Stores } from "../../src/db/store.js";
 import type { AlertDeps, LookupDeps } from "../../src/gmail/alertFetch.js";
@@ -29,7 +30,7 @@ export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = 
     const opened = stores ?? (await connectedStores());
     const fake = fakeImap({ mailbox: { uidValidity: 7, emails }, ...script });
     const trace = memoryTrace();
-    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, store: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, trace, now: NOW };
+    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, store: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, trace, now: NOW, source: ALERTS_SOURCE };
     return { deps, stores: opened, fake, trace };
 }
 

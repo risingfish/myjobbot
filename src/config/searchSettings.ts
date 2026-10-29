@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
-import { boostPoints, company, fileConfigSchema, filterTerm, publisherTerm, search } from "./schema.js";
+import { boostPoints, fileConfigSchema, filterTerm, publisherTerm } from "./schema.js";
 
 const PUBLISHERS = "exclude_publishers";
 
@@ -34,8 +34,6 @@ export interface FallbackNotice {
 }
 
 const SANITIZERS: Record<string, Sanitizer> = {
-    companies: (value, fallbacks) => fallbacks.list(value, { name: "companies", entry: company }),
-    searches: (value, fallbacks) => fallbacks.list(value, { name: "searches", entry: search }),
     preferences: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.preferences, value, "preferences"),
     match_threshold: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.match_threshold, value, "match_threshold"),
     title_filter: (value, fallbacks) => fallbacks.titleFilter(value),
@@ -43,6 +41,8 @@ const SANITIZERS: Record<string, Sanitizer> = {
     exclude_companies: (value, fallbacks) => fallbacks.list(value, { name: "exclude_companies", entry: filterTerm }),
     [PUBLISHERS]: (value, fallbacks) => fallbacks.list(value, { name: `jsearch.${PUBLISHERS}`, entry: publisherTerm, reason: publisherReason }),
 };
+
+const RETIRED_KEYS = ["companies", "searches"];
 
 const TOP_LEVEL_KEYS = new Set(Object.keys(SANITIZERS).filter((key) => key !== PUBLISHERS));
 
@@ -83,11 +83,18 @@ export function settingNames(search: RawSearchSettings): string[] {
         .map((key) => (key === PUBLISHERS ? `jsearch.${PUBLISHERS}` : key));
 }
 
+/** Names the settings no longer read from config.json or the stored document, since boards and searches became saved sources, wherever either still holds them. */
+export function retiredKeys(split: SplitSettings, stored: RawSearchSettings | null): string[] {
+    const inFile = isRawObject(split.runtime) ? split.runtime : {};
+    return RETIRED_KEYS.filter((key) => key in inFile || (stored !== null && key in stored));
+}
+
 /** Checks each stored search setting against its own rules, dropping bad values and entries so their defaults apply, with one notice per drop and never the dropped value. */
 export function sanitizeSearchSettings(stored: RawSearchSettings): { settings: RawSearchSettings; notices: FallbackNotice[] } {
     const fallbacks = new Fallbacks();
     const settings: RawSearchSettings = {};
     for (const [key, value] of Object.entries(stored)) {
+        if (RETIRED_KEYS.includes(key)) continue;
         const sanitizer = Object.hasOwn(SANITIZERS, key) ? SANITIZERS[key] : undefined;
         const kept = sanitizer === undefined ? fallbacks.report(key, NOT_SEARCH) : sanitizer(value, fallbacks);
         if (kept !== undefined) settings[key] = kept;

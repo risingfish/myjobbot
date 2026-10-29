@@ -3,7 +3,7 @@ import { readAll, type SourceModule } from "../sources/module.js";
 import { moduleFor } from "../sources/registry.js";
 import type { ToolContext } from "./context.js";
 import { withoutDescription } from "./jobLog.js";
-import type { Company, FetchOutcome } from "./sources.js";
+import { sourceRef, type Company, type FetchOutcome } from "./sources.js";
 
 /** Fetches a company board's current postings through its board's source module, stores them, and logs the fetch. */
 export async function fetchBoard(context: ToolContext, company: Company): Promise<FetchOutcome> {
@@ -11,16 +11,8 @@ export async function fetchBoard(context: ToolContext, company: Company): Promis
     const jobs = await readAll(board, board.params.parse({ slug: company.slug }), { http: context.sources, sourceName: company.name });
     logBoardFetch(context, company, jobs);
     const seen = context.now().toISOString();
-    await context.store.upsertAll(jobs, seen, company.name);
+    await context.store.upsertAll(jobs, seen, sourceRef(company));
     return { seen, note: null };
-}
-
-/** Gives the public address of a configured company's job board, which serves as its careers page. */
-export function boardCareersPage(company: Company): string {
-    const board = boardModule(company);
-    const hint = board.company?.(board.params.parse({ slug: company.slug }), company.name);
-    if (hint === undefined) throw new Error(`the ${company.ats} module names no company`);
-    return hint.careersPage;
 }
 
 /** Finds the source module for a configured company's board platform. */
