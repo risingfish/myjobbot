@@ -1,28 +1,10 @@
 import { createHash } from "node:crypto";
 import { expect, test } from "vitest";
 import { workday } from "../src/sources/modules/workday.js";
-import { workdayDetail, workdaySearch } from "./helpers/boardData.js";
+import { numbered, WORKDAY_BASE, WORKDAY_PARAMS, workdaySite } from "./helpers/workdaySite.js";
 
-const PARAMS = { host: "acme.wd5.myworkdayjobs.com", tenant: "acme", site: "Acme_Careers" };
-const BASE = "https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/Acme_Careers";
-
-function workdaySite(paths: string[], html = "<p>Build APIs &amp; services.</p>") {
-    const posts: unknown[] = [];
-    const listed = paths.map((path, index) => ({ title: `Engineer ${index}`, path, location: "Remote" }));
-    const http = {
-        postJson: async (url: string, body: unknown) => {
-            posts.push({ url, body });
-            const { offset, limit } = body as { offset: number; limit: number };
-            return workdaySearch(listed.slice(offset, offset + limit));
-        },
-        getJson: async (url: string) => workdayDetail(`Engineer at ${url.slice(BASE.length)}`, html),
-    };
-    return { http, posts };
-}
-
-function numbered(count: number) {
-    return Array.from({ length: count }, (_, index) => `/job/Remote/Engineer_R${index}`);
-}
+const PARAMS = WORKDAY_PARAMS;
+const BASE = WORKDAY_BASE;
 
 async function pages(site: ReturnType<typeof workdaySite>, from: Record<string, unknown> | null) {
     const read = [];

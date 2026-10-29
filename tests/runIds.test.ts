@@ -32,7 +32,7 @@ test("one run id ties the trace and the jobs log together", async () => {
     const trace = readJsonl(fileFor(join(dataDir, "runs"), runId, ".jsonl"));
     expect(trace.every((line) => line.run_id === runId)).toBe(true);
     const jobs = readJsonl(fileFor(TEST_ENV.MYJOBBOT_LOG_DIR, runId, ".jobs.jsonl"));
-    expect(jobs).toMatchObject([{ run_id: runId, type: "board_fetch", company: "Stripe", job_count: 1 }]);
+    expect(jobs).toMatchObject([{ run_id: runId, type: "source_fetch", source: "Stripe", module: "greenhouse", job_count: 1 }]);
 });
 
 test("each run gets a different run id", async () => {

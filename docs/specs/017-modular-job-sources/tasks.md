@@ -97,7 +97,7 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
 
   Rewrite `tests/boardPage.test.ts` (4 tests) into this file as the modules' `company()` tests, and
   delete it.
-- [ ] T006 [P] (Moved to S5, done with T047: nothing in S1 calls `failureReason` until the fetch phase
+- [x] T006 [P] (Done in S5b. Moved to S5, done with T047: nothing in S1 calls `failureReason` until the fetch phase
   records outcomes.) Unit test in a new `tests/sourceFailure.test.ts` (one `test()`): `failureReason` maps
   an `HttpStatusError` 404 to "not found", 401 and 403 to "refused", other statuses and a zod failure
   to "unexpected answer", a `NetworkError` to "unreachable", and a missing requirement to "not set
@@ -310,14 +310,16 @@ keep their history.
 Split into three PRs of about ten files each, by the owner's small-PR rule:
 - **5a** (`017-pr5a-jsearch-module`): the `jsearch` module, `ingest`, and the board and search fetches
   storing through them; `fetch_jobs` is unchanged for the model. Done: T043, and T046's JSearch half.
-- **5b**: `failureReason` and the typed client errors (T006, T047's first part), the `gmail_alerts`
-  module with `alertFetch` storing nothing (T046's Gmail half), and `fetchSources` run from
-  `beforeAgent` (T042, T047), which fills `fetch_jobs`'s per-run cache.
-- **5c**: `next_jobs`, `list_sources`, the prompt and the tests' new shape (T044, T045, T048), deleting
-  `fetchJobs.ts`, `boardFetch.ts`, `searchFetch.ts` and `alertSource.ts`.
+- **5b** (`017-pr5b-fetch-phase`): `failureReason` and the typed client errors (T006, T047's first
+  part), and `fetchSources` run from `beforeAgent` (T042, T047), which fills `fetch_jobs`'s per-run
+  cache. Gmail alerts is fetched through the old `alertSource` until 5c. Done.
+- **5c**: the `gmail_alerts` module with `alertFetch` storing nothing (T046's Gmail half), `next_jobs`,
+  `list_sources`, the prompt and the tests' new shape (T044, T045, T048), deleting `fetchJobs.ts`,
+  `boardFetch.ts`, `searchFetch.ts` and `alertSource.ts`. Workday sources are fetched from 5b but
+  offered to the model only once `next_jobs` reads every saved source.
 
 - [ ] T041 [US4] Per-PR flow steps 1–3, for sitting S5.
-- [ ] T042 [P] [US4] Unit tests in a new `tests/fetchPhase.test.ts` (nine `test()`s) for
+- [x] T042 [P] [US4] (5b. The decisions are plain functions in `src/sources/fetchPlan.ts`. A tenth test, from review, checks that a failure to record one source never stops the rest.) Unit tests in a new `tests/fetchPhase.test.ts` (nine `test()`s) for
   `fetchSources(context)` in `src/sources/fetchPhase.ts` (research R5):
   - it fetches only sources that are on, available and due, one at a time: company sources, then
     Gmail alerts, then JSearch. It skips the others with a `source_skipped` reason;

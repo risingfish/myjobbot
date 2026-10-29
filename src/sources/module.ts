@@ -5,7 +5,7 @@ import type { DescriptionFormat, Job } from "../jobs/job.js";
 
 export type SourceHttp = JsonGetter & JsonPoster;
 
-type Cursor = Record<string, unknown>;
+export type Cursor = Record<string, unknown>;
 
 interface JsearchAccess {
     apiKey: string;
