@@ -5,6 +5,7 @@ import { describeError } from "../../errors.js";
 import type { JsonGetter } from "../../http/client.js";
 import { makeJob, type Job } from "../../jobs/job.js";
 import { optionalDate, optionalFlag, optionalText, textList } from "../fields.js";
+import { NotSetUp } from "../failure.js";
 import type { SourceContext, SourceModule, SourcePage } from "../module.js";
 
 export const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
@@ -62,7 +63,7 @@ export const jsearch: SourceModule<Search> = {
 
 /** Yields one search's results as one page, which costs one request from the month's JSearch budget. */
 async function* searchPages(search: Search, ctx: SourceContext): AsyncGenerator<SourcePage> {
-    if (ctx.jsearch === undefined) throw new Error("JSEARCH_API_KEY is not set");
+    if (ctx.jsearch === undefined) throw new NotSetUp("JSEARCH_API_KEY is not set");
     yield { jobs: await fetchJsearch({ search, ...ctx.jsearch }, ctx.http), cost: 1, next: null };
 }
 

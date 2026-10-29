@@ -125,10 +125,10 @@ test("before the agent, each company source's company gets its board as careers 
     ]);
 });
 
-test("a run with a saved search on and no JSEARCH_API_KEY still starts, and the search reports it isn't set up", async () => {
+test("a run with a saved search on and no JSEARCH_API_KEY still starts, and skips the search as not set up", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);
     const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: TEST_SEARCH.name }], ["finish", { summary: "done" }])]);
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, lookup: publicDns(), openStores: async () => storesWithSettings({ searches: [TEST_SEARCH] }) });
     const [trace] = readdirSync(join(dataDir, "runs"));
-    expect([report.status, readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")]).toEqual(["finished", expect.stringContaining("not set up: JSEARCH_API_KEY is not set")]);
+    expect([report.status, readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")]).toEqual(["finished", expect.stringMatching(/"type":"source_skipped","source":"Backend remote","reason":"not set up"/)]);
 });

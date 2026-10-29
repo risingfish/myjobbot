@@ -1,15 +1,17 @@
 import type { SavedSource } from "../db/sourceStore.js";
 import { OWNER_ID } from "../db/searchSettingsStore.js";
 import { normalizeCompany } from "../jobs/company.js";
+import { fetchSources } from "../sources/fetchPhase.js";
 import { moduleFor } from "../sources/registry.js";
 import type { ToolContext } from "../tools/context.js";
 
-/** Prepares the stored data before the agent starts: links any job not yet linked to its company's record, which after an upgrade is every stored job, and gives each company source's company its board as careers page. */
+/** Prepares the run before the agent starts: links any job not yet linked to its company's record, gives each company source's company its board as careers page, then fetches every source that is on. */
 export async function beforeAgent(context: ToolContext): Promise<void> {
     const linked = await context.store.linkUnlinkedJobs();
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
     const at = context.now().toISOString();
     for (const source of context.saved.list) await linkBoardPage(context, source, at);
+    await fetchSources(context);
 }
 
 /** Makes a company source's board its company's careers page, and links the source to that company's record. */

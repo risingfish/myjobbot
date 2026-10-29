@@ -1,5 +1,6 @@
 import type { FileConfig } from "../config/schema.js";
 import { describeError } from "../errors.js";
+import { HttpStatusError, NetworkError } from "./errors.js";
 import type { Clock } from "./clock.js";
 import { HostLimiter } from "./limiter.js";
 import { readCapped } from "./readCapped.js";
@@ -92,10 +93,10 @@ export class HttpClient implements JsonGetter, TextGetter {
     private async request(url: string, init: RequestInit): Promise<Response> {
         const label = `${init.method ?? "GET"} ${url}`;
         for (let attempt = 0; ; attempt += 1) {
-            const response = await this.withUrl(label, () => this.send(url, init));
+            const response = await this.unanswered(label, () => this.send(url, init));
             if (response.ok || REDIRECT_STATUSES.has(response.status)) return response;
             await response.body?.cancel();
-            if (!this.shouldRetry(response.status, attempt)) throw new Error(`${label} failed with HTTP ${response.status}`);
+            if (!this.shouldRetry(response.status, attempt)) throw new HttpStatusError(`${label} failed with HTTP ${response.status}`, response.status);
             await this.deps.clock.sleep(this.backoffMs(response, attempt));
         }
     }
@@ -106,6 +107,15 @@ export class HttpClient implements JsonGetter, TextGetter {
             return await operation();
         } catch (error) {
             throw new Error(`${label} failed: ${describeError(error)}`, { cause: error });
+        }
+    }
+
+    /** Sends a request, reporting a request that got no answer as a network failure tagged with its method and URL. */
+    private async unanswered<T>(label: string, operation: () => Promise<T>): Promise<T> {
+        try {
+            return await operation();
+        } catch (error) {
+            throw new NetworkError(`${label} failed: ${describeError(error)}`, { cause: error });
         }
     }
 
