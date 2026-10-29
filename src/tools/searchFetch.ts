@@ -1,8 +1,6 @@
-import { normalizeCompany } from "../jobs/company.js";
-import { isExcludedPublisher } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
-import { normalizeTitle } from "../jobs/normalize.js";
-import { fetchJsearch, searchParams } from "../sources/jsearch.js";
+import { fetchAndIngest } from "../sources/ingest.js";
+import { jsearch, searchParams } from "../sources/modules/jsearch.js";
 import type { ToolContext } from "./context.js";
 import { withoutDescription } from "./jobLog.js";
 import { refreshBlocker, requestsThisMonth } from "./searchBudget.js";
@@ -10,32 +8,17 @@ import { sourceRef, type FetchOutcome, type Search } from "./sources.js";
 
 const NOT_SET_UP = "not set up: JSEARCH_API_KEY is not set";
 
-/** Refreshes a saved JSearch search against the API, storing new jobs and skipping excluded publishers and board duplicates. */
+/** Refreshes a saved JSearch search through the JSearch module, storing its new jobs and logging what it skipped. */
 export async function refreshSearch(context: ToolContext, search: Search): Promise<FetchOutcome> {
-    const apiKey = context.jsearchApiKey;
-    if (apiKey === null) return { seen: null, note: NOT_SET_UP };
+    if (context.jsearchApiKey === null) return { seen: null, note: NOT_SET_UP };
     const blocker = await refreshBlocker(context, search.name);
     if (blocker !== null) return { seen: null, note: blocker };
-    await context.apiCalls.record("jsearch", search.name, context.now().toISOString());
-    const jobs = await fetchJsearch({ search, settings: context.config.jsearch, apiKey }, context.http);
-    const wanted = jobs.filter((job) => !isExcludedPublisher(job, context.config.jsearch.exclude_publishers));
-    const fresh = await withoutBoardCopies(context, wanted);
-    await context.store.upsertAll(fresh, context.now().toISOString(), sourceRef(search));
-    await logSearchFetch(context, search, { fresh, skipped: wanted.length - fresh.length, skippedPublishers: jobs.length - wanted.length });
+    const now = context.now().toISOString();
+    await context.apiCalls.record("jsearch", search.name, now);
+    const batch = { source: sourceRef(search), name: search.name, scope: jsearch.scope, seen: now };
+    const result = await fetchAndIngest(context, { module: jsearch, params: search, batch });
+    await logSearchFetch(context, search, { fresh: result.stored, skipped: result.skippedCopies, skippedPublishers: result.skippedPublishers });
     return { seen: null, note: null };
-}
-
-/** Returns the jobs no company board already supplied, so JSearch duplicates are skipped. */
-async function withoutBoardCopies(context: ToolContext, jobs: Job[]): Promise<Job[]> {
-    const copies = await Promise.all(jobs.map((job) => hasBoardCopy(context, job)));
-    return jobs.filter((_, index) => !copies[index]);
-}
-
-/** Reports whether a company board already supplied this job. */
-async function hasBoardCopy(context: ToolContext, job: Job): Promise<boolean> {
-    const company = normalizeCompany(job.company);
-    const boardCompanies = await context.store.boardCompaniesWithTitle(normalizeTitle(job.title));
-    return boardCompanies.some((name) => normalizeCompany(name) === company);
 }
 
 /** Writes a search_fetch entry with the query, budget used and fetched jobs to the run's jobs log. */

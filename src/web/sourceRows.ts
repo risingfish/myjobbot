@@ -9,7 +9,7 @@ export interface SourceRowView {
     note: string | null;
 }
 
-const RUN_MODULES: Record<string, string> = { jsearch: "JSearch", gmail_alerts: "Gmail alerts" };
+const RUN_MODULES: Record<string, string> = { gmail_alerts: "Gmail alerts" };
 
 const NEEDS_SEARCH_KEY = "needs JSEARCH_API_KEY in .env";
 
@@ -27,6 +27,7 @@ function moduleName(id: string): string {
 
 /** Says what stops a source being fetched, or null when nothing does. */
 function rowNote(module: string, hasSearchKey: boolean): string | null {
-    if (module === "jsearch") return hasSearchKey ? null : NEEDS_SEARCH_KEY;
-    return moduleFor(module) === null && RUN_MODULES[module] === undefined ? UNAVAILABLE : null;
+    const found = moduleFor(module);
+    if (found === null) return RUN_MODULES[module] === undefined ? UNAVAILABLE : null;
+    return found.requires.includes("jsearch_key") && !hasSearchKey ? NEEDS_SEARCH_KEY : null;
 }

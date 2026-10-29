@@ -3,7 +3,7 @@ import type { JobSource } from "../db/jobSource.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { AlertSummary } from "../gmail/alertFetch.js";
 import { ATS_NAMES } from "../jobs/job.js";
-import { savedSearch } from "../sources/jsearch.js";
+import { savedSearch } from "../sources/modules/jsearch.js";
 import { z } from "zod";
 import type { ToolContext } from "./context.js";
 

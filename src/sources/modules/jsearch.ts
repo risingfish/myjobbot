@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import type { FileConfig } from "../config/schema.js";
-import { describeError } from "../errors.js";
-import type { JsonGetter } from "../http/client.js";
-import { makeJob, type Job } from "../jobs/job.js";
-import { optionalDate, optionalFlag, optionalText, textList } from "./fields.js";
+import type { FileConfig } from "../../config/schema.js";
+import { describeError } from "../../errors.js";
+import type { JsonGetter } from "../../http/client.js";
+import { makeJob, type Job } from "../../jobs/job.js";
+import { optionalDate, optionalFlag, optionalText, textList } from "../fields.js";
+import type { SourceContext, SourceModule, SourcePage } from "../module.js";
 
 export const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
 
@@ -38,6 +39,31 @@ interface SearchRequest {
     search: Search;
     settings: JsearchSettings;
     apiKey: string;
+}
+
+export const jsearch: SourceModule<Search> = {
+    id: "jsearch",
+    name: "JSearch",
+    description: "A saved job search across many job boards, through the JSearch API.",
+    kind: "api",
+    scope: "query",
+    params: savedSearch,
+    fields: [
+        { name: "query", label: "Search", input: "text" },
+        { name: "country", label: "Country", input: "text", optional: true, placeholder: "us" },
+        { name: "remote_only", label: "Remote only", input: "checkbox", optional: true },
+    ],
+    requires: ["jsearch_key"],
+    limits: { maxJobsPerRun: null, refresh: "jsearch_refresh_hours" },
+    suggestName: ({ query }) => query,
+    target: ({ query, country, remote_only }) => `jsearch:${query}|${country}|${remote_only}`.toLowerCase(),
+    fetch: (search, ctx) => searchPages(search, ctx),
+};
+
+/** Yields one search's results as one page, which costs one request from the month's JSearch budget. */
+async function* searchPages(search: Search, ctx: SourceContext): AsyncGenerator<SourcePage> {
+    if (ctx.jsearch === undefined) throw new Error("JSEARCH_API_KEY is not set");
+    yield { jobs: await fetchJsearch({ search, ...ctx.jsearch }, ctx.http), cost: 1, next: null };
 }
 
 /** Builds the JSearch query-string parameters for a saved search given its settings. */

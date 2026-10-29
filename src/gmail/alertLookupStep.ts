@@ -4,7 +4,7 @@ import type { JsonGetter } from "../http/client.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
-import { fetchJsearch } from "../sources/jsearch.js";
+import { fetchJsearch } from "../sources/modules/jsearch.js";
 import { lookupAllowance } from "./alertJobs/budget.js";
 import { matchResults, planQuery, type MatchStats } from "./alertJobs/lookup.js";
 import type { AlertEmail, AlertJob, ParsedAlert } from "./alertJobs/parse.js";

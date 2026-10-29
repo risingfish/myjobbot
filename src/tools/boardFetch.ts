@@ -1,5 +1,6 @@
 import type { Job } from "../jobs/job.js";
-import { readAll, type SourceModule } from "../sources/module.js";
+import { fetchAndIngest } from "../sources/ingest.js";
+import type { SourceModule } from "../sources/module.js";
 import { moduleFor } from "../sources/registry.js";
 import type { ToolContext } from "./context.js";
 import { withoutDescription } from "./jobLog.js";
@@ -8,10 +9,10 @@ import { sourceRef, type Company, type FetchOutcome } from "./sources.js";
 /** Fetches a company board's current postings through its board's source module, stores them, and logs the fetch. */
 export async function fetchBoard(context: ToolContext, company: Company): Promise<FetchOutcome> {
     const board = boardModule(company);
-    const jobs = await readAll(board, board.params.parse({ slug: company.slug }), { http: context.sources, sourceName: company.name });
-    logBoardFetch(context, company, jobs);
     const seen = context.now().toISOString();
-    await context.store.upsertAll(jobs, seen, sourceRef(company));
+    const batch = { source: sourceRef(company), name: company.name, scope: board.scope, seen };
+    const { stored } = await fetchAndIngest(context, { module: board, params: board.params.parse({ slug: company.slug }), batch });
+    logBoardFetch(context, company, stored);
     return { seen, note: null };
 }
 
