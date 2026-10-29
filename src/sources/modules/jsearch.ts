@@ -8,7 +8,7 @@ import { optionalDate, optionalFlag, optionalText, textList } from "../fields.js
 import { NotSetUp } from "../failure.js";
 import type { SourceContext, SourceModule, SourcePage } from "../module.js";
 
-export const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
+const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
 
 type Search = z.infer<typeof savedSearch>;
 type JsearchSettings = FileConfig["jsearch"];
@@ -68,7 +68,7 @@ async function* searchPages(search: Search, ctx: SourceContext): AsyncGenerator<
 }
 
 /** Builds the JSearch query-string parameters for a saved search given its settings. */
-export function searchParams(search: Search, settings: JsearchSettings): Record<string, string> {
+function searchParams(search: Search, settings: JsearchSettings): Record<string, string> {
     const params: Record<string, string> = { query: search.query, country: search.country, date_posted: settings.date_posted };
     if (search.remote_only) params.work_from_home = "true";
     return params;

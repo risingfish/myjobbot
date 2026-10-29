@@ -13,8 +13,8 @@ import { storesWithSettings } from "./helpers/memoryStore.js";
 
 const CONFIG = { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], searches: [TEST_SEARCH] };
 
-const FIRST_RUN = [toolCallReply("list_sources", {}), toolCallReply("fetch_jobs", { source: "Stripe" }), toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 30 }] }), toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }), toolCallReply("record_matches", { verdicts: [{ job_id: jsearchId("js-linkedin-1"), base: 50, bonus: 35 }] }), toolCallReply("finish", { summary: "Scored a board and a search." })];
-const SECOND_RUN = [toolCallReply("fetch_jobs", { source: "Stripe" }), toolCallReply("fetch_jobs", { source: TEST_SEARCH.name }), toolCallReply("finish", { summary: "Nothing new." })];
+const FIRST_RUN = [toolCallReply("list_sources", {}), toolCallReply("next_jobs", { source: "Stripe" }), toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 30 }] }), toolCallReply("next_jobs", { source: TEST_SEARCH.name }), toolCallReply("record_matches", { verdicts: [{ job_id: jsearchId("js-linkedin-1"), base: 50, bonus: 35 }] }), toolCallReply("finish", { summary: "Scored a board and a search." })];
+const SECOND_RUN = [toolCallReply("next_jobs", { source: "Stripe" }), toolCallReply("next_jobs", { source: TEST_SEARCH.name }), toolCallReply("finish", { summary: "Nothing new." })];
 
 async function scoredRows(stores: Stores) {
     const jobs = await stores.jobViews.allJobs({ offset: 0, limit: 100 });

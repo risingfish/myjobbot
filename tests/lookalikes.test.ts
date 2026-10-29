@@ -26,7 +26,7 @@ async function flags(views: JobViews) {
 
 test("a removal tied to a job flags that job only, and one tied to no job flags nothing", async () => {
     const { context, views } = await contextWithJobs();
-    await reportLookalike(context, { tool: "fetch_jobs", jobId: "a" });
+    await reportLookalike(context, { tool: "next_jobs", jobId: "a" });
     await reportLookalike(context, { tool: "get_job_details", jobId: null });
     expect(await flags(views)).toEqual({ a: TEST_NOW.toISOString(), b: null });
 });
@@ -34,6 +34,6 @@ test("a removal tied to a job flags that job only, and one tied to no job flags 
 test("a store that fails while flagging is traced, and the run carries on", async () => {
     const { context, trace } = await contextWithJobs();
     const failing = { ...context, store: { ...context.store, flagInjection: () => Promise.reject(new Error("database gone")) } };
-    await expect(reportLookalike(failing, { tool: "fetch_jobs", jobId: "a" })).resolves.toBeUndefined();
-    expect(trace.events.at(-1)).toEqual({ type: "injection_flag_failed", tool: "fetch_jobs", job_id: "a", error: "database gone" });
+    await expect(reportLookalike(failing, { tool: "next_jobs", jobId: "a" })).resolves.toBeUndefined();
+    expect(trace.events.at(-1)).toEqual({ type: "injection_flag_failed", tool: "next_jobs", job_id: "a", error: "database gone" });
 });

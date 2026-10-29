@@ -17,13 +17,13 @@ function envFor(dataDir: string) {
 const stores: Stores = storesWithSettings(ONE_COMPANY);
 
 function runAndCrash(dataDir: string, http: JsonGetter & JsonPoster) {
-    const crash = chatThenCrash([toolCallReply("fetch_jobs", { source: "Stripe" })], new Error("LLM down"));
+    const crash = chatThenCrash([toolCallReply("next_jobs", { source: "Stripe" })], new Error("LLM down"));
     return runOnce(envFor(dataDir), { chat: crash, http, lookup: publicDns(), openStores: async () => stores });
 }
 
 function runToCompletion(dataDir: string, http: JsonGetter & JsonPoster) {
     const score = toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 30, bonus: 25 }] });
-    const replies = [toolCallReply("fetch_jobs", { source: "Stripe" }), score, toolCallReply("finish", { summary: "done" })];
+    const replies = [toolCallReply("next_jobs", { source: "Stripe" }), score, toolCallReply("finish", { summary: "done" })];
     return runOnce(envFor(dataDir), { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => stores });
 }
 
@@ -32,7 +32,7 @@ test("a job left unscored by a crashed run is re-offered on the next run", async
     const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
     expect((await runAndCrash(dataDir, http)).status).toBe("aborted");
     expect((await runToCompletion(dataDir, http)).status).toBe("finished");
-    const fetchEvent = latestToolEvent(dataDir, "fetch_jobs");
+    const fetchEvent = latestToolEvent(dataDir, "next_jobs");
     expect(fetchEvent.content).toContain('"total_unscored":1');
     const job = await stores.jobStore.findJob("1000");
     expect(job?.score).toBe(55);

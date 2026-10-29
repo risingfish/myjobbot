@@ -313,10 +313,12 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
 - **5b** (`017-pr5b-fetch-phase`): `failureReason` and the typed client errors (T006, T047's first
   part), and `fetchSources` run from `beforeAgent` (T042, T047), which fills `fetch_jobs`'s per-run
   cache. Gmail alerts is fetched through the old `alertSource` until 5c. Done.
-- **5c**: the `gmail_alerts` module with `alertFetch` storing nothing (T046's Gmail half), `next_jobs`,
-  `list_sources`, the prompt and the tests' new shape (T044, T045, T048), deleting `fetchJobs.ts`,
-  `boardFetch.ts`, `searchFetch.ts` and `alertSource.ts`. Workday sources are fetched from 5b but
-  offered to the model only once `next_jobs` reads every saved source.
+- **5c** (`017-pr5c-next-jobs`): `next_jobs`, `list_sources`, `finish`, the prompt and the tests' new
+  shape (T044, T045's first two tests, T048), deleting `fetchJobs.ts`, `boardFetch.ts` and
+  `searchFetch.ts`. The run's per-source state is `RunState.sources`. A source counts as seen this run
+  only when it was read whole, so a Workday site read in pages offers all its unscored jobs. Done.
+- **5d**: the `gmail_alerts` module with `alertFetch` storing nothing (T046's Gmail half, T045's Gmail
+  test), deleting `alertSource.ts`.
 
 - [ ] T041 [US4] Per-PR flow steps 1–3, for sitting S5.
 - [x] T042 [P] [US4] (5b. The decisions are plain functions in `src/sources/fetchPlan.ts`. A tenth test, from review, checks that a failure to record one source never stops the rest.) Unit tests in a new `tests/fetchPhase.test.ts` (nine `test()`s) for
@@ -337,7 +339,7 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
     jobs.
 - [x] T043 [P] [US4] (5a, through `fetchAndIngest`, which is what calls `ingest`.) Unit test in a new
   `tests/ingest.test.ts` (one `test()`): a page is stored under its source's id and name.
-- [ ] T044 [P] [US4] Rewrite these tests for the new shape (no new `test()`):
+- [x] T044 [P] [US4] Rewrite these tests for the new shape (no new `test()`):
   - `tests/searchSources.test.ts` (12) becomes the `jsearch` module and `ingest` tests: the budget,
     board copies, and excluded publishers and domains;
   - `tests/jsearch.test.ts` (6) imports the module;
@@ -367,7 +369,7 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
   (T042). Call `fetchSources` from `src/app/beforeAgent.ts`. It records each outcome with
   `SourceStore.recordFetch`, writes alert state through `AlertStore.recordRead`, and runs
   `lookUpAlertJobs` after the alerts source.
-- [ ] T048 [US4] Replace `fetch_jobs` with `next_jobs` (`src/tools/nextJobs.ts`, `outsideText: true`).
+- [x] T048 [US4] Replace `fetch_jobs` with `next_jobs` (`src/tools/nextJobs.ts`, `outsideText: true`).
   - Rework `list_sources`.
   - Update `src/tools/registry.ts`, and `src/agent/prompt.ts`'s steps, `NUDGE` and
     `COMPACTION_NOTICE` (contracts/sources-ui-and-run.md).

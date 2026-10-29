@@ -5,7 +5,9 @@ import type { JsonGetter } from "../../src/http/client.js";
 import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testFileConfig } from "./config.js";
+import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { publicDns } from "./fakeDns.js";
+import { MemorySourceStore } from "./memorySourceStore.js";
 import { savedSources, STRIPE_BOARD } from "./savedSources.js";
 import { memoryStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";
@@ -24,7 +26,7 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         ...storeFields(stores),
         http: NO_HTTP,
         sources: testSources(overrides.http ?? NO_HTTP),
-        saved: { store: stores.sources, list: savedSources({ companies: [STRIPE_BOARD] }) },
+        saved: seededSources(stores),
         now: () => TEST_NOW,
         jobLog: memoryTrace(),
         jsearchApiKey: "test-jsearch-key",
@@ -35,6 +37,12 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         markers: dataMarkers(TEST_RUN_ID),
         ...overrides,
     };
+}
+
+function seededSources(stores: Stores) {
+    const list = savedSources({ companies: [STRIPE_BOARD] });
+    if (stores.sources instanceof MemorySourceStore) stores.sources.seed(OWNER_ID, list);
+    return { store: stores.sources, list };
 }
 
 function storeFields(stores: Stores) {
@@ -51,6 +59,6 @@ function offRenderer(stores: Stores): PageRenderer {
 
 export function doneContext(): ToolContext {
     const context = testContext();
-    context.run.fetches.set("Stripe", Promise.resolve({ seen: TEST_NOW.toISOString(), note: null }));
+    context.run.sources.set("Stripe", { outcome: "ok", reason: null, seen: TEST_NOW.toISOString() });
     return context;
 }

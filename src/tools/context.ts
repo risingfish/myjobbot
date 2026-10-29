@@ -11,13 +11,21 @@ import type { ImapFactory } from "../gmail/imap.js";
 import type { SecretKeyStatus } from "../gmail/secretKey.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { SourceHttp } from "../sources/module.js";
-import type { FetchOutcome } from "./sources.js";
+import type { CareersSummary } from "../careers/lookUpJobs.js";
+import type { AlertSummary } from "../gmail/alertFetch.js";
+
+export interface SourceRun {
+    outcome: "ok" | "partial" | "failing" | "skipped";
+    reason: string | null;
+    seen: string | null;
+    alerts?: AlertSummary;
+    careers?: CareersSummary;
+}
 
 interface RunState {
     finished: boolean;
     summary: string | null;
-    fetches: Map<string, Promise<FetchOutcome>>;
-    failedFetches: Map<string, string | null>;
+    sources: Map<string, SourceRun>;
 }
 
 export interface ToolContext {
@@ -62,7 +70,7 @@ interface GmailAccess {
     usable: true | string;
 }
 
-/** Creates the empty per-run state used to track in-flight fetches, failures, and finish status. */
+/** Creates the empty per-run state: how each source's fetch went this run, and whether the run has finished. */
 export function newRunState(): RunState {
-    return { finished: false, summary: null, fetches: new Map(), failedFetches: new Map() };
+    return { finished: false, summary: null, sources: new Map() };
 }

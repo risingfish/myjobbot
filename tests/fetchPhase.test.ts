@@ -39,7 +39,7 @@ function phaseContext(list: SavedSource[], http: SourceHttp = boardsAndSearch(),
     const sources = new MemorySourceStore(tables);
     sources.seed(OWNER_ID, list);
     const trace = memoryTrace();
-    const context = { ...(base ?? testContext({}, { ...memoryStores(tables), sources })), trace, saved: { store: sources, list }, sources: sourceHttp({ http, lookup: publicDns() }) };
+    const context = { ...(base ?? testContext({}, memoryStores(tables))), trace, saved: { store: sources, list }, sources: sourceHttp({ http, lookup: publicDns() }) };
     return { context, sources, trace };
 }
 
@@ -61,7 +61,7 @@ test("sources are fetched one at a time, company sources first, then Gmail alert
         ["source_skipped", "Gmail alerts", "not set up"],
         ["source_fetch", "Backend remote", "ok"],
     ]);
-    expect([...context.run.fetches.keys()]).toEqual(["Stripe", "Gmail alerts", "Backend remote"]);
+    expect([...context.run.sources.keys()]).toEqual(["Stripe", "Gmail alerts", "Backend remote"]);
 });
 
 test("a source whose module isn't shipped, or whose fields fail its rules, is skipped and fetches nothing", async () => {

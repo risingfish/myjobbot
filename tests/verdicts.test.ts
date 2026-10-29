@@ -3,7 +3,7 @@ import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
-import { fetchPage, invokeTool } from "./helpers/tools.js";
+import { nextPage, invokeTool } from "./helpers/tools.js";
 import { FIRST_PAGE } from "./helpers/views.js";
 
 function scoredContext() {
@@ -14,7 +14,7 @@ function scoredContext() {
 
 test("record_matches keeps every verdict as history tagged with the run", async () => {
     const { context, views } = scoredContext();
-    await fetchPage(context, "Stripe");
+    await nextPage(context, "Stripe");
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10, reasons: ["first"] }] });
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 35, reasons: ["second"] }] });
     const history = (await views.verdictHistory(FIRST_PAGE)).map((verdict) => [verdict.run_id, verdict.score, verdict.reasons]);
@@ -33,7 +33,7 @@ test("record_matches writes no history for unknown job ids", async () => {
 
 test("pruning a job removes its verdict history", async () => {
     const { context, views } = scoredContext();
-    await fetchPage(context, "Stripe");
+    await nextPage(context, "Stripe");
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10 }] });
     await context.store.pruneLastSeenBefore("2099-01-01T00:00:00.000Z");
     expect(await views.countVerdicts()).toBe(0);

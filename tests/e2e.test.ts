@@ -12,7 +12,7 @@ const VERDICTS = [
     { job_id: "1001", base: 10, bonus: 0 },
 ];
 
-const SCRIPT = [toolCallReply("list_sources", {}), toolCallReply("fetch_jobs", { source: "Stripe" }), toolCallReply("record_matches", { verdicts: VERDICTS }), toolCallReply("fetch_jobs", { source: "Stripe" }), toolCallReply("finish", { summary: "Scored 2 Stripe jobs." })];
+const SCRIPT = [toolCallReply("list_sources", {}), toolCallReply("next_jobs", { source: "Stripe" }), toolCallReply("record_matches", { verdicts: VERDICTS }), toolCallReply("next_jobs", { source: "Stripe" }), toolCallReply("finish", { summary: "Scored 2 Stripe jobs." })];
 
 test("a scripted model drives a full run and its verdicts land in the stores", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);

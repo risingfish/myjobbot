@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { z } from "zod";
 import { FetchRefused } from "../src/careers/fetchPage.js";
+import { AlertsUnavailable } from "../src/gmail/alertJobs/usable.js";
 import { HttpStatusError, NetworkError } from "../src/http/errors.js";
 import { failureReason, NotSetUp } from "../src/sources/failure.js";
 
@@ -17,6 +18,8 @@ test("a failure gives a fixed reason by its kind, found through its causes, and 
         [new NetworkError(`GET ${SECRET} failed: ECONNRESET`), "unreachable"],
         [new FetchRefused("refused: the address is not on the public internet"), "refused"],
         [new NotSetUp("JSEARCH_API_KEY is not set"), "not set up"],
+        [new AlertsUnavailable("Gmail couldn't be reached"), "unreachable"],
+        [new AlertsUnavailable("Gmail needs reconnecting"), "not set up"],
         [new Error(`something odd about ${SECRET}`), "unexpected answer"],
         ["not even an error", "unexpected answer"],
     ];
