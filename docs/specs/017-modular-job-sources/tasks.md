@@ -197,20 +197,22 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
 
 No behaviour changes yet: every caller still passes a plain name.
 
-- [ ] T025 [US2] Per-PR flow steps 1–3, for sitting S4a.
-- [ ] T026 [P] [US2] Extend the store contracts (no new `test()`):
+- [x] T025 [US2] Per-PR flow steps 1–3, for sitting S4a.
+- [x] T026 [P] [US2] Extend the store contracts (no new `test()`):
   - in `tests/helpers/storeContract.ts`, a job stored with `{ id, name }` is offered under that
     source's id, and a job from another source with the same name isn't;
   - in `tests/helpers/companyContract.ts`, `setBoardPage` returns the company's id;
   - in `tests/helpers/sourceContract.ts` (step 7, moved from T021), a removed source's jobs keep
     their label with a null `source_id`.
-- [ ] T027 [US2] In `src/db/store.ts`, `src/db/kysely/jobStore.ts` and the memory store:
+- [x] T027 [US2] (Done. `JobSource` and `sourceParts` live in `src/db/jobSource.ts`.
+  `boardCompaniesWithTitle` takes no source, so it is unchanged. The rename is made by
+  `SourceStore.save`, which relabels the jobs linked to the source.) In `src/db/store.ts`, `src/db/kysely/jobStore.ts` and the memory store:
   - `upsertAll(jobs, seen, source: JobSource)` takes a plain name or `{ id, name }`, setting
     `source_id`;
   - the unscored queries, `boardCompaniesWithTitle` and `companiesWithTitleOutside` key on
     `source_id` when one is given;
   - a rename updates `jobs.source`.
-- [ ] T028 [US2] Make `CompanyStore.setBoardPage` return the company's id, in the Kysely and memory
+- [x] T028 [US2] Make `CompanyStore.setBoardPage` return the company's id, in the Kysely and memory
   stores.
 - [ ] T029 [US2] Per-PR flow steps 4–6 ("Link jobs and companies to saved sources (017 PR 4a)").
 

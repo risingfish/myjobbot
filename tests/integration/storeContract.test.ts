@@ -42,11 +42,16 @@ jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
 sourceContract(emptyStores, {
+    jobLinks: () => db.selectFrom("jobs").select(["job_id", "source", "source_id"]).orderBy("job_id").execute(),
     seedCompany: async () => Number((await db.insertInto("companies").values({ company_key: "stripe", name: "Stripe", created_date: "2026-10-28", last_found_date: "2026-10-28" }).executeTakeFirstOrThrow()).insertId),
 });
 searchSettingsContract(emptyStores, {
     owners: async () => (await db.selectFrom("users").select("id").orderBy("id").execute()).map((row) => row.id),
-    seedUser: async (id) => void (await db.insertInto("users").values({ id, name: `user ${id}`, created_at: "2026-10-25T00:00:00.000Z" }).execute()),
+    seedUser: async (id) =>
+        void (await db
+            .insertInto("users")
+            .values({ id, name: `user ${id}`, created_at: "2026-10-25T00:00:00.000Z" })
+            .execute()),
 });
 careersStoreContract(emptyStores, {
     pageFields: async () => {

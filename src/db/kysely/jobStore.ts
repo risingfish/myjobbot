@@ -3,25 +3,39 @@ import { z } from "zod";
 import { companyKeys } from "../../companies/keys.js";
 import { normalizeCompany } from "../../jobs/company.js";
 import type { Job } from "../../jobs/job.js";
+import { sourceParts, type JobSource } from "../jobSource.js";
 import { jobRowSchema, toParams, type JobFields } from "../rows.js";
 import type { Database } from "../schema.js";
 import { linkJobs, recordCompanies, touchCompanyOf } from "./companyRows.js";
 import type { FoundDescription, JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
-const REFRESHED: Array<keyof JobFields | "company_id"> = ["company_id", "company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
+const REFRESHED: Array<keyof JobFields | "company_id" | "source_id"> = ["company_id", "source_id", "company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
 
 const jobRows = z.array(jobRowSchema);
 
 interface Batch {
     seen: string;
-    source: string;
+    source: JobSource;
     companyIds: Map<string, number>;
 }
 
-/** Builds the insert row for a fetched job, first and last seen at the fetch time and linked to its company's record. */
+/** Builds the insert row for a fetched job, first and last seen at the fetch time and linked to its company's record and saved source. */
 function insertRow(job: Job, batch: Batch) {
-    const { seen: _seen, ...fields } = toParams(job, batch.seen, batch.source);
-    return { ...fields, company_id: batch.companyIds.get(normalizeCompany(job.company)) ?? null, first_seen: batch.seen, last_seen: batch.seen };
+    const { label, id } = sourceParts(batch.source);
+    const { seen: _seen, ...fields } = toParams(job, batch.seen, label);
+    return { ...fields, company_id: batch.companyIds.get(normalizeCompany(job.company)) ?? null, source_id: id, first_seen: batch.seen, last_seen: batch.seen };
+}
+
+/** Narrows a query to the jobs from one source: its saved source when it has one, otherwise its label. */
+function fromSource(eb: ExpressionBuilder<Database, "jobs">, source: JobSource) {
+    const { label, id } = sourceParts(source);
+    return id === null ? eb("source", "=", label) : eb("source_id", "=", id);
+}
+
+/** Narrows a query to the jobs from anywhere but one source. */
+function outsideSource(eb: ExpressionBuilder<Database, "jobs">, source: JobSource) {
+    const { label, id } = sourceParts(source);
+    return id === null ? eb("source", "!=", label) : eb.or([eb("source_id", "is", null), eb("source_id", "!=", id)]);
 }
 
 /** Keeps a job's scoring time, or clears it the first time its description turns from plain text (or no format) to Markdown; it must precede the format's own update, which MariaDB applies in order. */
@@ -39,8 +53,8 @@ function scoredAtAfterRefresh(eb: ExpressionBuilder<Database, "jobs">) {
 export class KyselyJobStore implements JobStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Records the companies of fetched jobs, then inserts or refreshes the jobs linked to them, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
-    async upsertAll(jobs: Job[], seen: string, source: string): Promise<void> {
+    /** Records the companies of fetched jobs, then inserts or refreshes the jobs linked to them and to their source, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
+    async upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void> {
         if (jobs.length === 0) return;
         const companyIds = await recordCompanies(this.db, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
         const refresh = Object.fromEntries([...REFRESHED, "last_seen"].map((column) => [column, sql`VALUES(${sql.ref(column)})`]));
@@ -52,13 +66,13 @@ export class KyselyJobStore implements JobStore {
     }
 
     /** Returns jobs from a source that were last seen in a given fetch and still need scoring. */
-    async unscoredSince(source: string, seen: string): Promise<JobRow[]> {
+    async unscoredSince(source: JobSource, seen: string): Promise<JobRow[]> {
         const rows = await this.unscoredQuery(source).where("last_seen", "=", seen).execute();
         return jobRows.parse(rows);
     }
 
     /** Returns every unscored job for a source, regardless of when it was last seen. */
-    async unscoredForSource(source: string): Promise<JobRow[]> {
+    async unscoredForSource(source: JobSource): Promise<JobRow[]> {
         return jobRows.parse(await this.unscoredQuery(source).execute());
     }
 
@@ -69,8 +83,14 @@ export class KyselyJobStore implements JobStore {
     }
 
     /** Lists company names with a job of this title from any source but one, so alert copies of known jobs can be skipped. */
-    async companiesWithTitleOutside(source: string, normalizedTitle: string): Promise<string[]> {
-        const rows = await this.db.selectFrom("jobs").select("company").distinct().where("source", "!=", source).where("normalized_title", "=", normalizedTitle).execute();
+    async companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]> {
+        const rows = await this.db
+            .selectFrom("jobs")
+            .select("company")
+            .distinct()
+            .where((eb) => outsideSource(eb, source))
+            .where("normalized_title", "=", normalizedTitle)
+            .execute();
         return rows.map((row) => row.company);
     }
 
@@ -86,7 +106,11 @@ export class KyselyJobStore implements JobStore {
     async linkUnlinkedJobs(): Promise<number> {
         const rows = await this.db.selectFrom("jobs").select(["ats", "job_id", "company", "first_seen", "last_seen"]).where("company_id", "is", null).orderBy("first_seen").orderBy("ats").orderBy("job_id").execute();
         const companyIds = await recordCompanies(this.db, companyKeys(rows.map((row) => ({ name: row.company, firstSeen: row.first_seen, lastSeen: row.last_seen }))));
-        return linkJobs(this.db, rows.map((row) => ({ ats: row.ats, job_id: row.job_id, company_key: normalizeCompany(row.company) })), companyIds);
+        return linkJobs(
+            this.db,
+            rows.map((row) => ({ ats: row.ats, job_id: row.job_id, company_key: normalizeCompany(row.company) })),
+            companyIds,
+        );
     }
 
     /** Stores a description found outside the job's own source, with where it came from, and marks the job for scoring again. */
@@ -146,8 +170,13 @@ export class KyselyJobStore implements JobStore {
     }
 
     /** Starts the query for a source's unscored jobs, ordered by job id. */
-    private unscoredQuery(source: string) {
-        return this.db.selectFrom("jobs").selectAll().where("source", "=", source).where("scored_at", "is", null).orderBy("job_id");
+    private unscoredQuery(source: JobSource) {
+        return this.db
+            .selectFrom("jobs")
+            .selectAll()
+            .where((eb) => fromSource(eb, source))
+            .where("scored_at", "is", null)
+            .orderBy("job_id");
     }
 }
 

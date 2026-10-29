@@ -97,10 +97,11 @@ async function lookupNeverTouchesBoardPages({ stores, hooks }: Contract): Promis
     expect(await stores.careers.careersPage("gamma")).toBe(board);
 }
 
-async function boardPagesWin({ stores }: Contract): Promise<void> {
+async function boardPagesWin({ stores, hooks }: Contract): Promise<void> {
     const board = "https://jobs.ashbyhq.com/acme";
-    await stores.companies.setBoardPage({ key: "acme", name: "Acme", url: board }, DAY_THREE);
+    const acme = await stores.companies.setBoardPage({ key: "acme", name: "Acme", url: board }, DAY_THREE);
     expect(await stores.careers.careersPage("acme")).toBe(board);
+    expect((await hooks.listCompanies()).find((row) => row.company_key === "acme")?.id).toBe(acme);
     await stores.careers.setLookupPage({ key: "acme", name: "Acme", url: "https://acme.example/jobs" }, DAY_THREE);
     await stores.careers.clearLookupPage("acme");
     await stores.companies.setBoardPage({ key: "delta", name: "Delta", url: "https://jobs.lever.co/delta" }, DAY_THREE);

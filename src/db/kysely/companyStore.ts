@@ -8,10 +8,11 @@ import { ensureCompany } from "./companyRows.js";
 export class KyselyCompanyStore implements CompanyStore {
     constructor(private readonly db: Kysely<Database>) {}
 
-    /** Makes a configured board's public address its company's careers page, creating the record when there is none; it replaces any page a lookup or search found. */
-    async setBoardPage(page: CompanyPage, at: string): Promise<void> {
+    /** Makes a configured board's public address its company's careers page, creating the record when there is none, and gives the record's id; it replaces any page a lookup or search found. */
+    async setBoardPage(page: CompanyPage, at: string): Promise<number> {
         await ensureCompany(this.db, page, at);
         await this.db.updateTable("companies").set({ careers_url: page.url, careers_source: "board", careers_reason: null, careers_rejected: null }).where("company_key", "=", page.key).execute();
+        return (await this.db.selectFrom("companies").select("id").where("company_key", "=", page.key).executeTakeFirstOrThrow()).id;
     }
 
     /** Lists companies still missing an address and not searched since the cutoff, the most recently found first, up to the limit. */

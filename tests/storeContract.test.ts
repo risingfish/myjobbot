@@ -30,7 +30,14 @@ companyContract(
     memoryCompanyHooks(() => companyTables),
 );
 appliedContract(async () => memoryStores());
-sourceContract(async () => memoryStores(), { seedCompany: async () => 7 });
+let sourceTables = newTables();
+sourceContract(
+    async () => {
+        sourceTables = newTables();
+        return memoryStores(sourceTables);
+    },
+    { seedCompany: async () => 7, jobLinks: async () => sourceTables.jobs.map((job) => ({ job_id: String(job.job_id), source: String(job.source), source_id: job.source_id === null ? null : Number(job.source_id) })) },
+);
 let searchSettings = new MemorySearchSettingsStore();
 searchSettingsContract(
     async () => {

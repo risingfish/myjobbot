@@ -7,15 +7,20 @@ import { asc, type Row, type Tables } from "./memoryJobViews.js";
 export class MemoryCompanyStore implements CompanyStore {
     constructor(private readonly tables: Tables) {}
 
-    async setBoardPage(page: CompanyPage, at: string): Promise<void> {
+    async setBoardPage(page: CompanyPage, at: string): Promise<number> {
         if (!this.tables.companies.some((row) => row.company_key === page.key)) recordMemoryCompanies(this.tables, [{ key: page.key, name: page.name, firstSeen: at, lastSeen: at }]);
         const company = this.tables.companies.find((row) => row.company_key === page.key);
-        if (company) Object.assign(company, { careers_url: page.url, careers_source: "board", careers_reason: null, careers_rejected: null });
+        if (company === undefined) throw new Error(`no company ${page.key}`);
+        Object.assign(company, { careers_url: page.url, careers_source: "board", careers_reason: null, careers_rejected: null });
+        return Number(company.id);
     }
 
     async dueForSearch(limit: number, cutoff: string): Promise<CompanyRow[]> {
         const due = this.tables.companies.filter((row) => (row.website_url === null || row.careers_url === null) && (row.searched_at === null || String(row.searched_at) < cutoff));
-        return due.sort((a, b) => asc(b.last_found_date, a.last_found_date) || Number(a.id) - Number(b.id)).slice(0, limit).map(companyRow);
+        return due
+            .sort((a, b) => asc(b.last_found_date, a.last_found_date) || Number(a.id) - Number(b.id))
+            .slice(0, limit)
+            .map(companyRow);
     }
 
     async recordSearch(id: number, record: SearchRecord, at: string): Promise<void> {

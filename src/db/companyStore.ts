@@ -16,7 +16,7 @@ export interface SearchRecord {
 }
 
 export interface CompanyStore {
-    setBoardPage(page: CompanyPage, at: string): Promise<void>;
+    setBoardPage(page: CompanyPage, at: string): Promise<number>;
     dueForSearch(limit: number, cutoff: string): Promise<CompanyRow[]>;
     recordSearch(id: number, record: SearchRecord, at: string): Promise<void>;
     markUnavailable(ids: number[], at: string): Promise<void>;
