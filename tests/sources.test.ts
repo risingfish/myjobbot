@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { readAll, type SourceHttp } from "../src/sources/module.js";
+import type { SourceHttp } from "../src/sources/module.js";
+import { readAll } from "./helpers/readAll.js";
 import { moduleFor } from "../src/sources/registry.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { fakeBoard } from "./helpers/http.js";

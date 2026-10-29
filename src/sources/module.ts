@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { FileConfig } from "../config/schema.js";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 
@@ -6,9 +7,15 @@ export type SourceHttp = JsonGetter & JsonPoster;
 
 type Cursor = Record<string, unknown>;
 
+interface JsearchAccess {
+    apiKey: string;
+    settings: FileConfig["jsearch"];
+}
+
 export interface SourceContext {
     http: SourceHttp;
     sourceName: string;
+    jsearch?: JsearchAccess;
 }
 
 export interface SourcePage {
@@ -69,11 +76,4 @@ export interface SourceModule<P> {
     fetch(params: P, ctx: SourceContext, from: Cursor | null): AsyncIterable<SourcePage>;
     company?(params: P, name: string): CompanyHint;
     readonly postings?: BoardPostings<P>;
-}
-
-/** Reads every page a source yields from its first page and gives back all of its jobs. */
-export async function readAll<P>(module: SourceModule<P>, params: P, ctx: SourceContext): Promise<Job[]> {
-    const jobs: Job[] = [];
-    for await (const page of module.fetch(params, ctx, null)) jobs.push(...page.jobs);
-    return jobs;
 }

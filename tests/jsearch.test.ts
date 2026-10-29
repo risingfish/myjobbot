@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fetchJsearch, savedSearch } from "../src/sources/jsearch.js";
+import { fetchJsearch, savedSearch } from "../src/sources/modules/jsearch.js";
 import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";

@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
 import { HttpClient } from "../src/http/client.js";
 import { parseBoardLink } from "../src/sources/boardLink.js";
-import { readAll } from "../src/sources/module.js";
+import { jsearch } from "../src/sources/modules/jsearch.js";
+import { readAll } from "./helpers/readAll.js";
 import { moduleFor } from "../src/sources/registry.js";
 import { sourceHttp } from "../src/sources/sourceHttp.js";
 import { fakeClock } from "./helpers/clock.js";
@@ -44,8 +45,10 @@ test("the Lever and Ashby modules recognise their own board and posting links, a
     expect([linked("lever", "https://jobs.ashbyhq.com/openai"), linked("ashby", "https://jobs.lever.co/palantir")]).toEqual([null, null]);
 });
 
-test("a board's target ignores letter case, and its suggested name is its board id capitalised", () => {
+test("a board's target ignores letter case, and its suggested name is its board id capitalised, while a search's is its query", () => {
     expect([board("greenhouse").target({ slug: "Stripe" }), board("greenhouse").target({ slug: "stripe" }), board("greenhouse").suggestName?.({ slug: "stripe" })]).toEqual(["greenhouse:stripe", "greenhouse:stripe", "Stripe"]);
+    const search = { query: "Backend Engineer", country: "us", remote_only: true };
+    expect([jsearch.target(search), jsearch.suggestName?.(search)]).toEqual(["jsearch:backend engineer|us|true", "Backend Engineer"]);
 });
 
 test("a board module fetches the whole board as one page, with nothing to continue from and no cost", async () => {

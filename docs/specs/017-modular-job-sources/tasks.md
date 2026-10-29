@@ -307,6 +307,15 @@ keep their history.
 
 ### Sitting S5, PR 5: the fetch phase, JSearch and Gmail as modules, next_jobs (T041–T051), branch `017-pr5-fetch-phase`
 
+Split into three PRs of about ten files each, by the owner's small-PR rule:
+- **5a** (`017-pr5a-jsearch-module`): the `jsearch` module, `ingest`, and the board and search fetches
+  storing through them; `fetch_jobs` is unchanged for the model. Done: T043, and T046's JSearch half.
+- **5b**: `failureReason` and the typed client errors (T006, T047's first part), the `gmail_alerts`
+  module with `alertFetch` storing nothing (T046's Gmail half), and `fetchSources` run from
+  `beforeAgent` (T042, T047), which fills `fetch_jobs`'s per-run cache.
+- **5c**: `next_jobs`, `list_sources`, the prompt and the tests' new shape (T044, T045, T048), deleting
+  `fetchJobs.ts`, `boardFetch.ts`, `searchFetch.ts` and `alertSource.ts`.
+
 - [ ] T041 [US4] Per-PR flow steps 1–3, for sitting S5.
 - [ ] T042 [P] [US4] Unit tests in a new `tests/fetchPhase.test.ts` (nine `test()`s) for
   `fetchSources(context)` in `src/sources/fetchPhase.ts` (research R5):
@@ -324,8 +333,8 @@ keep their history.
   - each fetch writes `source_fetch` with its pages, jobs, cost and outcome;
   - after the Gmail alerts source, the alert state is recorded and the careers lookup runs for alert
     jobs.
-- [ ] T043 [P] [US4] Unit test in a new `tests/ingest.test.ts` (one `test()`): a page is stored under
-  its source's id and name.
+- [x] T043 [P] [US4] (5a, through `fetchAndIngest`, which is what calls `ingest`.) Unit test in a new
+  `tests/ingest.test.ts` (one `test()`): a page is stored under its source's id and name.
 - [ ] T044 [P] [US4] Rewrite these tests for the new shape (no new `test()`):
   - `tests/searchSources.test.ts` (12) becomes the `jsearch` module and `ingest` tests: the budget,
     board copies, and excluded publishers and domains;
