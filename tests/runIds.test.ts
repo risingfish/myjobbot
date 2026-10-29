@@ -14,7 +14,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 async function fetchAndFinishRun(dataDir: string) {
     const score: [string, object] = ["record_matches", { verdicts: [{ job_id: "1000", base: 10, bonus: 0 }] }];
-    const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
+    const replies = [toolCallsReply(["next_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
     const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
     return runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) });
 }

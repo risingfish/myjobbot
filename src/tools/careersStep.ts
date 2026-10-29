@@ -1,7 +1,6 @@
 import { lookUpCareers, type CareersDeps, type CareersSummary } from "../careers/lookUpJobs.js";
 import type { SoughtJob } from "../careers/session.js";
 import type { JobRow } from "../db/store.js";
-import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import type { ToolContext } from "./context.js";
 import { isWanted, unscoredJobs } from "./unscored.js";
 
@@ -18,7 +17,9 @@ export async function lookUpAlertJobs(context: ToolContext): Promise<CareersSumm
 
 /** Lists the unscored alert jobs with no description that haven't been looked up before. */
 async function freshJobs(context: ToolContext): Promise<JobRow[]> {
-    const missing = (await unscoredJobs(context, ALERTS_SOURCE, { seen: null, note: null })).filter((row) => row.description === null);
+    const alerts = context.saved.list.find((source) => source.module === "gmail_alerts");
+    if (alerts === undefined) return [];
+    const missing = (await unscoredJobs(context, alerts)).filter((row) => row.description === null);
     const done = await context.careers.store.attempted(missing.map((row) => ({ ats: row.ats, jobId: row.job_id })));
     return missing.filter((row) => !done.some((key) => key.ats === row.ats && key.jobId === row.job_id));
 }

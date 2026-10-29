@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fetchJsearch, savedSearch } from "../src/sources/modules/jsearch.js";
+import { fetchJsearch, jsearch } from "../src/sources/modules/jsearch.js";
 import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
@@ -9,7 +9,7 @@ const HOST = "api.openwebninja.com";
 
 function request(overrides: object = {}) {
     const { name: _name, ...params } = TEST_SEARCH;
-    return { search: savedSearch.parse({ ...params, ...overrides }), settings: testFileConfig().jsearch, apiKey: "secret-key" };
+    return { search: jsearch.params.parse({ ...params, ...overrides }), settings: testFileConfig().jsearch, apiKey: "secret-key" };
 }
 
 test("fetchJsearch requests the search with the API key header", async () => {

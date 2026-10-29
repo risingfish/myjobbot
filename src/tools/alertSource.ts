@@ -1,18 +1,17 @@
-import { fetchAlerts, type AlertDeps, type LookupDeps } from "../gmail/alertFetch.js";
-import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
+import { fetchAlerts, type AlertDeps, type AlertSummary, type LookupDeps } from "../gmail/alertFetch.js";
+import type { CareersSummary } from "../careers/lookUpJobs.js";
+import type { SavedSource } from "../db/sourceStore.js";
 import { AlertsUnavailable } from "../gmail/alertJobs/usable.js";
 import { lookUpAlertJobs } from "./careersStep.js";
 import type { ToolContext } from "./context.js";
 import { requestsThisMonth } from "./searchBudget.js";
-import { configuredSources, sourceRef, type FetchOutcome, type Source } from "./sources.js";
+import { sourceRef, sourcesOn } from "./sources.js";
 
-/** Fetches the Gmail alerts source once per run, refusing with its fixed note when Gmail can't be read. */
-export async function alertSource(context: ToolContext, source: Source): Promise<FetchOutcome> {
+/** Fetches the Gmail alerts source, then looks up careers pages for its jobs, refusing with its fixed note when Gmail can't be read. */
+export async function alertSource(context: ToolContext, source: Pick<SavedSource, "id" | "name">): Promise<{ alerts: AlertSummary; careers: CareersSummary }> {
     if (context.gmail.usable !== true) throw new AlertsUnavailable(context.gmail.usable);
-    const recorded = context.run.failedFetches.get(ALERTS_SOURCE);
-    if (recorded) throw new AlertsUnavailable(recorded);
     const alerts = await fetchAlerts({ ...alertDeps(context), source: sourceRef(source), lookup: await lookupDeps(context) });
-    return { seen: null, note: null, alerts, careers: await lookUpAlertJobs(context) };
+    return { alerts, careers: await lookUpAlertJobs(context) };
 }
 
 /** Gathers what the alert fetch needs from the run's context. */
@@ -25,5 +24,5 @@ function alertDeps(context: ToolContext): Omit<AlertDeps, "source"> {
 async function lookupDeps(context: ToolContext): Promise<LookupDeps> {
     const { config } = context;
     const filters = { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies };
-    return { http: context.http, apiKey: context.jsearchApiKey, settings: config.jsearch, apiCalls: context.apiCalls, filters, searches: configuredSources(context).filter((each) => each.kind === "search").length, usedThisMonth: await requestsThisMonth(context) };
+    return { http: context.http, apiKey: context.jsearchApiKey, settings: config.jsearch, apiCalls: context.apiCalls, filters, searches: sourcesOn(context).filter((each) => each.module === "jsearch").length, usedThisMonth: await requestsThisMonth(context) };
 }

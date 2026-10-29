@@ -11,8 +11,9 @@ function prompt() {
     return { system: String(system?.content), user: String(user?.content) };
 }
 
-test("the prompt asks for descriptions of plausible fits", () => {
+test("the prompt asks for descriptions of plausible fits, and pages each already-fetched source with next_jobs", () => {
     expect(prompt().system).toContain("call get_job_details");
+    expect([prompt().system.includes("For each source call next_jobs"), prompt().system.includes("fetched before this run began"), prompt().system.includes("fetch_jobs")]).toEqual([true, true, false]);
 });
 
 test("the prompt carries the base and bonus rubric", () => {

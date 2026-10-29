@@ -19,7 +19,7 @@ const ACME = { companies: [{ name: "Acme", ats: "greenhouse", slug: "acme" }] };
 
 test("runOnce finishes when the model calls finish and writes a trace", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);
-    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "nothing to do" }])]);
+    const { chat } = scriptedChat([toolCallsReply(["next_jobs", { source: "Stripe" }], ["finish", { summary: "nothing to do" }])]);
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) });
     expect(report).toMatchObject({ status: "finished", steps: 1, summary: "nothing to do" });
     expect(readdirSync(join(dataDir, "runs"))).toHaveLength(1);
@@ -30,7 +30,7 @@ test("runOnce stores fetched jobs in its stores", async () => {
     const stores = storesWithSettings(ONE_COMPANY);
     const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
     const score: [string, object] = ["record_matches", { verdicts: [{ job_id: "1000", base: 10, bonus: 0 }] }];
-    const replies = [toolCallsReply(["fetch_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
+    const replies = [toolCallsReply(["next_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => stores });
     expect(report.status).toBe("finished");
     expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true"]);
@@ -42,7 +42,7 @@ test("runOnce prunes jobs not seen within job_retention_days", async () => {
     const stores = storesWithSettings(ONE_COMPANY);
     const stale = makeJob({ ats: "greenhouse", jobId: "stale", company: "Stripe", title: "Old Engineer", url: "u" }, {});
     await stores.jobStore.upsertAll([stale], "2020-01-01T00:00:00.000Z", "Stripe");
-    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
+    const { chat } = scriptedChat([toolCallsReply(["next_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
     await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => stores });
     expect(await stores.jobViews.countAllJobs()).toBe(0);
 });
@@ -91,7 +91,7 @@ test("a company search that fails unexpectedly is traced, and the run still fini
     const dataDir = makeDataDir(ONE_COMPANY);
     const stores = storesWithSettings(ONE_COMPANY);
     stores.companies.dueForSearch = () => Promise.reject(new Error("search store down"));
-    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
+    const { chat } = scriptedChat([toolCallsReply(["next_jobs", { source: "Stripe" }], ["finish", { summary: "done" }])]);
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => stores });
     const [trace] = readdirSync(join(dataDir, "runs")).filter((name) => name.endsWith(".jsonl"));
     expect(report.status).toBe("finished");
@@ -100,7 +100,7 @@ test("a company search that fails unexpectedly is traced, and the run still fini
 
 test("a run fetches from the saved sources, not the companies left in the file", async () => {
     const http = fakeBoard(greenhouseBoard([]));
-    const replies = [toolCallsReply(["fetch_jobs", { source: "Acme" }], ["finish", { summary: "done" }])];
+    const replies = [toolCallsReply(["next_jobs", { source: "Acme" }], ["finish", { summary: "done" }])];
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => storesWithSettings(ACME) });
     expect(report.status).toBe("finished");
     expect(http.urls).toEqual(["https://boards-api.greenhouse.io/v1/boards/acme/jobs?content=true"]);
@@ -127,7 +127,7 @@ test("before the agent, each company source's company gets its board as careers 
 
 test("a run with a saved search on and no JSEARCH_API_KEY still starts, and skips the search as not set up", async () => {
     const dataDir = makeDataDir(ONE_COMPANY);
-    const { chat } = scriptedChat([toolCallsReply(["fetch_jobs", { source: TEST_SEARCH.name }], ["finish", { summary: "done" }])]);
+    const { chat } = scriptedChat([toolCallsReply(["next_jobs", { source: TEST_SEARCH.name }], ["finish", { summary: "done" }])]);
     const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat, lookup: publicDns(), openStores: async () => storesWithSettings({ searches: [TEST_SEARCH] }) });
     const [trace] = readdirSync(join(dataDir, "runs"));
     expect([report.status, readFileSync(join(dataDir, "runs", trace ?? ""), "utf8")]).toEqual(["finished", expect.stringMatching(/"type":"source_skipped","source":"Backend remote","reason":"not set up"/)]);

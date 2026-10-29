@@ -19,7 +19,7 @@ import { HttpClient, type JsonGetter, type JsonPoster, type TextGetter } from ".
 import { connectBrowser, type BrowserPort } from "../careers/browser.js";
 import { systemLookup, type HostLookup } from "../careers/fetchPage.js";
 import { sourceHttp } from "../sources/sourceHttp.js";
-import { configuredSources } from "../tools/sources.js";
+import { sourcesOn } from "../tools/sources.js";
 import { beforeAgent } from "./beforeAgent.js";
 import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
@@ -93,7 +93,7 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     const saved = await parts.stores.sources.list(OWNER_ID);
     const context = buildContext(config, seams, { ...parts, chat, saved, usable: await gmailUsable(parts), clients: runClients(config, seams) });
     try {
-        if (configuredSources(context).length === 0) return { status: "finished", reason: NO_SOURCES, steps: 0, runId: parts.logs.runId, summary: NO_SOURCES };
+        if (sourcesOn(context).length === 0) return { status: "finished", reason: NO_SOURCES, steps: 0, runId: parts.logs.runId, summary: NO_SOURCES };
         await beforeAgent(context);
         const result = await runAgent(agentDeps(config, context, { chat, trace: parts.logs.trace }), initialMessages(config, context.markers));
         await afterAgent(context);

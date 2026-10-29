@@ -46,21 +46,3 @@ export function sourceContext(context: Pick<ToolContext, "config" | "sources" | 
     const jsearch = context.jsearchApiKey === null ? {} : { jsearch: { apiKey: context.jsearchApiKey, settings: context.config.jsearch } };
     return { http: context.sources, sourceName, ...jsearch };
 }
-
-interface ModuleFetch {
-    module: SourceModule<unknown>;
-    params: unknown;
-    batch: IngestBatch & { name: string };
-}
-
-/** Reads every page a source's module yields, through the run's checked client, and stores each one as it arrives. */
-export async function fetchAndIngest(context: Pick<ToolContext, "store" | "config" | "sources" | "jsearchApiKey">, { module, params, batch }: ModuleFetch): Promise<Ingested> {
-    const total: Ingested = { stored: [], skippedPublishers: 0, skippedCopies: 0 };
-    for await (const page of module.fetch(params, sourceContext(context, batch.name), null)) {
-        const ingested = await ingest(context, batch, page);
-        total.stored.push(...ingested.stored);
-        total.skippedPublishers += ingested.skippedPublishers;
-        total.skippedCopies += ingested.skippedCopies;
-    }
-    return total;
-}

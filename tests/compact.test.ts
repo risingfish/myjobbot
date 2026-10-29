@@ -8,7 +8,7 @@ function round(id: string): Message[] {
     const assistant: Message = {
         role: "assistant",
         content: null,
-        tool_calls: [{ id, type: "function", function: { name: "fetch_jobs", arguments: JSON.stringify({ company: id }) } }],
+        tool_calls: [{ id, type: "function", function: { name: "next_jobs", arguments: JSON.stringify({ company: id }) } }],
     };
     return [assistant, { role: "tool", tool_call_id: id, content: "x".repeat(100) }];
 }
@@ -17,7 +17,7 @@ function wideRound(callCount: number): Message[] {
     const calls = Array.from({ length: callCount }, (_, index) => ({
         id: `wide_${index}`,
         type: "function" as const,
-        function: { name: "fetch_jobs", arguments: "{}" },
+        function: { name: "next_jobs", arguments: "{}" },
     }));
     const assistant: Message = { role: "assistant", content: null, tool_calls: calls };
     const tools = calls.map((call) => ({ role: "tool" as const, tool_call_id: call.id, content: "y".repeat(50) }));
