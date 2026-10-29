@@ -167,21 +167,23 @@ No behaviour changes: a run fetches the same boards the same way (quickstart PR 
 
 ### Sitting S3, PR 3: the saved sources table and store (T019–T024), branch `017-pr3-user-sources`
 
-- [ ] T019 [US2] Per-PR flow steps 1–3, for sitting S3.
-- [ ] T020 [P] [US2] Update the exact migration lists (no new `test()`; migration 012's own test comes
+- [x] T019 [US2] Per-PR flow steps 1–3, for sitting S3.
+- [x] T020 [P] [US2] Update the exact migration lists (no new `test()`; migration 012's own test comes
   with 013's in S4b):
   - add `012_user_sources` to every exact migration list in `tests/integration/migrate.test.ts` and
     `companyMigrations.test.ts`;
   - add `user_sources` to the collation list, in the order MariaDB returns it;
   - add `user_sources` to `TABLES` in `tests/helpers/testDb.ts`, before `users` and `companies`
     (foreign keys).
-- [ ] T021 [P] [US2] One bundled contract case in a new `tests/helpers/sourceContract.ts` (one
+- [x] T021 [P] [US2] (Done. Step 7 checks only that the source is gone: nothing sets
+  `jobs.source_id` before S4a, which adds the jobs half to this case. `ensureAccountSource` takes
+  `{ module, name }`, keeping it within three parameters.) One bundled contract case in a new `tests/helpers/sourceContract.ts` (one
   `test()`; data-model "Store contract" steps 1–7), wired into `tests/storeContract.test.ts` and
   `tests/integration/storeContract.test.ts`, whose `afterAll` already empties the tables.
-- [ ] T022 [US2] Add `src/db/migrations/012_user_sources.ts` (the table, its unique keys, and
+- [x] T022 [US2] Add `src/db/migrations/012_user_sources.ts` (the table, its unique keys, and
   `jobs.source_id` with `ON DELETE SET NULL`; data-model.md). List it in
   `src/db/migrations/index.ts`, and add `UserSourcesTable` and `jobs.source_id` to `src/db/schema.ts`.
-- [ ] T023 [US2] Add the store:
+- [x] T023 [US2] Add the store:
   - `src/db/sourceStore.ts`: `SourceStore`, `SavedSource`, `SourceOutcome` and `SourceKey`;
   - `sources` in `Stores`;
   - `src/db/kysely/sourceStore.ts`, wired into `src/db/kysely/stores.ts`;
@@ -199,7 +201,9 @@ No behaviour changes yet: every caller still passes a plain name.
 - [ ] T026 [P] [US2] Extend the store contracts (no new `test()`):
   - in `tests/helpers/storeContract.ts`, a job stored with `{ id, name }` is offered under that
     source's id, and a job from another source with the same name isn't;
-  - in `tests/helpers/companyContract.ts`, `setBoardPage` returns the company's id.
+  - in `tests/helpers/companyContract.ts`, `setBoardPage` returns the company's id;
+  - in `tests/helpers/sourceContract.ts` (step 7, moved from T021), a removed source's jobs keep
+    their label with a null `source_id`.
 - [ ] T027 [US2] In `src/db/store.ts`, `src/db/kysely/jobStore.ts` and the memory store:
   - `upsertAll(jobs, seen, source: JobSource)` takes a plain name or `{ id, name }`, setting
     `source_id`;

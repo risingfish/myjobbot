@@ -40,6 +40,7 @@ interface JobsTable {
     applied: Generated<number>;
     applied_on: Text;
     company_id: Count;
+    source_id: Count;
 }
 
 interface CompaniesTable {
@@ -67,6 +68,25 @@ interface UsersTable {
 interface UserSettingsTable {
     user_id: number;
     settings: ColumnType<unknown, string, string>;
+    updated_at: string;
+}
+
+interface UserSourcesTable {
+    id: Generated<number>;
+    user_id: number;
+    module: string;
+    name: string;
+    params: ColumnType<unknown, string, string>;
+    target: string;
+    enabled: number;
+    company_id: Count;
+    cursor: ColumnType<unknown, string | null, string | null>;
+    last_fetched_at: Text;
+    last_outcome: Text;
+    last_jobs: Count;
+    last_cost: Count;
+    last_reason: Text;
+    created_at: string;
     updated_at: string;
 }
 
@@ -141,4 +161,5 @@ export interface Database {
     careers_audit: CareersAuditTable;
     users: UsersTable;
     user_settings: UserSettingsTable;
+    user_sources: UserSourcesTable;
 }

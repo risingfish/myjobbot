@@ -6,6 +6,7 @@ import { splitSettings } from "../../src/config/searchSettings.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import type { SavedSource } from "../../src/db/sourceStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailSettings, settingsView, type SettingsView } from "../../src/web/settingsView.js";
@@ -30,6 +31,7 @@ interface SettingsState {
     key: SecretKeyStatus;
     notices: SettingsNotice[];
     view: SettingsView;
+    sources: SavedSource[];
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -87,7 +89,8 @@ export async function getSettingsState(): Promise<SettingsState> {
     const { stores: opened, key } = await getStores();
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored, Boolean(process.env.JSEARCH_API_KEY)) };
+    const sources = await opened.sources.list(OWNER_ID);
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored, Boolean(process.env.JSEARCH_API_KEY)), sources };
 }
 
 /** Returns config.json's runtime settings, the part a search settings save is checked against. */

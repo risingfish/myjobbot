@@ -98,7 +98,7 @@ interface SourceStore {
     remove(key: SourceKey): Promise<void>;
     recordFetch(key: SourceKey, outcome: SourceOutcome, cursor: unknown | null): Promise<void>;
     linkCompany(key: SourceKey, companyId: number): Promise<void>;
-    ensureAccountSource(userId: number, module: string, name: string, at: string): Promise<void>;
+    ensureAccountSource(userId: number, source: AccountSource, at: string): Promise<void>;   // AccountSource = { module, name }
 }
 ```
 

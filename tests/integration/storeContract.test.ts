@@ -12,6 +12,7 @@ import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
 import { jobDetailContract } from "../helpers/jobDetailContract.js";
 import { searchSettingsContract } from "../helpers/searchSettingsContract.js";
+import { sourceContract } from "../helpers/sourceContract.js";
 import { storeContract } from "../helpers/storeContract.js";
 import { connectTestDb, emptyTables } from "../helpers/testDb.js";
 
@@ -40,6 +41,9 @@ descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
+sourceContract(emptyStores, {
+    seedCompany: async () => Number((await db.insertInto("companies").values({ company_key: "stripe", name: "Stripe", created_date: "2026-10-28", last_found_date: "2026-10-28" }).executeTakeFirstOrThrow()).insertId),
+});
 searchSettingsContract(emptyStores, {
     owners: async () => (await db.selectFrom("users").select("id").orderBy("id").execute()).map((row) => row.id),
     seedUser: async (id) => void (await db.insertInto("users").values({ id, name: `user ${id}`, created_at: "2026-10-25T00:00:00.000Z" }).execute()),

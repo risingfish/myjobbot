@@ -12,6 +12,7 @@ import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
 import { searchSettingsContract } from "./helpers/searchSettingsContract.js";
+import { sourceContract } from "./helpers/sourceContract.js";
 import { storeContract } from "./helpers/storeContract.js";
 
 storeContract(async () => memoryStores());
@@ -29,6 +30,7 @@ companyContract(
     memoryCompanyHooks(() => companyTables),
 );
 appliedContract(async () => memoryStores());
+sourceContract(async () => memoryStores(), { seedCompany: async () => 7 });
 let searchSettings = new MemorySearchSettingsStore();
 searchSettingsContract(
     async () => {
