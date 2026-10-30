@@ -7,10 +7,11 @@ import { memoryStores } from "../helpers/memoryStore.js";
 
 vi.mock("../../web/lib/uiState.js", async () => {
     const { settingsView } = await import("../../src/web/settingsView.js");
-    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null), sources: [] }) };
+    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null), sources: { rows: [], usage: "JSearch requests this month: 0 of 190" } }) };
 });
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 vi.mock("../../web/lib/settingsActions.js", () => ({ saveSettingsSection: vi.fn() }));
+vi.mock("../../web/lib/sourceActions.js", () => ({ setSourceEnabled: vi.fn(), deleteSource: vi.fn() }));
 
 test("the settings page holds the search settings sections and the Gmail panel, and is labelled", async () => {
     const { container } = render(await SettingsPage());

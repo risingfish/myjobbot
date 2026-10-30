@@ -59,8 +59,18 @@ export function settingsView(stored: RawSearchSettings | null): SettingsView {
 
 /** Reads config.json's Gmail settings from its runtime part alone, so they can be used before any search settings are stored. */
 export function gmailSettings(fileRaw: unknown): z.infer<typeof fileConfigSchema.shape.gmail> {
+    return fileConfigSchema.shape.gmail.parse(runtimePart(fileRaw, "gmail"));
+}
+
+/** Reads config.json's JSearch budget and schedule from its runtime part alone, so the Sources section works before any search settings are stored. */
+export function searchLimits(fileRaw: unknown): Pick<z.infer<typeof fileConfigSchema.shape.jsearch>, "monthly_request_cap" | "refresh_hours"> {
+    return fileConfigSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch"));
+}
+
+/** Picks one key of config.json's runtime part, or undefined so its defaults apply. */
+function runtimePart(fileRaw: unknown, key: string): unknown {
     const { runtime } = splitSettings(fileRaw);
-    return fileConfigSchema.shape.gmail.parse(isRawObject(runtime) ? runtime.gmail : undefined);
+    return isRawObject(runtime) ? runtime[key] : undefined;
 }
 
 /** Shows each field of the sanitized settings. */

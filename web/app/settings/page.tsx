@@ -20,7 +20,7 @@ export default async function SettingsPage() {
     return (
         <main aria-label="Settings">
             <SettingsNotices notices={state.notices} />
-            <SourcesSection rows={state.sources} />
+            <SourcesSection sources={state.sources} />
             <PreferencesSection view={state.view} />
             <ScoringSection view={state.view} />
             <FiltersSection view={state.view} />

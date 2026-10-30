@@ -389,7 +389,17 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
 
 ### Sitting S6, PR 6: the Sources section made editable (T052–T061), branch `017-pr6-sources-section`
 
-- [ ] T052 [US1] Per-PR flow steps 1–3, for sitting S6.
+S6 is split in two PRs of about 10 files each, as S5 was:
+- **6a** (branch `017-pr6-sources-section`): the list made manageable. `sourceRows` gains each
+  outcome's text, "needs fixing", Gmail alerts only once connected, and the JSearch line (T055).
+  `enableProblem` in `sourceRules` refuses turning a search on past the budget (T053's last case).
+  `sourceActions` gets `setSourceEnabled` and `deleteSource`, and the list gets its switches and
+  Delete (`SourceControls.tsx`). The UI test covers the list (T057's last case).
+- **6b**: adding and editing. `recognizeLink`, `sourceChoices`, `sourceFormView`, the save rules
+  and `saveSourcePlan` (T053's other cases, T054, T056), `recognizeSourceLink` and `saveSource`,
+  and `SourceForm.tsx`, with the UI test's add cases.
+
+- [x] T052 [US1] Per-PR flow steps 1–3, for sitting S6.
 - [ ] T053 [P] [US1] Unit tests in a new `tests/sourceRules.test.ts` (five `test()`s) for `sourceRules`
   in `src/web/sourceRules.ts`. They bring back, as source rules, the checks S4b deleted:
   - a name matching another ignoring case is refused;

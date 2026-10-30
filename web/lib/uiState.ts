@@ -8,9 +8,11 @@ import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
+import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
-import { sourceRows, type SourceRowView } from "../../src/web/sourceRows.js";
-import { gmailSettings, settingsView, type SettingsView } from "../../src/web/settingsView.js";
+import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceRows.js";
+import type { SearchLimits } from "../../src/web/sourceRules.js";
+import { gmailSettings, searchLimits, settingsView, type SettingsView } from "../../src/web/settingsView.js";
 
 interface UiState {
     views: JobViews;
@@ -33,7 +35,7 @@ interface SettingsState {
     key: SecretKeyStatus;
     notices: SettingsNotice[];
     view: SettingsView;
-    sources: SourceRowView[];
+    sources: SourcesView;
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -92,8 +94,19 @@ export async function getSettingsState(): Promise<SettingsState> {
     const { stores: opened, key } = await getStores();
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
-    const sources = sourceRows(await opened.sources.list(OWNER_ID), Boolean(process.env.JSEARCH_API_KEY));
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources };
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened) };
+}
+
+/** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */
+async function sourcesView(opened: Stores): Promise<SourcesView> {
+    const [saved, connection, used] = await Promise.all([opened.sources.list(OWNER_ID), opened.gmail.connection(), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
+    const rows = sourceRows(saved, { hasSearchKey: Boolean(process.env.JSEARCH_API_KEY), gmailConnected: connection !== null });
+    return { rows, usage: searchUsage(used, sourceLimits().monthly_request_cap) };
+}
+
+/** Returns config.json's JSearch budget and schedule, which a search that is turned on must fit. */
+export function sourceLimits(): SearchLimits {
+    return searchLimits(loadFileConfig(dataDir()));
 }
 
 /** Returns config.json's runtime settings, the part a search settings save is checked against. */
