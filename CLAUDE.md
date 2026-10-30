@@ -91,12 +91,14 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
   Never print `.env`, sealed columns or app passwords.
 - The careers lookup lives in `src/careers/` (feature 008) and knows nothing about alerts; only
-  `src/tools/careersStep.ts` decides which jobs use it. Pages reach the model only through
+  `src/tools/careersStep.ts` decides which jobs use it, and the fetch phase calls it after reading
+  the Gmail alerts source. Pages reach the model only through
   `trimPage`, with numbered links (the model never types an address), addresses must be public
   `http(s)` and are checked again on every redirect (`fetchPage.ts`), and `careers_audit` holds
   addresses and sizes only, never page text. Check compose changes with `docker compose config
   --quiet`; plain `docker compose config` prints `.env`. Pages are read in order (feature 010,
-  `readPage.ts`): a job board's own data (`src/sources/boardLink.ts`, the board readers, Workday),
+  `readPage.ts`): a job board's own data (`src/sources/boardLink.ts`, then the module's `postings`
+  through `src/careers/boardPages.ts`),
   then the download, then rendering in the owner's Playwright browser when the download is
   unreadable. Every board and browser request goes through `assertPublic`; the browser never gets a
   redirect to follow on its own (`browser.ts`). `playwright-core` and the compose `browser` image
@@ -130,7 +132,17 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `board` page. The company search (`src/companies/`) makes no model calls and stores addresses and
   fixed reasons only, never result text; its address rules are plain functions in
   `pickAddresses.ts` and `hosts.ts`.
-- Search settings (feature 015: `companies`, `searches`, `preferences`, `match_threshold`,
+- Job sources are modules (feature 017): each implements `SourceModule` (`src/sources/module.ts`)
+  and is listed in `MODULES` (`src/sources/registry.ts`); users only save instances, as rows in
+  `user_sources` written only through `SourceStore`, and every job points at its source
+  (`jobs.source_id`). A module makes requests only through the `SourceHttp` it is given (built by
+  `sourceHttp`, address-checked), stores nothing itself, and fails with fixed reasons
+  (`failureReason`), never answer text. The fetch phase (`src/sources/fetchPhase.ts`) fetches every
+  source that is on before the agent, and shared code (`ingest.ts`) stores the pages; the model only
+  scores, through `next_jobs`. Rules across sources (names, duplicates, the JSearch budget) are plain
+  functions in `src/web/sourceRules.ts`; a test on save (`testFetch.ts`) stores no jobs. Scraping
+  (kind `web`) isn't a module yet.
+- Search settings (feature 015: `preferences`, `match_threshold`,
   `title_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
   `user_settings`, one raw document per user (owner `OWNER_ID = 1`, created by the store), written
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by

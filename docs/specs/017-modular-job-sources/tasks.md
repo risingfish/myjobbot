@@ -470,20 +470,20 @@ them all in one list.
 
 ### Sitting S7, PR 7: docs (T062–T065), branch `017-pr7-docs`
 
-- [ ] T062 Per-PR flow steps 1–3, for sitting S7.
-- [ ] T063 [P] Update `README.md`:
+- [x] T062 Per-PR flow steps 1–3, for sitting S7.
+- [x] T063 [P] Update `README.md`:
   - sources as modules and saved sources, with the module table;
   - adding a source by pasting a link;
   - the fetch phase, and the model only scoring;
   - the tool list: `next_jobs` replaces `fetch_jobs`;
   - the data model: `user_sources` and `jobs.source_id`;
   - Configuration knobs: `companies` and `searches` are gone.
-- [ ] T064 Update `CLAUDE.md`:
+- [x] T064 Update `CLAUDE.md`:
   - a Conventions line for the module interface and its rules: requests only through `sourceHttp`,
     no storing, fixed reasons, registered in `MODULES`;
   - fix the lines about "the board readers" and `src/tools/careersStep.ts`;
   - fill the ledger's last row.
-- [ ] T065 Per-PR flow steps 4–6 ("Document modular job sources (017 PR 7)").
+- [x] T065 Per-PR flow steps 4–6 ("Document modular job sources (017 PR 7)").
 
 ---
 
@@ -535,4 +535,4 @@ T044 rewrites     tests/searchSources.test.ts, nextJobs.test.ts, listSources.tes
 | Planned new | 50 (T005 8, T006 1, T014 4, T021's memory run 1, T032 6, T042 9, T043 1, T045 3, T053 5, T054 5, T055 4, T056 3) | 2 (T021's MariaDB run, T031) | 1 (T057) |
 | Planned removed | 17 (T033) | 0 | 0 |
 | Planned after | 731 (85.90%) | 60 (7.05%) | 60 (7.05%) |
-| After PR 7 (T064) | | | |
+| After PR 7 (T064) | 733 (86.03%) | 59 (6.92%: 58 run, plus the real-browser test, skipped without `MYJOBBOT_TEST_BROWSER_URL`) | 60 (7.04%) |
