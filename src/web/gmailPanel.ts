@@ -45,7 +45,7 @@ export function gmailPanelView(row: GmailConnectionRow | null, context: PanelCon
 }
 
 /** Shows a stored UTC time as YYYY-MM-DD HH:mm in the server's time zone, or null when there is none. */
-function localTime(iso: string | null): string | null {
+export function localTime(iso: string | null): string | null {
     return iso === null ? null : new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
 }
 
