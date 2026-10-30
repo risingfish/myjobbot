@@ -54,12 +54,12 @@ function siteParams(url: URL): WorkdaySite | null {
     return { host: link.host, tenant: link.slug, site: link.site };
 }
 
-/** Yields a jobs site's postings 20 to a page from an offset, each page saying where the next one starts. */
+/** Yields a jobs site's postings 20 to a page from an offset, each page saying where the next one starts; a preview reads the listing alone, without each posting's details. */
 async function* sitePages(site: WorkdaySite, ctx: SourceContext, start: number): AsyncGenerator<SourcePage> {
     for (let offset = start; ; offset += PAGE_SIZE) {
         const listed = await listPage(ctx.http, site, { offset, searchText: "" });
         const jobs: Job[] = [];
-        for (const posting of listed) jobs.push(siteJob(site, ctx.sourceName, await readPosting(ctx.http, site, posting.postingId)));
+        for (const posting of listed) jobs.push(siteJob(site, ctx.sourceName, ctx.preview === true ? posting : await readPosting(ctx.http, site, posting.postingId)));
         const next = listed.length < PAGE_SIZE ? null : { offset: offset + PAGE_SIZE };
         yield { jobs, cost: 0, next };
         if (next === null) return;

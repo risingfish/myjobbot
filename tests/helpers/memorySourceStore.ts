@@ -28,7 +28,7 @@ export class MemorySourceStore implements SourceStore {
         const existing = this.rows.find((row) => row.userId === userId && row.id === id);
         if (existing === undefined && "id" in source) throw new Error("no such saved source");
         if (existing === undefined) this.rows.push({ ...fields, id, userId, companyId: null, last: null });
-        else this.rename(existing, fields);
+        else this.rename(existing, existing.target === fields.target ? fields : { ...fields, last: null });
         return (await this.list(userId)).find((row) => row.id === id) as SavedSource;
     }
 

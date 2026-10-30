@@ -1,6 +1,7 @@
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
 import { moduleFor } from "../sources/registry.js";
 import { localTime } from "./gmailPanel.js";
+import { paramValues, type SourceChoice, type SourceDraft } from "./sourceForm.js";
 
 export interface SourceRowView {
     id: number;
@@ -10,11 +11,13 @@ export interface SourceRowView {
     note: string | null;
     last: string | null;
     account: boolean;
+    edit: SourceDraft | null;
 }
 
 export interface SourcesView {
     rows: SourceRowView[];
     usage: string;
+    choices: SourceChoice[];
 }
 
 interface RowFacts {
@@ -43,7 +46,14 @@ export function searchUsage(used: number, cap: number): string {
 /** Shows one saved source as a row. */
 function sourceRow(source: SavedSource, facts: RowFacts): SourceRowView {
     const module = moduleFor(source.module)?.name ?? source.module;
-    return { id: source.id, name: source.name, module, on: source.enabled, note: rowNote(source, facts.hasSearchKey), last: lastFetch(source.last), account: isAccount(source) };
+    return { id: source.id, name: source.name, module, on: source.enabled, note: rowNote(source, facts.hasSearchKey), last: lastFetch(source.last), account: isAccount(source), edit: editDraft(source) };
+}
+
+/** Gives the draft a source's Edit opens, or null for a source that can't be edited here: an account source, or one whose module is gone. */
+function editDraft(source: SavedSource): SourceDraft | null {
+    const module = moduleFor(source.module);
+    if (module === null || module.scope === "account") return null;
+    return { id: source.id, module: module.id, name: source.name, values: paramValues(module.fields, source.params) };
 }
 
 /** Reports whether a source belongs to the account, such as Gmail alerts, so it can only be switched on and off. */

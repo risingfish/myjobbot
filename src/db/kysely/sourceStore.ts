@@ -18,7 +18,7 @@ export class KyselySourceStore implements SourceStore {
         return rows.map(savedSource);
     }
 
-    /** Adds a new source, or replaces a saved one's fields, relabels its jobs and clears where its fetching stopped; a repeated target or name is refused. */
+    /** Adds a new source, or replaces a saved one's fields, relabels its jobs and clears where its fetching stopped, and its last fetch when its target changes; a repeated target or name is refused. */
     async save(userId: number, source: NewSource | SavedSource, at: string): Promise<SavedSource> {
         const fields = sourceFields(source, at);
         const id = await this.db.transaction().execute(async (trx) => {
@@ -84,8 +84,10 @@ async function insertSource(trx: Transaction<Database>, row: ReturnType<typeof s
     return Number((await trx.insertInto("user_sources").values(row).executeTakeFirstOrThrow()).insertId);
 }
 
-/** Replaces a saved source's fields and relabels its jobs with its name, giving its id. */
+/** Replaces a saved source's fields and relabels its jobs with its name, forgetting its last fetch when it now reads another board or search, and gives its id. */
 async function replaceSource(trx: Transaction<Database>, key: SourceKey, fields: ReturnType<typeof sourceFields>): Promise<number> {
+    const unfetched = { last_fetched_at: null, last_outcome: null, last_jobs: null, last_cost: null, last_reason: null };
+    await trx.updateTable("user_sources").set(unfetched).where("id", "=", key.id).where("user_id", "=", key.userId).where("target", "!=", fields.target).execute();
     await trx.updateTable("user_sources").set(fields).where("id", "=", key.id).where("user_id", "=", key.userId).execute();
     const owned = trx.selectFrom("user_sources").select("id").where("id", "=", key.id).where("user_id", "=", key.userId);
     await trx.updateTable("jobs").set({ source: fields.name }).where("source_id", "in", owned).execute();

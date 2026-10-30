@@ -64,6 +64,13 @@ test("a search is not fetched well inside refresh_hours", async () => {
     expect([context.run.sources.get(SEARCH_NAME)?.reason, jsearchRequests().length]).toEqual(["not due", 0]);
 });
 
+test("a search whose last fetch failed is tried again on the next run, inside refresh_hours", async () => {
+    const failing = { last: { at: new Date(TEST_NOW.getTime() - HOUR).toISOString(), outcome: "failing" as const, jobs: 0, cost: 0, reason: "refused" } };
+    const { context, jsearchRequests } = searchContext({}, failing);
+    await fetchRun(context);
+    expect([context.run.sources.get(SEARCH_NAME)?.outcome, jsearchRequests().length]).toEqual(["ok", 1]);
+});
+
 test("a search is not fetched once the monthly budget is used", async () => {
     const { context, jsearchRequests } = searchContext();
     for (let index = 0; index < 190; index += 1) await context.apiCalls.record("jsearch", "other", TEST_NOW.toISOString());

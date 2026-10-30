@@ -36,9 +36,9 @@ export function fetchPlan(saved: SavedSource, facts: FetchFacts): FetchPlan {
     return { module, params: params.data, cursor: cursorOf(saved.cursor) };
 }
 
-/** Reports whether a scheduled source's last fetch is at least its refresh interval old, less the leeway that keeps a daily schedule from slipping. */
+/** Reports whether a scheduled source is failing or its last fetch is at least its refresh interval old, less the leeway that keeps a daily schedule from slipping. */
 function isDue(saved: SavedSource, facts: FetchFacts): boolean {
-    if (saved.last === null) return true;
+    if (saved.last === null || saved.last.outcome === "failing") return true;
     const ageHours = (facts.now.getTime() - Date.parse(saved.last.at)) / MS_PER_HOUR;
     return ageHours >= facts.refreshHours - REFRESH_GRACE_HOURS;
 }
