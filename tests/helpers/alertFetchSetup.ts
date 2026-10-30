@@ -1,7 +1,8 @@
 import { ALERTS_SOURCE } from "../../src/gmail/alertJobs/source.js";
 import { randomBytes } from "node:crypto";
 import type { Stores } from "../../src/db/store.js";
-import type { AlertDeps, LookupDeps } from "../../src/gmail/alertFetch.js";
+import { readAlerts, recordAlertRead, type AlertDeps, type AlertSummary } from "../../src/gmail/alertFetch.js";
+import type { LookupDeps } from "../../src/gmail/alertLookupStep.js";
 import type { JsonGetter } from "../../src/http/client.js";
 import { testFileConfig } from "./config.js";
 import type { AlertEmail } from "../../src/gmail/alertJobs/parse.js";
@@ -30,11 +31,20 @@ export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = 
     const opened = stores ?? (await connectedStores());
     const fake = fakeImap({ mailbox: { uidValidity: 7, emails }, ...script });
     const trace = memoryTrace();
-    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, store: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, trace, now: NOW, source: ALERTS_SOURCE };
+    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, known: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, now: NOW, source: ALERTS_SOURCE };
     return { deps, stores: opened, fake, trace };
 }
 
-export function lookupDeps(http: JsonGetter, stores: Stores): LookupDeps {
+export async function fetchAlerts(setup: Pick<AlertSetup, "stores" | "trace">, deps: AlertDeps): Promise<AlertSummary> {
+    const read = await readAlerts(deps);
+    const at = deps.now.toISOString();
+    await setup.stores.jobStore.upsertAll(read.jobs, at, deps.source);
+    for (let request = 0; request < read.summary.searches; request += 1) await setup.stores.apiCalls.record("jsearch", ALERTS_SOURCE, at);
+    await recordAlertRead({ jobStore: setup.stores.jobStore, alerts: setup.stores.alerts, trace: setup.trace, now: deps.now }, read);
+    return read.summary;
+}
+
+export function lookupDeps(http: JsonGetter): LookupDeps {
     const config = testFileConfig();
-    return { http, apiKey: "test-key", settings: config.jsearch, apiCalls: stores.apiCalls, filters: { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies }, searches: 0, usedThisMonth: 0 };
+    return { http, apiKey: "test-key", settings: config.jsearch, filters: { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies }, searches: 0, usedThisMonth: 0 };
 }

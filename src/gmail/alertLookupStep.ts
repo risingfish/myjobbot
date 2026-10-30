@@ -1,5 +1,4 @@
 import type { FileConfig } from "../config/schema.js";
-import type { ApiCallLog } from "../db/store.js";
 import type { JsonGetter } from "../http/client.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
@@ -8,13 +7,11 @@ import { fetchJsearch } from "../sources/modules/jsearch.js";
 import { lookupAllowance } from "./alertJobs/budget.js";
 import { matchResults, planQuery, type MatchStats } from "./alertJobs/lookup.js";
 import type { AlertEmail, AlertJob, ParsedAlert } from "./alertJobs/parse.js";
-import { ALERTS_SOURCE } from "./alertJobs/source.js";
 
 export interface LookupDeps {
     http: JsonGetter;
     apiKey: string | null;
     settings: FileConfig["jsearch"];
-    apiCalls: ApiCallLog;
     filters: { titleFilter: FileConfig["title_filter"]; excludeCompanies: string[] };
     searches: number;
     usedThisMonth: number;
@@ -66,9 +63,8 @@ function plans(deps: LookupDeps, work: { read: ReadEmail[]; fresh: AlertJob[] })
         });
 }
 
-/** Runs one JSearch search for an email, logging the request against the budget; a failed search finds nothing. */
+/** Runs one JSearch search for an email, which the fetch phase counts against the budget as the page's cost; a failed search finds nothing. */
 async function search(deps: LookupDeps, request: { query: string; apiKey: string; now: Date }): Promise<Job[]> {
-    await deps.apiCalls.record("jsearch", ALERTS_SOURCE, request.now.toISOString());
     const query = { search: { query: request.query, remote_only: false, country: "us" }, settings: { ...deps.settings, date_posted: "7days" as const }, apiKey: request.apiKey };
     return fetchJsearch(query, deps.http).catch((error: unknown) => failedSearch(error));
 }

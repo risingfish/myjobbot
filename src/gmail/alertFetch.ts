@@ -1,6 +1,7 @@
 import type { Trace } from "../agent/trace.js";
 import type { JobSource } from "../db/jobSource.js";
-import type { AlertStateRow, AlertStore, GmailStore, JobStore } from "../db/store.js";
+import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore, JobKey, JobStore } from "../db/store.js";
+import type { Job } from "../jobs/job.js";
 import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
@@ -13,18 +14,37 @@ import type { SecretKeyStatus } from "./secretKey.js";
 
 export interface AlertDeps {
     gmail: GmailStore;
-    alerts: AlertStore;
-    store: JobStore;
+    alerts: Pick<AlertStore, "state">;
+    known: Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
     key: SecretKeyStatus;
     imap?: ImapFactory;
     senders: string[];
-    trace: Trace;
     now: Date;
     source: JobSource;
     lookup?: LookupDeps;
 }
 
-export type { LookupDeps };
+interface NotUnderstood {
+    from: string;
+    subject: string;
+    failure?: string;
+}
+
+export interface AlertRead {
+    jobs: Job[];
+    seenAgain: JobKey[];
+    mail: MailState;
+    summary: AlertSummary;
+    lookups: MatchStats[];
+    notUnderstood: NotUnderstood[];
+}
+
+interface AlertRecording {
+    jobStore: Pick<JobStore, "markSeen">;
+    alerts: Pick<AlertStore, "recordRead">;
+    trace: Trace;
+    now: Date;
+}
 
 export interface AlertSummary {
     emails: number;
@@ -45,35 +65,34 @@ interface Counts {
     searches: number;
     lookedUp: number;
     withDescription: number;
-    lookups: MatchStats[];
 }
 
 const MAX_EMAILS = 50;
 
-/** Reads new job-alert emails into stored jobs, records where reading stopped, and reports what it found. */
-export async function fetchAlerts(deps: AlertDeps): Promise<AlertSummary> {
+/** Reads new job-alert emails into jobs, looking up descriptions for the new ones, without storing anything: it gives back the new jobs, the known ones seen again, where reading stopped, and what it found. */
+export async function readAlerts(deps: AlertDeps): Promise<AlertRead> {
     const marker = await deps.alerts.state();
     const mail = await readMail(deps, marker);
     const read = mail.emails.map((email) => ({ email, alert: safeParse(email) }));
-    const counts = await storeRead(deps, read);
-    const summary = summarize(read, counts);
-    await deps.alerts.recordRead({ uidValidity: mail.uidValidity, lastUid: lastUid(mail, marker), emails: summary.emails, jobs: summary.jobs_found, notUnderstood: summary.not_understood }, deps.now.toISOString());
-    deps.trace.write({ type: "alerts", ...summary, lookups: counts.lookups, not_understood: notUnderstood(read).map(({ email, alert }) => ({ from: email.from, subject: email.subject, ...(alert.failure === undefined ? {} : { failure: alert.failure }) })) });
-    return summary;
-}
-
-/** Stores the jobs a run read, looking up descriptions for the new ones first, and counts the outcome. */
-async function storeRead(deps: AlertDeps, read: ReadEmail[]): Promise<Counts> {
-    const seen = deps.now.toISOString();
     const sorted = await sortAlertJobs(
-        deps.store,
+        deps.known,
         read.flatMap((entry) => entry.alert.jobs),
-        seen,
+        deps.source,
     );
     const looked = await lookUpDescriptions(deps.lookup, { read, fresh: sorted.fresh, now: deps.now });
     const jobs = sorted.fresh.map((job) => alertJobRecord(job, looked.matches.get(job.linkedinId)));
-    await deps.store.upsertAll(jobs, seen, deps.source);
-    return { stored: jobs.length, seenAgain: sorted.seenAgain, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length, lookups: looked.stats };
+    const counts = { stored: jobs.length, seenAgain: sorted.seenAgain.length, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length };
+    const summary = summarize(read, counts);
+    const state = { uidValidity: mail.uidValidity, lastUid: lastUid(mail, marker), emails: summary.emails, jobs: summary.jobs_found, notUnderstood: summary.not_understood };
+    return { jobs, seenAgain: sorted.seenAgain, mail: state, summary, lookups: looked.stats, notUnderstood: notUnderstoodMail(read) };
+}
+
+/** Records an alert read once its jobs are stored: moves the known jobs' last-seen time, saves where reading stopped, and traces what it found. */
+export async function recordAlertRead(deps: AlertRecording, read: AlertRead): Promise<void> {
+    const at = deps.now.toISOString();
+    await deps.jobStore.markSeen(read.seenAgain, at);
+    await deps.alerts.recordRead(read.mail, at);
+    deps.trace.write({ type: "alerts", ...read.summary, lookups: read.lookups, not_understood: read.notUnderstood });
 }
 
 /** Reads unread alert mail, turning an unusable connection or a Gmail failure into a fixed note. */
@@ -95,6 +114,11 @@ function summarize(read: ReadEmail[], counts: Counts): AlertSummary {
     const unsupported = read.filter((entry) => !isLinkedIn(entry.email)).length;
     const looked = { searches: counts.searches, looked_up: counts.lookedUp, with_description: counts.withDescription, alert_only: counts.stored - counts.withDescription };
     return { emails: read.length, jobs_found: jobsFound, stored: counts.stored, seen_again: counts.seenAgain, ...looked, not_understood: notUnderstood(read).length, unsupported };
+}
+
+/** Describes the LinkedIn emails that yielded no jobs by sender, subject and failure only, never their text. */
+function notUnderstoodMail(read: ReadEmail[]): NotUnderstood[] {
+    return notUnderstood(read).map(({ email, alert }) => ({ from: email.from, subject: email.subject, ...(alert.failure === undefined ? {} : { failure: alert.failure }) }));
 }
 
 /** Lists LinkedIn emails that yielded no jobs, the signal of a layout change. */
