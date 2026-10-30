@@ -9,8 +9,6 @@ export interface SourceRowView {
     note: string | null;
 }
 
-const RUN_MODULES: Record<string, string> = { gmail_alerts: "Gmail alerts" };
-
 const NEEDS_SEARCH_KEY = "needs JSEARCH_API_KEY in .env";
 
 const UNAVAILABLE = "unavailable";
@@ -22,12 +20,12 @@ export function sourceRows(saved: SavedSource[], hasSearchKey: boolean): SourceR
 
 /** Names a source's module, falling back to its stored id for a module the app no longer ships. */
 function moduleName(id: string): string {
-    return moduleFor(id)?.name ?? RUN_MODULES[id] ?? id;
+    return moduleFor(id)?.name ?? id;
 }
 
 /** Says what stops a source being fetched, or null when nothing does. */
 function rowNote(module: string, hasSearchKey: boolean): string | null {
     const found = moduleFor(module);
-    if (found === null) return RUN_MODULES[module] === undefined ? UNAVAILABLE : null;
+    if (found === null) return UNAVAILABLE;
     return found.requires.includes("jsearch_key") && !hasSearchKey ? NEEDS_SEARCH_KEY : null;
 }

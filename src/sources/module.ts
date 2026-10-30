@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { FileConfig } from "../config/schema.js";
+import type { AlertDeps, AlertRead } from "../gmail/alertFetch.js";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 
@@ -16,12 +17,14 @@ export interface SourceContext {
     http: SourceHttp;
     sourceName: string;
     jsearch?: JsearchAccess;
+    alerts?: AlertDeps;
 }
 
 export interface SourcePage {
     jobs: Job[];
     cost: number;
     next: Cursor | null;
+    alerts?: AlertRead;
 }
 
 interface SourceField {

@@ -1,14 +1,16 @@
 import { OWNER_ID } from "../db/searchSettingsStore.js";
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
 import type { Job } from "../jobs/job.js";
-import { alertSource } from "../tools/alertSource.js";
+import { recordAlertRead, type AlertSummary } from "../gmail/alertFetch.js";
+import { lookUpAlertJobs } from "../tools/careersStep.js";
 import type { SourceRun, ToolContext } from "../tools/context.js";
 import { withoutDescription } from "../tools/jobLog.js";
 import { requestsThisMonth } from "../tools/searchBudget.js";
+import { alertAccess } from "./alertAccess.js";
 import { failureReason } from "./failure.js";
 import { fetchOrder, fetchPlan, type FetchFacts, type SkipReason } from "./fetchPlan.js";
 import { ingest, sourceContext } from "./ingest.js";
-import type { Cursor, SourceModule } from "./module.js";
+import type { Cursor, SourceModule, SourcePage } from "./module.js";
 
 interface Read {
     pages: number;
@@ -17,6 +19,7 @@ interface Read {
     next: Cursor | null;
     stored: Job[];
     skipped: { duplicates: number; publishers: number };
+    alerts?: AlertSummary;
 }
 
 const NOTHING_READ: Read = { pages: 0, jobs: 0, cost: 0, next: null, stored: [], skipped: { duplicates: 0, publishers: 0 } };
@@ -36,8 +39,6 @@ interface Finished {
     cursor: unknown;
 }
 
-const ALERTS_MODULE = "gmail_alerts";
-
 /** Fetches every saved source that is on, one at a time in fetch order, before the agent starts, and leaves each one's outcome where next_jobs and list_sources find it, so the model only scores. */
 export async function fetchSources(context: ToolContext): Promise<void> {
     for (const saved of fetchOrder(context.saved.list)) {
@@ -48,7 +49,7 @@ export async function fetchSources(context: ToolContext): Promise<void> {
 
 /** Fetches one saved source, so that even a failure to decide or record its fetch leaves the other sources to be fetched. */
 async function fetchGuarded(context: ToolContext, saved: SavedSource): Promise<SourceRun | null> {
-    const fetched = await settle(saved.module === ALERTS_MODULE ? fetchAlertSource(context, saved) : fetchSource(context, saved));
+    const fetched = await settle(fetchSource(context, saved));
     if ("value" in fetched) return fetched.value;
     const reason = failureReason(fetched.error);
     context.trace.write({ type: "source_fetch_failed", source: saved.name, reason });
@@ -66,19 +67,8 @@ async function fetchSource(context: ToolContext, saved: SavedSource): Promise<So
     const outcome = read.next === null ? "ok" : "partial";
     await finishFetch(context, saved, { at: seen, outcome, read, reason: null, cursor: read.next });
     const whole = plan.module.scope === "company" && plan.cursor === null && outcome === "ok";
-    return { outcome, reason: null, seen: whole ? seen : null };
-}
-
-/** Fetches the Gmail alerts source, which records its own mail state and runs the careers lookup for its jobs, once Gmail can be read. */
-async function fetchAlertSource(context: ToolContext, saved: SavedSource): Promise<SourceRun | null> {
-    if (!saved.enabled) return skipped(context, saved, "off");
-    if (context.gmail.usable !== true) return skipped(context, saved, "not set up");
-    const at = context.now().toISOString();
-    const fetched = await settle(alertSource(context, saved));
-    if ("error" in fetched) return failed(context, saved, { at, error: fetched.error });
-    const { alerts, careers } = fetched.value;
-    await finishFetch(context, saved, { at, outcome: "ok", read: { ...NOTHING_READ, pages: 1, jobs: alerts.stored, cost: alerts.searches }, reason: null, cursor: null });
-    return { outcome: "ok", reason: null, seen: null, alerts, careers };
+    const alerts = read.alerts === undefined ? {} : { alerts: read.alerts, careers: await lookUpAlertJobs(context) };
+    return { outcome, reason: null, seen: whole ? seen : null, ...alerts };
 }
 
 /** Waits for some work, giving back its value or what it threw, so a failure can be handled without a try around the rest. */
@@ -101,15 +91,24 @@ async function readPages(context: ToolContext, saved: SavedSource, planned: Plan
     const read: Read = { ...NOTHING_READ, next: planned.cursor, stored: [], skipped: { duplicates: 0, publishers: 0 } };
     const batch = { source: { id: saved.id, name: saved.name }, scope: planned.module.scope, seen: planned.seen };
     const limit = planned.module.limits.maxJobsPerRun;
-    for await (const page of planned.module.fetch(planned.params, sourceContext(context, saved.name), planned.cursor)) {
+    const ctx = { ...sourceContext(context, saved.name), ...(await alertAccess(context, saved)) };
+    for await (const page of planned.module.fetch(planned.params, ctx, planned.cursor)) {
         for (let request = 0; request < page.cost; request += 1) await context.apiCalls.record("jsearch", saved.name, planned.seen);
         const ingested = await ingest(context, batch, page);
         read.stored.push(...ingested.stored);
         read.skipped = { duplicates: read.skipped.duplicates + ingested.skippedCopies, publishers: read.skipped.publishers + ingested.skippedPublishers };
+        await recordAlerts(context, page, read);
         Object.assign(read, { pages: read.pages + 1, jobs: read.jobs + page.jobs.length, cost: read.cost + page.cost, next: page.next });
         if (limit !== null && read.jobs >= limit) break;
     }
     return read;
+}
+
+/** Records an alert page's read once its jobs are stored, and keeps its summary for the run. */
+async function recordAlerts(context: ToolContext, page: SourcePage, read: Read): Promise<void> {
+    if (page.alerts === undefined) return;
+    await recordAlertRead({ jobStore: context.store, alerts: context.gmail.alerts, trace: context.trace, now: context.now() }, page.alerts);
+    read.alerts = page.alerts.summary;
 }
 
 /** Traces a source the run doesn't fetch and why, giving that reason as its outcome, or null for a source that is off. */

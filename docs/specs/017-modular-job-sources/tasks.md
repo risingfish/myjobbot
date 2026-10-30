@@ -317,10 +317,12 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
   shape (T044, T045's first two tests, T048), deleting `fetchJobs.ts`, `boardFetch.ts` and
   `searchFetch.ts`. The run's per-source state is `RunState.sources`. A source counts as seen this run
   only when it was read whole, so a Workday site read in pages offers all its unscored jobs. Done.
-- **5d**: the `gmail_alerts` module with `alertFetch` storing nothing (T046's Gmail half, T045's Gmail
-  test), deleting `alertSource.ts`.
+- **5d** (`017-pr5d-gmail-module`): the `gmail_alerts` module, with `readAlerts` storing nothing and
+  the fetch phase recording each alert read (T046's Gmail half, T045's Gmail test, in
+  `tests/gmailAlertsModule.test.ts` since `gmailAlerts.test.ts` already tests the Gmail search),
+  deleting `alertSource.ts`. Done.
 
-- [ ] T041 [US4] Per-PR flow steps 1–3, for sitting S5.
+- [x] T041 [US4] Per-PR flow steps 1–3, for sitting S5.
 - [x] T042 [P] [US4] (5b. The decisions are plain functions in `src/sources/fetchPlan.ts`. A tenth test, from review, checks that a failure to record one source never stops the rest.) Unit tests in a new `tests/fetchPhase.test.ts` (nine `test()`s) for
   `fetchSources(context)` in `src/sources/fetchPhase.ts` (research R5):
   - it fetches only sources that are on, available and due, one at a time: company sources, then
@@ -350,21 +352,21 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
   - the alert tests that call `fetchAlerts` read its yielded jobs and mail state;
   - the run tests, `e2e`, `searchE2e`, `recovery`, `runIds` and `llm` use `next_jobs`, with the
     fetch phase run first.
-- [ ] T045 [US5] Unit tests in its own pass (not [P]: it edits `nextJobs.test.ts` after T044) (three
+- [x] T045 [US5] Unit tests in its own pass (not [P]: it edits `nextJobs.test.ts` after T044) (three
   `test()`s):
   - `tests/nextJobs.test.ts`: `next_jobs` fetches nothing;
   - `tests/nextJobs.test.ts`: it offers a company source's jobs from this run's fetch, and a skipped
     or failing source's jobs from earlier runs;
   - `tests/gmailAlerts.test.ts`: the `gmail_alerts` module is unavailable, and skipped, until Gmail
     is usable.
-- [ ] T046 [US4] Add the two modules, and list both in `MODULES`:
+- [x] T046 [US4] Add the two modules, and list both in `MODULES`:
   - `src/sources/modules/jsearch.ts`, from `src/sources/jsearch.ts` and `src/tools/searchFetch.ts`,
     with the `search` zod object moved from `src/config/schema.ts`;
   - `src/sources/modules/gmailAlerts.ts`.
 
   Restructure `src/gmail/alertFetch.ts` to yield jobs and its mail state, storing nothing (research
   R2). Delete `src/sources/jsearch.ts`.
-- [ ] T047 [US4] Add `src/sources/failure.ts` and make `src/http/client.ts` throw `HttpStatusError` and
+- [x] T047 [US4] Add `src/sources/failure.ts` and make `src/http/client.ts` throw `HttpStatusError` and
   `NetworkError` (moved from T009, with T006's test). Add `src/sources/ingest.ts` (T043; research R4) and `src/sources/fetchPhase.ts`
   (T042). Call `fetchSources` from `src/app/beforeAgent.ts`. It records each outcome with
   `SourceStore.recordFetch`, writes alert state through `AlertStore.recordRead`, and runs
@@ -375,9 +377,9 @@ Split into three PRs of about ten files each, by the owner's small-PR rule:
     `COMPACTION_NOTICE` (contracts/sources-ui-and-run.md).
   - Delete `fetchJobs.ts`, `boardFetch.ts`, `searchFetch.ts` and `alertSource.ts` once nothing
     imports them.
-- [ ] T049 [US4] Check every file is within 200 lines.
-- [ ] T050 [US4] Run `tests/docker.sh`.
-- [ ] T051 [US4] Per-PR flow steps 4–6 ("Fetch every source that is on before the model scores (017
+- [x] T049 [US4] Check every file is within 200 lines.
+- [x] T050 [US4] Run `tests/docker.sh`.
+- [x] T051 [US4] Per-PR flow steps 4–6 ("Fetch every source that is on before the model scores (017
   PR 5)"). It is about 22 files: tell the owner when opening it, and offer to split the tools and
   prompt into their own PR.
 

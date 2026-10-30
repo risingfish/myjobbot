@@ -16,8 +16,6 @@ export type FetchPlan = { skip: SkipReason } | { module: SourceModule<unknown>; 
 
 const SCOPE_ORDER: Record<string, number> = { company: 0, account: 1, query: 2 };
 
-const ACCOUNT_MODULES: Record<string, string> = { gmail_alerts: "account" };
-
 const MS_PER_HOUR = 3_600_000;
 
 /** Orders saved sources the way a run fetches them: company sources, then account sources such as Gmail alerts, then searches, each in the order they were added. */
@@ -47,7 +45,7 @@ function isDue(saved: SavedSource, facts: FetchFacts): boolean {
 
 /** Ranks a saved source by its module's scope, putting a module the app doesn't ship among the company sources. */
 function scopeRank(saved: SavedSource): number {
-    return SCOPE_ORDER[moduleFor(saved.module)?.scope ?? ACCOUNT_MODULES[saved.module] ?? "company"] ?? 0;
+    return SCOPE_ORDER[moduleFor(saved.module)?.scope ?? "company"] ?? 0;
 }
 
 /** Reads a stored cursor as a place to continue from, or null to start from the first page. */
