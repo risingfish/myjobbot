@@ -10,9 +10,9 @@ import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/stor
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
+import { gmailSettings, settingsView, sourceSettings, type SettingsView } from "../../src/web/settingsView.js";
+import { sourceChoices, type Met } from "../../src/web/sourceChoices.js";
 import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceRows.js";
-import type { SearchLimits } from "../../src/web/sourceRules.js";
-import { gmailSettings, searchLimits, settingsView, type SettingsView } from "../../src/web/settingsView.js";
 
 interface UiState {
     views: JobViews;
@@ -99,14 +99,19 @@ export async function getSettingsState(): Promise<SettingsState> {
 
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */
 async function sourcesView(opened: Stores): Promise<SourcesView> {
-    const [saved, connection, used] = await Promise.all([opened.sources.list(OWNER_ID), opened.gmail.connection(), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
-    const rows = sourceRows(saved, { hasSearchKey: Boolean(process.env.JSEARCH_API_KEY), gmailConnected: connection !== null });
-    return { rows, usage: searchUsage(used, sourceLimits().monthly_request_cap) };
+    const [saved, met, used] = await Promise.all([opened.sources.list(OWNER_ID), metNeeds(opened), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
+    const rows = sourceRows(saved, { hasSearchKey: met.jsearch_key, gmailConnected: met.gmail });
+    return { rows, usage: searchUsage(used, sourceConfig().jsearch.monthly_request_cap), choices: sourceChoices(met) };
 }
 
-/** Returns config.json's JSearch budget and schedule, which a search that is turned on must fit. */
-export function sourceLimits(): SearchLimits {
-    return searchLimits(loadFileConfig(dataDir()));
+/** Returns config.json's HTTP settings and JSearch budget and schedule, which saving and testing sources use. */
+export function sourceConfig(): Pick<FileConfig, "http" | "jsearch"> {
+    return sourceSettings(loadFileConfig(dataDir()));
+}
+
+/** Reports which source requirements are set up: the JSearch key, and a Gmail connection. */
+export async function metNeeds(opened: Stores): Promise<Met> {
+    return { jsearch_key: Boolean(process.env.JSEARCH_API_KEY), gmail: (await opened.gmail.connection()) !== null };
 }
 
 /** Returns config.json's runtime settings, the part a search settings save is checked against. */

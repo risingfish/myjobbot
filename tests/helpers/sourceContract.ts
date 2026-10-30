@@ -26,7 +26,9 @@ async function savesAndEdits(store: SourceStore): Promise<SavedSource> {
     expect(board).toEqual({ ...BOARD, id: expect.any(Number), companyId: null, cursor: null, last: null });
     await store.recordFetch(key(board), FETCHED, { offset: 20 });
     const edited = await store.save(OWNER_ID, { ...board, params: { slug: "stripe-inc" }, target: "greenhouse:stripe-inc" }, AT);
-    expect(edited).toEqual({ ...BOARD, id: board.id, params: { slug: "stripe-inc" }, target: "greenhouse:stripe-inc", companyId: null, cursor: null, last: FETCHED });
+    expect(edited).toEqual({ ...BOARD, id: board.id, params: { slug: "stripe-inc" }, target: "greenhouse:stripe-inc", companyId: null, cursor: null, last: null });
+    await store.recordFetch(key(edited), FETCHED, { offset: 20 });
+    expect(await store.save(OWNER_ID, edited, AT)).toEqual({ ...edited, cursor: null, last: FETCHED });
     return edited;
 }
 

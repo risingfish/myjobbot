@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fileConfigSchema, titleFilterTerms } from "../config/schema.js";
+import { fileConfigSchema, titleFilterTerms, type FileConfig } from "../config/schema.js";
 import { isRawObject, sanitizeSearchSettings, splitSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import { SECTIONS, type FieldName } from "./settingsSections.js";
@@ -62,9 +62,9 @@ export function gmailSettings(fileRaw: unknown): z.infer<typeof fileConfigSchema
     return fileConfigSchema.shape.gmail.parse(runtimePart(fileRaw, "gmail"));
 }
 
-/** Reads config.json's JSearch budget and schedule from its runtime part alone, so the Sources section works before any search settings are stored. */
-export function searchLimits(fileRaw: unknown): Pick<z.infer<typeof fileConfigSchema.shape.jsearch>, "monthly_request_cap" | "refresh_hours"> {
-    return fileConfigSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch"));
+/** Reads config.json's HTTP and JSearch settings from its runtime part alone, so the Sources section works before any search settings are stored. */
+export function sourceSettings(fileRaw: unknown): Pick<FileConfig, "http" | "jsearch"> {
+    return { http: fileConfigSchema.shape.http.parse(runtimePart(fileRaw, "http")), jsearch: fileConfigSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch")) };
 }
 
 /** Picks one key of config.json's runtime part, or undefined so its defaults apply. */

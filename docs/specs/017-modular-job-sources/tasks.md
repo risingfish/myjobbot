@@ -395,12 +395,26 @@ S6 is split in two PRs of about 10 files each, as S5 was:
   `enableProblem` in `sourceRules` refuses turning a search on past the budget (T053's last case).
   `sourceActions` gets `setSourceEnabled` and `deleteSource`, and the list gets its switches and
   Delete (`SourceControls.tsx`). The UI test covers the list (T057's last case).
-- **6b**: adding and editing. `recognizeLink`, `sourceChoices`, `sourceFormView`, the save rules
-  and `saveSourcePlan` (T053's other cases, T054, T056), `recognizeSourceLink` and `saveSource`,
-  and `SourceForm.tsx`, with the UI test's add cases.
+- **6b** (branch `017-pr6b-sources-form`): adding and editing. `recognizeLink`, `sourceChoices`,
+  `sourceFormView`, the save rules and `saveSourcePlan` (T053's other cases, T054, T056),
+  `recognizeSourceLink` and `saveSource`, and the forms, with the UI test's add case. Where it
+  differs from the tasks below:
+  - `sourceChoices` is in its own `src/web/sourceChoices.ts`, since `sourceForm.ts` is imported by
+    the browser and must not reach the modules;
+  - the save is `saveSource` in `src/web/saveSource.ts` (unit-tested with the memory store), and the
+    test fetch is `testFetch` in `src/sources/testFetch.ts`; `web/lib/sourceDeps.ts` builds the
+    checked client as a run does;
+  - a test reads its first page with `SourceContext.preview` set, which Workday reads as "the
+    listing only";
+  - a passing test of a JSearch search isn't recorded as its last fetch, since its jobs aren't
+    stored, so the next run still fetches it; a failing test is recorded as failing, and a failing
+    search is due on every run (`fetchPlan`), so it is tried again on the next run as the form says;
+    and an edit that changes a source's target forgets its last fetch (`SourceStore.save`, with a
+    contract case), so an edited search is fetched on the next run too;
+  - the forms are `AddSource.tsx` and `SourceEditor.tsx` rather than one `SourceForm.tsx`.
 
 - [x] T052 [US1] Per-PR flow steps 1–3, for sitting S6.
-- [ ] T053 [P] [US1] Unit tests in a new `tests/sourceRules.test.ts` (five `test()`s) for `sourceRules`
+- [x] T053 [P] [US1] Unit tests in a new `tests/sourceRules.test.ts` (five `test()`s) for `sourceRules`
   in `src/web/sourceRules.ts`. They bring back, as source rules, the checks S4b deleted:
   - a name matching another ignoring case is refused;
   - "Gmail alerts" is refused as a name;
@@ -408,7 +422,7 @@ S6 is split in two PRs of about 10 files each, as S5 was:
   - a `jsearch` source that would pass the monthly budget at `refresh_hours` is refused with today's
     message;
   - turning a `jsearch` source on is refused the same way.
-- [ ] T054 [P] [US1] Unit tests in a new `tests/sourceForm.test.ts` (five `test()`s) for
+- [x] T054 [P] [US1] Unit tests in a new `tests/sourceForm.test.ts` (five `test()`s) for
   `recognizeLink` in `src/sources/registry.ts`, and for `sourceChoices` and `sourceFormView` in
   `src/web/sourceForm.ts`:
   - each ATS link, including a posting link, gives its module, params and a suggested name (SC-003);
@@ -417,7 +431,7 @@ S6 is split in two PRs of about 10 files each, as S5 was:
     data;
   - a module's form lists its fields with their values and problems;
   - a module whose `requires` aren't met is shown as unavailable, with why.
-- [ ] T055 [P] [US3] Unit tests in a new `tests/sourceRows.test.ts` (four `test()`s) for `sourceRows`
+- [x] T055 [P] [US3] Unit tests in a new `tests/sourceRows.test.ts` (four `test()`s) for `sourceRows`
   in `src/web/sourceRows.ts`:
   - rows show each outcome's text: "ok", "stopped at the limit (continues next run)" and
     "failing: <reason>";
@@ -425,26 +439,26 @@ S6 is split in two PRs of about 10 files each, as S5 was:
   - a source whose module is gone shows "unavailable", and one whose fields fail shows "needs
     fixing";
   - the JSearch line shows this month's requests out of the cap.
-- [ ] T056 [P] [US1] Unit tests in a new `tests/saveSource.test.ts` (three `test()`s) for
+- [x] T056 [P] [US1] Unit tests in a new `tests/saveSource.test.ts` (three `test()`s) for
   `saveSourcePlan` in `src/web/sourceRules.ts`:
   - a source whose test fetch fails is saved and marked `failing` (FR-017);
   - editing a source's fields clears its cursor;
   - a JSearch test records one request, and a Workday test reads the listing only.
-- [ ] T057 [P] [US1] UI test in a new `tests/client/sourcesSection.test.tsx` (one `test()`), with
+- [x] T057 [P] [US1] UI test in a new `tests/client/sourcesSection.test.tsx` (one `test()`), with
   `web/lib/sourceActions.js` mocked:
   - pasting a Greenhouse link opens its form, filled in;
   - saving shows "Saved. Test found N jobs.";
   - a refused name shows its problem beside the field;
   - the list's switch calls `setSourceEnabled`.
-- [ ] T058 [US1] Add `src/web/sourceRules.ts`, `src/web/sourceForm.ts`, `src/web/sourceRows.ts` and
+- [x] T058 [US1] Add `src/web/sourceRules.ts`, `src/web/sourceForm.ts`, `src/web/sourceRows.ts` and
   `recognizeLink` (T053–T056).
-- [ ] T059 [US1] Add `web/lib/sourceActions.ts`, with `recognizeSourceLink`, `saveSource`,
+- [x] T059 [US1] Add `web/lib/sourceActions.ts`, with `recognizeSourceLink`, `saveSource`,
   `setSourceEnabled` and `deleteSource` (contracts/sources-ui-and-run.md). The save test builds its
   `SourceContext` with `sourceHttp`, as a run does.
-- [ ] T060 [US1] Extend `web/components/settings/SourcesSection.tsx` with switches, edits and
+- [x] T060 [US1] Extend `web/components/settings/SourcesSection.tsx` with switches, edits and
   deletes. Add `SourceForm.tsx`: the link box, the module picker fed by `sourceChoices`, and a
   module's form.
-- [ ] T061 [US1] Per-PR flow steps 4–6 ("Add and manage sources on the Settings page (017 PR 6)"). It
+- [x] T061 [US1] Per-PR flow steps 4–6 ("Add and manage sources on the Settings page (017 PR 6)"). It
   is about 13 files: tell the owner when opening it.
 
 **Checkpoint**: User Stories 1 and 3 work: the owner adds a source by pasting a link, and manages

@@ -11,6 +11,7 @@ import { failureReason } from "./failure.js";
 import { fetchOrder, fetchPlan, type FetchFacts, type SkipReason } from "./fetchPlan.js";
 import { ingest, sourceContext } from "./ingest.js";
 import type { Cursor, SourceModule, SourcePage } from "./module.js";
+import { recordCost } from "./testFetch.js";
 
 interface Read {
     pages: number;
@@ -93,7 +94,7 @@ async function readPages(context: ToolContext, saved: SavedSource, planned: Plan
     const limit = planned.module.limits.maxJobsPerRun;
     const ctx = { ...sourceContext(context, saved.name), ...(await alertAccess(context, saved)) };
     for await (const page of planned.module.fetch(planned.params, ctx, planned.cursor)) {
-        for (let request = 0; request < page.cost; request += 1) await context.apiCalls.record("jsearch", saved.name, planned.seen);
+        await recordCost(context.apiCalls, page, { source: saved.name, at: planned.seen });
         const ingested = await ingest(context, batch, page);
         read.stored.push(...ingested.stored);
         read.skipped = { duplicates: read.skipped.duplicates + ingested.skippedCopies, publishers: read.skipped.publishers + ingested.skippedPublishers };

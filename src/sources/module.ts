@@ -18,6 +18,7 @@ export interface SourceContext {
     sourceName: string;
     jsearch?: JsearchAccess;
     alerts?: AlertDeps;
+    preview?: boolean;
 }
 
 export interface SourcePage {
@@ -27,7 +28,7 @@ export interface SourcePage {
     alerts?: AlertRead;
 }
 
-interface SourceField {
+export interface SourceField {
     name: string;
     label: string;
     input: "text" | "select" | "checkbox";
@@ -41,7 +42,7 @@ interface CompanyHint {
     careersPage: string;
 }
 
-type Requirement = "jsearch_key" | "gmail";
+export type Requirement = "jsearch_key" | "gmail";
 
 interface SourceLimits {
     maxJobsPerRun: number | null;
