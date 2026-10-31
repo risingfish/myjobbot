@@ -3,6 +3,7 @@ import { panelApplied, panelHide } from "../../lib/panelActions.js";
 import { useApplied } from "../../lib/useApplied.js";
 import { useHide } from "../../lib/useHide.js";
 import type { Details } from "../../lib/useJobDetails.js";
+import { PostingLink } from "../common/PostingLink.js";
 import { SaveFailedNote } from "../forms/SaveFailedNote.js";
 
 interface PanelHeaderProps {
@@ -14,14 +15,17 @@ interface PanelHeaderProps {
     onClose: () => void;
 }
 
-/** Renders the panel's header: the shown job's title as its heading, then the actions on the job and the close button. */
+/** Renders the panel's header: the shown job's title as its heading with the link to its posting, then the actions on the job and the close button. */
 export function PanelHeader({ job, details, titleId, onApplied, onHidden, onClose }: PanelHeaderProps) {
     const row = job ?? (details.state === "found" ? details.view.job : null);
     return (
         <header className="details-head">
-            <h2 id={titleId} tabIndex={-1}>
-                {headingText(job, details)}
-            </h2>
+            <div className="details-title">
+                <h2 id={titleId} tabIndex={-1}>
+                    {headingText(job, details)}
+                </h2>
+                {row !== null && <PostingLink url={row.url} />}
+            </div>
             <div className="details-actions">
                 {row !== null && <PanelApplied job={row} onApplied={(appliedOn) => onApplied(row, appliedOn)} />}
                 {row !== null && <PanelHide job={row} onHidden={onHidden} />}

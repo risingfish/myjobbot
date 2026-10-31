@@ -225,6 +225,11 @@ dialog.details-panel[open] {
     padding: 16px 20px;
     border-bottom: 1px solid var(--pico-muted-border-color);
 }
+.details-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
 .details-head h2 {
     margin: 0;
     font-size: 18px;
