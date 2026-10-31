@@ -36,9 +36,11 @@ export function FiltersSection({ view }: { view: SettingsView }) {
     return (
         <Panel title="Filters">
             <form action={() => save(sectionRequest("filters", lists))}>
-                {LISTS.map(([name, label]) => (
-                    <TermList key={name} name={name} label={label} terms={lists[name]} defaults={view.defaults[name]} result={result} onChange={change(name)} />
-                ))}
+                <div className="setting-columns">
+                    {LISTS.map(([name, label]) => (
+                        <TermList key={name} name={name} label={label} terms={lists[name]} defaults={view.defaults[name]} result={result} onChange={change(name)} />
+                    ))}
+                </div>
                 <SaveBar section="Filters" result={result} saving={saving} />
             </form>
         </Panel>

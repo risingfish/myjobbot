@@ -79,6 +79,21 @@ footer {
 .setting h5 {
     margin-bottom: 4px;
 }
+.setting-columns {
+    display: grid;
+    grid-template-columns: 1fr;
+    column-gap: 32px;
+}
+@media (min-width: 768px) {
+    .setting-columns {
+        grid-template-columns: 1fr 1fr;
+    }
+    .setting-columns > .setting:nth-child(2) {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+    }
+}
 .ghost,
 .injection {
     color: var(--warn);
@@ -325,6 +340,7 @@ dialog.details-panel[open] {
 }
 .setting h5 .reset {
     margin-left: 8px;
+    margin-bottom: 0;
 }
 .setting .row {
     display: flex;
