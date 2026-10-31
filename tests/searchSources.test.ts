@@ -126,6 +126,5 @@ test("list_sources shows saved searches next to boards, with how each one's fetc
     expect(await invokeTool(context, "list_sources", {})).toEqual([
         { name: "Stripe", module: "greenhouse", fetch: "ok", total_unscored: 1 },
         { name: SEARCH_NAME, module: "jsearch", fetch: "ok", total_unscored: 1 },
-        { name: "Gmail alerts", module: "gmail_alerts", fetch: "skipped", reason: "not set up", total_unscored: 0 },
     ]);
 });

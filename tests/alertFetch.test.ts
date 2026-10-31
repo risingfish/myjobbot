@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { AlertsUnavailable, alertsUsability } from "../src/gmail/alertJobs/usable.js";
+import { AlertsUnavailable, alertsUsability, gmailConnected } from "../src/gmail/alertJobs/usable.js";
 import { GmailError } from "../src/gmail/imapErrors.js";
 import { makeJob } from "../src/jobs/job.js";
 import { alertEmail, digest, DIGEST_SENDER, fixtureJob, fixtureJobs, notification, SEARCH_SENDER, searchAlert } from "./helpers/alertEmails.js";
@@ -126,4 +126,12 @@ test("lookups stop at the allowance, and a JSearch failure or missing key leaves
     expect(await fetchAlerts(failing, { ...failing.deps, lookup: lookupDeps(down) })).toMatchObject({ stored: 2, with_description: 0, alert_only: 2 });
     const keyless = await alertSetup(emails);
     expect(await fetchAlerts(keyless, { ...keyless.deps, lookup: { ...lookupDeps(http), apiKey: null } })).toMatchObject({ searches: 0, alert_only: 2 });
+});
+
+test("Gmail counts as connected from a sign-in until Disconnect, even while it needs reconnecting", () => {
+    const row = { email: "me@example.com", app_password: "sealed", connected_at: "2026-10-31T00:00:00.000Z", status: "connected" as const, reason: null };
+    expect(gmailConnected(null)).toBe(false);
+    expect(gmailConnected({ ...row, email: null, app_password: null, connected_at: null, status: "none" })).toBe(false);
+    expect(gmailConnected(row)).toBe(true);
+    expect(gmailConnected({ ...row, status: "needs_reconnect" })).toBe(true);
 });

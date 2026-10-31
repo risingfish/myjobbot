@@ -68,6 +68,7 @@ interface GmailAccess {
     key: SecretKeyStatus;
     imap?: ImapFactory;
     usable: true | string;
+    connected: boolean;
 }
 
 /** Creates the empty per-run state: how each source's fetch went this run, and whether the run has finished. */

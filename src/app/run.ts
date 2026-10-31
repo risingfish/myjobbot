@@ -23,8 +23,8 @@ import { sourcesOn } from "../tools/sources.js";
 import { beforeAgent } from "./beforeAgent.js";
 import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
-import { alertsUsability } from "../gmail/alertJobs/usable.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
+import { gmailState, type GmailState } from "./gmailState.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
 import { dataMarkers } from "../agent/markers.js";
@@ -47,7 +47,7 @@ interface RunParts {
 
 interface ContextParts extends RunParts {
     saved: SavedSource[];
-    usable: true | string;
+    gmail: GmailState;
     chat: ChatFn;
     clients: RunClients;
 }
@@ -91,7 +91,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const saved = await parts.stores.sources.list(OWNER_ID);
-    const context = buildContext(config, seams, { ...parts, chat, saved, usable: await gmailUsable(parts), clients: runClients(config, seams) });
+    const context = buildContext(config, seams, { ...parts, chat, saved, gmail: await gmailState(parts.stores.gmail, parts.key), clients: runClients(config, seams) });
     try {
         if (sourcesOn(context).length === 0) return { status: "finished", reason: NO_SOURCES, steps: 0, runId: parts.logs.runId, summary: NO_SOURCES };
         await beforeAgent(context);
@@ -121,14 +121,8 @@ async function pruneOldJobs(context: ToolContext): Promise<void> {
     await context.careers.store.pruneAuditBefore(cutoff);
 }
 
-/** Settles once per run whether the Gmail alerts source can be read, or the fixed note saying why not. */
-async function gmailUsable({ stores, key }: RunParts): Promise<true | string> {
-    const usability = alertsUsability(await stores.gmail.connection(), key);
-    return usability.usable ? true : usability.note;
-}
-
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
-function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, usable, chat, saved, clients: { client, boards, lookup } }: ContextParts): ToolContext {
+function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, gmail, chat, saved, clients: { client, boards, lookup } }: ContextParts): ToolContext {
     return {
         config: config.file,
         run: newRunState(),
@@ -141,7 +135,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, u
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
-        gmail: { store: stores.gmail, alerts: stores.alerts, key, usable },
+        gmail: { store: stores.gmail, alerts: stores.alerts, key, ...gmail },
         trace: logs.trace,
         chat,
         careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup, pages: seams.pages ?? client, boards, renderer: pageRenderer(config, seams, { logs, stores }) },
