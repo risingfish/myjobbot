@@ -22,8 +22,8 @@ export function AddSource({ choices, onOpen }: AddSourceProps) {
     );
 }
 
-/** Renders the box for a pasted jobs page link, opening the form of the source type it belongs to, filled in, or saying the link isn't supported. */
-function LinkBox({ choices, onOpen }: AddSourceProps) {
+/** Looks up a pasted jobs page link, opening the form of the source type it belongs to, filled in, or noting that the link isn't supported. */
+function useLinkLookUp({ choices, onOpen }: AddSourceProps) {
     const [link, setLink] = useState("");
     const [note, setNote] = useState<string | null>(null);
     const [looking, startLooking] = useTransition();
@@ -36,9 +36,18 @@ function LinkBox({ choices, onOpen }: AddSourceProps) {
             onOpen({ id: null, module: found.module, name: found.name, values: paramValues(choice.fields, found.params) });
         });
     };
+    return { link, setLink, note, looking, lookUp };
+}
+
+/** Renders the box for a pasted jobs page link with its Open button beside it, and the note when the link isn't supported. */
+function LinkBox(props: AddSourceProps) {
+    const { link, setLink, note, looking, lookUp } = useLinkLookUp(props);
     return (
         <form onSubmit={lookUp}>
-            <input aria-label="Paste a jobs page link" placeholder="Paste a jobs page link" value={link} onChange={(event) => setLink(event.target.value)} /> <button disabled={looking}>Open</button>
+            <fieldset role="group">
+                <input aria-label="Paste a jobs page link" placeholder="Paste a jobs page link" value={link} onChange={(event) => setLink(event.target.value)} />
+                <button disabled={looking}>Open</button>
+            </fieldset>
             {note === null ? null : <p className="note">{note}</p>}
         </form>
     );
