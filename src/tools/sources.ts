@@ -1,10 +1,16 @@
 import type { JobSource } from "../db/jobSource.js";
 import type { SavedSource } from "../db/sourceStore.js";
+import { moduleFor } from "../sources/registry.js";
 import type { ToolContext } from "./context.js";
 
-/** Lists the owner's saved sources that are on, the ones a run fetches and offers for scoring. */
+/** Lists the owner's saved sources that are on, the ones a run fetches and offers for scoring; a source that reads Gmail is on only while Gmail is connected. */
 export function sourcesOn(context: ToolContext): SavedSource[] {
-    return context.saved.list.filter((saved) => saved.enabled);
+    return context.saved.list.filter((saved) => saved.enabled && (context.gmail.connected || !readsGmail(saved)));
+}
+
+/** Reports whether a saved source's module reads the connected Gmail account. */
+function readsGmail(saved: SavedSource): boolean {
+    return moduleFor(saved.module)?.requires.includes("gmail") === true;
 }
 
 /** Gives the saved source a source's jobs are stored and read under. */

@@ -22,6 +22,11 @@ export class AlertsUnavailable extends Error {
     }
 }
 
+/** Reports whether Gmail is connected: signed in once and not disconnected since, even if it now needs reconnecting. */
+export function gmailConnected(row: GmailConnectionRow | null): boolean {
+    return row !== null && row.status !== "none";
+}
+
 /** Decides whether Gmail alerts can be read, from the stored connection and the server key alone. */
 export function alertsUsability(row: GmailConnectionRow | null, key: SecretKeyStatus): AlertsUsability {
     if (key.status === "missing") return { usable: false, note: ALERT_NOTES.keyMissing };

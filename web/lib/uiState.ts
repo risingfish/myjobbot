@@ -8,6 +8,7 @@ import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
+import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
 import { gmailSettings, settingsView, sourceSettings, type SettingsView } from "../../src/web/settingsView.js";
@@ -111,7 +112,7 @@ export function sourceConfig(): Pick<FileConfig, "http" | "jsearch"> {
 
 /** Reports which source requirements are set up: the JSearch key, and a Gmail connection. */
 export async function metNeeds(opened: Stores): Promise<Met> {
-    return { jsearch_key: Boolean(process.env.JSEARCH_API_KEY), gmail: (await opened.gmail.connection()) !== null };
+    return { jsearch_key: Boolean(process.env.JSEARCH_API_KEY), gmail: gmailConnected(await opened.gmail.connection()) };
 }
 
 /** Returns config.json's runtime settings, the part a search settings save is checked against. */

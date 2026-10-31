@@ -112,6 +112,12 @@ test("a run with no source on finishes at once, without asking the model", async
     expect(report).toMatchObject({ status: "finished", steps: 0, summary: "no sources are on" });
 });
 
+test("a run whose only source is Gmail alerts finishes at once while Gmail isn't connected", async () => {
+    const chat = () => Promise.reject(new Error("the model was asked"));
+    const report = await runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, lookup: publicDns(), openStores: async () => storesWithSettings({}) });
+    expect(report).toMatchObject({ status: "finished", steps: 0, summary: "no sources are on" });
+});
+
 test("before the agent, each company source's company gets its board as careers page and the source is linked to it", async () => {
     const tables = newTables();
     const stores = storesWithSettings(ONE_COMPANY, tables);

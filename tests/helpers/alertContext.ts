@@ -9,5 +9,5 @@ export async function alertContext(script: FakeImapScript = {}, emails: AlertEma
     const stores = await connectedStores(memoryStores());
     const imap = fakeImap({ mailbox: { uidValidity: 7, emails }, ...script }).factory;
     const context = testContext({}, stores);
-    return { ...context, gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "ok", key: KEY }, imap, usable: true } };
+    return { ...context, gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "ok", key: KEY }, imap, usable: true, connected: true } };
 }

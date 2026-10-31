@@ -30,7 +30,7 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
         now: () => TEST_NOW,
         jobLog: memoryTrace(),
         jsearchApiKey: "test-jsearch-key",
-        gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected" },
+        gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected", connected: false },
         trace: memoryTrace(),
         chat: () => Promise.reject(new Error("unexpected LLM call in test")),
         careers: { store: stores.careers, searxngUrl: null, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), pages: { getText: () => Promise.reject(new Error("unexpected page fetch in test")) }, boards: { getJson: () => Promise.reject(new Error("unexpected board request in test")), postJson: () => Promise.reject(new Error("unexpected board request in test")) }, renderer: offRenderer(stores) },
