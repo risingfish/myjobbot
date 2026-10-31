@@ -1,7 +1,7 @@
 # myjobbot
 
 An autonomous agent that pulls software-engineering postings from company job boards
-(Greenhouse, Lever, Ashby), saved JSearch searches (Google for Jobs: LinkedIn, Indeed and more)
+(Greenhouse, Lever, Ashby, Workday), saved JSearch searches (Google for Jobs: LinkedIn, Indeed and more)
 and your LinkedIn job-alert emails, looks up missing descriptions on employers' own careers pages,
 scores every job against your resume with a local LLM, and keeps history in MariaDB to spot
 long-open "ghost" postings. A web UI lists the results and explains each score.
@@ -19,10 +19,9 @@ cp examples/resume.md data/     # replace with your resume
 ```
 
 Once the database is set up (see Storage), open the web UI's **Settings** page (`npm run web`) and
-add your first company board or saved search in **Sources**. For a Greenhouse board, that's a name
-(`Stripe`), the board type `greenhouse` and the board id from its address
-(`boards.greenhouse.io/stripe` → `stripe`). Until a source is saved, a run refuses to start and the
-other pages show "configure at least one company or search". See
+add your first source in **Sources**: paste a company's jobs page link (for example
+`https://boards.greenhouse.io/stripe`) and press **Open**, or pick a source type and fill in its
+form. See [Sources](#sources). Until a source is added, runs find nothing to score. See
 [Configuration knobs](#configuration-knobs) for which settings live where.
 
 The LLM server must be llama.cpp `llama-server` started with `--jinja` and a
@@ -30,8 +29,8 @@ tool-calling model.
 
 ## Storage
 
-Jobs, the companies they come from, scores, verdict history, the JSearch request log and your
-search settings live in MariaDB (10.11 or later),
+Jobs, the companies they come from, scores, verdict history, the JSearch request log, your saved
+sources and your search settings live in MariaDB (10.11 or later),
 reached through [Kysely](https://kysely.dev) typed queries. `data/` keeps only `config.json` (the
 runtime settings), `resume.md`, run traces and logs.
 
@@ -44,8 +43,8 @@ runtime settings), `resume.md`, run traces and logs.
 
 Every table compares text exactly (`utf8mb4_bin`), so job IDs that differ only in letter case
 stay distinct, and every connection sets `utf8mb4`, so accents and emoji survive. Backups are the
-MariaDB server's job, and a database backup holds your search settings too (`users` and
-`user_settings`).
+MariaDB server's job, and a database backup holds your sources and search settings too (`users`,
+`user_sources` and `user_settings`).
 
 **Coming from SQLite?** Copy the old database across once, with the agent stopped:
 
@@ -70,7 +69,7 @@ Each run gets a UUID (printed as `run <id> finished after …`). Every log line 
 |---|---|
 | `data/runs/<timestamp>-<run_id>.jsonl` | Trace event: starting messages, model replies, tool calls and results, nudges, compactions, end |
 | `log/<timestamp>-<run_id>.llm.jsonl` | Raw LLM response, including token usage and llama.cpp timings |
-| `log/<timestamp>-<run_id>.jobs.jsonl` | Board download: company, board, job count, and the normalized jobs (descriptions omitted) |
+| `log/<timestamp>-<run_id>.jobs.jsonl` | Source fetch: source, module, job count, and the normalized jobs (descriptions omitted) |
 
 Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 
@@ -82,8 +81,8 @@ npm run web:build && npm run web:start   # production build and server
 ```
 
 A Next.js app for browsing the database, with three tabs and a Settings page. Settings is where your
-search settings are made and changed (see [Configuration knobs](#configuration-knobs)), and where
-Gmail is connected (see [Gmail](#gmail)):
+sources are added (see [Sources](#sources)), where your search settings are made and changed (see
+[Configuration knobs](#configuration-knobs)), and where Gmail is connected (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
@@ -99,8 +98,8 @@ Each row also starts with an **Applied** column: a blue **?** until you've appli
 to mark the job applied, and then a green **✓**. Hovering the check shows the date you marked it, in
 your browser's time zone. Clicking the check asks "Mark as not applied?" and, if you confirm, clears
 the mark. Applied and Hide are independent: marking a job doesn't move it on or off Recommended or
-change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, and the Gmail panel on Settings
-are the UI's only writes; they accept requests from its own pages only.
+change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, and
+the Settings page are the UI's only writes; they accept requests from its own pages only.
 
 **Job details.** On Recommended and All jobs, a job's title opens a panel from the right, over
 about 60% of the window, without leaving the list: you can still scroll, hide jobs or click
@@ -141,9 +140,9 @@ in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:
 
 How it's built:
 - **The app lives in `web/`.** Each page is a folder under `web/app/` and is rendered on the
-  server, so its first rows are in the HTML. Scrolling, Hide and the Gmail panel's buttons run in
-  the browser, and they call server functions in `web/lib/actions.ts` and
-  `web/lib/gmailActions.ts`.
+  server, so its first rows are in the HTML. Scrolling, Hide and the Settings page's buttons run in
+  the browser, and they call server functions in `web/lib/` (`actions.ts`, `gmailActions.ts`,
+  `sourceActions.ts` and the settings actions).
 - **The server does the deciding.** The rules for scores, boosts and filter notes are shared with
   the agent in `src/web/`, so the browser only lays them out.
 - **`myjobbot serve` is gone.** The `myjobbot` command only runs the agent; the UI is started with
@@ -152,6 +151,45 @@ How it's built:
 - **To learn React and Next.js** from this code, see
   [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
   it and ends with exercises.
+
+### Sources
+
+A **source** is somewhere jobs come from. Each kind of source is a **module** shipped with the app
+(`src/sources/modules/`); what you save on the Settings page is a **saved source**: a module, a
+name, the module's fields, and whether it is on. Saved sources are rows in `user_sources`, and
+every job remembers the one it came from (`jobs.source_id`).
+
+| Module | Kind | Fields | Fetched |
+|---|---|---|---|
+| Greenhouse | company board | board id (`boards.greenhouse.io/<id>`) | every run, the whole board |
+| Lever | company board | board id (`jobs.lever.co/<id>`) | every run, the whole board |
+| Ashby | company board | board id (`jobs.ashbyhq.com/<id>`) | every run, the whole board |
+| Workday | company jobs site | host, tenant, site (`<tenant>.wd<N>.myworkdayjobs.com/<site>`) | every run, at most 100 postings, continuing where the last run stopped |
+| JSearch | saved search | search, country, remote only | once per `jsearch.refresh_hours`, within `jsearch.monthly_request_cap`; needs `JSEARCH_API_KEY` |
+| Gmail alerts | your mailbox | none | every run, once Gmail is connected (see [Gmail](#gmail)) |
+
+**Adding a source.** In Settings → Sources, paste a jobs page link (a board's page, or one posting
+on it; `https://` is optional) and press **Open**: the form of the module it belongs to opens with
+its fields filled in and a suggested name. Or pick a module from the list; one that can't be used
+yet says why ("Needs JSEARCH_API_KEY in .env"). **Edit** opens a saved source's form. **Save**
+refuses, beside the field or at the top of the form:
+- a field its module doesn't accept;
+- a blank name, "Gmail alerts" (reserved), or a name another source has, ignoring case;
+- a second source for the same board or search;
+- a search that would take JSearch past its monthly budget, counting each search that is on as
+  one request per `jsearch.refresh_hours`.
+
+**Test on save.** A saved source is tested at once: the first page a run would read, through the
+same address-checked client, with none of its jobs stored. The form says "Saved. Test found N
+jobs." or why it failed. A Workday test reads only the listing; a JSearch test spends one request.
+A failing test marks the source failing, and a run tries a failing source again even when a search
+isn't due. Changing a source's board or search forgets its last fetch, so the next run reads the
+new one.
+
+Each source's row shows whether it is on, its last fetch ("ok", "stopped at the limit (continues
+next run)", or "failing: <reason>"), and a switch and **Delete**. Gmail alerts is added for you,
+appears in the list once Gmail is connected, and can be switched off but not edited or deleted.
+Scraping web pages that aren't a job board's own data isn't a module yet.
 
 ### Gmail
 
@@ -228,15 +266,14 @@ on the employer's own careers page before the agent scores them:
    page's HTML without its navigation, header, footer or hidden parts (or, from a board's own data,
    the posting's own description), and the agent scores it as usual (`get_job_details` says
    `description_from: "careers page"`). The careers page that led to it is kept on the company's
-   record (`companies.careers_url`), so later jobs there skip the search. A configured board's page
+   record (`companies.careers_url`), so later jobs there skip the search. A company source's board page
    is never replaced. A remembered page that stops working is cleared and added to the company's
    turned-down addresses, so the company search never stores it again.
 
 **How a page is read**, in order (each open's audit row says which, in `page_source`):
 
 1. **Board data**: links on Ashby, Greenhouse, Lever and Workday (`*.myworkdayjobs.com`) are read
-   from the board's own published data, through the same readers as the job-board sources (plus a
-   Workday reader). A careers page becomes the board's job list (Workday: its search for the
+   from the board's own published data, through the same source modules as the job-board sources. A careers page becomes the board's job list (Workday: its search for the
    sought title), a job page the posting itself. If that fails, the page is downloaded instead
    (`fallback = 'board_failed'`).
 2. **Download**: the page's HTML, trimmed.
@@ -294,7 +331,7 @@ kept after its jobs are pruned.
   name it was created with. Jobs whose company name has no letters or digits get no record and stay
   unlinked.
 - **Careers pages** come from three places, in this order of precedence (`careers_source`):
-  - `board`: a configured board's public address (`companies` in the config);
+  - `board`: a saved company source's board (see [Sources](#sources));
   - `lookup`: the page the careers lookup found a job on;
   - `search`: the search below.
 - **Search**: after each run's agent, up to `company_search.max_per_run` (50) companies still
@@ -353,7 +390,7 @@ cp examples/resume.md data/       # your resume
 docker compose up -d --build
 ```
 
-Then open the web UI's Settings page and add your first company board or saved search in Sources.
+Then open the web UI's Settings page and add your first source in Sources (see [Sources](#sources)).
 
 The container runs `myjobbot run` on `SCHEDULE` (default `0 1/8 * * *`, every 8 hours from
 1 a.m.: 01:00, 09:00, 17:00) in `TZ` (default `America/Los_Angeles`, Pacific time). After a board's backlog is scored,
@@ -402,14 +439,15 @@ add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yam
 ### The big idea
 
 myjobbot is **an LLM in a loop with tools**. The model never touches the internet or the
-database directly. It can only ask to call one of five tools. The TypeScript code decides
+database directly. Before it starts, plain code fetches every source that is on; the model then
+only scores, and can only ask to call one of five tools. The TypeScript code decides
 whether that's allowed, runs it, and hands the result back. The [careers lookup](#careers-lookup)
 reuses the same loop for a short side conversation per job, with three tools of its own; even
 there the model only picks numbered links, and the code decides which addresses may be opened.
 
 **Outside text is fenced off as data.** Job boards, alert emails and web pages are written by
 other people, and any of them could carry instructions aimed at the model. Every result of a tool
-that returns such text (`fetch_jobs`, `get_job_details`, `search_careers`, `open_link`) reaches
+that returns such text (`next_jobs`, `get_job_details`, `search_careers`, `open_link`) reaches
 the model between two markers, `<<data TAG>>` and `<</data TAG>>`, where `TAG` comes from the
 run's random id, so nothing written before the run can match it. Both system prompts say that
 anything between the markers is data to read, never instructions to follow. Before wrapping, the
@@ -430,7 +468,8 @@ flowchart TD
     CFG["config/load.ts<br/>env (validated with zod), config.json, resume.md"] --> SET
     SET["app/runSettings.ts<br/>stored search settings + config.json runtime settings<br/>(validated with zod; a bad stored value falls back)"] --> CTX
     CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LINK
-    LINK["app/run.ts beforeAgent<br/>link unlinked jobs to companies,<br/>set configured boards' careers pages"] --> LOOP
+    LINK["app/beforeAgent.ts<br/>link unlinked jobs to companies,<br/>set company sources' careers pages"] --> FETCH
+    FETCH["sources/fetchPhase.ts<br/>fetch every source that is on, through its module:<br/>boards, then Gmail alerts (with careers lookups), then due searches"] --> LOOP
     LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> SEARCH
     SEARCH["companies/searchCompanies.ts<br/>find missing websites and careers pages"] --> PRUNE
     PRUNE["app/run.ts<br/>prune postings not seen in 90 days"] --> OUT
@@ -462,25 +501,25 @@ flowchart TD
 A typical run makes this sequence of calls:
 
 ```
-list_sources → fetch_jobs → record_matches → fetch_jobs → record_matches → … → fetch_jobs → finish
+list_sources → next_jobs → record_matches → next_jobs → record_matches → … → next_jobs → finish
 ```
 
 ### A tool call, up close
 
 Every tool is defined with a zod schema (`src/tools/tool.ts`). `defineTool` turns it into
 JSON Schema, which goes to the model in the `tools` field of every request. That is how the
-model knows `fetch_jobs` takes `{source: string}`.
+model knows `next_jobs` takes `{source: string}`.
 
 ```mermaid
 sequenceDiagram
     participant L as Agent loop
     participant M as Model (llama.cpp)
     participant D as dispatch
-    participant T as fetch_jobs tool
+    participant T as next_jobs tool
     participant DB as MariaDB
 
     L->>M: messages + tool schemas
-    M-->>L: tool_calls: fetch_jobs({"source":"Palantir"})
+    M-->>L: tool_calls: next_jobs({"source":"Palantir"})
     L->>D: name + JSON arguments
     D->>D: parse JSON, validate with zod
     D->>T: run({source: "Palantir"})
@@ -498,7 +537,7 @@ For those, the loop (`src/agent/wrapped.ts`) wraps the result in the run's data 
 the model sees it; the trace keeps the result as it was, with `wrapped: true`.
 
 **Errors are data, not crashes.** `dispatch` never throws. Bad arguments, an unknown tool,
-or a board that's down all come back to the model as `{"error": "…"}` (capped at 2,000
+or a source name that doesn't exist all come back to the model as `{"error": "…"}` (capped at 2,000
 characters), so the model can correct itself. That self-correction is most of why agents
 work. Three failures in a row and the code ends the run.
 
@@ -506,29 +545,33 @@ work. Three failures in a row and the code ends the run.
 
 | Tool | What it does |
 |---|---|
-| `list_sources` | Each company board and saved search, plus "Gmail alerts", with this run's progress: `fetched`, `total_unscored`, `fetch_failed` (with a `note` saying why, for Gmail alerts) |
-| `fetch_jobs` | The first call per source per run downloads the board, calls JSearch if the search is due, or reads new Gmail alert emails. Every call returns **at most 25** unscored jobs that pass the title filter, plus `total_unscored`; search pages also say whether they were refreshed, and the alerts page carries the run's alert counts |
+| `list_sources` | Each source that is on, with its module, how this run's fetch went (`fetch`: `ok`, `partial`, or `failing` or `skipped` with a `reason`, such as a search that isn't due) and `total_unscored` |
+| `next_jobs` | Returns **at most 25** of one source's unscored jobs that pass the title filter, plus `total_unscored`. It fetches nothing: every source was fetched before the model's first turn |
 | `record_matches` | Saves up to 25 verdicts in one call: a `base` (0–50, resume fit) and a `bonus` (0–50, preference fit) that code sums into the score, with reasons and gaps |
 | `get_job_details` | One job's metadata plus its description (first 6,000 characters, Markdown without link addresses, or plain text) and any requirements and skills. The prompt asks the model to call it for jobs that look like a plausible fit before scoring them; the result arrives inside the run's data markers |
-| `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source is unfetched or still has unscored jobs (a source whose fetch failed doesn't count) |
+| `finish` | Records the model's summary and ends the loop. Refused, with a list of what's left, while any source still has unscored jobs |
 
-**Paging needs no page numbers.** The model scores a page and calls `fetch_jobs` again.
+**Paging needs no page numbers.** The model scores a page and calls `next_jobs` again.
 The database only returns jobs that are still unscored, so each call gets the next batch
 until `total_unscored` is 0.
 
 ```mermaid
 flowchart LR
-    F1["fetch_jobs<br/>total_unscored: 159<br/>25 jobs"] --> R1["record_matches<br/>25 verdicts"]
-    R1 --> F2["fetch_jobs<br/>total_unscored: 134<br/>25 jobs"]
+    F1["next_jobs<br/>total_unscored: 159<br/>25 jobs"] --> R1["record_matches<br/>25 verdicts"]
+    R1 --> F2["next_jobs<br/>total_unscored: 134<br/>25 jobs"]
     F2 --> R2["record_matches<br/>25 verdicts"]
     R2 --> MORE["…"]
-    MORE --> FN["fetch_jobs<br/>total_unscored: 0"]
-    FN --> NEXT["next company<br/>or finish"]
+    MORE --> FN["next_jobs<br/>total_unscored: 0"]
+    FN --> NEXT["next source<br/>or finish"]
 ```
 
-The board is downloaded only on the first `fetch_jobs` call per company per run. Later
-calls reuse that download and just query the database. A failed download isn't cached, so
-the next call retries it.
+**The fetch phase** (`src/sources/fetchPhase.ts`) runs before the agent, one source at a time:
+company boards first, then Gmail alerts, then searches. Each module yields pages of jobs with
+their cost. Shared code stores them under the source (`src/sources/ingest.ts`, which drops a
+search's excluded publishers and copies of jobs a company board already supplied), records JSearch
+requests in `api_calls`, and keeps the source's last fetch on its row. Each fetch is a
+`source_fetch` trace event; a source that fails gets a fixed reason, shows "failing" on Settings,
+and doesn't stop the others. A skipped source is a `source_skipped` event saying why.
 
 ### The plain-code layers
 
@@ -538,7 +581,7 @@ Everything below the agent is ordinary, deterministic code.
 flowchart TD
     AGENT["agent/<br/>loop · budget · compaction · prompt · LLM client · trace · data markers<br/><i>knows nothing about jobs</i>"]
     TOOLS["tools/<br/>thin adapters from model requests to the layers below"]
-    SOURCES["sources/<br/>Greenhouse · Lever · Ashby · JSearch · Workday readers<br/>(defineBoard: URL + schema + mapper)"]
+    SOURCES["sources/<br/>modules: Greenhouse · Lever · Ashby · Workday · JSearch · Gmail alerts<br/>fetch phase · ingest"]
     GMAIL["gmail/<br/>IMAP (read-only) · alert email parsing"]
     CAREERS["careers/<br/>careers-page lookup: its own short loop,<br/>address checks, page trimming, rendering"]
     HTTP["http/<br/>1 s spacing per host · 300 requests per host per run<br/>retry 429 and 5xx with backoff"]
@@ -551,9 +594,9 @@ flowchart TD
 
     AGENT --> TOOLS
     AGENT --> LLAMA
-    TOOLS --> SOURCES
-    TOOLS --> GMAIL
-    TOOLS --> CAREERS
+    SOURCES --> GMAIL
+    SOURCES --> CAREERS
+    SOURCES --> DB
     TOOLS --> DB
     CAREERS --> AGENT
     CAREERS --> SEARCH
@@ -564,8 +607,11 @@ flowchart TD
     WEB --> DB
 ```
 
-- **Sources:** each adapter is a URL, a zod schema for the board's response, and a mapper
-  to a common `Job` shape.
+- **Sources:** each module (`src/sources/module.ts`) declares its fields (a zod schema that also
+  draws its Settings form), what it needs (`JSEARCH_API_KEY`, Gmail), its limits, how to read a
+  pasted link, and a paged `fetch` that maps the source's answers to a common `Job` shape. Modules
+  are listed in `MODULES` (`src/sources/registry.ts`), make requests only through the run's
+  address-checked client, store nothing themselves, and fail with fixed reasons.
 - **HTTP:** requests to the same site are at least 1 second apart and capped at 300 per site per run,
   and 429 and 5xx responses are retried with backoff that honors `Retry-After`. A looping
   agent can't hammer a job board.
@@ -580,9 +626,9 @@ flowchart TD
 ```mermaid
 erDiagram
     JOBS {
-        text ats PK "greenhouse | lever | ashby | jsearch | linkedin"
+        text ats PK "greenhouse | lever | ashby | workday | jsearch | linkedin"
         text job_id PK
-        text source "the company, saved search or Gmail alerts it came from"
+        text source "the name of the source it came from, kept if the source is deleted"
         text company
         text title
         text normalized_title "for repost matching"
@@ -616,6 +662,7 @@ erDiagram
         text emailed_at "reserved for the email digest"
         text injection_seen_at "first time its text tried to escape the data markers"
         int company_id FK "the company's record"
+        int source_id FK "the saved source it came from (null once that is deleted)"
     }
     COMPANIES {
         int id PK
@@ -644,6 +691,25 @@ erDiagram
         text updated_at
     }
     USERS ||--o| USER_SETTINGS : "searches with"
+    USER_SOURCES {
+        int id PK
+        int user_id FK
+        text module "greenhouse | lever | ashby | workday | jsearch | gmail_alerts"
+        text name "unique per user"
+        json params "the module's fields"
+        text target "the board or search, unique per user"
+        int enabled
+        int company_id FK "a company source's company"
+        json cursor "where a partial fetch continues"
+        text last_fetched_at
+        text last_outcome "ok, partial or failing"
+        int last_jobs
+        int last_cost "JSearch requests"
+        text last_reason "a fixed reason, when failing"
+    }
+    USERS ||--o{ USER_SOURCES : "fetches from"
+    USER_SOURCES ||--o{ JOBS : "supplies"
+    COMPANIES ||--o{ USER_SOURCES : "has boards"
 ```
 
 Company boards and JSearch save the job description (see below). Alert emails carry none: an alert job takes the description of a matching JSearch result,
@@ -681,7 +747,7 @@ plain text and always show as plain text.
   link reduced to its words, so a link to `aws.example.com` doesn't count as "aws".
 - **Scored again once.** The first time a scored job's description changes to Markdown, it is marked
   for scoring again, keeping its current score until then.
-- **Only configured boards change.** Stored jobs from companies no longer in your search settings are
+- **Only saved sources change.** Stored jobs from a source you've deleted or switched off are
   never fetched again, so they keep their plain text.
 
 **Fishing-post detection:** "days open" counts from the oldest date the bot has, either
@@ -724,12 +790,12 @@ flowchart LR
 
 A job's score is decided in four stages. Only the third involves the model.
 
-**1. Filters decide what the model sees** (before scoring, in code). `fetch_jobs` offers only
+**1. Filters decide what the model sees** (before scoring, in code). `next_jobs` offers only
 jobs whose title passes `title_filter` (an include term, matched at the start of a word, and no
 exclude term, matched as a whole word) and whose company isn't in `exclude_companies`. Filtered jobs are stored but never
 scored; All jobs marks them.
 
-**2. The model reads what looks promising.** `fetch_jobs` returns metadata only. For each job
+**2. The model reads what looks promising.** `next_jobs` returns metadata only. For each job
 whose title, seniority and location could plausibly fit, the prompt asks the model to call
 `get_job_details` and read the description (first 6,000 characters) before scoring.
 
@@ -778,7 +844,7 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 1. **Limits live in code, not the prompt.** The step cap, the time cap, the error streak and
    the nudge are all enforced in `agent/budget.ts` and `agent/loop.ts`, and `finish` is
-   refused while any source is unfetched or still has unscored jobs. The model can't argue
+   refused while any source still has unscored jobs. The model can't argue
    its way past them.
 2. **The database is the memory.** That's what makes compaction safe, and it's why a crashed
    run loses nothing: unscored jobs are offered again on the next run.
@@ -795,7 +861,7 @@ Settings live in two places:
 - **Search settings** (what you look for, and how jobs are filtered and ranked) are stored in the
   database, one set per user (today just you, the owner), and changed only on the web UI's
   **Settings** page. It has four sections:
-  - **Sources**: company boards and saved searches;
+  - **Sources**: your saved sources (see [Sources](#sources)), each saved on its own;
   - **Preferences**: the preferences text;
   - **Scoring**: the match threshold and title boosts;
   - **Filters**: the title filter and excluded companies and publishers.
@@ -808,6 +874,11 @@ Settings live in two places:
 - **Runtime settings** (limits, budgets, lifetimes, Gmail senders) stay in `data/config.json`. Edit
   the file; a bad value stops the run with its message.
 
+Company boards and saved searches are no longer settings: `companies` and `searches` became saved
+sources (see [Sources](#sources)), moved into `user_sources` once by the upgrade. If either is still
+in `data/config.json` or the stored settings, it is ignored, and the Settings page says it can be
+removed.
+
 Search settings left in `data/config.json` (from before they moved to the database) are never used.
 The Settings page, and each run's trace (`settings_file_ignored`), says they can be removed from
 the file. A stored search setting that later breaks a rule (say, after an upgrade tightens one)
@@ -819,8 +890,6 @@ section stores the value in effect and clears the notice.
 
 | Setting | Default | What it controls |
 |---|---|---|
-| `companies` | `[]` | `{name, ats, slug}` per company board (at least one company or search) |
-| `searches` | `[]` | Saved JSearch searches: `{name, query, remote_only, country}`. Needs `JSEARCH_API_KEY` |
 | `jsearch.exclude_publishers` | `[]` | Job boards whose JSearch results are dropped before storing. A name matches the publisher as whole words, any case: `"dailyremote"` drops results published by DailyRemote (use full board names: `"remote"` would also drop Remote Rocketship). An entry with a dot is a domain matched against the apply link's host: `"jobmesh.io"` drops links on exactly `jobmesh.io`, and `"*.trabajo.org"` drops `trabajo.org` and every subdomain. So `"remote.co"` matches by link, not by name. A malformed domain, or a bare suffix like `"*.com"`, is refused when you save it on the Settings page; one already stored is left out, with a notice |
 | `preferences` | `""` | Free text added to the system prompt |
 | `match_threshold` | 70 | Score at which a job counts as a match |
@@ -852,7 +921,7 @@ section stores the value in effect and clears the notice.
 | `careers_lookup.skip_hosts` | aggregators | Hosts (and their subdomains) whose search results are dropped |
 | `careers_lookup.lan_probe_url` | unset | A LAN address the browser service must not reach, checked once per run |
 | `company_search.max_per_run` | 50 | Companies searched for a website and careers page per run (0 turns the search off) |
-| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no company or search may use it |
+| `gmail.alert_senders` | LinkedIn and Indeed alert addresses | Email addresses or domains whose mail counts as a job alert, both for runs (the "Gmail alerts" source) and for the Gmail panel's Check now. Anything else (quotes, spaces, brackets, a leading `-`) stops the config from loading, like any other config error. "Gmail alerts" is a reserved source name, so no other source may use it |
 
 ### Saved searches (JSearch)
 
@@ -865,9 +934,10 @@ Domains catch a board however its name is spelled ("JobMesh.io" and "JobMESH" bo
 and a wildcard like `"*.trabajo.org"` covers regional hosts such as `us.trabajo.org`.
 Excluded results still count against the budget. Budget: every request
 is recorded in the `api_calls` table; a search refreshes at most once per `refresh_hours` (less 15 minutes, so a
-fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`. When a search isn't due,
-`fetch_jobs` serves the stored jobs and says why. Each request writes a `search_fetch` line to
-the run's jobs log.
+fixed schedule never skips a refresh by a few seconds), and never once the month's count reaches `monthly_request_cap`.
+A search whose last fetch failed is tried again on the next run. When a search isn't due, the run
+skips it and `next_jobs` serves its stored jobs. Each fetch writes a `source_fetch` line to the
+run's jobs log.
 
 ### Where to look to learn more
 
@@ -884,7 +954,9 @@ runs; MariaDB storage; the web UI (Recommended, All jobs, Reasoning, Settings) w
 panel; LinkedIn job alerts from Gmail; the careers-page lookup, with pages rendered in a browser
 when needed; and data markers around outside text. Feature specs are in `docs/specs/`.
 
-Also built: descriptions kept as Markdown so their structure shows (feature 012).
+Also built: descriptions kept as Markdown so their structure shows (feature 012); and modular
+job sources (feature 017): every source is a module, saved sources are added on Settings by
+pasting a link, and Workday sites are a source.
 
 Still to come: a step-by-step trace of how each job was categorized, an email digest, and Glassdoor
 ratings.
