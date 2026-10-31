@@ -12,7 +12,9 @@ export function HideButton({ job, onHidden }: HideButtonProps) {
     const { status, submit } = useHide(job, onHidden);
     return (
         <form className="hide" onSubmit={(event) => void submit(event)}>
-            <button disabled={status === "saving"}>{job.hidden ? "Unhide" : "Hide"}</button>
+            <button className="outline secondary" disabled={status === "saving"}>
+                {job.hidden ? "Unhide" : "Hide"}
+            </button>
             <SaveFailedNote status={status} />
         </form>
     );

@@ -18,7 +18,7 @@ type SettingsState = Awaited<ReturnType<typeof getSettingsState>>;
 export default async function SettingsPage() {
     const state = await getSettingsState();
     return (
-        <main aria-label="Settings">
+        <main className="container-fluid" aria-label="Settings">
             <SettingsNotices notices={state.notices} />
             <SourcesSection sources={state.sources} />
             <PreferencesSection view={state.view} />
