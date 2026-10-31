@@ -25,7 +25,7 @@ export function PanelHeader({ job, details, titleId, onApplied, onHidden, onClos
             <div className="details-actions">
                 {row !== null && <PanelApplied job={row} onApplied={(appliedOn) => onApplied(row, appliedOn)} />}
                 {row !== null && <PanelHide job={row} onHidden={onHidden} />}
-                <button type="button" onClick={onClose}>
+                <button type="button" className="outline secondary" onClick={onClose}>
                     Close
                 </button>
             </div>
@@ -46,7 +46,7 @@ function PanelApplied({ job, onApplied }: { job: JobRowView; onApplied: (applied
     const done = panelApplied(job) === "done";
     return (
         <form className="panel-applied" onSubmit={(event) => void submit(event)}>
-            <button className={done ? "applied-done" : "applied-action"} disabled={status === "saving"}>
+            <button className={done ? "outline applied-done" : "applied-action"} disabled={status === "saving"}>
                 {done ? "Applied ✓" : "Applied"}
             </button>
             <SaveFailedNote status={status} />
@@ -59,14 +59,16 @@ function PanelHide({ job, onHidden }: { job: JobRowView; onHidden: (job: JobRowV
     const { status, submit } = useHide(job, () => onHidden(job));
     if (panelHide(job) === "disabled") {
         return (
-            <button type="button" disabled title="Already hidden" aria-label="Hide (already hidden)">
+            <button type="button" className="outline secondary" disabled title="Already hidden" aria-label="Hide (already hidden)">
                 Hide
             </button>
         );
     }
     return (
         <form className="panel-hide" onSubmit={(event) => void submit(event)}>
-            <button disabled={status === "saving"}>Hide</button>
+            <button className="outline secondary" disabled={status === "saving"}>
+                Hide
+            </button>
             <SaveFailedNote status={status} />
         </form>
     );

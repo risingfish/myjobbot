@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Footer } from "../components/sections/Footer.js";
 import { Header } from "../components/sections/Header.js";
 import { dbLabel } from "../lib/uiState.js";
+import "@picocss/pico/css/pico.blue.min.css";
 import "./styles.css";
 
 export const metadata: Metadata = { title: { template: "myjobbot · %s", default: "myjobbot" } };

@@ -1,48 +1,28 @@
 :root {
-    --bg: #f6f7f5;
-    --fg: #1b211e;
-    --muted: #5b655f;
-    --rule: #d5dbd6;
-    --accent: #2b4fb0;
-    --card: #fff;
+    --pico-font-size: 93.75%;
     --warn: #a3561a;
     --applied: #1e7a3c;
 }
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #121614;
-        --fg: #e3e8e4;
-        --muted: #98a29c;
-        --rule: #2c3430;
-        --accent: #93a8ff;
-        --card: #1a1f1c;
         --warn: #e6a467;
         --applied: #6fd08f;
     }
 }
-body {
-    margin: 0;
-    padding: 24px 16px;
-    background: var(--bg);
-    color: var(--fg);
-    font:
-        15px/1.5 system-ui,
-        sans-serif;
-}
 nav {
-    display: flex;
+    justify-content: flex-start;
     gap: 16px;
-    margin: 12px 0;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 nav a {
-    color: var(--muted);
+    color: var(--pico-muted-color);
     text-decoration: none;
     padding-bottom: 2px;
 }
 nav a.current {
-    color: var(--fg);
-    border-bottom: 2px solid var(--accent);
+    color: var(--pico-color);
+    border-bottom: 2px solid var(--pico-primary);
 }
 
 header .main-title {
@@ -51,9 +31,9 @@ header .main-title {
 
 .panel {
     overflow-x: auto;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
     padding: 10px;
     margin-bottom: 20px;
 }
@@ -67,35 +47,26 @@ header .main-title {
 
 .table {
     overflow-x: auto;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
 }
-table {
-    border-collapse: collapse;
-    width: 100%;
+.table table {
+    margin: 0;
 }
 th,
 td {
-    text-align: left;
     vertical-align: top;
-    padding: 8px 10px;
-    border-top: 1px solid var(--rule);
 }
 th {
-    border-top: 0;
-    color: var(--muted);
+    color: var(--pico-muted-color);
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-a {
-    color: var(--accent);
-}
 small,
 .note,
 footer {
-    color: var(--muted);
+    color: var(--pico-muted-color);
 }
 .preferences {
     white-space: pre-wrap;
@@ -103,7 +74,7 @@ footer {
 .setting + .setting {
     margin-top: 14px;
     padding-top: 10px;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--pico-muted-border-color);
 }
 .setting h5 {
     margin-bottom: 4px;
@@ -124,14 +95,13 @@ footer {
     color: var(--applied);
 }
 .applied-cell span.unapplied {
-    color: var(--accent);
+    color: var(--pico-primary);
 }
 form.applied-form button {
     border: 0;
     background: none;
     padding: 2px 6px;
     font: inherit;
-    cursor: pointer;
 }
 .score-col {
     width: 1%;
@@ -153,10 +123,10 @@ form.applied-form button {
     white-space: normal;
     font-weight: 400;
     font-size: 13px;
-    color: var(--fg);
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
+    color: var(--pico-color);
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
 }
 .score:hover .tip,
 .score:focus .tip {
@@ -166,9 +136,8 @@ form.applied-form button {
     min-width: 16em;
     overflow-wrap: anywhere;
 }
-ul {
-    margin: 4px 0;
-    padding-left: 18px;
+td ul {
+    margin: 0;
 }
 .row-actions {
     display: inline-flex;
@@ -177,24 +146,19 @@ ul {
 }
 .posting-link {
     display: inline-flex;
-    color: var(--muted);
+    color: var(--pico-muted-color);
 }
 .posting-link:hover,
 .posting-link:focus-visible {
-    color: var(--accent);
+    color: var(--pico-primary);
 }
 form.hide {
     margin: 0;
 }
-form.hide button {
-    font: inherit;
+form.hide button,
+.details-head button {
     font-size: 13px;
-    color: var(--muted);
-    background: none;
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    padding: 2px 8px;
-    cursor: pointer;
+    padding: 2px 10px;
 }
 tr[data-hidden="0"] .hidden-note {
     display: none;
@@ -203,20 +167,16 @@ tr[data-hidden="1"] {
     opacity: 0.6;
 }
 dialog.details-panel {
-    position: fixed;
     inset: 0 0 0 auto;
-    margin: 0;
     width: 60vw;
-    max-width: none;
+    min-width: 0;
     height: 100vh;
-    max-height: none;
-    padding: 0;
-    border: 0;
-    border-left: 1px solid var(--rule);
-    background: var(--card);
-    color: var(--fg);
+    border-left: 1px solid var(--pico-muted-border-color);
+    background: var(--pico-card-background-color);
+    backdrop-filter: none;
     box-shadow: -8px 0 24px rgb(0 0 0 / 18%);
     flex-direction: column;
+    align-items: stretch;
     z-index: 10;
     transform: translateX(100%);
     transition:
@@ -224,7 +184,6 @@ dialog.details-panel {
         display 180ms allow-discrete;
 }
 dialog.details-panel[open] {
-    display: flex;
     transform: none;
     transition-timing-function: ease-out;
 }
@@ -249,20 +208,14 @@ dialog.details-panel[open] {
     justify-content: space-between;
     gap: 16px;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--pico-muted-border-color);
 }
 .details-head h2 {
     margin: 0;
     font-size: 18px;
 }
-.details-head button {
-    font: inherit;
-    color: var(--muted);
-    background: none;
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    padding: 2px 10px;
-    cursor: pointer;
+.details-head form {
+    margin: 0;
 }
 .details-actions {
     display: flex;
@@ -287,10 +240,9 @@ dialog.details-panel[open] {
 }
 .details-section h3 {
     font-size: 16px;
-    color: var(--fg);
     margin: 22px 0 10px;
     padding-bottom: 4px;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--pico-muted-border-color);
 }
 .details-facts {
     display: grid;
@@ -299,29 +251,26 @@ dialog.details-panel[open] {
     margin: 0;
 }
 .details-facts dt {
-    color: var(--muted);
+    color: var(--pico-muted-color);
 }
 .details-facts dd {
     margin: 0;
 }
 .details-section h4 {
     font-size: 13px;
-    color: var(--muted);
+    color: var(--pico-muted-color);
     margin: 14px 0 4px;
 }
 .details-text {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    line-height: 1.5;
 }
 .details-markdown {
-    line-height: 1.5;
     overflow-wrap: anywhere;
 }
 .details-markdown h4,
 .details-markdown h5,
 .details-markdown h6 {
-    color: var(--fg);
     font-size: 15px;
     margin: 16px 0 6px;
 }
@@ -329,24 +278,8 @@ dialog.details-panel[open] {
 .details-markdown h6 {
     font-size: 14px;
 }
-.details-markdown ul,
-.details-markdown ol {
-    margin: 6px 0;
-    padding-left: 22px;
-}
-.details-markdown blockquote {
-    margin: 8px 0;
-    padding-left: 12px;
-    border-left: 3px solid var(--rule);
-    color: var(--muted);
-}
-.details-markdown pre {
-    overflow-x: auto;
-    padding: 8px;
-    background: color-mix(in srgb, var(--fg) 6%, transparent);
-}
 .details-origin {
-    color: var(--muted);
+    color: var(--pico-muted-color);
     margin: 0 0 8px;
 }
 .details-warning {
@@ -356,27 +289,21 @@ dialog.details-panel[open] {
     background: color-mix(in srgb, var(--warn) 10%, transparent);
 }
 .details-history {
-    border-collapse: collapse;
+    width: auto;
     font-variant-numeric: tabular-nums;
 }
 .details-history th,
 .details-history td {
-    text-align: left;
     padding: 4px 16px 4px 0;
 }
 .details-history th {
-    color: var(--muted);
     font-weight: normal;
-}
-.details-notes {
-    margin: 0;
-    padding-left: 20px;
 }
 .badge {
     font-size: 12px;
-    color: var(--muted);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
+    color: var(--pico-muted-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
     padding: 0 6px;
 }
 .source-row {
@@ -384,4 +311,31 @@ dialog.details-panel[open] {
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+}
+.panel button[type="button"] {
+    --pico-background-color: transparent;
+    --pico-border-color: var(--pico-secondary-border);
+    --pico-color: var(--pico-secondary);
+    font-size: 13px;
+    padding: 2px 10px;
+}
+.panel button[type="button"]:is(:hover, :focus-visible) {
+    --pico-border-color: var(--pico-secondary-hover-border);
+    --pico-color: var(--pico-secondary-hover);
+}
+.setting h5 .reset {
+    margin-left: 8px;
+}
+.setting .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+}
+.setting .row input {
+    flex: 1;
+    width: auto;
+}
+.setting .row input[type="number"] {
+    flex: 0 0 7em;
 }
