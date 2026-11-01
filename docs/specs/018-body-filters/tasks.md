@@ -246,7 +246,7 @@ and the owner can try PR 3 from a terminal.
   - **(d) failed:** the chat throws. The result is `failed`, and the job's old score and verdicts are unchanged.
   - **(e) lookup finds nothing:** the job is scored from its alert fields, and the verdict carries the "scored from the alert only" gap.
   - **(f) lookup throws:** the error is traced as `rescore_lookup_failed`, and the job is still scored.
-- [ ] T030 [US4] Update `tests/toolDeclarations.test.ts` so the expected map also holds the re-score's tools, `get_job: true` and `record_matches: false`, by adding `rescoreTools(...)` to the listed tools (existing test, 0 new). Also write an integration test (1) in `tests/integration/openRescore.test.ts`: `openRescore` against a temporary data folder (a `config.json` and `resume.md`) and the memory stores builds deps whose run id names a new trace file, and `close()` resolves; no model call is made.
+- [ ] T030 [US4] Update `tests/toolDeclarations.test.ts` so the expected map also holds the re-score's tools, `get_job: true` and `record_matches: false`, by adding `rescoreTools(...)` to the listed tools (existing test, 0 new). Also write an integration test (1) in `tests/integration/openRescore.test.ts`: `openRescore` against a temporary data folder (a `config.json` and `resume.md`), a temporary log folder (`MYJOBBOT_LOG_DIR`), placeholder `LLM_*` values in its environment, and the memory stores builds deps whose run id names a new trace file, and `close()` resolves; no model call is made.
 
 #### Implementation for User Story 4 (S3)
 
@@ -289,7 +289,7 @@ and the owner can try PR 3 from a terminal.
   - load `loadConfig(environment)`;
   - open `openRunLogs(loaded)` and resolve `settingsForRun(loaded, stores.searchSettings, logs.trace)`;
   - create `createChat(config.env, logs.llm)`, `runClients(config, {})` and `pageRenderer(config, {}, { logs, stores })`;
-  - build `CareersParts` from those parts with `dataMarkers(logs.runId)`, and `lookUp: (job) => lookUpCareers(careersDeps(parts), [job])`;
+  - build `CareersParts` from those parts with `dataMarkers(logs.runId)`, with the careers lookup settings' `max_minutes` and `max_total_minutes` capped at `RESCORE_LOOKUP_MINUTES = 2` (SC-005), and `lookUp: (job) => lookUpCareers(careersDeps(parts), [job])`;
   - `close` closes the renderer.
 - [ ] T039 [US4] Add a `rescore` command to `COMMANDS` in `src/cli.ts`:
   - `rescoreCommand(environment, [ats, jobId])` opens the stores like `runOnce` (`openStores(parseDbSettings(environment))`), calls `openRescore` and then `rescore`, and prints `rescore <ats> <job_id>: <outcome>` (plus the note when filtered);

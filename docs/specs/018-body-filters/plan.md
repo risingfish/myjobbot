@@ -146,6 +146,11 @@ that adds it (knip), and the CLI command is the smallest caller that reaches all
 part that stands on its own is the rubric and careers-deps move, a pure refactor reached from the run
 (~6 files). If the owner prefers, it can go first as its own PR.
 
+**PR 4's size** is about 10 files of its own. The rest are the eight existing panel and list UI
+tests, each gaining a one-line `vi.mock` of the server action and, in `panelHeader.test.tsx`, the
+new button order. Splitting it would leave a server action with no caller (knip), so it stays one
+PR.
+
 ## Complexity Tracking
 
 No constitution violations to justify.

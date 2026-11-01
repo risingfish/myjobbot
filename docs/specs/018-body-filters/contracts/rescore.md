@@ -56,7 +56,8 @@ type RescoreResult =
     `get_job_details` for this job (summary, description up to 6,000 characters, origin, lists).
   - `record_matches`: unchanged schema and description. Its store is `oneJobStore(store, key)`, so
     a verdict for any other id is reported in `unknown_job_ids` and not written.
-- **Limits**: `max_steps` is 6 and `max_wall_clock_min` is 3 (SC-005). The other limits are the
+- **Limits**: `max_steps` is 6 and `max_wall_clock_min` is 3 (SC-005). The lookup before it has
+  its careers `max_minutes` and `max_total_minutes` capped at 2. The other limits are the
   run's `agent` settings. `isFinished` turns
   true once the verdict is recorded.
 - **Look-alikes**: a scrubbed look-alike marker is traced and flags the job (`injection_seen_at`),

@@ -245,7 +245,7 @@ that the job's score, reasons and gaps are replaced and its scored time moves fo
   scope.
 - The careers lookup for jobs missing a description runs as today in runs, and also from Re-score
   (FR-011); the body filter applies once a description exists.
-- While a re-score runs (up to about 2 minutes with a lookup), the page's other actions (Hide,
+- While a re-score runs (its lookup is limited to 2 minutes and its scoring to 3), the page's other actions (Hide,
   Applied, Load more, opening another job) wait for it to finish. That is acceptable for one owner.
 - A re-score that overlaps a run on the same job needs no locking: whichever scoring finishes last is
   kept, as both score from the same settings.

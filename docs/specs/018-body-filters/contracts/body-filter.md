@@ -14,7 +14,7 @@
 
 ## Runs
 
-- `isWanted(row, config)` is true only when:
+- `isWanted(row, config)` is `filterMatch(row, filterSet(config)) === null`, so it is true only when:
   - the title passes the title filter;
   - the company isn't excluded;
   - `passesBodyFilter(row.description, row.description_format, config.body_filter)` holds.

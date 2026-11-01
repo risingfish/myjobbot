@@ -52,7 +52,7 @@ Decisions behind [plan.md](plan.md), each checked against the code on 2026-11-01
 
 ## R3. Where a run applies the filter
 
-- **Decision**: `isWanted` (`src/tools/unscored.ts`) also calls `passesBodyFilter`. Its parameter
+- **Decision**: `isWanted` (`src/tools/unscored.ts`) becomes `filterMatch(row, filterSet(config)) === null` (R4), so it applies the body filter too. Its parameter
   widens from `Pick<JobRow, "title" | "company">` to also take `description` and
   `description_format`.
 - **Rationale**: `isWanted` is the one gate before the model. `next_jobs`, `list_sources`' counts,
@@ -63,8 +63,9 @@ Decisions behind [plan.md](plan.md), each checked against the code on 2026-11-01
     lookup (which only takes wanted jobs) would never fetch one.
   - `next_jobs` reads the job after the lookup has stored its description, so the filter applies
     once the description arrives (spec edge case).
-  - `alertLookupStep`'s title-only check before lookups stays as it is: an alert job has no
-    description at that point.
+  - `alertLookupStep`'s title and company check before lookups stays as it is: an alert job has no
+    description at that point, so `filterMatch` would give the same answer. Moving it onto
+    `filterMatch` is out of scope for this feature.
 - **Alternatives**: filtering in the store query. Rejected: the matching rules aren't expressible in
   SQL, and they must stay a plain function.
 
@@ -91,7 +92,7 @@ Decisions behind [plan.md](plan.md), each checked against the code on 2026-11-01
   - The `web` service already loads `.env` (the `LLM_*` variables) and mounts `data/` (the resume),
     so it can build a chat client and a trace file the same way a run does.
 - **Accepted limit**: Next.js runs one server action at a time per client, so while a re-score runs
-  (up to about 2 minutes with a lookup), Hide, Applied, Load more and opening another job wait
+  (at most 2 minutes for a lookup and 3 for scoring), Hide, Applied, Load more and opening another job wait
   behind it. For one owner pressing Re-score now and then, that is accepted and written down (spec
   Assumptions, quickstart §4) rather than moving the re-score to a Route Handler.
 - **Second entry point**: the CLI command `npm start -- rescore <ats> <job_id>` builds the same
@@ -146,7 +147,9 @@ Decisions behind [plan.md](plan.md), each checked against the code on 2026-11-01
 
   The flow in `src/rescore/rescore.ts` repeats this:
   1. Plan the job.
-  2. If the plan is `lookup`, call `deps.lookUp` for that one job, then re-read the job and plan it
+  2. If the plan is `lookup`, call `deps.lookUp` for that one job (its careers settings'
+     `max_minutes` and `max_total_minutes` capped at 2, so a re-score with a lookup stays within
+     SC-005's 2 minutes plus the session's own cap), then re-read the job and plan it
      again, this time with lookups done. `deps.lookUp` is built by `openRescore` as
      `(job) => lookUpCareers(careersDeps(parts), [job])`, so tests pass a fake. A thrown lookup error
      is traced as `rescore_lookup_failed` and the flow carries on with lookups done.
