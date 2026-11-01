@@ -47,7 +47,7 @@ sittings follow the PRs in [plan.md](plan.md) (Delivery):
 
 ### Sitting S0: the design docs (docs PR)
 
-- [ ] T001 Commit `docs/specs/018-body-filters/` (spec, plan, research, data model, contracts, quickstart, checklist and this file) when the owner asks, and open the docs PR
+- [X] T001 Commit `docs/specs/018-body-filters/` (spec, plan, research, data model, contracts, quickstart, checklist and this file) when the owner asks, and open the docs PR
 - [ ] T002 Run `npm run check` and `npm run check:db` on `main` after the docs PR merges, and correct the ledger's baseline row below if the counts differ from 735 unit / 59 integration / 62 UI
 
 ---
