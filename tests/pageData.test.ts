@@ -74,6 +74,28 @@ test("all jobs lists every job and marks titles the filter hides", async () => {
     expect(jobRows(data).find((row) => row.jobId === "a")?.filterNote).toBeNull();
 });
 
+test("a scored job whose description holds an excluded term is marked in all jobs and stays on recommended", async () => {
+    const page = pagesOf([{ id: "c", score: 90, description: "Active security clearance required." }], { body_filter: { exclude: ["clearance"] } });
+    expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden by body filter");
+    expect(jobRows(await page("recommended")).map((row) => row.jobId)).toEqual(["c"]);
+});
+
+test("a job whose description mentions none of the included terms is marked in all jobs", async () => {
+    const rows = jobRows(await pagesOf([{ id: "j", description: "We write Java." }, { id: "t", description: "We write TypeScript." }, { id: "n" }], { body_filter: { include: ["typescript"] } })("jobs"));
+    expect(rows.map((row) => [row.jobId, row.filterNote])).toEqual(
+        expect.arrayContaining([
+            ["j", "hidden by body filter"],
+            ["t", null],
+            ["n", null],
+        ]),
+    );
+});
+
+test("a job hidden by both its title and its description names the title filter", async () => {
+    const page = pagesOf([{ id: "e", title: "Account Executive", description: "Security clearance required." }], { body_filter: { exclude: ["clearance"] } });
+    expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden by title filter");
+});
+
 test("only http and https postings carry a link", async () => {
     const rows = jobRows(
         await pagesOf([

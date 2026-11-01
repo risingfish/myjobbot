@@ -91,6 +91,17 @@ test("one bad entry in each title filter list is left out", () => {
     expect(droppedFrom(stored)).toEqual([{ title_filter: { include: ["engineer"], exclude: ["sales"], extra_exclude: ["staff"] } }, ["title_filter.include[1]", "title_filter.exclude[0]", "title_filter.extra_exclude[1]"]]);
 });
 
+test("a bad body filter term is left out of its list by position, never by value, and the other list is kept", () => {
+    const { settings, notices } = sanitizeSearchSettings({ body_filter: { include: ["typescript"], exclude: ["clearance", "---"] } });
+    expect([settings, notices.map((notice) => notice.setting)]).toEqual([{ body_filter: { include: ["typescript"], exclude: ["clearance"] } }, ["body_filter.exclude[1]"]]);
+    expect(notices.some((notice) => notice.reason.includes("---"))).toBe(false);
+});
+
+test("a body filter that isn't an object falls back to both lists empty", () => {
+    expect(droppedFrom({ body_filter: ["clearance"] })).toEqual([{}, ["body_filter"]]);
+    expect(fileConfigSchema.parse({}).body_filter).toEqual({ include: [], exclude: [] });
+});
+
 test("one bad excluded company is left out", () => {
     expect(droppedFrom({ exclude_companies: ["acme", "--"] })).toEqual([{ exclude_companies: ["acme"] }, ["exclude_companies[1]"]]);
 });

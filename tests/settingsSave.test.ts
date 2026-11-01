@@ -11,7 +11,7 @@ function scoring(threshold: unknown, boosts: unknown = []): SaveRequest {
 }
 
 function filters(edits: Record<string, unknown>): SaveRequest {
-    const fields = ["include", "exclude", "extra_exclude", "exclude_companies", "exclude_publishers"];
+    const fields = ["include", "exclude", "extra_exclude", "body_include", "body_exclude", "exclude_companies", "exclude_publishers"];
     return { section: "filters", edits: Object.fromEntries(fields.map((field) => [field, field in edits ? value(edits[field]) : DEFAULT])) };
 }
 
@@ -28,7 +28,25 @@ test("a save works with nothing stored yet", () => {
 });
 
 test("a boost term listed twice is refused on its second row", () => {
-    expect(saveSection(STORED, {}, scoring(70, [["go", 5], ["go", 6]]))).toEqual({ problems: [{ field: "title_boosts", entry: 1, message: "this term is already boosted above" }] });
+    expect(
+        saveSection(
+            STORED,
+            {},
+            scoring(70, [
+                ["go", 5],
+                ["go", 6],
+            ]),
+        ),
+    ).toEqual({ problems: [{ field: "title_boosts", entry: 1, message: "this term is already boosted above" }] });
+});
+
+test("the body filter's two lists are stored with the section's other lists", () => {
+    const request = filters({ body_include: ["typescript"], body_exclude: ["clearance"], exclude_companies: ["acme"] });
+    expect(saveSection(STORED, {}, request)).toEqual({ toStore: { preferences: "Remote", body_filter: { include: ["typescript"], exclude: ["clearance"] }, exclude_companies: ["acme"] } });
+});
+
+test("a body filter term without a letter or digit refuses the whole save, on its row", () => {
+    expect(saveSection(STORED, {}, filters({ body_exclude: ["---"], exclude_companies: ["acme"] }))).toEqual({ problems: [{ field: "body_exclude", entry: 0, message: "filter terms need at least one letter or digit" }] });
 });
 
 test("the preferences text is stored exactly as typed, line breaks included", () => {

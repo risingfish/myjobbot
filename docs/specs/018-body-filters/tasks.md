@@ -48,7 +48,7 @@ sittings follow the PRs in [plan.md](plan.md) (Delivery):
 ### Sitting S0: the design docs (docs PR)
 
 - [X] T001 Commit `docs/specs/018-body-filters/` (spec, plan, research, data model, contracts, quickstart, checklist and this file) when the owner asks, and open the docs PR
-- [ ] T002 Run `npm run check` and `npm run check:db` on `main` after the docs PR merges, and correct the ledger's baseline row below if the counts differ from 735 unit / 59 integration / 62 UI
+- [X] T002 Run `npm run check` and `npm run check:db` on `main` after the docs PR merges, and correct the ledger's baseline row below if the counts differ from 735 unit / 59 integration / 62 UI
 
 ---
 
@@ -58,8 +58,8 @@ sittings follow the PRs in [plan.md](plan.md) (Delivery):
 
 ### Sitting S1: the setting, its Settings fields and the All jobs note (PR 1)
 
-- [ ] T003 Stop the Docker stack (`docker compose stop`), confirm `docker:watch` isn't running, and create `.specify/sitting-in-progress` naming S1
-- [ ] T004 [P] Write unit tests (10) in `tests/bodyFilter.test.ts` for `passesBodyFilter(description, format, filter)`, covering the examples table in [contracts/body-filter.md](contracts/body-filter.md):
+- [X] T003 Stop the Docker stack (`docker compose stop`), confirm `docker:watch` isn't running, and create `.specify/sitting-in-progress` naming S1
+- [X] T004 [P] Write unit tests (10) in `tests/bodyFilter.test.ts` for `passesBodyFilter(description, format, filter)`, covering the examples table in [contracts/body-filter.md](contracts/body-filter.md):
   - exclude "security clearance" matches "Active Security-Clearance required";
   - exclude "php" doesn't match "PHPUnit";
   - exclude "php" matches "PHP and Go";
@@ -70,14 +70,14 @@ sittings follow the PRs in [plan.md](plan.md) (Delivery):
   - include "typescript", "golang" fails "We write Java" and passes "TypeScript-first team";
   - include "go" doesn't match "A good team";
   - a description matching both an include and an exclude term fails.
-- [ ] T005 [P] Write unit tests (2) in `tests/searchSettings.test.ts` for the `body_filter` sanitizer:
+- [X] T005 [P] Write unit tests (2) in `tests/searchSettings.test.ts` for the `body_filter` sanitizer:
   - a stored `exclude` entry `"---"` is dropped, with a fallback notice whose setting is `body_filter.exclude[1]` and whose reason doesn't contain the value, and the stored `include` list is kept;
   - a stored non-object value falls back to both lists empty.
-- [ ] T006 Export `bodyFilterTerms = z.object({ include: z.array(filterTerm).default([]), exclude: z.array(filterTerm).default([]) })` from `src/config/schema.ts`, beside `titleFilterTerms`, and add `body_filter: bodyFilterTerms.prefault({})` to `fileConfigSchema`
-- [ ] T007 Create `src/jobs/bodyFilter.ts` with `passesBodyFilter(description: string | null, format: DescriptionFormat | null, filter: FileConfig["body_filter"]): boolean` (research R2):
+- [X] T006 Export `bodyFilterTerms = z.object({ include: z.array(filterTerm).default([]), exclude: z.array(filterTerm).default([]) })` from `src/config/schema.ts`, beside `titleFilterTerms`, and add `body_filter: bodyFilterTerms.prefault({})` to `fileConfigSchema`
+- [X] T007 Create `src/jobs/bodyFilter.ts` with `passesBodyFilter(description: string | null, format: DescriptionFormat | null, filter: FileConfig["body_filter"]): boolean` (research R2):
   - return `true` when both lists are empty or the readable text is null or empty;
   - otherwise normalize `readableDescription(description, format)` with `normalizeTitle`, and return `(filter.include.length === 0 || filter.include.some(has)) && !filter.exclude.some(has)`, where `has` is `(term) => hasWord(text, term)`.
-- [ ] T008 In `src/config/searchSettings.ts`, rename `SearchFallbacks.titleFilter(value)` to `filterLists(value, name)` (the name prefixes each notice, as `title_filter.include[0]` does today), update its purpose comment, and use it for `title_filter` and a new `body_filter` entry in `SANITIZERS`, so T005 passes and the title filter's sanitizer tests still pass untouched
+- [X] T008 In `src/config/searchSettings.ts`, rename `SearchFallbacks.titleFilter(value)` to `filterLists(value, name)` (the name prefixes each notice, as `title_filter.include[0]` does today), update its purpose comment, and use it for `title_filter` and a new `body_filter` entry in `SANITIZERS`, so T005 passes and the title filter's sanitizer tests still pass untouched
 
 **Checkpoint**: the setting resolves for runs and web requests. Typecheck passes, and `passesBodyFilter` gets its production caller in T014.
 
@@ -92,7 +92,7 @@ refused, with the message on that row. Reset, and the list is empty.
 
 ### Tests for User Story 2
 
-- [ ] T009 [P] [US2] Write unit tests (3):
+- [X] T009 [P] [US2] Write unit tests (3):
   - in `tests/settingsSave.test.ts`, saving the `filters` section stores `body_filter.include` and `body_filter.exclude` with the other lists;
   - in `tests/settingsSave.test.ts`, a `body_exclude` entry `"---"` refuses the whole save, with the problem at field `body_exclude`, entry 0;
   - in `tests/settingsSave.test.ts`, add `body_include` and `body_exclude` to the `filters()` helper, so their edits reach the save (no new count);
@@ -100,14 +100,14 @@ refused, with the message on that row. Reset, and the list is empty.
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Add `"body_include"` and `"body_exclude"` to `FieldName`, and to `SECTIONS` in `src/web/settingsSections.ts` add `{ name: "body_include", section: "filters", stored: ["body_filter", "include"], check: ["body_filter", "include"] }` and the same for `body_exclude` at `["body_filter", "exclude"]`. Update `tests/settingsSections.test.ts` (existing test, 0 new): 10 fields, `"body_filter"` added to `SEARCH_KEYS`, and the test's name to match.
-- [ ] T011 [US2] Add `body_include` and `body_exclude` in `src/web/settingsView.ts` to:
+- [X] T010 [US2] Add `"body_include"` and `"body_exclude"` to `FieldName`, and to `SECTIONS` in `src/web/settingsSections.ts` add `{ name: "body_include", section: "filters", stored: ["body_filter", "include"], check: ["body_filter", "include"] }` and the same for `body_exclude` at `["body_filter", "exclude"]`. Update `tests/settingsSections.test.ts` (existing test, 0 new): 10 fields, `"body_filter"` added to `SEARCH_KEYS`, and the test's name to match.
+- [X] T011 [US2] Add `body_include` and `body_exclude` in `src/web/settingsView.ts` to:
   - `FieldValues` (`string[]`) and `SHOWN` (`terms`);
   - `DEFAULTS` (`bodyFilterTerms.shape.include.parse(undefined)` and `.exclude`);
   - `shownFields` and `defaultValues`.
 
   Also add both, as `termList`, to `ROW_SHAPES` in `src/web/settingsForm.ts`.
-- [ ] T012 [US2] In `web/components/settings/FiltersSection.tsx`:
+- [X] T012 [US2] In `web/components/settings/FiltersSection.tsx`:
   - add `"body_include"` and `"body_exclude"` to `TermName`;
   - add `["body_include", "Description must include one of"]` and `["body_exclude", "Description must not include"]` to `LISTS`, after `"Also excluded"`;
   - add both to `listsOf`;
@@ -126,7 +126,7 @@ without it shows none, and a job hidden by both title and description names the 
 
 ### Tests for User Story 3
 
-- [ ] T013 [P] [US3] Write unit tests (4):
+- [X] T013 [P] [US3] Write unit tests (4):
   - in `tests/filterMatch.test.ts`, `filterMatch` names `"company"` before `"title"` before `"body"` for a job all three match, and gives null for a job none matches;
   - in `tests/pageData.test.ts`, a scored job whose description contains a `body_filter.exclude` term gets `filterNote: "hidden by body filter"` and still appears on Recommended (FR-008);
   - a job whose description contains no `body_filter.include` term gets the same note;
@@ -134,14 +134,14 @@ without it shows none, and a job hidden by both title and description names the 
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Create `src/jobs/filterMatch.ts` (research R4) with:
+- [X] T014 [US3] Create `src/jobs/filterMatch.ts` (research R4) with:
   - `interface FilterSet { excludedCompanies: string[]; titleFilter: FileConfig["title_filter"]; bodyFilter: FileConfig["body_filter"] }` and `filterSet(config: FileConfig): FilterSet`;
   - `filterMatch(job: Pick<JobRow, "title" | "company" | "description" | "description_format">, filters: FilterSet): "company" | "title" | "body" | null`, checking `isExcludedCompany`, `passesTitleFilter`, then `passesBodyFilter`, in that order;
   - `FILTER_NOTES: Record<"company" | "title" | "body", string>`, the three notes from [contracts/body-filter.md](contracts/body-filter.md).
 
   In `src/web/rowViews.ts`, make `RowContext` extend `FilterSet` (adding `bodyFilter`), and have `filterNote` return `FILTER_NOTES[match]` or null; update its purpose comment.
-- [ ] T015 [US3] Build `rowContext` from `filterSet(config)` in `src/web/pageData.ts`, and fix any `RowContext` literal in `tests/` that typecheck flags
-- [ ] T016 Run `npm run check` and `npm run check:db` until green (fix every habit-hooks finding), delete `.specify/sitting-in-progress`, and when the owner asks, commit S1 and open PR 1
+- [X] T015 [US3] Build `rowContext` from `filterSet(config)` in `src/web/pageData.ts`, and fix any `RowContext` literal in `tests/` that typecheck flags
+- [X] T016 Run `npm run check` and `npm run check:db` until green (fix every habit-hooks finding), delete `.specify/sitting-in-progress`, and when the owner asks, commit S1 and open PR 1
 
 **Checkpoint**: PR 1. Terms can be saved and their effect seen on All jobs. Runs don't act on them yet.
 

@@ -36,7 +36,8 @@ export interface FallbackNotice {
 const SANITIZERS: Record<string, Sanitizer> = {
     preferences: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.preferences, value, "preferences"),
     match_threshold: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.match_threshold, value, "match_threshold"),
-    title_filter: (value, fallbacks) => fallbacks.titleFilter(value),
+    title_filter: (value, fallbacks) => fallbacks.filterLists(value, "title_filter"),
+    body_filter: (value, fallbacks) => fallbacks.filterLists(value, "body_filter"),
     title_boosts: (value, fallbacks) => fallbacks.boosts(value),
     exclude_companies: (value, fallbacks) => fallbacks.list(value, { name: "exclude_companies", entry: filterTerm }),
     [PUBLISHERS]: (value, fallbacks) => fallbacks.list(value, { name: `jsearch.${PUBLISHERS}`, entry: publisherTerm, reason: publisherReason }),
@@ -134,10 +135,10 @@ class Fallbacks {
         return kept.length === 0 && value.length > 0 ? undefined : kept;
     }
 
-    /** Keeps the passing terms of each stored title filter list, dropping a list with none left so its default applies. */
-    titleFilter(value: unknown): unknown {
-        if (!isRawObject(value)) return this.checked(z.object({}), value, "title_filter");
-        const parts = Object.entries(value).map(([key, terms]) => [key, FILTER_LISTS.has(key) ? this.list(terms, { name: `title_filter.${key}`, entry: filterTerm }) : terms]);
+    /** Keeps the passing terms of each stored list of a title or body filter, dropping a list with none left so its default applies. */
+    filterLists(value: unknown, name: string): unknown {
+        if (!isRawObject(value)) return this.checked(z.object({}), value, name);
+        const parts = Object.entries(value).map(([key, terms]) => [key, FILTER_LISTS.has(key) ? this.list(terms, { name: `${name}.${key}`, entry: filterTerm }) : terms]);
         return Object.fromEntries(parts.filter(([, terms]) => terms !== undefined));
     }
 

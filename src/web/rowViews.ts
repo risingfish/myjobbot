@@ -2,18 +2,15 @@ import type { FileConfig } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import { daysBetween } from "../jobs/age.js";
-import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { boostedScore, jobBoost, type Boost } from "../jobs/titleBoost.js";
-import { passesTitleFilter } from "../jobs/titleFilter.js";
+import { FILTER_NOTES, filterMatch, type FilterSet } from "../jobs/filterMatch.js";
 import type { JobRowView, Score, VerdictRowView } from "./api.js";
 import { shortTitle } from "./shortTitle.js";
 
-export interface RowContext {
+export interface RowContext extends FilterSet {
     now: Date;
     ghostDays: number;
-    titleFilter: FileConfig["title_filter"];
     boosts: FileConfig["title_boosts"];
-    excludedCompanies: FileConfig["exclude_companies"];
 }
 
 const WEB_URL = /^https?:\/\//i;
@@ -128,8 +125,8 @@ function boostNote(score: number, boost: Boost): string {
     return text === null ? "" : `model ${score} · ${text}`;
 }
 
-/** Explains why a job would be hidden from the model, by company or title filter, or null when it is not. */
+/** Explains why a job would be hidden from the model, by company, title or body filter, or null when it is not. */
 function filterNote(job: JobView, context: RowContext): string | null {
-    if (isExcludedCompany(job.company, context.excludedCompanies)) return "hidden: excluded company";
-    return passesTitleFilter(job.title, context.titleFilter) ? null : "hidden by title filter";
+    const match = filterMatch(job, context);
+    return match === null ? null : FILTER_NOTES[match];
 }

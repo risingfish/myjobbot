@@ -2,7 +2,7 @@ export const SECTION_NAMES = ["preferences", "scoring", "filters"] as const;
 
 export type SectionName = (typeof SECTION_NAMES)[number];
 
-export type FieldName = "preferences" | "match_threshold" | "title_boosts" | "include" | "exclude" | "extra_exclude" | "exclude_companies" | "exclude_publishers";
+export type FieldName = "preferences" | "match_threshold" | "title_boosts" | "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 
 export interface FieldSpec {
     name: FieldName;
@@ -18,6 +18,8 @@ export const SECTIONS: readonly FieldSpec[] = [
     { name: "include", section: "filters", stored: ["title_filter", "include"], check: ["title_filter", "include"] },
     { name: "exclude", section: "filters", stored: ["title_filter", "exclude"], check: ["title_filter", "exclude"] },
     { name: "extra_exclude", section: "filters", stored: ["title_filter", "extra_exclude"], check: ["title_filter", "extra_exclude"] },
+    { name: "body_include", section: "filters", stored: ["body_filter", "include"], check: ["body_filter", "include"] },
+    { name: "body_exclude", section: "filters", stored: ["body_filter", "exclude"], check: ["body_filter", "exclude"] },
     { name: "exclude_companies", section: "filters", stored: ["exclude_companies"], check: ["exclude_companies"] },
     { name: "exclude_publishers", section: "filters", stored: ["exclude_publishers"], check: ["jsearch", "exclude_publishers"] },
 ];

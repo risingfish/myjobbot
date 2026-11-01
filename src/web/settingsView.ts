@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fileConfigSchema, titleFilterTerms, type FileConfig } from "../config/schema.js";
+import { bodyFilterTerms, fileConfigSchema, titleFilterTerms, type FileConfig } from "../config/schema.js";
 import { isRawObject, sanitizeSearchSettings, splitSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import { SECTIONS, type FieldName } from "./settingsSections.js";
@@ -11,6 +11,8 @@ interface FieldValues {
     include: string[];
     exclude: string[];
     extra_exclude: string[];
+    body_include: string[];
+    body_exclude: string[];
     exclude_companies: string[];
     exclude_publishers: string[];
 }
@@ -36,6 +38,8 @@ const SHOWN: { [K in FieldName]: z.ZodType<FieldValues[K]> } = {
     include: terms,
     exclude: terms,
     extra_exclude: terms,
+    body_include: terms,
+    body_exclude: terms,
     exclude_companies: terms,
     exclude_publishers: terms,
 };
@@ -47,6 +51,8 @@ const DEFAULTS: Record<FieldName, () => unknown> = {
     include: () => titleFilterTerms.shape.include.parse(undefined),
     exclude: () => titleFilterTerms.shape.exclude.parse(undefined),
     extra_exclude: () => titleFilterTerms.shape.extra_exclude.parse(undefined),
+    body_include: () => bodyFilterTerms.shape.include.parse(undefined),
+    body_exclude: () => bodyFilterTerms.shape.exclude.parse(undefined),
     exclude_companies: () => fileConfigSchema.shape.exclude_companies.parse(undefined),
     exclude_publishers: () => fileConfigSchema.shape.jsearch.parse(undefined).exclude_publishers,
 };
@@ -82,6 +88,8 @@ function shownFields(settings: RawSearchSettings): SettingsFields {
         include: shownField("include", settings),
         exclude: shownField("exclude", settings),
         extra_exclude: shownField("extra_exclude", settings),
+        body_include: shownField("body_include", settings),
+        body_exclude: shownField("body_exclude", settings),
         exclude_companies: shownField("exclude_companies", settings),
         exclude_publishers: shownField("exclude_publishers", settings),
     };
@@ -97,6 +105,8 @@ function defaultValues(): SettingsView["defaults"] {
         include: empty.include.value,
         exclude: empty.exclude.value,
         extra_exclude: empty.extra_exclude.value,
+        body_include: empty.body_include.value,
+        body_exclude: empty.body_exclude.value,
         exclude_companies: empty.exclude_companies.value,
         exclude_publishers: empty.exclude_publishers.value,
     };

@@ -33,6 +33,11 @@ export const titleFilterTerms = z.object({
     extra_exclude: z.array(filterTerm).default([]),
 });
 
+export const bodyFilterTerms = z.object({
+    include: z.array(filterTerm).default([]),
+    exclude: z.array(filterTerm).default([]),
+});
+
 const titleFilter = titleFilterTerms.transform(({ include, exclude, extra_exclude }) => ({ include, exclude: [...exclude, ...extra_exclude] }));
 
 const agent = z.object({
@@ -74,6 +79,7 @@ export const fileConfigSchema = z
         ghost_threshold_days: z.number().int().min(1).default(60),
         job_retention_days: z.number().int().min(1).default(90),
         title_filter: titleFilter.prefault({}),
+        body_filter: bodyFilterTerms.prefault({}),
         exclude_companies: z.array(filterTerm).default([]),
         title_boosts: z.record(filterTerm, boostPoints).default({}),
         agent: agent.prefault({}),
