@@ -28,6 +28,19 @@ test("each title filter list has its own default", () => {
     expect(fields.exclude.value).toContain("intern");
 });
 
+test("the body filter's lists are empty by default and show what is stored", () => {
+    const empty = settingsView(null).fields;
+    expect([empty.body_include, empty.body_exclude]).toEqual([
+        { value: [], isDefault: true },
+        { value: [], isDefault: true },
+    ]);
+    const stored = settingsView({ body_filter: { exclude: ["clearance"] } }).fields;
+    expect([stored.body_include, stored.body_exclude]).toEqual([
+        { value: [], isDefault: true },
+        { value: ["clearance"], isDefault: false },
+    ]);
+});
+
 test("a value that fell back whole shows its default, marked", () => {
     expect(settingsView({ match_threshold: 150 }).fields.match_threshold).toEqual({ value: 70, isDefault: true });
 });

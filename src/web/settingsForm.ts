@@ -12,6 +12,8 @@ const ROW_SHAPES: Record<FieldName, z.ZodType> = {
     include: termList,
     exclude: termList,
     extra_exclude: termList,
+    body_include: termList,
+    body_exclude: termList,
     exclude_companies: termList,
     exclude_publishers: termList,
 };

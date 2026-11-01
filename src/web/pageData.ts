@@ -3,6 +3,7 @@ import type { SavedSource } from "../db/sourceStore.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
+import { filterSet } from "../jobs/filterMatch.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
@@ -72,6 +73,5 @@ export function sourceNames(saved: SavedSource[]): string[] {
 
 /** Builds the context row views need from the current config and time. */
 export function rowContext(config: FileConfig, now: Date): RowContext {
-    const filters = { titleFilter: config.title_filter, excludedCompanies: config.exclude_companies };
-    return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filters };
+    return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filterSet(config) };
 }
