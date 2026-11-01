@@ -2,10 +2,10 @@ import { expect, test } from "vitest";
 import type { JobViews } from "../src/db/store.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor } from "../web/lib/rows.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { seededStores } from "./helpers/views.js";
 
-const config = testFileConfig();
+const config = testAppSettings();
 const settings = { config, sourceNames: ["Stripe", "Gmail alerts"] };
 const JOB_A = { ats: "greenhouse", jobId: "a" };
 

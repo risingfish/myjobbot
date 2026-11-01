@@ -1,66 +1,66 @@
 import { expect, test } from "vitest";
 import type { Environment } from "../src/config/load.js";
 import { appConfigFrom, parseJson } from "../src/config/parse.js";
-import { envSchema, fileConfigSchema } from "../src/config/schema.js";
-import { LLM_ENV, SAMPLE_CONFIG, testFileConfig } from "./helpers/config.js";
+import { envSchema, settingsSchema } from "../src/config/schema.js";
+import { LLM_ENV, SAMPLE_CONFIG, testAppSettings } from "./helpers/config.js";
 
 function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
-    return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, fileConfigSchema.parse(config));
+    return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, settingsSchema.parse(config));
 }
 
 test("the app config applies defaults", () => {
     const config = configFrom(LLM_ENV);
-    expect(config.file).not.toHaveProperty("companies");
-    expect(config.file.match_threshold).toBe(70);
-    expect(config.file.http.min_interval_ms).toBe(1000);
-    expect(config.file.title_filter.include).toContain("engineer");
+    expect(config.settings).not.toHaveProperty("companies");
+    expect(config.settings.match_threshold).toBe(70);
+    expect(config.settings.http.min_interval_ms).toBe(1000);
+    expect(config.settings.title_filter.include).toContain("engineer");
     expect(config.resume).toContain("Jane Doe");
 });
 
 test("config.json parses without any LLM settings", () => {
-    const file = fileConfigSchema.parse(SAMPLE_CONFIG);
+    const file = settingsSchema.parse(SAMPLE_CONFIG);
     expect(file).not.toHaveProperty("searches");
     expect(file.match_threshold).toBe(70);
 });
 
 test("config rejects filter terms without a letter or digit", () => {
-    expect(() => testFileConfig({ title_filter: { exclude: ["++"] } })).toThrow(/letter or digit/);
-    expect(() => testFileConfig({ title_filter: { extra_exclude: ["++"] } })).toThrow(/letter or digit/);
+    expect(() => testAppSettings({ title_filter: { exclude: ["++"] } })).toThrow(/letter or digit/);
+    expect(() => testAppSettings({ title_filter: { extra_exclude: ["++"] } })).toThrow(/letter or digit/);
 });
 
 test("title boosts default to none and need 1-100 points per term", () => {
-    expect(testFileConfig().title_boosts).toEqual({});
-    expect(testFileConfig({ title_boosts: { typescript: 10 } }).title_boosts).toEqual({ typescript: 10 });
-    expect(() => testFileConfig({ title_boosts: { typescript: 0 } })).toThrow();
-    expect(() => testFileConfig({ title_boosts: { typescript: 101 } })).toThrow();
-    expect(() => testFileConfig({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
+    expect(testAppSettings().title_boosts).toEqual({});
+    expect(testAppSettings({ title_boosts: { typescript: 10 } }).title_boosts).toEqual({ typescript: 10 });
+    expect(() => testAppSettings({ title_boosts: { typescript: 0 } })).toThrow();
+    expect(() => testAppSettings({ title_boosts: { typescript: 101 } })).toThrow();
+    expect(() => testAppSettings({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
 });
 
 test("jsearch.exclude_publishers needs a letter or digit per name", () => {
-    expect(() => testFileConfig({ jsearch: { exclude_publishers: ["--"] } })).toThrow(/letter or digit/);
+    expect(() => testAppSettings({ jsearch: { exclude_publishers: ["--"] } })).toThrow(/letter or digit/);
 });
 
 test("jsearch.exclude_publishers rejects malformed domain entries by name", () => {
     for (const entry of ["trabajo.*", "https://trabajo.org/", "trabajo.org:443", "*.com"]) {
-        expect(() => testFileConfig({ jsearch: { exclude_publishers: [entry] } })).toThrow(`'${entry}' is not a valid domain entry`);
+        expect(() => testAppSettings({ jsearch: { exclude_publishers: [entry] } })).toThrow(`'${entry}' is not a valid domain entry`);
     }
     const entries = ["dailyremote", "jobmesh.io", "*.trabajo.org"];
-    expect(testFileConfig({ jsearch: { exclude_publishers: entries } }).jsearch.exclude_publishers).toEqual(entries);
+    expect(testAppSettings({ jsearch: { exclude_publishers: entries } }).jsearch.exclude_publishers).toEqual(entries);
 });
 
 test("exclude_companies defaults to none and needs a letter or digit per name", () => {
-    expect(testFileConfig().exclude_companies).toEqual([]);
-    expect(() => testFileConfig({ exclude_companies: ["--"] })).toThrow(/letter or digit/);
+    expect(testAppSettings().exclude_companies).toEqual([]);
+    expect(() => testAppSettings({ exclude_companies: ["--"] })).toThrow(/letter or digit/);
 });
 
 test("extra_exclude adds to the default exclude terms", () => {
-    const exclude = testFileConfig({ title_filter: { extra_exclude: ["staff", "principal"] } }).title_filter.exclude;
+    const exclude = testAppSettings({ title_filter: { extra_exclude: ["staff", "principal"] } }).title_filter.exclude;
     expect(exclude).toEqual(expect.arrayContaining(["intern", "manager", "staff", "principal"]));
 });
 
 test("extra_exclude adds to a custom exclude list", () => {
     const filter = { exclude: ["sales"], extra_exclude: ["lead"] };
-    expect(testFileConfig({ title_filter: filter }).title_filter.exclude).toEqual(["sales", "lead"]);
+    expect(testAppSettings({ title_filter: filter }).title_filter.exclude).toEqual(["sales", "lead"]);
 });
 
 test("the app config requires LLM settings", () => {
@@ -69,7 +69,7 @@ test("the app config requires LLM settings", () => {
 
 test("config rejects retention not longer than ghost threshold", () => {
     const overrides = { ghost_threshold_days: 90, job_retention_days: 60 };
-    expect(() => testFileConfig(overrides)).toThrow(/job_retention_days/);
+    expect(() => testAppSettings(overrides)).toThrow(/job_retention_days/);
 });
 
 test("config.json that isn't valid JSON is reported readably", () => {
@@ -77,11 +77,11 @@ test("config.json that isn't valid JSON is reported readably", () => {
 });
 
 test("careers lookup settings default to small, 16GB-friendly limits and reject out-of-range values", () => {
-    expect(testFileConfig().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048, render_seconds: 15, skip_hosts: ["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"] });
-    expect(testFileConfig({ careers_lookup: { skip_hosts: [] } }).careers_lookup.skip_hosts).toEqual([]);
-    expect(() => testFileConfig({ careers_lookup: { page_chars: 500 } })).toThrow();
-    expect(() => testFileConfig({ careers_lookup: { search_results: 50 } })).toThrow();
-    expect(() => testFileConfig({ careers_lookup: { max_per_run: 0 } })).toThrow();
+    expect(testAppSettings().careers_lookup).toEqual({ max_per_run: 10, max_total_minutes: 30, max_minutes: 5, page_chars: 12_000, search_results: 10, max_download_kb: 2048, render_seconds: 15, skip_hosts: ["glassdoor.com", "ziprecruiter.com", "indeed.com", "linkedin.com", "builtin.com", "teamworkonline.com"] });
+    expect(testAppSettings({ careers_lookup: { skip_hosts: [] } }).careers_lookup.skip_hosts).toEqual([]);
+    expect(() => testAppSettings({ careers_lookup: { page_chars: 500 } })).toThrow();
+    expect(() => testAppSettings({ careers_lookup: { search_results: 50 } })).toThrow();
+    expect(() => testAppSettings({ careers_lookup: { max_per_run: 0 } })).toThrow();
 });
 
 test("the SearXNG address is optional and must be a URL", () => {
@@ -91,9 +91,9 @@ test("the SearXNG address is optional and must be a URL", () => {
 });
 
 test("page rendering has a bounded time limit and an optional LAN probe address", () => {
-    for (const render_seconds of [4, 61]) expect(() => testFileConfig({ careers_lookup: { render_seconds } })).toThrow();
-    expect(testFileConfig({ careers_lookup: { lan_probe_url: "http://192.168.3.1/" } }).careers_lookup.lan_probe_url).toBe("http://192.168.3.1/");
-    expect(() => testFileConfig({ careers_lookup: { lan_probe_url: "router" } })).toThrow();
+    for (const render_seconds of [4, 61]) expect(() => testAppSettings({ careers_lookup: { render_seconds } })).toThrow();
+    expect(testAppSettings({ careers_lookup: { lan_probe_url: "http://192.168.3.1/" } }).careers_lookup.lan_probe_url).toBe("http://192.168.3.1/");
+    expect(() => testAppSettings({ careers_lookup: { lan_probe_url: "router" } })).toThrow();
 });
 
 test("the browser service address is optional and must be a WebSocket address", () => {
@@ -103,6 +103,6 @@ test("the browser service address is optional and must be a WebSocket address", 
 });
 
 test("the company search makes at most 50 searches a run by default, and refuses a negative limit", () => {
-    expect(fileConfigSchema.parse(SAMPLE_CONFIG).company_search.max_per_run).toBe(50);
-    expect(() => fileConfigSchema.parse({ ...SAMPLE_CONFIG, company_search: { max_per_run: -1 } })).toThrow();
+    expect(settingsSchema.parse(SAMPLE_CONFIG).company_search.max_per_run).toBe(50);
+    expect(() => settingsSchema.parse({ ...SAMPLE_CONFIG, company_search: { max_per_run: -1 } })).toThrow();
 });

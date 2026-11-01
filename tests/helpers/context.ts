@@ -4,7 +4,7 @@ import { PageRenderer } from "../../src/careers/renderState.js";
 import type { JsonGetter } from "../../src/http/client.js";
 import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
-import { testFileConfig } from "./config.js";
+import { testAppSettings } from "./config.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { publicDns } from "./fakeDns.js";
 import { MemorySourceStore } from "./memorySourceStore.js";
@@ -20,7 +20,7 @@ const NO_HTTP: JsonGetter = { getJson: () => Promise.reject(new Error("unexpecte
 
 export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores = memoryStores()): ToolContext {
     return {
-        config: testFileConfig(),
+        config: testAppSettings(),
         run: newRunState(),
         runId: "test-run",
         ...storeFields(stores),
@@ -54,7 +54,7 @@ function testSources(http: JsonGetter) {
 }
 
 function offRenderer(stores: Stores): PageRenderer {
-    return new PageRenderer({ connect: null, settings: testFileConfig().careers_lookup, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW });
+    return new PageRenderer({ connect: null, settings: testAppSettings().careers_lookup, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW });
 }
 
 export function doneContext(): ToolContext {

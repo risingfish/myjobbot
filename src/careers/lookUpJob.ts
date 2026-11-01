@@ -3,7 +3,7 @@ import { describeError } from "../errors.js";
 import type { ChatFn } from "../agent/llm.js";
 import type { DataMarkers, Lookalike } from "../agent/markers.js";
 import { taggedTrace, type Trace } from "../agent/trace.js";
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { CareersStore, JobStore } from "../db/store.js";
 import type { Tool } from "../tools/tool.js";
 import type { PageFetchDeps } from "./fetchPage.js";
@@ -18,7 +18,7 @@ import { newSession, type LookupSession, type SoughtJob } from "./session.js";
 import { readPage } from "./readPage.js";
 import { lookupTools, type PageKind } from "./tools.js";
 
-type CareersSettings = FileConfig["careers_lookup"];
+type CareersSettings = Settings["careers_lookup"];
 
 export interface LookupDeps {
     chat: ChatFn;

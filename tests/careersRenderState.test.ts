@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { BrowserPort } from "../src/careers/browser.js";
 import { PageRenderer } from "../src/careers/renderState.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
 import { fakeBrowser } from "./helpers/fakeBrowser.js";
 import { publicDns } from "./helpers/fakeDns.js";
@@ -13,7 +13,7 @@ const PAGE = "https://acme.example/careers";
 function renderer(connect: (() => Promise<BrowserPort>) | null, probe?: string) {
     const careers = new MemoryCareersStore();
     const trace = memoryTrace();
-    const settings = testFileConfig({ careers_lookup: probe === undefined ? {} : { lan_probe_url: probe } }).careers_lookup;
+    const settings = testAppSettings({ careers_lookup: probe === undefined ? {} : { lan_probe_url: probe } }).careers_lookup;
     return { careers, trace, renderer: new PageRenderer({ connect, settings, lookup: publicDns(), careers, trace, runId: "run-1", now: () => TEST_NOW }) };
 }
 

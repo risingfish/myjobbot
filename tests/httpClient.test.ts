@@ -1,7 +1,7 @@
 import { expect, onTestFinished, test, vi } from "vitest";
 import { HttpClient } from "../src/http/client.js";
 import { fakeClock } from "./helpers/clock.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { jsonResponse, scriptedFetch } from "./helpers/http.js";
 
 const URL_A = "https://a.example/board";
@@ -9,7 +9,7 @@ const URL_A = "https://a.example/board";
 function client(responses: Response[]) {
     const clock = fakeClock();
     const { fetchFn, urls, inits } = scriptedFetch(responses);
-    const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
+    const http = new HttpClient({ config: testAppSettings().http, clock, fetchFn, random: () => 0 });
     return { http, clock, urls, inits };
 }
 
@@ -63,7 +63,7 @@ test("HttpClient does not retry a 404", async () => {
 test("HttpClient names the URL when fetch itself fails", async () => {
     const clock = fakeClock();
     const fetchFn = () => Promise.reject(new TypeError("fetch failed"));
-    const http = new HttpClient({ config: testFileConfig().http, clock, fetchFn, random: () => 0 });
+    const http = new HttpClient({ config: testAppSettings().http, clock, fetchFn, random: () => 0 });
     await expect(http.getJson(URL_A)).rejects.toThrow(/https:\/\/a\.example\/board.*fetch failed/);
     const error = await http.getJson(URL_A).catch((caught: unknown) => caught);
     expect(error).toMatchObject({ cause: expect.any(TypeError) });
@@ -78,7 +78,7 @@ test("HttpClient starts the timeout after the rate-limit wait", async () => {
     const events: string[] = [];
     const timeoutSpy = spyOnTimeout(events);
     onTestFinished(() => timeoutSpy.mockRestore());
-    const config = { ...testFileConfig().http, min_interval_ms: 60_000, timeout_s: 1 };
+    const config = { ...testAppSettings().http, min_interval_ms: 60_000, timeout_s: 1 };
     const { fetchFn } = scriptedFetch([jsonResponse({}), jsonResponse({})]);
     const http = new HttpClient({ config, clock: trackedClock(events), fetchFn, random: () => 0 });
     await http.getJson(URL_A);

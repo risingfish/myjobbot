@@ -146,8 +146,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `title_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
   `user_settings`, one raw document per user (owner `OWNER_ID = 1`, created by the store), written
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by
-  `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `fileConfigSchema`,
-  once per run and on every web request. A bad stored value falls back per setting
+  `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `settingsSchema`
+  (type `Settings`, held in `AppConfig.settings`; never named after the file), once per run and on
+  every web request. A bad stored value falls back per setting
   (`sanitizeSearchSettings`) with a notice that never holds the value. They change only on the
   Settings page (feature 016): one section at a time (`src/web/settingsSections.ts`), each save
   checked with the rest by `saveSection` and stored through the `saveSettingsSection` server action;

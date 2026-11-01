@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { searchCompanies } from "../src/companies/searchCompanies.js";
 import { searxngJson } from "./helpers/careersPages.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { TEST_NOW, testContext } from "./helpers/context.js";
 import { newTables, type Row, type Tables } from "./helpers/memoryJobViews.js";
 import { memoryStores } from "./helpers/memoryStore.js";
@@ -27,7 +27,7 @@ function searxng(byQuery: Record<string, string[]>, failAfter = Infinity) {
 function setup(companies: Row[], http: ReturnType<typeof searxng>, options: { maxPerRun?: number; searxng?: string | null } = {}) {
     const tables: Tables = { ...newTables(), companies };
     const trace = memoryTrace();
-    const context = testContext({ http, trace, config: testFileConfig({ company_search: { max_per_run: options.maxPerRun ?? 50 } }) }, memoryStores(tables));
+    const context = testContext({ http, trace, config: testAppSettings({ company_search: { max_per_run: options.maxPerRun ?? 50 } }) }, memoryStores(tables));
     context.careers.searxngUrl = options.searxng === undefined ? "https://search.example" : options.searxng;
     return { context, tables, trace };
 }

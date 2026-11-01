@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 
 const MS_PER_MINUTE = 60_000;
 
@@ -9,7 +9,7 @@ export class Budget {
 
     /** Starts tracking the agent run's wall-clock budget from the current time. */
     constructor(
-        private readonly limits: FileConfig["agent"],
+        private readonly limits: Settings["agent"],
         private readonly clock: () => number,
     ) {
         this.startedAt = clock();

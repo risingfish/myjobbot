@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import { passesBodyFilter } from "./bodyFilter.js";
 import { isExcludedCompany } from "./companyFilter.js";
 import type { DescriptionFormat } from "./job.js";
@@ -7,9 +7,9 @@ import { passesTitleFilter } from "./titleFilter.js";
 type FilterName = "company" | "title" | "body";
 
 export interface FilterSet {
-    excludedCompanies: FileConfig["exclude_companies"];
-    titleFilter: FileConfig["title_filter"];
-    bodyFilter: FileConfig["body_filter"];
+    excludedCompanies: Settings["exclude_companies"];
+    titleFilter: Settings["title_filter"];
+    bodyFilter: Settings["body_filter"];
 }
 
 interface FilterableJob {
@@ -26,7 +26,7 @@ export const FILTER_NOTES: Record<FilterName, string> = {
 };
 
 /** Picks the company, title and body filters out of the settings. */
-export function filterSet(config: FileConfig): FilterSet {
+export function filterSet(config: Settings): FilterSet {
     return { excludedCompanies: config.exclude_companies, titleFilter: config.title_filter, bodyFilter: config.body_filter };
 }
 

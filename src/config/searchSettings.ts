@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
-import { boostPoints, fileConfigSchema, filterTerm, publisherTerm } from "./schema.js";
+import { boostPoints, settingsSchema, filterTerm, publisherTerm } from "./schema.js";
 
 const PUBLISHERS = "exclude_publishers";
 
@@ -34,8 +34,8 @@ export interface FallbackNotice {
 }
 
 const SANITIZERS: Record<string, Sanitizer> = {
-    preferences: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.preferences, value, "preferences"),
-    match_threshold: (value, fallbacks) => fallbacks.checked(fileConfigSchema.shape.match_threshold, value, "match_threshold"),
+    preferences: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.preferences, value, "preferences"),
+    match_threshold: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.match_threshold, value, "match_threshold"),
     title_filter: (value, fallbacks) => fallbacks.filterLists(value, "title_filter"),
     body_filter: (value, fallbacks) => fallbacks.filterLists(value, "body_filter"),
     title_boosts: (value, fallbacks) => fallbacks.boosts(value),

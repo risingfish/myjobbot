@@ -1,16 +1,16 @@
 import { expect, test } from "vitest";
 import { alertQuery, newestFirst, newestUids, summarize } from "../src/gmail/alerts.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 
 test("the alert search names every sender and looks back 7 days", () => {
     expect(alertQuery(["a@x.com", "y.org"])).toBe("from:(a@x.com OR y.org) newer_than:7d");
 });
 
 test("alert senders are emails or domains, defaulting to LinkedIn and Indeed alerts", () => {
-    expect(testFileConfig().gmail.alert_senders).toEqual(["jobalerts-noreply@linkedin.com", "jobs-noreply@linkedin.com", "alert@indeed.com", "donotreply@jobalert.indeed.com"]);
-    expect(testFileConfig({ gmail: { alert_senders: ["Jobs@Example.com", "mail.example.org"] } }).gmail.alert_senders).toHaveLength(2);
+    expect(testAppSettings().gmail.alert_senders).toEqual(["jobalerts-noreply@linkedin.com", "jobs-noreply@linkedin.com", "alert@indeed.com", "donotreply@jobalert.indeed.com"]);
+    expect(testAppSettings({ gmail: { alert_senders: ["Jobs@Example.com", "mail.example.org"] } }).gmail.alert_senders).toHaveLength(2);
     for (const bad of ['"a@x.com"', "a b.com", "(x.com)", "-x.com", "", "x"]) {
-        expect(() => testFileConfig({ gmail: { alert_senders: [bad] } })).toThrow(/alert sender/);
+        expect(() => testAppSettings({ gmail: { alert_senders: [bad] } })).toThrow(/alert sender/);
     }
 });
 

@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
@@ -10,7 +10,7 @@ import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
 
 export interface PageInput {
     views: JobViews;
-    config: FileConfig;
+    config: Settings;
     sourceNames: string[];
     page: Page;
     now: Date;
@@ -72,6 +72,6 @@ export function sourceNames(saved: SavedSource[]): string[] {
 }
 
 /** Builds the context row views need from the current config and time. */
-export function rowContext(config: FileConfig, now: Date): RowContext {
+export function rowContext(config: Settings, now: Date): RowContext {
     return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filterSet(config) };
 }

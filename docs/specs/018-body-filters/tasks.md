@@ -73,8 +73,8 @@ sittings follow the PRs in [plan.md](plan.md) (Delivery):
 - [X] T005 [P] Write unit tests (2) in `tests/searchSettings.test.ts` for the `body_filter` sanitizer:
   - a stored `exclude` entry `"---"` is dropped, with a fallback notice whose setting is `body_filter.exclude[1]` and whose reason doesn't contain the value, and the stored `include` list is kept;
   - a stored non-object value falls back to both lists empty.
-- [X] T006 Export `bodyFilterTerms = z.object({ include: z.array(filterTerm).default([]), exclude: z.array(filterTerm).default([]) })` from `src/config/schema.ts`, beside `titleFilterTerms`, and add `body_filter: bodyFilterTerms.prefault({})` to `fileConfigSchema`
-- [X] T007 Create `src/jobs/bodyFilter.ts` with `passesBodyFilter(description: string | null, format: DescriptionFormat | null, filter: FileConfig["body_filter"]): boolean` (research R2):
+- [X] T006 Export `bodyFilterTerms = z.object({ include: z.array(filterTerm).default([]), exclude: z.array(filterTerm).default([]) })` from `src/config/schema.ts`, beside `titleFilterTerms`, and add `body_filter: bodyFilterTerms.prefault({})` to `settingsSchema`
+- [X] T007 Create `src/jobs/bodyFilter.ts` with `passesBodyFilter(description: string | null, format: DescriptionFormat | null, filter: Settings["body_filter"]): boolean` (research R2):
   - return `true` when both lists are empty or the readable text is null or empty;
   - otherwise normalize `readableDescription(description, format)` with `normalizeTitle`, and return `(filter.include.length === 0 || filter.include.some(has)) && !filter.exclude.some(has)`, where `has` is `(term) => hasWord(text, term)`.
 - [X] T008 In `src/config/searchSettings.ts`, rename `SearchFallbacks.titleFilter(value)` to `filterLists(value, name)` (the name prefixes each notice, as `title_filter.include[0]` does today), update its purpose comment, and use it for `title_filter` and a new `body_filter` entry in `SANITIZERS`, so T005 passes and the title filter's sanitizer tests still pass untouched
@@ -135,7 +135,7 @@ without it shows none, and a job hidden by both title and description names the 
 ### Implementation for User Story 3
 
 - [X] T014 [US3] Create `src/jobs/filterMatch.ts` (research R4) with:
-  - `interface FilterSet { excludedCompanies: string[]; titleFilter: FileConfig["title_filter"]; bodyFilter: FileConfig["body_filter"] }` and `filterSet(config: FileConfig): FilterSet`;
+  - `interface FilterSet { excludedCompanies: string[]; titleFilter: Settings["title_filter"]; bodyFilter: Settings["body_filter"] }` and `filterSet(config: Settings): FilterSet`;
   - `filterMatch(job: Pick<JobRow, "title" | "company" | "description" | "description_format">, filters: FilterSet): "company" | "title" | "body" | null`, checking `isExcludedCompany`, `passesTitleFilter`, then `passesBodyFilter`, in that order;
   - `FILTER_NOTES: Record<"company" | "title" | "body", string>`, the three notes from [contracts/body-filter.md](contracts/body-filter.md).
 
@@ -260,7 +260,7 @@ and the owner can try PR 3 from a terminal.
 - [ ] T033 [P] [US4] Move `careersDeps` from `src/tools/careersStep.ts` into `src/careers/deps.ts`, exported as `careersDeps(parts: CareersParts): CareersDeps`, where `CareersParts` is a plain interface in `deps.ts` (store, searxngUrl, lookup, pages, boards, renderer, settings, chat, trace, jobs, runId, now, http, markers), so `src/careers` still never reads the tool context (research R9). `careersStep.ts` maps its context onto `CareersParts`. Move `soughtJob` alongside it, exported.
 - [ ] T034 [US4] Create `src/rescore/plan.ts`:
   - `type RescoreStep = { kind: "filtered"; by: "company" | "title" | "body" } | { kind: "lookup" } | { kind: "score" }`;
-  - `rescoreStep(job: JobRow, config: FileConfig, progress: { lookedUp: boolean }): RescoreStep`: `filtered` when `filterMatch(job, filterSet(config))` names a filter (T014; a job with no description passes the body filter there), then `lookup` when there is no description and `lookedUp` is false, else `score`. The notes come from `FILTER_NOTES` in `src/jobs/filterMatch.ts`.
+  - `rescoreStep(job: JobRow, config: Settings, progress: { lookedUp: boolean }): RescoreStep`: `filtered` when `filterMatch(job, filterSet(config))` names a filter (T014; a job with no description passes the body filter there), then `lookup` when there is no description and `lookedUp` is false, else `score`. The notes come from `FILTER_NOTES` in `src/jobs/filterMatch.ts`.
 - [ ] T035 [US4] Create `src/rescore/oneJobStore.ts`: `oneJobStore(store: JobStore, key: JobKey): OneJobStore`, where `OneJobStore` is `Pick<JobStore, "findJob" | "recordVerdict" | "earliestSeen" | "flagInjection"> & { recorded(): boolean }`:
   - `findJob` and `recordVerdict` answer only for `key.jobId`, and the rest delegate;
   - `recorded()` reports whether a `recordVerdict` for the job has returned `true`;
@@ -269,7 +269,7 @@ and the owner can try PR 3 from a terminal.
   - `rescoreTools(context)` returns `[getJobTool(context), recordMatchesTool(context)]`. `get_job` has no parameters and `outsideText: true`, and calls `jobDetails(context, key.jobId)`, now exported from `getJobDetails.ts`. Its description never names the job.
   - `rescoreMessages(config, markers)` returns a system message (the re-score steps, then `scoringRubric`) and a user message ("My resume:\n\n<resume>\n\nRe-score the job now.").
   - `scoreOne(deps)` calls `runAgent` with:
-    - `tools: rescoreTools(...)`, `limits: { ...config.file.agent, max_steps: RESCORE_MAX_STEPS, max_wall_clock_min: RESCORE_MAX_MINUTES }` where `RESCORE_MAX_STEPS = 6` and `RESCORE_MAX_MINUTES = 3` (SC-005);
+    - `tools: rescoreTools(...)`, `limits: { ...config.settings.agent, max_steps: RESCORE_MAX_STEPS, max_wall_clock_min: RESCORE_MAX_MINUTES }` where `RESCORE_MAX_STEPS = 6` and `RESCORE_MAX_MINUTES = 3` (SC-005);
     - `isFinished: () => store.recorded()`, where `store` is the session's `oneJobStore`;
     - `onLookalike: (hit) => reportLookalike(...)`;
     - the re-score's own `RESCORE_NUDGE` ("Respond only with tool calls: get_job, then record_matches.") and compaction notice, never the run's, which name tools the session doesn't have.
@@ -319,7 +319,7 @@ and the owner can try PR 3 from a terminal.
 - [ ] T045 [US4] Create `web/lib/rescoreActions.ts`, the `"use server"` action `rescoreJob(ats, jobId): Promise<RescoreResult>`:
   - check the input with `jobRequest` from `web/lib/rows.ts` (exported, with this as its new caller), returning `failed` when it is invalid, before any model call;
   - load the root `.env` as `uiState.ts` does, take the cached stores (`getStores()`), call `openRescore(process.env, stores)` and then `rescore`, and close in `finally`;
-  - on `scored` or `filtered`, add `row`, the job's `JobRowView` rebuilt through `views.jobDetail` and `toJobRowView` with `rowContext(config.file, new Date())`;
+  - on `scored` or `filtered`, add `row`, the job's `JobRowView` rebuilt through `views.jobDetail` and `toJobRowView` with `rowContext(config.settings, new Date())`;
   - map any error to `{ outcome: "failed" }`.
 - [ ] T046 [US4] Create `web/lib/useRescore.ts` (not `useSave`: its result isn't `{ ok }`, and "Couldn't save" is the wrong message; research R10). `useRescore(job, onRescored)` returns `{ working, note, press }`:
   - `press` calls `rescoreJob(job.ats, job.jobId)`;

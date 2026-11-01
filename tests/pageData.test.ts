@@ -1,16 +1,16 @@
 import { expect, test } from "vitest";
 import type { JobRowView, PageData, PageName, VerdictRowView } from "../src/web/api.js";
 import { loadPageData, sourceNames } from "../src/web/pageData.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
 import { savedSources, STRIPE_BOARD } from "./helpers/savedSources.js";
 import { seededStores, type SeedJob } from "./helpers/views.js";
 
 const SOURCE_NAMES = ["Stripe", "Gmail alerts"];
 
-function pagesOf(jobs: SeedJob[], overrides: Parameters<typeof testFileConfig>[0] = {}) {
+function pagesOf(jobs: SeedJob[], overrides: Parameters<typeof testAppSettings>[0] = {}) {
     const views = seededStores(jobs).then((stores) => stores.jobViews);
-    const config = testFileConfig(overrides);
+    const config = testAppSettings(overrides);
     return async (name: PageName, offset = 0) => loadPageData(name, { views: await views, config, sourceNames: SOURCE_NAMES, now: TEST_NOW, page: { offset, limit: 100 } });
 }
 

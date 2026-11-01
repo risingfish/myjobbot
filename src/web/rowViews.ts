@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import { daysBetween } from "../jobs/age.js";
@@ -10,7 +10,7 @@ import { shortTitle } from "./shortTitle.js";
 export interface RowContext extends FilterSet {
     now: Date;
     ghostDays: number;
-    boosts: FileConfig["title_boosts"];
+    boosts: Settings["title_boosts"];
 }
 
 const WEB_URL = /^https?:\/\//i;

@@ -1,8 +1,8 @@
 import type { AppConfig } from "../../src/config/load.js";
-import { envSchema, fileConfigSchema, type FileConfig } from "../../src/config/schema.js";
+import { envSchema, settingsSchema, type Settings } from "../../src/config/schema.js";
 
-export function testFileConfig(overrides: Record<string, unknown> = {}): FileConfig {
-    return fileConfigSchema.parse(overrides);
+export function testAppSettings(overrides: Record<string, unknown> = {}): Settings {
+    return settingsSchema.parse(overrides);
 }
 
 export const SAMPLE_CONFIG = {
@@ -15,7 +15,7 @@ export const TEST_SEARCH = { name: "Backend remote", query: "senior backend engi
 
 export function testAppConfig(overrides: Record<string, unknown> = {}): AppConfig {
     const env = envSchema.parse(LLM_ENV);
-    return { env, file: testFileConfig(overrides), resume: "# Jane Doe\nSenior backend engineer, Go and TypeScript.\n", dataDir: "unused" };
+    return { env, settings: testAppSettings(overrides), resume: "# Jane Doe\nSenior backend engineer, Go and TypeScript.\n", dataDir: "unused" };
 }
 
 export const FULL_CONFIG = {

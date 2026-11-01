@@ -1,6 +1,6 @@
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { JobRow } from "../db/store.js";
 import type { ToolContext } from "./context.js";
@@ -15,6 +15,6 @@ export async function unscoredJobs(context: ToolContext, source: Pick<SavedSourc
 }
 
 /** Tells whether a job passes the configured title filter and isn't at an excluded company. */
-export function isWanted(row: Pick<JobRow, "title" | "company">, config: FileConfig): boolean {
+export function isWanted(row: Pick<JobRow, "title" | "company">, config: Settings): boolean {
     return passesTitleFilter(row.title, config.title_filter) && !isExcludedCompany(row.company, config.exclude_companies);
 }

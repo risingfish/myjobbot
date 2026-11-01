@@ -3,7 +3,7 @@ import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import type { SavedSource } from "../src/db/sourceStore.js";
 import { newRunState, type ToolContext } from "../src/tools/context.js";
 import { greenhouseBoard } from "./helpers/boards.js";
-import { TEST_SEARCH, testFileConfig } from "./helpers/config.js";
+import { TEST_SEARCH, testAppSettings } from "./helpers/config.js";
 import { TEST_NOW, testContext } from "./helpers/context.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
@@ -31,7 +31,7 @@ function searchContext(overrides: Partial<ToolContext> = {}, { last = null, boar
         OWNER_ID,
         savedSources({ companies: board ? [STRIPE_BOARD] : [], searches: [TEST_SEARCH] }).map((source) => (source.module === "jsearch" ? { ...source, last } : source)),
     );
-    const context = testContext({ config: testFileConfig(), http, ...overrides }, memoryStores(tables));
+    const context = testContext({ config: testAppSettings(), http, ...overrides }, memoryStores(tables));
     context.saved = { store, list: [] };
     const jsearchRequests = () => http.requests.filter((sent) => new URL(sent.url).host === JSEARCH_HOST);
     return { context, jsearchRequests };
@@ -53,13 +53,13 @@ test("a search is not fetched again within refresh_hours, and its unscored jobs 
 });
 
 test("a search is fetched on a schedule that lands seconds short of refresh_hours", async () => {
-    const { context, jsearchRequests } = searchContext({ config: testFileConfig({ jsearch: { refresh_hours: 8 } }) }, fetchedHoursAgo(8 - 10 / 3600));
+    const { context, jsearchRequests } = searchContext({ config: testAppSettings({ jsearch: { refresh_hours: 8 } }) }, fetchedHoursAgo(8 - 10 / 3600));
     await fetchRun(context);
     expect([context.run.sources.get(SEARCH_NAME)?.outcome, jsearchRequests().length]).toEqual(["ok", 1]);
 });
 
 test("a search is not fetched well inside refresh_hours", async () => {
-    const { context, jsearchRequests } = searchContext({ config: testFileConfig({ jsearch: { refresh_hours: 8 } }) }, fetchedHoursAgo(7));
+    const { context, jsearchRequests } = searchContext({ config: testAppSettings({ jsearch: { refresh_hours: 8 } }) }, fetchedHoursAgo(7));
     await fetchRun(context);
     expect([context.run.sources.get(SEARCH_NAME)?.reason, jsearchRequests().length]).toEqual(["not due", 0]);
 });
@@ -92,7 +92,7 @@ test("each search's fetch is logged with the jobs it stored and the duplicates i
 
 async function fetchExcluding(excludePublishers: string[]) {
     const jobLog = memoryTrace();
-    const { context } = searchContext({ config: testFileConfig({ jsearch: { exclude_publishers: excludePublishers } }), jobLog }, { board: false });
+    const { context } = searchContext({ config: testAppSettings({ jsearch: { exclude_publishers: excludePublishers } }), jobLog }, { board: false });
     const served = (await nextPage(context, SEARCH_NAME)).jobs.map((job) => job.job_id);
     return { served, stored: (await context.store.unscoredForSource(SEARCH_NAME)).length, log: jobLog.events.at(-1) };
 }
