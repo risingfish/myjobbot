@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { Clock } from "./clock.js";
 
 export class HostLimiter {
@@ -6,7 +6,7 @@ export class HostLimiter {
     private readonly counts = new Map<string, number>();
 
     constructor(
-        private readonly config: FileConfig["http"],
+        private readonly config: Settings["http"],
         private readonly clock: Clock,
     ) {}
 

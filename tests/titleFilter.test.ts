@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { passesTitleFilter } from "../src/jobs/titleFilter.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 
 const FILTER = { include: ["engineer", "developer", "sre"], exclude: ["manager", "intern"] };
 
@@ -36,6 +36,6 @@ test("title filter rejects titles with no included term", () => {
 });
 
 test("default exclude list rejects recruitment titles", () => {
-    const filter = testFileConfig().title_filter;
+    const filter = testAppSettings().title_filter;
     expect(passesTitleFilter("Engineering Recruitment Partner", filter)).toBe(false);
 });

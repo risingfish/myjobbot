@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fileConfigSchema } from "../src/config/schema.js";
+import { settingsSchema } from "../src/config/schema.js";
 import { settingsNotices } from "../src/config/resolve.js";
 import { mergeSettings, sanitizeSearchSettings, splitSettings } from "../src/config/searchSettings.js";
 import { FULL_CONFIG } from "./helpers/config.js";
@@ -48,10 +48,10 @@ test("splitting then merging gives back the original file", () => {
 
 test("the merged file parses exactly as the original, and a file that isn't an object still fails as it does today", () => {
     const { search, runtime } = splitSettings(FULL_CONFIG);
-    expect(fileConfigSchema.parse(mergeSettings(runtime, search))).toEqual(fileConfigSchema.parse(FULL_CONFIG));
+    expect(settingsSchema.parse(mergeSettings(runtime, search))).toEqual(settingsSchema.parse(FULL_CONFIG));
     const notObject = splitSettings([]);
     expect(notObject).toEqual({ search: {}, runtime: [] });
-    expect(() => fileConfigSchema.parse(mergeSettings(notObject.runtime, notObject.search))).toThrow();
+    expect(() => settingsSchema.parse(mergeSettings(notObject.runtime, notObject.search))).toThrow();
 });
 
 const STRIPE = { name: "Stripe", ats: "greenhouse", slug: "stripe" };
@@ -59,7 +59,7 @@ const STRIPE = { name: "Stripe", ats: "greenhouse", slug: "stripe" };
 test("boards and searches in config.json or the stored document give one retired notice, are never used, and are never an error", () => {
     expect(sanitizeSearchSettings({ companies: [STRIPE], searches: "anything", match_threshold: 60 })).toEqual({ settings: { match_threshold: 60 }, notices: [] });
     expect(settingsNotices(splitSettings({ companies: [STRIPE], agent: {} }), { searches: [] })).toEqual([{ kind: "retired", keys: ["companies", "searches"] }]);
-    expect(fileConfigSchema.parse(mergeSettings(splitSettings({ companies: [STRIPE] }).runtime, {}))).not.toHaveProperty("companies");
+    expect(settingsSchema.parse(mergeSettings(splitSettings({ companies: [STRIPE] }).runtime, {}))).not.toHaveProperty("companies");
 });
 
 function droppedFrom(stored: Record<string, unknown>) {
@@ -99,7 +99,7 @@ test("a bad body filter term is left out of its list by position, never by value
 
 test("a body filter that isn't an object falls back to both lists empty", () => {
     expect(droppedFrom({ body_filter: ["clearance"] })).toEqual([{}, ["body_filter"]]);
-    expect(fileConfigSchema.parse({}).body_filter).toEqual({ include: [], exclude: [] });
+    expect(settingsSchema.parse({}).body_filter).toEqual({ include: [], exclude: [] });
 });
 
 test("one bad excluded company is left out", () => {

@@ -1,4 +1,4 @@
-import { fileConfigSchema } from "../config/schema.js";
+import { settingsSchema } from "../config/schema.js";
 import { mergeSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import { applySection } from "./settingsApply.js";
@@ -14,6 +14,6 @@ export function saveSection(stored: RawSearchSettings | null, runtime: unknown, 
     const repeated = repeatedBoosts(request);
     if (repeated.length > 0) return { problems: repeated };
     const { toStore, toCheck } = applySection(stored, request);
-    const result = fileConfigSchema.safeParse(mergeSettings(runtime, toCheck));
+    const result = settingsSchema.safeParse(mergeSettings(runtime, toCheck));
     return result.success ? { toStore } : { problems: sectionProblems(result.error.issues, request) };
 }

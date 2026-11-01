@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { JsonGetter } from "../http/client.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
@@ -11,8 +11,8 @@ import type { AlertEmail, AlertJob, ParsedAlert } from "./alertJobs/parse.js";
 export interface LookupDeps {
     http: JsonGetter;
     apiKey: string | null;
-    settings: FileConfig["jsearch"];
-    filters: { titleFilter: FileConfig["title_filter"]; excludeCompanies: string[] };
+    settings: Settings["jsearch"];
+    filters: { titleFilter: Settings["title_filter"]; excludeCompanies: string[] };
     searches: number;
     usedThisMonth: number;
 }

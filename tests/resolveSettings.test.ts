@@ -16,18 +16,18 @@ function storedWith(settings: Record<string, unknown>): MemorySearchSettingsStor
 
 test("with nothing stored and no search settings in the file, every search setting takes its default and there are no notices", async () => {
     const resolved = await resolveSettings({ http: { timeout_s: 20 } }, new MemorySearchSettingsStore());
-    expect([resolved.file.match_threshold, resolved.file.http.timeout_s, resolved.notices]).toEqual([70, 20, []]);
+    expect([resolved.settings.match_threshold, resolved.settings.http.timeout_s, resolved.notices]).toEqual([70, 20, []]);
 });
 
 test("with nothing stored, the file's search settings are never imported or used", async () => {
     const store = new MemorySearchSettingsStore();
-    expect((await resolveSettings(FULL_CONFIG, store)).file.match_threshold).toBe(70);
+    expect((await resolveSettings(FULL_CONFIG, store)).settings.match_threshold).toBe(70);
     expect(await store.load(OWNER_ID)).toBeNull();
 });
 
 test("with settings stored, the file's search settings are ignored and named in a notice", async () => {
     const resolved = await resolveSettings(FULL_CONFIG, storedWith(STORED));
-    expect([resolved.file.exclude_companies, resolved.file.match_threshold, resolved.file.http.timeout_s]).toEqual([STORED.exclude_companies, 70, 20]);
+    expect([resolved.settings.exclude_companies, resolved.settings.match_threshold, resolved.settings.http.timeout_s]).toEqual([STORED.exclude_companies, 70, 20]);
     expect(resolved.notices).toEqual([{ kind: "file_ignored", keys: SEARCH_KEYS }]);
 });
 
@@ -41,12 +41,12 @@ test("the joined settings are checked as a whole, runtime rules included", async
 
 test("a bad stored setting falls back on its own and the rest are used as stored", async () => {
     const resolved = await resolveSettings({}, storedWith({ ...STORED, match_threshold: 150, preferences: "Remote" }));
-    expect([resolved.file.match_threshold, resolved.file.preferences, resolved.file.exclude_companies, resolved.notices]).toEqual([70, "Remote", STORED.exclude_companies, [{ kind: "fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
+    expect([resolved.settings.match_threshold, resolved.settings.preferences, resolved.settings.exclude_companies, resolved.notices]).toEqual([70, "Remote", STORED.exclude_companies, [{ kind: "fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
 });
 
 test("a stored document of nothing but bad values still resolves, every setting at its default", async () => {
     const resolved = await resolveSettings({}, storedWith({ match_threshold: "high", title_boosts: ["go"] }));
-    expect([resolved.file.match_threshold, resolved.file.title_boosts, resolved.notices.length]).toEqual([70, {}, 2]);
+    expect([resolved.settings.match_threshold, resolved.settings.title_boosts, resolved.notices.length]).toEqual([70, {}, 2]);
 });
 
 test("the settings notices are the fallbacks and the file's leftover search settings, the same ones resolving reports", async () => {

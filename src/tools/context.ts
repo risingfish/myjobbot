@@ -4,7 +4,7 @@ import type { Trace } from "../agent/trace.js";
 import type { DataMarkers } from "../agent/markers.js";
 import type { HostLookup } from "../careers/fetchPage.js";
 import type { PageRenderer } from "../careers/renderState.js";
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { SavedSource, SourceStore } from "../db/sourceStore.js";
 import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
@@ -29,7 +29,7 @@ interface RunState {
 }
 
 export interface ToolContext {
-    config: FileConfig;
+    config: Settings;
     run: RunState;
     runId: string;
     store: JobStore;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FileConfig } from "../../src/config/schema.js";
+import type { Settings } from "../../src/config/schema.js";
 import type { JobViews } from "../../src/db/store.js";
 import type { JobDetailView, PageData } from "../../src/web/api.js";
 import { toJobDetailView } from "../../src/web/jobDetail.js";
@@ -40,7 +40,7 @@ export async function setAppliedFor(views: JobViews, change: unknown, now: Date)
 }
 
 /** Loads one job's details for its panel, refusing a malformed request and giving null for a job that doesn't exist. */
-export async function loadDetailsFor(views: JobViews, config: FileConfig, request: unknown): Promise<JobDetailView | null> {
+export async function loadDetailsFor(views: JobViews, config: Settings, request: unknown): Promise<JobDetailView | null> {
     const parsed = jobRequest.safeParse(request);
     if (!parsed.success) throw new Error("Invalid job request");
     const [row, verdicts] = await Promise.all([views.jobDetail(parsed.data), views.jobVerdicts(parsed.data)]);

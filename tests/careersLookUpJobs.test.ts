@@ -8,7 +8,7 @@ import type { JsonGetter } from "../src/http/client.js";
 import { jobPage, scriptOnlyPage, searxngJson } from "./helpers/careersPages.js";
 import { finish, JOB, lookupSetup, open, POSTING_URL, search } from "./helpers/careersLookup.js";
 import { scriptedChat } from "./helpers/chat.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
 import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
@@ -32,7 +32,7 @@ const BLANK = "https://acme.example/careers/blank";
 async function careersSetup(options: { replies: ReturnType<typeof search>[]; settings?: object; chat?: ChatFn; http?: JsonGetter & { urls: string[] }; pages?: Record<string, string> }) {
     const setup = await lookupSetup({ replies: options.replies, chat: options.chat, pages: options.pages ?? { [POSTING_URL]: jobPage(JOB.title, ["Build APIs."]) } });
     const http = options.http ?? fakeBoard(searxngJson([{ url: POSTING_URL, title: JOB.title }]));
-    const settings = testFileConfig({ careers_lookup: options.settings ?? {} }).careers_lookup;
+    const settings = testAppSettings({ careers_lookup: options.settings ?? {} }).careers_lookup;
     const deps: CareersDeps = { ...setup.deps, settings, http, boardHttp: setup.deps.boards.http, searxngUrl: "https://search.example" };
     return { ...setup, deps, http };
 }

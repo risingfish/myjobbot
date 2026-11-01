@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import { parseBoardLink } from "../sources/boardLink.js";
 import { boardPage, type BoardAccess } from "./boardPages.js";
 import { fetchPublicPage, FetchRefused, type PageFetchDeps } from "./fetchPage.js";
@@ -25,7 +25,7 @@ interface ReadDeps {
     pages: PageFetchDeps;
     boards: BoardAccess;
     renderer: Pick<PageRenderer, "render">;
-    settings: Pick<FileConfig["careers_lookup"], "page_chars">;
+    settings: Pick<Settings["careers_lookup"], "page_chars">;
 }
 
 interface ReadRequest {

@@ -6,7 +6,7 @@ import type { SearchSettingsStore } from "../db/searchSettingsStore.js";
 
 /** Resolves a run's settings once at its start, tracing what resolving them reported, so the run keeps the same settings throughout. */
 export async function settingsForRun(loaded: LoadedConfig, store: SearchSettingsStore, trace: Trace): Promise<AppConfig> {
-    const { file, notices } = await resolveSettings(loaded.fileRaw, store);
+    const { settings, notices } = await resolveSettings(loaded.fileRaw, store);
     for (const { kind, ...fields } of notices) trace.write({ type: `settings_${kind}`, ...fields });
-    return appConfigFrom(loaded, file);
+    return appConfigFrom(loaded, settings);
 }

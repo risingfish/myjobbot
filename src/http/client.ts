@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import { describeError } from "../errors.js";
 import { HttpStatusError, NetworkError } from "./errors.js";
 import type { Clock } from "./clock.js";
@@ -35,7 +35,7 @@ export interface TextGetter {
 }
 
 interface HttpDeps {
-    config: FileConfig["http"];
+    config: Settings["http"];
     clock: Clock;
     fetchFn: (url: string, init: RequestInit) => Promise<Response>;
     random: () => number;

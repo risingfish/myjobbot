@@ -6,7 +6,7 @@ import { readAll } from "./helpers/readAll.js";
 import { moduleFor } from "../src/sources/registry.js";
 import { sourceHttp } from "../src/sources/sourceHttp.js";
 import { fakeClock } from "./helpers/clock.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { fakeDns, publicDns } from "./helpers/fakeDns.js";
 import { fakeBoard, jsonResponse, scriptedFetch } from "./helpers/http.js";
 
@@ -59,7 +59,7 @@ test("a board module fetches the whole board as one page, with nothing to contin
 
 function redirectingClient() {
     const { fetchFn, urls } = scriptedFetch([jsonResponse({}, 302, { location: "http://169.254.169.254/latest/meta-data/" })]);
-    return { urls, http: new HttpClient({ config: testFileConfig().http, clock: fakeClock(), fetchFn, random: () => 0 }).withoutRedirects() };
+    return { urls, http: new HttpClient({ config: testAppSettings().http, clock: fakeClock(), fetchFn, random: () => 0 }).withoutRedirects() };
 }
 
 test("a module's request goes through the checked client, which refuses a non-public address and follows no redirect", async () => {

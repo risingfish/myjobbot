@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { bodyFilterTerms, fileConfigSchema, titleFilterTerms, type FileConfig } from "../config/schema.js";
+import { bodyFilterTerms, settingsSchema, titleFilterTerms, type Settings } from "../config/schema.js";
 import { isRawObject, sanitizeSearchSettings, splitSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import { SECTIONS, type FieldName } from "./settingsSections.js";
@@ -45,16 +45,16 @@ const SHOWN: { [K in FieldName]: z.ZodType<FieldValues[K]> } = {
 };
 
 const DEFAULTS: Record<FieldName, () => unknown> = {
-    preferences: () => fileConfigSchema.shape.preferences.parse(undefined),
-    match_threshold: () => fileConfigSchema.shape.match_threshold.parse(undefined),
-    title_boosts: () => fileConfigSchema.shape.title_boosts.parse(undefined),
+    preferences: () => settingsSchema.shape.preferences.parse(undefined),
+    match_threshold: () => settingsSchema.shape.match_threshold.parse(undefined),
+    title_boosts: () => settingsSchema.shape.title_boosts.parse(undefined),
     include: () => titleFilterTerms.shape.include.parse(undefined),
     exclude: () => titleFilterTerms.shape.exclude.parse(undefined),
     extra_exclude: () => titleFilterTerms.shape.extra_exclude.parse(undefined),
     body_include: () => bodyFilterTerms.shape.include.parse(undefined),
     body_exclude: () => bodyFilterTerms.shape.exclude.parse(undefined),
-    exclude_companies: () => fileConfigSchema.shape.exclude_companies.parse(undefined),
-    exclude_publishers: () => fileConfigSchema.shape.jsearch.parse(undefined).exclude_publishers,
+    exclude_companies: () => settingsSchema.shape.exclude_companies.parse(undefined),
+    exclude_publishers: () => settingsSchema.shape.jsearch.parse(undefined).exclude_publishers,
 };
 
 /** Builds what the Settings page shows: every search setting in effect after fallback, each marked when it takes its default. */
@@ -64,13 +64,13 @@ export function settingsView(stored: RawSearchSettings | null): SettingsView {
 }
 
 /** Reads config.json's Gmail settings from its runtime part alone, so they can be used before any search settings are stored. */
-export function gmailSettings(fileRaw: unknown): z.infer<typeof fileConfigSchema.shape.gmail> {
-    return fileConfigSchema.shape.gmail.parse(runtimePart(fileRaw, "gmail"));
+export function gmailSettings(fileRaw: unknown): z.infer<typeof settingsSchema.shape.gmail> {
+    return settingsSchema.shape.gmail.parse(runtimePart(fileRaw, "gmail"));
 }
 
 /** Reads config.json's HTTP and JSearch settings from its runtime part alone, so the Sources section works before any search settings are stored. */
-export function sourceSettings(fileRaw: unknown): Pick<FileConfig, "http" | "jsearch"> {
-    return { http: fileConfigSchema.shape.http.parse(runtimePart(fileRaw, "http")), jsearch: fileConfigSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch")) };
+export function sourceSettings(fileRaw: unknown): Pick<Settings, "http" | "jsearch"> {
+    return { http: settingsSchema.shape.http.parse(runtimePart(fileRaw, "http")), jsearch: settingsSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch")) };
 }
 
 /** Picks one key of config.json's runtime part, or undefined so its defaults apply. */

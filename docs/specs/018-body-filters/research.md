@@ -32,7 +32,7 @@ Decisions behind [plan.md](plan.md), each checked against the code on 2026-11-01
 
 - **Decision**: a new `src/jobs/bodyFilter.ts` with
   `passesBodyFilter(description, format, filter): boolean`, where `filter` is
-  `FileConfig["body_filter"]`. It returns `true` when the description is null or empty, or when both
+  `Settings["body_filter"]`. It returns `true` when the description is null or empty, or when both
   lists are empty. Otherwise it normalizes `readableDescription(description, format)` with
   `normalizeTitle` and returns
   `(include.length === 0 || include.some(has)) && !exclude.some(has)`, with `has` being `hasWord`.

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fileConfigSchema } from "../src/config/schema.js";
+import { settingsSchema } from "../src/config/schema.js";
 import { mergeSettings } from "../src/config/searchSettings.js";
 import type { SaveRequest } from "../src/web/settingsForm.js";
 import { sectionProblems } from "../src/web/settingsProblems.js";
@@ -8,11 +8,20 @@ const value = (v: unknown) => ({ kind: "value" as const, value: v });
 const DEFAULT = { kind: "default" as const };
 
 function problemsOf(settings: object, request: SaveRequest, runtime: object = {}) {
-    const result = fileConfigSchema.safeParse(mergeSettings(runtime, settings as Record<string, unknown>));
+    const result = settingsSchema.safeParse(mergeSettings(runtime, settings as Record<string, unknown>));
     return result.success ? [] : sectionProblems(result.error.issues, request);
 }
 
-const SCORING: SaveRequest = { section: "scoring", edits: { match_threshold: value(150), title_boosts: value([["++", 10], ["go", 0]]) } };
+const SCORING: SaveRequest = {
+    section: "scoring",
+    edits: {
+        match_threshold: value(150),
+        title_boosts: value([
+            ["++", 10],
+            ["go", 0],
+        ]),
+    },
+};
 const FILTERS: SaveRequest = { section: "filters", edits: { include: value([]), exclude: DEFAULT, extra_exclude: DEFAULT, exclude_companies: DEFAULT, exclude_publishers: value([]) } };
 const PREFERENCES: SaveRequest = { section: "preferences", edits: { preferences: value("Remote") } };
 

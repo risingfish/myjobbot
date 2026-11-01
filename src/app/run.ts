@@ -124,7 +124,7 @@ async function pruneOldJobs(context: ToolContext): Promise<void> {
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */
 function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, gmail, chat, saved, clients: { client, boards, lookup } }: ContextParts): ToolContext {
     return {
-        config: config.file,
+        config: config.settings,
         run: newRunState(),
         runId: logs.runId,
         markers: dataMarkers(logs.runId),
@@ -149,7 +149,7 @@ function storeParts(stores: Stores): Pick<ToolContext, "store" | "apiCalls" | "c
 
 /** Creates the run's HTTP clients, one following redirects and one for job boards that doesn't, with the address lookup they're checked against. */
 function runClients(config: AppConfig, seams: RunSeams): RunClients {
-    const client = new HttpClient({ config: config.file.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
+    const client = new HttpClient({ config: config.settings.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
     return { client, boards: client.withoutRedirects(), lookup: seams.lookup ?? systemLookup };
 }
 
@@ -157,7 +157,7 @@ function runClients(config: AppConfig, seams: RunSeams): RunClients {
 function pageRenderer(config: AppConfig, seams: RunSeams, { logs, stores }: Pick<RunParts, "logs" | "stores">): PageRenderer {
     const url = config.env.MYJOBBOT_BROWSER_URL;
     const connect = url === undefined ? null : () => (seams.browser ?? connectBrowser)(url);
-    return new PageRenderer({ connect, settings: config.file.careers_lookup, lookup: systemLookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now: () => new Date() });
+    return new PageRenderer({ connect, settings: config.settings.careers_lookup, lookup: systemLookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now: () => new Date() });
 }
 
 /** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */
@@ -165,7 +165,7 @@ function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, 
     return {
         ...io,
         tools: buildTools(context),
-        limits: config.file.agent,
+        limits: config.settings.agent,
         clock: Date.now,
         isFinished: () => context.run.finished,
         ...PROMPT_TEXTS,

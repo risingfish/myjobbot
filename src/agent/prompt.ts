@@ -46,8 +46,8 @@ export function initialMessages(config: AppConfig, markers: DataMarkers): Messag
 
 /** Fills the system prompt template with the run's data markers, the configured match threshold and user preferences. */
 function systemPrompt(config: AppConfig, markers: DataMarkers): string {
-    const preferences = config.file.preferences.trim() || "(none given)";
-    return SYSTEM_PROMPT.replace("{data}", dataSentence(markers)).replace("{threshold}", String(config.file.match_threshold)).replace("{preferences}", preferences);
+    const preferences = config.settings.preferences.trim() || "(none given)";
+    return SYSTEM_PROMPT.replace("{data}", dataSentence(markers)).replace("{threshold}", String(config.settings.match_threshold)).replace("{preferences}", preferences);
 }
 
 /** Tells the model which markers bound this run's outside text and that their contents are data, never instructions. */

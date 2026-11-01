@@ -16,7 +16,7 @@ function loaded(fileRaw: unknown): LoadedConfig {
 
 test("a run with nothing stored uses the defaults, and never imports the file's search settings", async () => {
     const store = new MemorySearchSettingsStore();
-    expect((await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace())).file.preferences).toBe("");
+    expect((await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace())).settings.preferences).toBe("");
     expect(await store.load(OWNER_ID)).toBeNull();
 });
 
@@ -25,7 +25,7 @@ test("with settings stored, a run uses them and traces the file's search setting
     store.put(OWNER_ID, ACME);
     const trace = memoryTrace();
     const config = await settingsForRun(loaded(ONE_COMPANY), store, trace);
-    expect(config.file.preferences).toBe("Acme only");
+    expect(config.settings.preferences).toBe("Acme only");
     expect(trace.events).toEqual([
         { type: "settings_file_ignored", keys: ["preferences"] },
         { type: "settings_retired", keys: ["companies"] },
@@ -38,7 +38,7 @@ test("a run keeps the settings it started with when the stored ones change", asy
     const started = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
     store.put(OWNER_ID, ACME);
     const next = await settingsForRun(loaded(ONE_COMPANY), store, memoryTrace());
-    expect([started.file.preferences, next.file.preferences]).toEqual(["Remote US, senior backend", "Acme only"]);
+    expect([started.settings.preferences, next.settings.preferences]).toEqual(["Remote US, senior backend", "Acme only"]);
 });
 
 test("a run with a bad stored match threshold scores with the default and traces the fallback", async () => {
@@ -46,5 +46,5 @@ test("a run with a bad stored match threshold scores with the default and traces
     store.put(OWNER_ID, { ...ACME, match_threshold: 150 });
     const trace = memoryTrace();
     const config = await settingsForRun(loaded({}), store, trace);
-    expect([config.file.match_threshold, trace.events]).toEqual([70, [{ type: "settings_fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
+    expect([config.settings.match_threshold, trace.events]).toEqual([70, [{ type: "settings_fallback", setting: "match_threshold", reason: "Too big: expected number to be <=100" }]]);
 });

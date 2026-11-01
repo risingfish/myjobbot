@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import type { FileConfig } from "../../config/schema.js";
+import type { Settings } from "../../config/schema.js";
 import { describeError } from "../../errors.js";
 import type { JsonGetter } from "../../http/client.js";
 import { makeJob, type Job } from "../../jobs/job.js";
@@ -11,7 +11,7 @@ import type { SourceContext, SourceModule, SourcePage } from "../module.js";
 const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean().default(false), country: z.string().min(2).default("us") });
 
 type Search = z.infer<typeof savedSearch>;
-type JsearchSettings = FileConfig["jsearch"];
+type JsearchSettings = Settings["jsearch"];
 
 const ENDPOINT = "https://api.openwebninja.com/jsearch/search-v2";
 

@@ -3,7 +3,7 @@ import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { HttpStatusError } from "../src/http/errors.js";
 import type { SourceHttp } from "../src/sources/module.js";
 import { saveSource } from "../src/web/saveSource.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
 import { newTables } from "./helpers/memoryJobViews.js";
@@ -12,7 +12,7 @@ import { memoryStores } from "./helpers/memoryStore.js";
 import { numbered, WORKDAY_PARAMS, workdaySite } from "./helpers/workdaySite.js";
 
 const NOW = new Date("2026-10-30T12:00:00.000Z");
-const JSEARCH = testFileConfig().jsearch;
+const JSEARCH = testAppSettings().jsearch;
 
 function setup(http: SourceHttp) {
     const tables = newTables();

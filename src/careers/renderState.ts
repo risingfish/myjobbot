@@ -1,5 +1,5 @@
 import type { Trace } from "../agent/trace.js";
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { CareersStore } from "../db/store.js";
 import type { TextPage } from "../http/client.js";
 import type { BrowserPort } from "./browser.js";
@@ -8,7 +8,7 @@ import { renderPage } from "./render.js";
 
 interface RendererDeps {
     connect: (() => Promise<BrowserPort>) | null;
-    settings: Pick<FileConfig["careers_lookup"], "render_seconds" | "max_download_kb" | "lan_probe_url">;
+    settings: Pick<Settings["careers_lookup"], "render_seconds" | "max_download_kb" | "lan_probe_url">;
     lookup: HostLookup;
     careers: CareersStore;
     trace: Trace;

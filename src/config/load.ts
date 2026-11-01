@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseJson } from "./parse.js";
-import { envSchema, type Env, type FileConfig } from "./schema.js";
+import { envSchema, type Env, type Settings } from "./schema.js";
 
 export type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -14,7 +14,7 @@ export interface LoadedConfig {
 
 export interface AppConfig {
     env: Env;
-    file: FileConfig;
+    settings: Settings;
     resume: string;
     dataDir: string;
 }

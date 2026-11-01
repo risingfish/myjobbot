@@ -1,13 +1,13 @@
 import { expect, test } from "vitest";
 import { HostLimiter } from "../src/http/limiter.js";
 import { fakeClock } from "./helpers/clock.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 
 const ok = async () => "ok";
 
 function limiter(overrides: Record<string, number> = {}) {
     const clock = fakeClock();
-    const config = { ...testFileConfig().http, ...overrides };
+    const config = { ...testAppSettings().http, ...overrides };
     return { clock, limiter: new HostLimiter(config, clock) };
 }
 

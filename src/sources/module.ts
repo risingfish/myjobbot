@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import type { AlertDeps, AlertRead } from "../gmail/alertFetch.js";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
@@ -10,7 +10,7 @@ export type Cursor = Record<string, unknown>;
 
 interface JsearchAccess {
     apiKey: string;
-    settings: FileConfig["jsearch"];
+    settings: Settings["jsearch"];
 }
 
 export interface SourceContext {

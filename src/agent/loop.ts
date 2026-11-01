@@ -1,4 +1,4 @@
-import type { FileConfig } from "../config/schema.js";
+import type { Settings } from "../config/schema.js";
 import { describeError } from "../errors.js";
 import { dispatch } from "../tools/dispatch.js";
 import type { Tool } from "../tools/tool.js";
@@ -12,7 +12,7 @@ import { wrapOutcome } from "./wrapped.js";
 export interface AgentDeps {
     chat: ChatFn;
     tools: Tool[];
-    limits: FileConfig["agent"];
+    limits: Settings["agent"];
     trace: Trace;
     clock: () => number;
     isFinished: () => boolean;

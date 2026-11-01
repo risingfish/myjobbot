@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { greenhouseBoard } from "./helpers/boards.js";
-import { testFileConfig } from "./helpers/config.js";
+import { testAppSettings } from "./helpers/config.js";
 import { ALERTS_REF, testContext } from "./helpers/context.js";
 import { newRunState } from "../src/tools/context.js";
 import { fakeBoard, flakyBoard } from "./helpers/http.js";
@@ -26,7 +26,7 @@ test("next_jobs returns title-filtered unscored jobs without null fields", async
 });
 
 test("next_jobs leaves out jobs at excluded companies", async () => {
-    const config = testFileConfig({ exclude_companies: ["stripe"] });
+    const config = testAppSettings({ exclude_companies: ["stripe"] });
     const tables = newTables();
     const context = testContext({ config, http: fakeBoard(greenhouseBoard(["Backend Engineer"])) }, memoryStores(tables));
     expect(await nextPage(context, "Stripe")).toMatchObject({ total_unscored: 0, jobs: [] });

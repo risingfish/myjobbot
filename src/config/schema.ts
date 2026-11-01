@@ -71,7 +71,7 @@ const http = z.object({
     timeout_s: z.number().min(1).default(30),
 });
 
-export const fileConfigSchema = z
+export const settingsSchema = z
     .object({
         jsearch: jsearch.prefault({}),
         preferences: z.string().default(""),
@@ -108,5 +108,5 @@ function hasLongerRetentionThanGhostThreshold(config: { ghost_threshold_days: nu
     return config.job_retention_days > config.ghost_threshold_days;
 }
 
-export type FileConfig = z.infer<typeof fileConfigSchema>;
+export type Settings = z.infer<typeof settingsSchema>;
 export type Env = z.infer<typeof envSchema>;
