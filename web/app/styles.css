@@ -162,6 +162,7 @@ form.hide {
 }
 form.hide button,
 .details-head button {
+    margin: 0;
     font-size: 13px;
     padding: 2px 10px;
 }
