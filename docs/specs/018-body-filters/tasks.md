@@ -351,14 +351,14 @@ and the owner can try PR 3 from a terminal.
 
 ### Sitting S5: documentation (PR 5)
 
-- [ ] T051 Create `.specify/sitting-in-progress` naming S5
-- [ ] T052 [P] Update `README.md`:
+- [X] T051 Create `.specify/sitting-in-progress` naming S5
+- [X] T052 [P] Update `README.md`:
   - "Configuration knobs", "Filters": the description lists (must include one of, must not include);
   - "How scoring works", step 1: the body filter beside the title filter;
   - "Web UI": the panel's Re-score button and what it does to a filtered job or a job with no description;
   - "Run": the `rescore <ats> <job_id>` command;
   - "Deploy with Docker": `web` on the `browser` network.
-- [ ] T053 [P] Update `CLAUDE.md` Conventions with a body filters and Re-score paragraph:
+- [X] T053 [P] Update `CLAUDE.md` Conventions with a body filters and Re-score paragraph:
   - `body_filter` (`include` and `exclude`) in `user_settings`;
   - matching through `passesBodyFilter` on `readableDescription`, and one order of checks in `filterMatch` (`src/jobs/filterMatch.ts`);
   - `isWanted` as the one gate;
@@ -369,7 +369,7 @@ and the owner can try PR 3 from a terminal.
   - `web` on the `browser` network.
 
   Add `npm start -- rescore <ats> <job_id>` to Commands. Keep `.specify/memory/constitution.md` in agreement (no principle changes expected).
-- [ ] T054 Run [quickstart.md](quickstart.md) §1–§5 against the rebuilt stack. Fill the ledger's last row with the real counts. Run `npm run check` and `npm run check:db`, delete the marker, and when the owner asks, commit S5 and open PR 5.
+- [X] T054 Run [quickstart.md](quickstart.md) §1–§5 against the rebuilt stack. Fill the ledger's last row with the real counts. Run `npm run check` and `npm run check:db`, delete the marker, and when the owner asks, commit S5 and open PR 5.
 
 ---
 
@@ -447,9 +447,9 @@ are complete and useful on their own, before any Re-score work.
 | Planned new | 39 (T004 10, T005 2, T009 3, T013 4, T018 3, T025's memory run 1, T026 5, T027 2, T028 1, T029 6, T042 2) | 2 (T025's MariaDB run, T030's `openRescore`) | 1 (T043) |
 | Planned removed | 0 | 0 | 0 |
 | Planned after | 774 (86.19%) | 61 (6.79%) | 63 (7.02%) |
-| After PR 5 (T054) | | | |
+| After PR 5 (T054) | 774 (86.19%) | 61 (6.79%) | 63 (7.02%) |
 
-Every share moves toward 95 / 4 / 1.
+Every share moves toward 95 / 4 / 1. The final counts match the plan exactly. The quickstart's manual steps (§1–§5) were each PR's "To test" steps, for the owner to walk after merging; the agent did not press Re-score against the production database.
 
 ## Notes
 

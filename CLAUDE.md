@@ -122,7 +122,8 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
   `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
   on a repeat. The cleanup after each run never prunes an applied job. Hide and Applied save through
-  `useSave` and show `SaveFailedNote`; a new job action should too.
+  `useSave` and show `SaveFailedNote`; a new job action should too (Re-score is the one exception,
+  below).
 - Companies (feature 014) live in `companies`, one row per `normalizeCompany` key, and every job
   points at its row (`jobs.company_id`). Records are written only through the Kysely stores: jobs
   record and link them (`JobStore.upsertAll`, `markSeen`, the backfill `linkUnlinkedJobs`, all via
@@ -143,7 +144,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   functions in `src/web/sourceRules.ts`; a test on save (`testFetch.ts`) stores no jobs. Scraping
   (kind `web`) isn't a module yet.
 - Search settings (feature 015: `preferences`, `match_threshold`,
-  `title_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
+  `title_filter`, `body_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
   `user_settings`, one raw document per user (owner `OWNER_ID = 1`, created by the store), written
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by
   `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `settingsSchema`
@@ -153,6 +154,25 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   Settings page (feature 016): one section at a time (`src/web/settingsSections.ts`), each save
   checked with the rest by `saveSection` and stored through the `saveSettingsSection` server action;
   search settings left in `config.json` are never imported or used.
+- Body filters (feature 018) are `body_filter.include` and `.exclude` in `user_settings`, matched
+  by `passesBodyFilter` (`src/jobs/bodyFilter.ts`) as whole words or phrases on
+  `readableDescription`; a job with no description passes both. One order of checks, company, then
+  title, then body, lives in `filterMatch` (`src/jobs/filterMatch.ts`) with its `FILTER_NOTES`, and
+  runs (`isWanted`, the one gate before the model), the All jobs note and Re-score all use it.
+  Filters never touch jobs already scored.
+- Re-score (feature 018) lives in `src/rescore/`, knows nothing about Next.js, and has two entry
+  points: `npm start -- rescore <ats> <job_id>` and the panel's `rescoreJob` server action
+  (`web/lib/actions.ts`, work in `rescoreFor` in `web/lib/rows.ts`, input checked before any
+  model call). A filtered job loses its score through `JobViews.clearScore`, which keeps the marks
+  and verdict history; a job with no description is looked up first, with the careers lookup built
+  from `CareersParts` (`src/careers/deps.ts`) and capped at 2 minutes. Scoring is a one-job
+  `runAgent` session (6 steps, 3 minutes) whose model reads the job only through `get_job`, inside
+  the data markers, and saves it through `oneJobStore`; it shares the run's rubric
+  (`src/agent/rubric.ts`), and the run prompt is pinned by `tests/__snapshots__/prompt.test.ts.snap`.
+  The panel's messages come only from `rescoreNote`. The Re-score button uses `useRescore`, not
+  `useSave`, the one exception to the job-action rule above, and a running re-score holds up the
+  page's other actions (Next.js runs one server action at a time). The `web` service is on the
+  `browser` network for the lookup's rendering.
 
 ## Commands
 
@@ -160,6 +180,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - `npm run check:db`: the MariaDB integration tests against `myjobbot_test` (needs `.env`'s
   `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
+- `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints scored, filtered or failed)
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`
