@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobRowView, PageData, PageName } from "../../src/web/api.js";
 import { loadMoreRows } from "./actions.js";
-import { jobKey, rescoredChange, withJobApplied, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsChange, type RowsState } from "./pageRows.js";
+import { appliedChange, jobKey, rescoredChange, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsChange, type RowsState } from "./pageRows.js";
 
 export interface PageRows extends RowsState {
     loadMore: () => void;
@@ -36,7 +36,7 @@ export function usePageRows(name: PageName, initial: PageData): PageRows {
         },
         [name],
     );
-    return { ...state, loadMore, markHidden, markApplied: useMarkApplied(setState), replaceRow };
+    return { ...state, loadMore, markHidden, markApplied: useMarkApplied(name, setState), replaceRow };
 }
 
 /** Applies a change to the rows shown, counting a removal so a page still loading is dropped rather than skipping a row. */
@@ -44,9 +44,15 @@ function changeRows(setState: SetRows, change: RowsChange, removing: boolean): v
     setState((current) => ({ ...current, data: current.data && change(current.data), version: current.version + Number(removing) }));
 }
 
-/** Returns the function that records a job's applied mark, or its undoing, on the rows shown; a mark never removes a row. */
-function useMarkApplied(setState: SetRows): PageRows["markApplied"] {
-    return useCallback((job, appliedOn) => setState((current) => ({ ...current, data: current.data && withJobApplied(jobKey(job), appliedOn)(current.data) })), [setState]);
+/** Returns the function that records a job's applied mark, or its undoing, on the rows shown; only undoing it on the Applied page removes a row. */
+function useMarkApplied(name: PageName, setState: SetRows): PageRows["markApplied"] {
+    return useCallback(
+        (job, appliedOn) => {
+            const { change, removing } = appliedChange(job, appliedOn, name);
+            changeRows(setState, change, removing);
+        },
+        [name, setState],
+    );
 }
 
 /** Returns a loader for the next page of rows that never runs twice at once, or does nothing at the end. */

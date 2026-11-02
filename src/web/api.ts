@@ -1,4 +1,4 @@
-export type PageName = "recommended" | "jobs" | "reasoning";
+export type PageName = "recommended" | "applied" | "jobs" | "reasoning";
 
 export interface Score {
     value: number;

@@ -89,13 +89,14 @@ npm run web          # development server, http://localhost:8080
 npm run web:build && npm run web:start   # production build and server
 ```
 
-A Next.js app for browsing the database, with three tabs and a Settings page. Settings is where your
+A Next.js app for browsing the database, with four tabs and a Settings page. Settings is where your
 sources are added (see [Sources](#sources)), where your search settings are made and changed (see
 [Configuration knobs](#configuration-knobs)), and where Gmail is connected (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
-| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after boosts), most recently posted first, with the model's reasons and gaps |
+| **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after boosts) and not yet marked applied, most recently posted first, with the model's reasons and gaps |
+| **Applied** | Every job you've marked applied, most recently marked first, hidden ones included. Clearing a job's mark here takes it off the list |
 | **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter, the body filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
 
@@ -106,8 +107,9 @@ dimmed, with an **Unhide** button.
 Each row also starts with an **Applied** column: a blue **?** until you've applied, which you click
 to mark the job applied, and then a green **✓**. Hovering the check shows the date you marked it, in
 your browser's time zone. Clicking the check asks "Mark as not applied?" and, if you confirm, clears
-the mark. Applied and Hide are independent: marking a job doesn't move it on or off Recommended or
-change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, Re-score and
+the mark. Marking a job applied moves it off Recommended and onto the Applied tab (clearing the
+mark moves it back); it doesn't change its score, it's independent of Hide, and the mark stays
+through runs and re-scoring. Hiding, marking a job applied, Re-score and
 the Settings page are the UI's only writes; they accept requests from its own pages only.
 
 **Job details.** On Recommended and All jobs, a job's title opens a panel from the right, over

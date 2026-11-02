@@ -20,6 +20,7 @@ export type PageSettings = Pick<PageInput, "config" | "sourceNames">;
 
 const LOADERS: Record<PageName, (input: PageInput) => Promise<PageData>> = {
     recommended: loadRecommended,
+    applied: loadApplied,
     jobs: loadAllJobs,
     reasoning: loadReasoning,
 };
@@ -37,19 +38,30 @@ async function loadRecommended({ views, config, sourceNames, page, now }: PageIn
     return { kind: "jobs", rows, total: jobs.length, nextOffset: nextOffset(page, jobs.length), ...text };
 }
 
-/** Returns the jobs, from saved sources, whose boosted score meets the match threshold. */
+/** Returns the jobs, from saved sources and not marked applied, whose boosted score meets the match threshold. */
 async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
     const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(config.title_boosts) });
-    const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
+    const shown = scored.filter((job) => !job.applied && !isExcludedCompany(job.company, config.exclude_companies));
     return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
 }
 
 /** Loads a page of all retrieved jobs, for the All jobs page. */
-async function loadAllJobs({ views, config, page, now }: PageInput): Promise<PageData> {
-    const total = await views.countAllJobs();
-    const rows = (await views.allJobs(page)).map((job) => toJobRowView(job, rowContext(config, now)));
-    return { kind: "jobs", rows, total, nextOffset: nextOffset(page, total), summary: `${total} jobs`, empty: "No jobs retrieved yet: run myjobbot run." };
+async function loadAllJobs(input: PageInput): Promise<PageData> {
+    const total = await input.views.countAllJobs();
+    return jobList(input, { total, jobs: await input.views.allJobs(input.page), summary: `${total} jobs`, empty: "No jobs retrieved yet: run myjobbot run." });
+}
+
+/** Loads a page of the jobs marked applied, most recently marked first, for the Applied page. */
+async function loadApplied(input: PageInput): Promise<PageData> {
+    const total = await input.views.countApplied();
+    return jobList(input, { total, jobs: await input.views.appliedJobs(input.page), summary: `${total} applied`, empty: "No jobs marked applied yet: use a job's Applied button." });
+}
+
+/** Turns one page of a job list into display-ready rows with its total, summary and empty-state text. */
+function jobList({ config, page, now }: PageInput, list: { total: number; jobs: JobView[]; summary: string; empty: string }): PageData {
+    const rows = list.jobs.map((job) => toJobRowView(job, rowContext(config, now)));
+    return { kind: "jobs", rows, total: list.total, nextOffset: nextOffset(page, list.total), summary: list.summary, empty: list.empty };
 }
 
 /** Loads a page of scoring verdict history, for the Reasoning page. */

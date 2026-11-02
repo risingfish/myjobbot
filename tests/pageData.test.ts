@@ -96,6 +96,22 @@ test("a job hidden by both its title and its description names the title filter"
     expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden by title filter");
 });
 
+test("a job marked applied leaves recommended", async () => {
+    const rows = jobRows(
+        await pagesOf([
+            { id: "a", score: 90, appliedOn: "2026-10-20T09:00:00.000Z" },
+            { id: "b", score: 90 },
+        ])("recommended"),
+    );
+    expect(rows.map((row) => row.jobId)).toEqual(["b"]);
+});
+
+test("the applied page lists only jobs marked applied, most recently marked first", async () => {
+    const data = await pagesOf([{ id: "a", appliedOn: "2026-10-20T09:00:00.000Z" }, { id: "b" }, { id: "c", score: 90, appliedOn: "2026-10-22T09:00:00.000Z" }])("applied");
+    expect([data.summary, data.total, jobRows(data).map((row) => row.jobId)]).toEqual(["2 applied", 2, ["c", "a"]]);
+    expect((await pagesOf([{ id: "b" }])("applied")).empty).toBe("No jobs marked applied yet: use a job's Applied button.");
+});
+
 test("only http and https postings carry a link", async () => {
     const rows = jobRows(
         await pagesOf([

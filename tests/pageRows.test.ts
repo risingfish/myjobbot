@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { PageData } from "../src/web/api.js";
-import { jobKey, rescoredChange, withJobApplied, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
+import { appliedChange, jobKey, rescoredChange, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
 import { jobPage, jobRowView, verdictPage, verdictRowView } from "./helpers/rowFixtures.js";
 
 function jobs(from: number, count: number) {
@@ -47,23 +47,23 @@ function marks(data: PageData) {
 }
 
 test("marking a job applied sets its mark and time", () => {
-    const marked = withJobApplied(jobKey(jobRowView({ jobId: "1" })), MARKED_AT)(jobPage(jobs(0, 2)));
+    const marked = appliedChange(jobRowView({ jobId: "1" }), MARKED_AT, "jobs").change(jobPage(jobs(0, 2)));
     expect(marks(marked)[1]).toEqual([true, MARKED_AT]);
 });
 
 test("marking one job applied leaves the other rows alone", () => {
-    const marked = withJobApplied(jobKey(jobRowView({ jobId: "1" })), MARKED_AT)(jobPage(jobs(0, 2)));
+    const marked = appliedChange(jobRowView({ jobId: "1" }), MARKED_AT, "jobs").change(jobPage(jobs(0, 2)));
     expect(marks(marked)[0]).toEqual([false, null]);
 });
 
 test("undoing a job's mark clears its mark and time", () => {
     const data = jobPage([jobRowView({ jobId: "1", applied: true, appliedOn: MARKED_AT })]);
-    expect(marks(withJobApplied(jobKey(jobRowView({ jobId: "1" })), null)(data))).toEqual([[false, null]]);
+    expect(marks(appliedChange(jobRowView({ jobId: "1" }), null, "jobs").change(data))).toEqual([[false, null]]);
 });
 
 test("marking a job applied leaves a page of verdicts unchanged", () => {
     const data = verdictPage([verdictRowView()]);
-    expect(withJobApplied("greenhouse:1", MARKED_AT)(data)).toBe(data);
+    expect(appliedChange(jobRowView({ jobId: "1" }), MARKED_AT, "jobs").change(data)).toBe(data);
 });
 
 test("a re-scored row replaces the listed one, and on recommended a row left with no score is dropped", () => {
@@ -74,4 +74,20 @@ test("a re-scored row replaces the listed one, and on recommended a row left wit
     expect([scored.removing, titles(state(scored.change(listed)))]).toEqual([false, ["Job 0 rescored", "Job 1"]]);
     expect([filtered.removing, titles(state(filtered.change(listed))), filtered.change(listed).total]).toEqual([true, ["Job 1"], 1]);
     expect([unscoredOnAll.removing, titles(state(unscoredOnAll.change(listed)))]).toEqual([false, ["Job 0 unscored", "Job 1"]]);
+});
+
+test("marking a job applied drops its row from the recommended page", () => {
+    const listed = jobPage(jobs(0, 2), { total: 2, nextOffset: null });
+    const marked = appliedChange(jobRowView({ jobId: "0" }), "2026-10-20T09:00:00.000Z", "recommended");
+    expect([marked.removing, titles(state(marked.change(listed)))]).toEqual([true, ["Job 1"]]);
+});
+
+test("clearing a job's applied mark drops its row from the applied page, and only marks it elsewhere", () => {
+    const listed = jobPage(jobs(0, 2), { total: 2, nextOffset: null });
+    const cleared = appliedChange(jobRowView({ jobId: "0" }), null, "applied");
+    const marked = appliedChange(jobRowView({ jobId: "0" }), "2026-10-20T09:00:00.000Z", "applied");
+    const elsewhere = appliedChange(jobRowView({ jobId: "0" }), null, "jobs");
+    expect([cleared.removing, titles(state(cleared.change(listed)))]).toEqual([true, ["Job 1"]]);
+    expect([marked.removing, titles(state(marked.change(listed)))]).toEqual([false, ["Job 0", "Job 1"]]);
+    expect([elsewhere.removing, titles(state(elsewhere.change(listed)))]).toEqual([false, ["Job 0", "Job 1"]]);
 });

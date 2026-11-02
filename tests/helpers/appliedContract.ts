@@ -66,7 +66,27 @@ async function undoneAndMarkedAgain({ jobStore, jobViews }: Stores) {
     expect(await markOf(jobViews)).toBeNull();
 }
 
+async function appliedList({ jobViews }: Stores) {
+    const jobs = await jobViews.appliedJobs({ offset: 0, limit: 10 });
+    return [jobs.map((job) => job.job_id), await jobViews.countApplied()];
+}
+
+async function listsMarkedJobs(stores: Stores) {
+    expect(await appliedList(stores)).toEqual([[], 0]);
+    await stores.jobViews.setApplied({ ...KEPT, applied: true, at: FIRST });
+    await stores.jobViews.setApplied({ ...OTHER, applied: true, at: LATER });
+    await stores.jobViews.setHidden({ ...OTHER, hidden: true });
+    expect(await appliedList(stores)).toEqual([["other", "kept"], 2]);
+    expect((await stores.jobViews.appliedJobs({ offset: 1, limit: 1 })).map((job) => job.job_id)).toEqual(["kept"]);
+    await stores.jobViews.setApplied({ ...KEPT, applied: false, at: LATER });
+    expect(await appliedList(stores)).toEqual([["other"], 1]);
+}
+
 export function appliedContract(make: MakeStores): void {
+    test("the applied list holds the marked jobs, most recently marked first, hidden ones too, and counts them", async () => {
+        await listsMarkedJobs(await seeded(make));
+    });
+
     test("the applied mark is set once, undone, kept through runs and the cleanup, and independent of hiding", async () => {
         const stores = await seeded(make);
         const before = await scoring(stores);

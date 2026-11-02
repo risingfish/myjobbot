@@ -64,6 +64,15 @@ export class MemoryJobViews implements JobViews {
         return this.tables.jobs.length;
     }
 
+    async appliedJobs(page: Page): Promise<JobView[]> {
+        const applied = this.tables.jobs.filter((job) => job.applied === 1).sort((a, b) => asc(b.applied_on, a.applied_on) || asc(a.ats, b.ats) || asc(a.job_id, b.job_id));
+        return slice(applied, page).map((row) => jobViewSchema.parse(row));
+    }
+
+    async countApplied(): Promise<number> {
+        return this.tables.jobs.filter((job) => job.applied === 1).length;
+    }
+
     async verdictHistory(page: Page): Promise<VerdictView[]> {
         return slice(this.verdictsNewestFirst(this.tables.verdicts), page);
     }
