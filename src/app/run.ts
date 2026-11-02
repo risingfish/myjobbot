@@ -1,33 +1,29 @@
-import { randomUUID } from "node:crypto";
 import { searchCompanies } from "../companies/searchCompanies.js";
 import { describeError } from "../errors.js";
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
 import { createChat, type ChatFn } from "../agent/llm.js";
 import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
-import { fileTrace, type Trace } from "../agent/trace.js";
-import { loadConfig, type AppConfig, type Environment, type LoadedConfig } from "../config/load.js";
+import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
 import { OWNER_ID } from "../db/searchSettingsStore.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { Stores } from "../db/store.js";
 import { MS_PER_DAY } from "../jobs/age.js";
-import { systemClock } from "../http/clock.js";
-import { HttpClient, type JsonGetter, type JsonPoster, type TextGetter } from "../http/client.js";
-import { connectBrowser, type BrowserPort } from "../careers/browser.js";
-import { systemLookup, type HostLookup } from "../careers/fetchPage.js";
+import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
+import type { BrowserPort } from "../careers/browser.js";
+import type { HostLookup } from "../careers/fetchPage.js";
 import { sourceHttp } from "../sources/sourceHttp.js";
 import { sourcesOn } from "../tools/sources.js";
 import { beforeAgent } from "./beforeAgent.js";
-import { PageRenderer } from "../careers/renderState.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
 import { gmailState, type GmailState } from "./gmailState.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
 import { dataMarkers } from "../agent/markers.js";
+import { openRunLogs, type RunLogs } from "./runLogs.js";
+import { pageRenderer, runClients, type RunClients } from "./runParts.js";
 import { settingsForRun } from "./runSettings.js";
 
 interface RunSeams {
@@ -50,19 +46,6 @@ interface ContextParts extends RunParts {
     gmail: GmailState;
     chat: ChatFn;
     clients: RunClients;
-}
-
-interface RunClients {
-    client: HttpClient;
-    boards: JsonGetter & JsonPoster;
-    lookup: HostLookup;
-}
-
-interface RunLogs {
-    runId: string;
-    trace: Trace;
-    llm: Trace;
-    jobs: Trace;
 }
 
 interface RunReport extends AgentResult {
@@ -147,19 +130,6 @@ function storeParts(stores: Stores): Pick<ToolContext, "store" | "apiCalls" | "c
     return { store: stores.jobStore, apiCalls: stores.apiCalls, companies: stores.companies };
 }
 
-/** Creates the run's HTTP clients, one following redirects and one for job boards that doesn't, with the address lookup they're checked against. */
-function runClients(config: AppConfig, seams: RunSeams): RunClients {
-    const client = new HttpClient({ config: config.settings.http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random });
-    return { client, boards: client.withoutRedirects(), lookup: seams.lookup ?? systemLookup };
-}
-
-/** Creates the run's page renderer, connected to the browser service only when one is configured. */
-function pageRenderer(config: AppConfig, seams: RunSeams, { logs, stores }: Pick<RunParts, "logs" | "stores">): PageRenderer {
-    const url = config.env.MYJOBBOT_BROWSER_URL;
-    const connect = url === undefined ? null : () => (seams.browser ?? connectBrowser)(url);
-    return new PageRenderer({ connect, settings: config.settings.careers_lookup, lookup: systemLookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now: () => new Date() });
-}
-
 /** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */
 function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, "chat" | "trace">): AgentDeps {
     return {
@@ -172,23 +142,4 @@ function agentDeps(config: AppConfig, context: ToolContext, io: Pick<AgentDeps, 
         markers: context.markers,
         onLookalike: (hit) => reportLookalike(context, hit),
     };
-}
-
-/** Opens the trace, LLM, and job JSONL log files used to record one run. */
-function openRunLogs(config: LoadedConfig): RunLogs {
-    const runId = randomUUID();
-    const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
-    const logDir = config.env.MYJOBBOT_LOG_DIR;
-    return {
-        runId,
-        trace: openJsonl(join(config.dataDir, "runs"), `${name}.jsonl`, runId),
-        llm: openJsonl(logDir, `${name}.llm.jsonl`, runId),
-        jobs: openJsonl(logDir, `${name}.jobs.jsonl`, runId),
-    };
-}
-
-/** Creates a file-backed Trace, creating its parent directory first if needed. */
-function openJsonl(dir: string, file: string, runId: string): Trace {
-    mkdirSync(dir, { recursive: true });
-    return fileTrace(join(dir, file), runId);
 }

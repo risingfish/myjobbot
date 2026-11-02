@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JobRow } from "../db/store.js";
+import type { JobRow, JobStore } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";
@@ -8,6 +8,8 @@ import { defineTool, type Tool } from "./tool.js";
 const MAX_DESCRIPTION_CHARS = 6000;
 const schema = z.object({ job_id: z.union([z.string(), z.number()]).transform(String) });
 
+type DetailsContext = { store: Pick<JobStore, "findJob" | "earliestSeen"> } & Pick<ToolContext, "now" | "config">;
+
 /** Builds the get_job_details tool: fetches one job's full description, requirements, and skills. */
 export function getJobDetailsTool(context: ToolContext): Tool {
     return defineTool({
@@ -15,12 +17,12 @@ export function getJobDetailsTool(context: ToolContext): Tool {
         outsideText: true,
         description: `Return one job's metadata plus its full description (up to ${MAX_DESCRIPTION_CHARS} characters) and, when the source provides them, requirements and skills.`,
         schema,
-        run: ({ job_id }) => details(context, job_id),
+        run: ({ job_id }) => jobDetails(context, job_id),
     });
 }
 
 /** Looks up a job by id and assembles its summary, description, and list fields for the model. */
-async function details(context: ToolContext, jobId: string): Promise<Record<string, unknown>> {
+async function jobDetails(context: DetailsContext, jobId: string): Promise<Record<string, unknown>> {
     const row = await context.store.findJob(jobId);
     if (!row) throw new Error(`unknown job_id "${jobId}"`);
     const origin = row.description_source === "careers" ? { description_from: "careers page" } : {};

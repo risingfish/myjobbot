@@ -156,18 +156,18 @@ jobs are not scored while the others are.
 
 ### Sitting S2: the run skips matching jobs, and Re-score prep (PR 2)
 
-- [ ] T017 Create `.specify/sitting-in-progress` naming S2 (stack still stopped)
+- [X] T017 Create `.specify/sitting-in-progress` naming S2 (stack still stopped)
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Write unit tests (3) in `tests/nextJobs.test.ts`, using the memory store and `testContext`:
+- [X] T018 [P] [US1] Write unit tests (3) in `tests/nextJobs.test.ts`, using the memory store and `testContext`:
   - a job whose description contains a `body_filter.exclude` term, and one that contains none of the `body_filter.include` terms, are absent from `next_jobs`' `jobs` and not counted in `total_unscored`;
   - a job with a null description passes and is offered;
   - with only a body-filtered job left, `finish` succeeds, and `list_sources` reports `total_unscored: 0` for its source.
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] In `src/tools/unscored.ts`:
+- [X] T019 [US1] In `src/tools/unscored.ts`:
   - widen `isWanted`'s parameter to `Pick<JobRow, "title" | "company" | "description" | "description_format">` and make it `filterMatch(row, filterSet(config)) === null`, so runs, the All jobs note and Re-score share one order of checks;
   - update the purpose comments of `isWanted` and `unscoredJobs` to name the body filter.
 
@@ -177,12 +177,12 @@ jobs are not scored while the others are.
 
 ### Re-score prep in S2 (no behaviour change; reached from the run path)
 
-- [ ] T020 [P] [US4] Move `openRunLogs` and `openJsonl`, with the `RunLogs` interface, from `src/app/run.ts` into a new `src/app/runLogs.ts`, exported. `run.ts` imports them.
-- [ ] T021 [US4] After T020, move `runClients` and `pageRenderer`, with the `RunClients` interface, from `src/app/run.ts` into a new `src/app/runParts.ts`, exported:
+- [X] T020 [P] [US4] Move `openRunLogs` and `openJsonl`, with the `RunLogs` interface, from `src/app/run.ts` into a new `src/app/runLogs.ts`, exported. `run.ts` imports them.
+- [X] T021 [US4] After T020, move `runClients` and `pageRenderer`, with the `RunClients` interface, from `src/app/run.ts` into a new `src/app/runParts.ts`, exported:
   - `pageRenderer` takes `{ logs, stores }` as `Pick<RunParts, …>` or an equivalent small interface, and `run.ts` imports both;
   - they take small seam types of their own (`{ lookup? }` and `{ browser? }`) rather than `run.ts`' `RunSeams`, so `runParts.ts` doesn't import `run.ts`;
   - confirm `run.ts` is well under 200 lines.
-- [ ] T022 [P] [US4] Narrow context types, the store included, to what each function reads, so T035's one-job store fits them:
+- [X] T022 [P] [US4] Narrow context types, the store included, to what each function reads, so T035's one-job store fits them:
   - `recordMatchesTool`, `record` and `withAlertNote` in `src/tools/recordMatches.ts` take `{ store: Pick<JobStore, "findJob" | "recordVerdict"> } & Pick<ToolContext, "now" | "runId">`;
   - `summarizeJob` in `src/tools/jobSummary.ts` takes `{ store: Pick<JobStore, "earliestSeen"> } & Pick<ToolContext, "now" | "config">`;
   - in `src/tools/getJobDetails.ts`, `details` is renamed `jobDetails(context: { store: Pick<JobStore, "findJob" | "earliestSeen"> } & Pick<ToolContext, "now" | "config">, jobId: string)`, and `getJobDetailsTool` calls it;
@@ -192,7 +192,7 @@ jobs are not scored while the others are.
   A full `ToolContext` still satisfies every one of these, so the run's callers don't change.
 
   knip must stay clean: `jobDetails` is exported only once T036 imports it. Until then, keep it module-private and only rename it.
-- [ ] T023 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S2 and open PR 2
+- [X] T023 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S2 and open PR 2
 
 **Checkpoint**: PR 2.
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { JobStore } from "../db/store.js";
 import type { ToolContext } from "./context.js";
 import { defineTool, type Tool } from "./tool.js";
 
@@ -15,8 +16,10 @@ const verdict = z.object({
 });
 const schema = z.object({ verdicts: z.array(verdict).min(1).max(MAX_VERDICTS) });
 
+type RecordContext = { store: Pick<JobStore, "findJob" | "recordVerdict"> } & Pick<ToolContext, "now" | "runId">;
+
 /** Builds the record_matches tool, letting the model save its base+bonus fit scores for scored jobs. */
-export function recordMatchesTool(context: ToolContext): Tool {
+export function recordMatchesTool(context: RecordContext): Tool {
     return defineTool({
         name: "record_matches",
         outsideText: false,
@@ -27,7 +30,7 @@ export function recordMatchesTool(context: ToolContext): Tool {
 }
 
 /** Persists each verdict's total score, reporting how many were recorded and which job ids were unknown. */
-async function record(context: ToolContext, verdicts: Array<z.infer<typeof verdict>>) {
+async function record(context: RecordContext, verdicts: Array<z.infer<typeof verdict>>) {
     const stamp = { scoredAt: context.now().toISOString(), runId: context.runId };
     const unknown: string[] = [];
     for (const entry of verdicts) {
@@ -39,7 +42,7 @@ async function record(context: ToolContext, verdicts: Array<z.infer<typeof verdi
 }
 
 /** Adds a note to the gaps of a Gmail alert job scored without a description, so its reasoning says what it was scored on. */
-async function withAlertNote(context: ToolContext, entry: z.infer<typeof verdict>): Promise<string[]> {
+async function withAlertNote(context: RecordContext, entry: z.infer<typeof verdict>): Promise<string[]> {
     const job = await context.store.findJob(entry.job_id);
     return job?.ats === "linkedin" && job.description === null ? [...entry.gaps, ALERT_ONLY] : entry.gaps;
 }
