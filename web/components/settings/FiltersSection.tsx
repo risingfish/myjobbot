@@ -12,14 +12,20 @@ import { Tag, TagButton, TagCloud } from "./Tags.js";
 type TermName = "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 type Terms = FieldView<string[]>;
 
-const LISTS: Array<[TermName, string]> = [
-    ["include", "Title must include one of"],
-    ["exclude", "Title must not include"],
-    ["extra_exclude", "Also excluded"],
-    ["body_include", "Description must include one of"],
-    ["body_exclude", "Description must not include"],
-    ["exclude_companies", "Excluded companies"],
-    ["exclude_publishers", "Excluded publishers"],
+const LABELS: Record<TermName, string> = {
+    include: "Title must include one of",
+    exclude: "Title must not include",
+    extra_exclude: "Also excluded",
+    body_include: "Description must include one of",
+    body_exclude: "Description must not include",
+    exclude_companies: "Excluded companies",
+    exclude_publishers: "Excluded publishers",
+};
+
+const GROUPS: Array<[string, TermName[]]> = [
+    ["Title", ["include", "exclude", "extra_exclude"]],
+    ["Description", ["body_include", "body_exclude"]],
+    ["Other", ["exclude_companies", "exclude_publishers"]],
 ];
 
 interface TermListProps {
@@ -31,7 +37,7 @@ interface TermListProps {
     onChange: (terms: Terms) => void;
 }
 
-/** Renders the Filters section: the title and description filters' lists and the excluded companies and publishers, saved together as soon as any list changes. */
+/** Renders the Filters section as three groups, Title, Description and Other, each holding its lists, saved together as soon as any list changes. */
 export function FiltersSection({ view }: { view: SettingsView }) {
     const [lists, setLists] = useState(() => listsOf(view));
     const { result, saving, autosave } = useAutoSave("filters");
@@ -42,13 +48,25 @@ export function FiltersSection({ view }: { view: SettingsView }) {
     };
     return (
         <Panel title="Filters">
-            <div className="setting-columns">
-                {LISTS.map(([name, label]) => (
-                    <TermList key={name} name={name} label={label} terms={lists[name]} defaults={view.defaults[name]} result={result} onChange={change(name)} />
+            <div className="grid">
+                {GROUPS.map(([title, names]) => (
+                    <FilterGroup key={title} title={title} lists={names.map((name) => ({ name, label: LABELS[name], terms: lists[name], defaults: view.defaults[name], result, onChange: change(name) }))} />
                 ))}
             </div>
             <SaveStatus result={result} saving={saving} />
         </Panel>
+    );
+}
+
+/** Renders one group of filter lists as a Pico card headed by the group's name. */
+function FilterGroup({ title, lists }: { title: string; lists: TermListProps[] }) {
+    return (
+        <article>
+            <header>{title}</header>
+            {lists.map((list) => (
+                <TermList key={list.name} {...list} />
+            ))}
+        </article>
     );
 }
 
