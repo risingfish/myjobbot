@@ -1,21 +1,18 @@
 import { useState } from "react";
-import type { JobRowView, RescoreResult } from "../../src/web/api.js";
-import { rescoreNote } from "../../src/web/rescoreNote.js";
-import { rescoreJob } from "./actions.js";
+import type { JobKey } from "../../src/db/store.js";
+import type { RescoreStart } from "../../src/web/api.js";
+import { startRescore } from "./actions.js";
 
-const FAILED: RescoreResult = { outcome: "failed" };
+const FAILED: RescoreStart = { failed: true };
 
-/** Re-scores a job when pressed, tracking whether it is working and what it said; not useSave, since its answer isn't a save result and its notes aren't save failures. */
-export function useRescore(job: JobRowView, onRescored: (row: JobRowView) => void) {
+/** Starts a job's re-score when pressed, tracking whether the start is still on its way, and hands on the run it started or that it failed; not useSave, since its answer isn't a save result. */
+export function useRescore(job: JobKey, onStart: (result: RescoreStart) => void) {
     const [working, setWorking] = useState(false);
-    const [note, setNote] = useState<string | null>(null);
     const press = async () => {
         setWorking(true);
-        setNote(null);
-        const result = await rescoreJob(job.ats, job.jobId).catch(() => FAILED);
+        const result = await startRescore(job.ats, job.jobId).catch(() => FAILED);
         setWorking(false);
-        setNote(rescoreNote(result));
-        if (result.outcome !== "failed") onRescored(result.row);
+        onStart(result);
     };
-    return { working, note, press };
+    return { working, press };
 }

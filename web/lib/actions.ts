@@ -1,8 +1,10 @@
 "use server";
 
+import { after } from "next/server.js";
 import { describeError } from "../../src/errors.js";
-import type { JobDetailView, PageData, PageName, RescoreResult } from "../../src/web/api.js";
-import { loadDetailsFor, loadRows, rescoreFor, setAppliedFor, setHiddenFor, type AppliedResult, type HideResult } from "./rows.js";
+import { openRescore } from "../../src/rescore/open.js";
+import type { JobDetailView, PageData, PageName, RescoreStart } from "../../src/web/api.js";
+import { loadDetailsFor, loadRows, setAppliedFor, startRescoreFor, setHiddenFor, type AppliedResult, type HideResult } from "./rows.js";
 import { getStores, getUiState } from "./uiState.js";
 
 /** Loads the next rows of a page for the browser as the owner scrolls. */
@@ -27,12 +29,15 @@ export async function loadJobDetails(ats: string, jobId: string): Promise<JobDet
     return loadDetailsFor(views, config, { ats, jobId });
 }
 
-/** Re-scores one job at once from its panel, answering failed, with the detail in the server log only, when it can't be run. */
-export async function rescoreJob(ats: string, jobId: string): Promise<RescoreResult> {
+/** Starts one job's re-score from its panel and answers with its run at once, the re-score carrying on after the answer; failed, with the detail in the server log only, when it can't start. */
+export async function startRescore(ats: string, jobId: string): Promise<RescoreStart> {
     try {
-        return await rescoreFor((await getStores()).stores, process.env, { ats, jobId });
+        const { stores } = await getStores();
+        const started = await startRescoreFor(() => openRescore(process.env, stores), { ats, jobId });
+        if ("work" in started) after(() => started.work().catch((error: unknown) => console.error(`rescore failed: ${describeError(error)}`)));
+        return "run" in started ? { run: started.run } : started;
     } catch (error) {
         console.error(`rescore failed: ${describeError(error)}`);
-        return { outcome: "failed" };
+        return { failed: true };
     }
 }

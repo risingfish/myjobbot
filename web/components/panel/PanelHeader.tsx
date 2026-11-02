@@ -3,6 +3,7 @@ import { panelApplied, panelHide } from "../../lib/panelActions.js";
 import { useApplied } from "../../lib/useApplied.js";
 import { useHide } from "../../lib/useHide.js";
 import type { Details } from "../../lib/useJobDetails.js";
+import type { RescoreControls } from "../../lib/useRescoreTerminal.js";
 import { PostingLink } from "../common/PostingLink.js";
 import { SaveFailedNote } from "../forms/SaveFailedNote.js";
 import { PanelRescore } from "./PanelRescore.js";
@@ -13,11 +14,11 @@ interface PanelHeaderProps {
     titleId: string;
     onApplied: (job: JobRowView, appliedOn: string | null) => void;
     onHidden: (job: JobRowView) => void;
-    onRescored: (job: JobRowView, row: JobRowView) => void;
+    rescore: RescoreControls;
     onClose: () => void;
 }
 
-type ActionsProps = Pick<PanelHeaderProps, "onApplied" | "onHidden" | "onRescored" | "onClose"> & { row: JobRowView | null };
+type ActionsProps = Pick<PanelHeaderProps, "onApplied" | "onHidden" | "rescore" | "onClose"> & { row: JobRowView | null };
 
 /** Renders the panel's header: the shown job's title as its heading with the link to its posting, then the actions on the job and the close button. */
 export function PanelHeader({ job, details, titleId, ...actions }: PanelHeaderProps) {
@@ -36,10 +37,10 @@ export function PanelHeader({ job, details, titleId, ...actions }: PanelHeaderPr
 }
 
 /** Renders the actions on the shown job, Re-score, Applied and Hide, once it is known, then the close button. */
-function PanelActions({ row, onApplied, onHidden, onRescored, onClose }: ActionsProps) {
+function PanelActions({ row, onApplied, onHidden, rescore, onClose }: ActionsProps) {
     return (
         <div className="details-actions">
-            {row !== null && <PanelRescore job={row} onRescored={(updated) => onRescored(row, updated)} />}
+            {row !== null && <PanelRescore job={row} rescore={rescore} />}
             {row !== null && <PanelApplied job={row} onApplied={(appliedOn) => onApplied(row, appliedOn)} />}
             {row !== null && <PanelHide job={row} onHidden={onHidden} />}
             <button type="button" className="outline secondary" onClick={onClose}>

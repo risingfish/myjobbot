@@ -18,7 +18,7 @@ import { loggedCareers, stepsFromTrace } from "./traceSteps.js";
 
 const RESCORE_LOOKUP_MINUTES = 2;
 
-interface OpenRescore {
+export interface OpenedRescore {
     deps: RescoreDeps;
     begin(key: JobKey): Promise<BeginResult>;
     close(): Promise<void>;
@@ -37,7 +37,7 @@ interface LookupIo {
 }
 
 /** Opens what one re-score needs, as a run does: its settings, logs, model client, careers lookup and step log, with a way to record the run and a close for its page renderer. */
-export async function openRescore(environment: Environment, stores: Stores, onLine?: OnLine): Promise<OpenRescore> {
+export async function openRescore(environment: Environment, stores: Stores, onLine?: OnLine): Promise<OpenedRescore> {
     const loaded = loadConfig(environment);
     const logs = openRunLogs(loaded);
     const fallbacks = fallbackCounter(logs.trace);
