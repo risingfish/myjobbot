@@ -7,8 +7,8 @@
 All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings:
 - at the end of every **sitting** (see Development Workflow) and at every commit
 - at the end of every turn whenever the Docker stack is running, because it runs this checkout's
-  `src/` and `web/` live. Feature work is done in this checkout with the stack stopped (see
-  Development Workflow).
+  `src/` and `web/` live. Feature work is done in this checkout with the stack stopped, except
+  UI work, which may keep it running (see Development Workflow).
 
 The limits:
 - functions at most 20 lines, at most 3 parameters, complexity at most 10, nesting at most 4
@@ -109,7 +109,15 @@ Rationale: one documentation root for the project.
   - may span several turns
   - is worked in the main checkout, on the feature branch, with the Docker stack stopped
     (`docker compose stop`, and `docker:watch` not running) from the first code change until the
-    feature is merged and the stack is rebuilt
+    feature is merged and the stack is rebuilt, unless the sitting is **UI work**
+  - **UI work** may keep the stack running, so the owner watches the change live in the `web`
+    service (owner decision, 2026-11-02). UI work means changes to the web UI's components,
+    styles and page wiring that add no database migration and don't change the agent run's code
+    path (`src/agent/`, `src/tools/`, `src/sources/`, `src/careers/`, `src/app/` and the stores it
+    writes through). A sitting that adds a migration or changes the run stops the stack, because
+    the stack's scheduled run and the `web` service would apply it to the production database
+    from an unmerged branch. While the stack runs, every turn ends with habit-hooks clean
+    (Principle I). A task list says, per sitting, whether the stack runs.
   - ends with `npm run check` green
   - is the only point where work may be committed (when the owner asks)
 
@@ -135,4 +143,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.3.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-18
+**Version**: 2.4.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-02
