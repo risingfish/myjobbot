@@ -55,3 +55,15 @@ export function SaveBar({ section, result, saving }: { section: string; result: 
         </footer>
     );
 }
+
+/** Says how a section's automatic save went: saving, stored, refused at the top, or couldn't run. */
+export function SaveStatus({ result, saving }: { result: SaveResult | null; saving: boolean }) {
+    return (
+        <footer aria-live="polite">
+            <Problems result={result} field={null} />
+            {saving && <small className="note">Saving…</small>}
+            {result?.ok === true && <small className="note">Saved</small>}
+            <SaveFailedNote status={result !== null && "failed" in result ? "failed" : "idle"} />
+        </footer>
+    );
+}

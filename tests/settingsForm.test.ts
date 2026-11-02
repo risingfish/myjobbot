@@ -1,18 +1,46 @@
 import { expect, test } from "vitest";
-import { addRow, editedField, removeRow, resetField, saveRequest, sectionRequest, updateRow } from "../src/web/settingsForm.js";
+import { addTerm, editedField, putBoost, removeRow, resetField, saveRequest, sectionRequest } from "../src/web/settingsForm.js";
 
 const BOOSTS = { value: [["go", 5] as [string, number]], isDefault: false };
 
-test("adding a row appends it, and the list stops being the default", () => {
-    expect(addRow({ value: ["engineer"], isDefault: true }, "developer")).toEqual({ value: ["engineer", "developer"], isDefault: false });
+test("adding a term trims it, and a blank term or one already listed, in any case, changes nothing", () => {
+    const terms = { value: ["engineer"], isDefault: true };
+    expect(addTerm(terms, "  Developer ")).toEqual({ value: ["engineer", "Developer"], isDefault: false });
+    expect([addTerm(terms, "   "), addTerm(terms, " Engineer")]).toEqual([terms, terms]);
+});
+
+test("putting a boost adds it trimmed, updates the points of a term already boosted in any case, and ignores a blank term", () => {
+    const boosts = { value: [["go", 5] as [string, number]], isDefault: true };
+    expect(putBoost(boosts, [" TypeScript ", 10], null)).toEqual({
+        value: [
+            ["go", 5],
+            ["TypeScript", 10],
+        ],
+        isDefault: false,
+    });
+    expect(putBoost(boosts, ["Go", 8], null)).toEqual({ value: [["Go", 8]], isDefault: false });
+    expect(putBoost(boosts, ["  ", 10], null)).toBe(boosts);
+});
+
+test("putting a boost at an index replaces that boost", () => {
+    const boosts = {
+        value: [
+            ["go", 5],
+            ["rust", 3],
+        ] as Array<[string, number]>,
+        isDefault: false,
+    };
+    expect(putBoost(boosts, ["golang ", 7], 0)).toEqual({
+        value: [
+            ["golang", 7],
+            ["rust", 3],
+        ],
+        isDefault: false,
+    });
 });
 
 test("removing a row drops the row at its index", () => {
     expect(removeRow({ value: ["a", "b", "c"], isDefault: false }, 1)).toEqual({ value: ["a", "c"], isDefault: false });
-});
-
-test("updating a row changes only that row", () => {
-    expect(updateRow(BOOSTS, 0, ["go", 8])).toEqual({ value: [["go", 8]], isDefault: false });
 });
 
 test("resetting a field puts its default back, marked", () => {

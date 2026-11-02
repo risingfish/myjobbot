@@ -1,64 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { addRow, editedField, removeRow, resetField, sectionRequest, updateRow } from "../../../src/web/settingsForm.js";
+import { useState, type KeyboardEvent } from "react";
+import { editedField, resetField } from "../../../src/web/settingsForm.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
-import { useSectionSave } from "../../lib/useSectionSave.js";
+import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
-import { Problems, SaveBar, Setting } from "./SettingParts.js";
+import { BoostTags } from "./BoostTags.js";
+import { Problems, SaveStatus, Setting } from "./SettingParts.js";
 
+type Threshold = FieldView<number>;
 type Boosts = FieldView<Array<[string, number]>>;
 
-/** Renders the editable Scoring section: the match threshold and the title boosts, saved together. */
+interface ThresholdProps {
+    threshold: Threshold;
+    result: SaveResult | null;
+    onType: (threshold: Threshold) => void;
+    onCommit: () => void;
+    onReset: () => void;
+}
+
+/** Renders the Scoring section: the match threshold and the title boosts, saved together as soon as a boost changes or the threshold is left or reset. */
 export function ScoringSection({ view }: { view: SettingsView }) {
-    const [threshold, setThreshold] = useState(view.fields.match_threshold);
-    const [boosts, setBoosts] = useState(view.fields.title_boosts);
-    const { result, save, saving, edited } = useSectionSave();
-    const changeThreshold = edited(setThreshold);
-    const changeBoosts = edited(setBoosts);
+    const scoring = useScoring(view);
     return (
         <Panel title="Scoring">
-            <form action={() => save(sectionRequest("scoring", { match_threshold: threshold, title_boosts: boosts }))}>
-                <ThresholdSetting threshold={threshold} defaultValue={view.defaults.match_threshold} result={result} onChange={changeThreshold} />
-                <Setting label="Title boosts" field={boosts} onReset={() => changeBoosts(resetField(view.defaults.title_boosts))}>
-                    <BoostRows boosts={boosts} result={result} onChange={changeBoosts} />
-                    <Problems result={result} field="title_boosts" />
-                </Setting>
-                <SaveBar section="Scoring" result={result} saving={saving} />
-            </form>
+            <ThresholdSetting threshold={scoring.threshold} result={scoring.result} onType={scoring.typeThreshold} onCommit={scoring.commitThreshold} onReset={scoring.resetThreshold} />
+            <Setting label="Title boosts" field={scoring.boosts} onReset={() => scoring.changeBoosts(resetField(view.defaults.title_boosts))}>
+                <BoostTags boosts={scoring.boosts} result={scoring.result} onChange={scoring.changeBoosts} />
+                <Problems result={scoring.result} field="title_boosts" />
+            </Setting>
+            <SaveStatus result={scoring.result} saving={scoring.saving} />
         </Panel>
     );
 }
 
-/** Renders the match threshold's number field, with its problems and a reset to the default. */
-function ThresholdSetting({ threshold, defaultValue, result, onChange }: { threshold: FieldView<number>; defaultValue: number; result: SaveResult | null; onChange: (threshold: FieldView<number>) => void }) {
-    return (
-        <Setting label="Match threshold" field={threshold} onReset={() => onChange(resetField(defaultValue))}>
-            <input type="number" aria-label="Match threshold" value={Number.isNaN(threshold.value) ? "" : threshold.value} onChange={(event) => onChange(editedField(numberFrom(event.target.value)))} />
-            <Problems result={result} field="match_threshold" />
-        </Setting>
-    );
+/** Keeps the Scoring section's fields and saves them: a boost change or a reset at once, a typed threshold once it is committed. */
+function useScoring(view: SettingsView) {
+    const [threshold, setThreshold] = useState(view.fields.match_threshold);
+    const [boosts, setBoosts] = useState(view.fields.title_boosts);
+    const { result, saving, autosave } = useAutoSave("scoring");
+    const saveWith = (next: { threshold?: Threshold; boosts?: Boosts }) => autosave({ match_threshold: next.threshold ?? threshold, title_boosts: next.boosts ?? boosts });
+    const changeBoosts = (next: Boosts) => {
+        setBoosts(next);
+        saveWith({ boosts: next });
+    };
+    const edits = useThresholdEdits({ setThreshold, defaultValue: view.defaults.match_threshold, save: (next) => saveWith({ threshold: next }) });
+    return { threshold, boosts, result, saving, changeBoosts, ...edits };
 }
 
-/** Renders the title boosts as rows of term and points, each removable, with a row to add. */
-function BoostRows({ boosts, result, onChange }: { boosts: Boosts; result: SaveResult | null; onChange: (boosts: Boosts) => void }) {
+/** Tracks a threshold being typed, saving it once it is committed, and saves a reset to the default at once. */
+function useThresholdEdits({ setThreshold, defaultValue, save }: { setThreshold: (threshold: Threshold) => void; defaultValue: number; save: (threshold?: Threshold) => void }) {
+    const [typed, setTyped] = useState(false);
+    const typeThreshold = (next: Threshold) => {
+        setThreshold(next);
+        setTyped(true);
+    };
+    const commitThreshold = () => {
+        if (typed) save();
+        setTyped(false);
+    };
+    const resetThreshold = () => {
+        const next = resetField(defaultValue);
+        setThreshold(next);
+        save(next);
+    };
+    return { typeThreshold, commitThreshold, resetThreshold };
+}
+
+/** Renders the match threshold's number field, saved when it is left or on Enter, with its problems and a reset to the default. */
+function ThresholdSetting({ threshold, result, onType, onCommit, onReset }: ThresholdProps) {
+    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => event.key === "Enter" && onCommit();
     return (
-        <>
-            {boosts.value.map(([term, points], index) => (
-                <div className="row" key={index}>
-                    <input aria-label={`Boost term ${index + 1}`} value={term} onChange={(event) => onChange(updateRow(boosts, index, [event.target.value, points]))} />
-                    <input type="number" aria-label={`Boost points ${index + 1}`} value={Number.isNaN(points) ? "" : points} onChange={(event) => onChange(updateRow(boosts, index, [term, numberFrom(event.target.value)]))} />
-                    <button type="button" onClick={() => onChange(removeRow(boosts, index))}>
-                        Remove
-                    </button>
-                    <Problems result={result} field="title_boosts" entry={index} />
-                </div>
-            ))}
-            <button type="button" onClick={() => onChange(addRow(boosts, ["", 10]))}>
-                Add a boost
-            </button>
-        </>
+        <Setting label="Match threshold" field={threshold} onReset={onReset}>
+            <input type="number" aria-label="Match threshold" value={Number.isNaN(threshold.value) ? "" : threshold.value} onChange={(event) => onType(editedField(numberFrom(event.target.value)))} onBlur={onCommit} onKeyDown={onKeyDown} />
+            <Problems result={result} field="match_threshold" />
+        </Setting>
     );
 }
 
