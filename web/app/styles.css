@@ -35,6 +35,10 @@ header .main-title {
     margin-bottom: 20px;
 }
 
+.panel > h4 {
+    --pico-font-size: calc(1.25rem * 1.25);
+}
+
 .panel h2,
 .panel h3,
 .panel h4,
