@@ -1,10 +1,8 @@
-import { lookUpCareers, type CareersDeps, type CareersSummary } from "../careers/lookUpJobs.js";
-import type { SoughtJob } from "../careers/session.js";
+import { careersDeps, soughtJob, type CareersParts } from "../careers/deps.js";
+import { lookUpCareers, type CareersSummary } from "../careers/lookUpJobs.js";
 import type { JobRow } from "../db/store.js";
 import type { ToolContext } from "./context.js";
 import { isWanted, unscoredJobs } from "./unscored.js";
-
-const BYTES_PER_KB = 1024;
 
 /** Looks up careers-page descriptions for the alert jobs that still lack one: new ones, and earlier unreadable ones owed a retry. */
 export async function lookUpAlertJobs(context: ToolContext): Promise<CareersSummary> {
@@ -12,7 +10,7 @@ export async function lookUpAlertJobs(context: ToolContext): Promise<CareersSumm
     const fresh = (await freshJobs(context)).filter((row) => !retried.some((other) => sameJob(other, row)));
     const rows = [...fresh.map((row) => ({ row, retry: false })), ...retried.map((row) => ({ row, retry: true }))];
     const sought = rows.sort((left, right) => left.row.first_seen.localeCompare(right.row.first_seen)).map(soughtJob);
-    return lookUpCareers(careersDeps(context), sought);
+    return lookUpCareers(careersDeps(careersParts(context)), sought);
 }
 
 /** Lists the unscored alert jobs with no description that haven't been looked up before. */
@@ -36,15 +34,7 @@ function sameJob(left: JobRow, right: JobRow): boolean {
     return left.ats === right.ats && left.job_id === right.job_id;
 }
 
-/** Describes a stored job as the lookup's input: its key, title, company and location, and whether it is a retry. */
-function soughtJob({ row, retry }: { row: JobRow; retry: boolean }): SoughtJob {
-    const job = { ats: row.ats, jobId: row.job_id, title: row.title, company: row.company, location: row.location };
-    return retry ? { ...job, retry } : job;
-}
-
-/** Gathers what the careers lookup needs from the run's context, so src/careers never reads the tool context. */
-function careersDeps(context: ToolContext): CareersDeps {
-    const { careers, config } = context;
-    const pages = { pages: careers.pages, lookup: careers.lookup, maxBytes: config.careers_lookup.max_download_kb * BYTES_PER_KB };
-    return { chat: context.chat, trace: context.trace, settings: config.careers_lookup, pages, jobs: context.store, careers: careers.store, runId: context.runId, now: context.now, http: context.http, boardHttp: careers.boards, renderer: careers.renderer, markers: context.markers, searxngUrl: careers.searxngUrl };
+/** Gathers the careers lookup's parts from the run's context. */
+function careersParts(context: ToolContext): CareersParts {
+    return { careers: context.careers, settings: context.config.careers_lookup, chat: context.chat, trace: context.trace, jobs: context.store, runId: context.runId, now: context.now, http: context.http, markers: context.markers };
 }

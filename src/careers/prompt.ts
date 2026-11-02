@@ -1,6 +1,6 @@
 import type { Message } from "../agent/llm.js";
 import { scrubText, type DataMarkers } from "../agent/markers.js";
-import { dataSentence } from "../agent/prompt.js";
+import { dataSentence } from "../agent/rubric.js";
 import type { SoughtJob } from "./session.js";
 
 export const LOOKUP_NUDGE = "Respond only with tool calls: search_careers, open_link or finish_lookup.";

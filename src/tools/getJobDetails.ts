@@ -22,7 +22,7 @@ export function getJobDetailsTool(context: ToolContext): Tool {
 }
 
 /** Looks up a job by id and assembles its summary, description, and list fields for the model. */
-async function jobDetails(context: DetailsContext, jobId: string): Promise<Record<string, unknown>> {
+export async function jobDetails(context: DetailsContext, jobId: string): Promise<Record<string, unknown>> {
     const row = await context.store.findJob(jobId);
     if (!row) throw new Error(`unknown job_id "${jobId}"`);
     const origin = row.description_source === "careers" ? { description_from: "careers page" } : {};

@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { dataMarkers } from "../src/agent/markers.js";
 import { initialMessages } from "../src/agent/prompt.js";
+import { scoringRubric } from "../src/agent/rubric.js";
+import { RESCORE_COMPACTION_NOTICE, RESCORE_NUDGE, rescoreMessages } from "../src/rescore/prompt.js";
 import { TEST_RUN_ID } from "./helpers/context.js";
 import { testAppConfig } from "./helpers/config.js";
 
@@ -35,4 +37,14 @@ test("the resume and preferences stay outside any marker, as the owner's own ins
     const { system, user } = prompt();
     expect(user).not.toContain("<<data");
     expect(system.slice(system.indexOf("User preferences:"))).not.toContain("<<data");
+});
+
+test("the run's prompt text is unchanged, and the re-score shares its rubric but names only its own tools", () => {
+    expect(prompt().system).toMatchSnapshot();
+    const [system = "", user = ""] = rescoreMessages(testAppConfig(), MARKERS).map((message) => String(message.content));
+    expect(system).toContain(scoringRubric(testAppConfig(), MARKERS));
+    expect(prompt().system).toContain(scoringRubric(testAppConfig(), MARKERS));
+    const texts = [system, user, RESCORE_NUDGE, RESCORE_COMPACTION_NOTICE].join("\n");
+    expect(["get_job", "record_matches"].every((name) => system.includes(name) && RESCORE_NUDGE.includes(name))).toBe(true);
+    expect(["next_jobs", "get_job_details", "list_sources", "finish"].filter((name) => texts.includes(name))).toEqual([]);
 });

@@ -5,7 +5,7 @@ import { makeDataDir } from "./helpers/dataDir.js";
 test("cli prints usage and exits 2 without a command", () => {
     const result = runCli([]);
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("usage: myjobbot run | import-sqlite <path>");
+    expect(result.stderr).toContain("usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path>");
 });
 
 test("cli reports configuration errors readably", () => {
