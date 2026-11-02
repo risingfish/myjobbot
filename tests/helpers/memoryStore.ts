@@ -11,6 +11,7 @@ import { recordMemoryCompanies, touchMemoryCompany } from "./memoryCompanies.js"
 import { MemoryCompanyStore } from "./memoryCompanyStore.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
 import { MemoryGmailStore } from "./memoryGmailStore.js";
+import { MemoryRescoreLog } from "./memoryRescoreLog.js";
 import { MemorySearchSettingsStore } from "./memorySearchSettingsStore.js";
 import { MemorySourceStore } from "./memorySourceStore.js";
 import { savedSources, type SourceLists } from "./savedSources.js";
@@ -104,6 +105,9 @@ class MemoryJobStore implements JobStore {
         this.tables.jobs = this.tables.jobs.filter((job) => String(job.last_seen) >= cutoff || job.applied === 1);
         const kept = new Set(this.tables.jobs.map((job) => `${job.ats}:${job.job_id}`));
         this.tables.verdicts = this.tables.verdicts.filter((verdict) => kept.has(`${verdict.ats}:${verdict.job_id}`));
+        this.tables.rescoreRuns = this.tables.rescoreRuns.filter((run) => kept.has(`${run.ats}:${run.jobId}`));
+        const runs = new Set(this.tables.rescoreRuns.map((run) => run.id));
+        this.tables.rescoreSteps = this.tables.rescoreSteps.filter((step) => runs.has(step.runId));
         return before - this.tables.jobs.length;
     }
 
@@ -154,7 +158,7 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), close };
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): Stores {

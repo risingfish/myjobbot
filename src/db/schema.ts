@@ -151,6 +151,25 @@ interface CareersAuditTable {
     retry_once: Generated<number>;
 }
 
+interface RescoreRunsTable {
+    id: string;
+    ats: string;
+    job_id: string;
+    started_at: string;
+    ended_at: Text;
+    outcome: Text;
+    filter: Text;
+    score: Count;
+}
+
+interface RescoreStepsTable {
+    run_id: string;
+    seq: number;
+    elapsed_ms: number;
+    kind: string;
+    fields: string;
+}
+
 export interface Database {
     jobs: JobsTable;
     companies: CompaniesTable;
@@ -162,4 +181,6 @@ export interface Database {
     users: UsersTable;
     user_settings: UserSettingsTable;
     user_sources: UserSourcesTable;
+    rescore_runs: RescoreRunsTable;
+    rescore_steps: RescoreStepsTable;
 }

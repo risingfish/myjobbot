@@ -1,4 +1,5 @@
 import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../../src/db/rows.js";
+import type { RescoreRun, StoredStep } from "../../src/db/rescoreLogStore.js";
 import type { AppliedChange, HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../../src/db/store.js";
 
 export type Row = Record<string, string | number | null>;
@@ -8,10 +9,12 @@ export interface Tables {
     verdicts: Row[];
     calls: Row[];
     companies: Row[];
+    rescoreRuns: RescoreRun[];
+    rescoreSteps: Array<StoredStep & { runId: string }>;
 }
 
 export function newTables(): Tables {
-    return { jobs: [], verdicts: [], calls: [], companies: [] };
+    return { jobs: [], verdicts: [], calls: [], companies: [], rescoreRuns: [], rescoreSteps: [] };
 }
 
 export const asc = (left: unknown, right: unknown): number => (String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0);
