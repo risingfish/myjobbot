@@ -401,4 +401,10 @@ dialog.details-panel[open] {
 }
 .panel article > header {
     color: var(--pico-contrast);
+    font-weight: bold;
+}
+@media (prefers-color-scheme: dark) {
+    .panel article > header {
+        background: var(--pico-form-element-selected-background-color);
+    }
 }
