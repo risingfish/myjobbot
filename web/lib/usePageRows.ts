@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobRowView, PageData, PageName } from "../../src/web/api.js";
 import { loadMoreRows } from "./actions.js";
-import { jobKey, withJobApplied, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsState } from "./pageRows.js";
+import { jobKey, rescoredChange, withJobApplied, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsChange, type RowsState } from "./pageRows.js";
 
 export interface PageRows extends RowsState {
     loadMore: () => void;
     markHidden: (job: JobRowView, hidden: boolean) => void;
     markApplied: (job: JobRowView, appliedOn: string | null) => void;
+    replaceRow: (row: JobRowView) => void;
 }
 
 type SetRows = Dispatch<SetStateAction<RowsState>>;
@@ -17,20 +18,30 @@ interface NextPage {
     version: number;
 }
 
-/** Keeps a page's rows, starting from the server-rendered first page, loading more on request and following hides and marks. */
+/** Keeps a page's rows, starting from the server-rendered first page, loading more on request and following hides, marks and re-scores. */
 export function usePageRows(name: PageName, initial: PageData): PageRows {
     const [state, setState] = useState<RowsState>({ data: initial, error: null, moreError: null, version: 0 });
     const loadMore = useLoadMore({ name, offset: state.data?.nextOffset ?? null, version: state.version }, setState);
     const markHidden = useCallback(
         (job: JobRowView, hidden: boolean) => {
             const removing = hidden && name === "recommended";
-            const change = removing ? withoutJob(jobKey(job)) : withJobHidden(jobKey(job), hidden);
-            setState((current) => ({ ...current, data: current.data && change(current.data), version: current.version + Number(removing) }));
+            changeRows(setState, removing ? withoutJob(jobKey(job)) : withJobHidden(jobKey(job), hidden), removing);
         },
         [name],
     );
-    const markApplied = useMarkApplied(setState);
-    return { ...state, loadMore, markHidden, markApplied };
+    const replaceRow = useCallback(
+        (row: JobRowView) => {
+            const { change, removing } = rescoredChange(row, name);
+            changeRows(setState, change, removing);
+        },
+        [name],
+    );
+    return { ...state, loadMore, markHidden, markApplied: useMarkApplied(setState), replaceRow };
+}
+
+/** Applies a change to the rows shown, counting a removal so a page still loading is dropped rather than skipping a row. */
+function changeRows(setState: SetRows, change: RowsChange, removing: boolean): void {
+    setState((current) => ({ ...current, data: current.data && change(current.data), version: current.version + Number(removing) }));
 }
 
 /** Returns the function that records a job's applied mark, or its undoing, on the rows shown; a mark never removes a row. */

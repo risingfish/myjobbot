@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { PageData } from "../src/web/api.js";
-import { jobKey, withJobApplied, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
+import { jobKey, rescoredChange, withJobApplied, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
 import { jobPage, jobRowView, verdictPage, verdictRowView } from "./helpers/rowFixtures.js";
 
 function jobs(from: number, count: number) {
@@ -64,4 +64,14 @@ test("undoing a job's mark clears its mark and time", () => {
 test("marking a job applied leaves a page of verdicts unchanged", () => {
     const data = verdictPage([verdictRowView()]);
     expect(withJobApplied("greenhouse:1", MARKED_AT)(data)).toBe(data);
+});
+
+test("a re-scored row replaces the listed one, and on recommended a row left with no score is dropped", () => {
+    const listed = jobPage(jobs(0, 2), { total: 2, nextOffset: null });
+    const scored = rescoredChange(jobRowView({ jobId: "0", title: "Job 0 rescored", score: { value: 90, note: "" } }), "recommended");
+    const filtered = rescoredChange(jobRowView({ jobId: "0", title: "Job 0", score: null }), "recommended");
+    const unscoredOnAll = rescoredChange(jobRowView({ jobId: "0", title: "Job 0 unscored", score: null }), "jobs");
+    expect([scored.removing, titles(state(scored.change(listed)))]).toEqual([false, ["Job 0 rescored", "Job 1"]]);
+    expect([filtered.removing, titles(state(filtered.change(listed))), filtered.change(listed).total]).toEqual([true, ["Job 1"], 1]);
+    expect([unscoredOnAll.removing, titles(state(unscoredOnAll.change(listed)))]).toEqual([false, ["Job 0 unscored", "Job 1"]]);
 });

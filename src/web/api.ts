@@ -27,6 +27,8 @@ export interface JobRowView {
     gaps: string[];
 }
 
+export type RescoreResult = { outcome: "scored"; row: JobRowView } | { outcome: "filtered"; note: string; row: JobRowView } | { outcome: "failed" };
+
 export interface ScoreDetail {
     total: number;
     model: number;

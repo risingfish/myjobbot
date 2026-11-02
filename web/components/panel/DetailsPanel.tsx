@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { JobKey } from "../../../src/db/store.js";
 import type { JobDetailView, JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
@@ -16,6 +16,7 @@ interface DetailsPanelProps {
     job: JobRowView | null;
     onApplied: (job: JobRowView, appliedOn: string | null) => void;
     onHidden: (job: JobRowView) => void;
+    onRescored: (job: JobRowView, row: JobRowView) => void;
     onClose: () => void;
 }
 
@@ -25,30 +26,36 @@ interface ContentProps {
     titleId: string;
     onApplied: (job: JobRowView, appliedOn: string | null) => void;
     onHidden: (job: JobRowView) => void;
+    onRescored: (job: JobRowView, row: JobRowView) => void;
     onClose: () => void;
 }
 
 type PanelRef = RefObject<HTMLDialogElement | null>;
 
-/** Shows the open job's details in a panel at the right of the page, leaving the list usable behind it. */
-export function DetailsPanel({ open, shown, job, onApplied, onHidden, onClose }: DetailsPanelProps) {
+/** Shows the open job's details in a panel at the right of the page, leaving the list usable behind it, and reloads them after a re-score. */
+export function DetailsPanel({ open, shown, job, onApplied, onHidden, onRescored, onClose }: DetailsPanelProps) {
     const panel = useRef<HTMLDialogElement>(null);
     const titleId = useId();
-    const details = useJobDetails(shown);
+    const [refresh, setRefresh] = useState(0);
+    const details = useJobDetails(shown, refresh);
+    const rescored = (rescoredJob: JobRowView, row: JobRowView) => {
+        setRefresh((count) => count + 1);
+        onRescored(rescoredJob, row);
+    };
     useShown(panel, open && shown !== null ? jobParam(shown) : null);
     useDismissal(panel, open, onClose);
     return (
         <dialog ref={panel} className="details-panel" aria-labelledby={titleId}>
-            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onClose={onClose} />}
+            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onRescored={rescored} onClose={onClose} />}
         </dialog>
     );
 }
 
 /** Renders the shown job: its header, with the title and the actions on the job, and the job's sections. */
-function PanelContent({ job, details, titleId, onApplied, onHidden, onClose }: ContentProps) {
+function PanelContent({ job, details, titleId, onApplied, onHidden, onRescored, onClose }: ContentProps) {
     return (
         <>
-            <PanelHeader job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onClose={onClose} />
+            <PanelHeader job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onRescored={onRescored} onClose={onClose} />
             <div className="details-body">
                 <PanelStatus details={details} />
                 <PanelSections job={job} details={details} />

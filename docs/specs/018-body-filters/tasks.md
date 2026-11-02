@@ -304,42 +304,44 @@ and the owner can try PR 3 from a terminal.
 
 ### Sitting S4: the Re-score button (PR 4)
 
-- [ ] T041 Create `.specify/sitting-in-progress` naming S4
+- [X] T041 Create `.specify/sitting-in-progress` naming S4
 
 #### Tests for User Story 4 (S4)
 
-- [ ] T042 [P] [US4] Write unit tests (2):
+- [X] T042 [P] [US4] Write unit tests (2):
   - in `tests/rescoreNote.test.ts`, for `rescoreNote(result)`: `scored` gives null; `filtered` gives "Not re-scored: hidden by body filter" (and the title and company texts); `failed` gives "Re-score failed; the old score is kept"; every non-null output is one of that fixed set of messages;
   - in `tests/pageRows.test.ts`, `withJobRow(rows, key, row, page)` replaces the job's row on All jobs, and on Recommended removes it when `row.score` is null.
-- [ ] T043 [P] [US4] Write a UI test (1) in `tests/client/panelRescore.test.tsx`, mocking `web/lib/rescoreActions.js`:
+- [X] T043 [P] [US4] Write a UI test (1) in `tests/client/panelRescore.test.tsx`, mocking `web/lib/rescoreActions.js`:
   - pressing Re-score disables the button and shows "Re-scoring…" until the action settles;
   - a `failed` answer shows the failure note and calls no refresh callback.
 
 #### Implementation for User Story 4 (S4)
 
-- [ ] T044 [P] [US4] Create `src/web/rescoreNote.ts` with `rescoreNote(result: RescoreResult): string | null`, and add the `RescoreResult` type (`{ outcome: "scored"; row } | { outcome: "filtered"; note; row } | { outcome: "failed" }`, with `row: JobRowView`) to `src/web/api.ts`
-- [ ] T045 [US4] Create `web/lib/rescoreActions.ts`, the `"use server"` action `rescoreJob(ats, jobId): Promise<RescoreResult>`:
+- [X] T044 [P] [US4] Create `src/web/rescoreNote.ts` with `rescoreNote(result: RescoreResult): string | null`, and add the `RescoreResult` type (`{ outcome: "scored"; row } | { outcome: "filtered"; note; row } | { outcome: "failed" }`, with `row: JobRowView`) to `src/web/api.ts`
+- [X] T045 [US4] Create `web/lib/rescoreActions.ts`, the `"use server"` action `rescoreJob(ats, jobId): Promise<RescoreResult>`:
   - check the input with `jobRequest` from `web/lib/rows.ts` (exported, with this as its new caller), returning `failed` when it is invalid, before any model call;
   - load the root `.env` as `uiState.ts` does, take the cached stores (`getStores()`), call `openRescore(process.env, stores)` and then `rescore`, and close in `finally`;
   - on `scored` or `filtered`, add `row`, the job's `JobRowView` rebuilt through `views.jobDetail` and `toJobRowView` with `rowContext(config.settings, new Date())`;
   - map any error to `{ outcome: "failed" }`.
-- [ ] T046 [US4] Create `web/lib/useRescore.ts` (not `useSave`: its result isn't `{ ok }`, and "Couldn't save" is the wrong message; research R10). `useRescore(job, onRescored)` returns `{ working, note, press }`:
+- [X] T046 [US4] Create `web/lib/useRescore.ts` (not `useSave`: its result isn't `{ ok }`, and "Couldn't save" is the wrong message; research R10). `useRescore(job, onRescored)` returns `{ working, note, press }`:
   - `press` calls `rescoreJob(job.ats, job.jobId)`;
   - it sets `note` from `rescoreNote`;
   - on `scored` or `filtered`, it calls `onRescored(result.row)`;
   - a rejected promise is shown as `failed`.
-- [ ] T047 [US4] Create `web/components/panel/PanelRescore.tsx`, a button with the class `outline secondary`, labelled "Re-score" or "Re-scoring…" and disabled while working, followed by its note. In `web/components/panel/PanelHeader.tsx`, render `<PanelRescore …>` first in `details-actions` when `row !== null`, take an `onRescored` prop, and update the purpose comment. Update the existing UI tests that render the panel or the list (`tests/client/panelPostingLink.test.tsx`, `panelHeader.test.tsx`, `panelSections.test.tsx`, `detailsPanel.test.tsx`, `hide.test.tsx`, `applied.test.tsx`, `loadMore.test.tsx`, `rowsList.test.tsx`):
+- [X] T047 [US4] Create `web/components/panel/PanelRescore.tsx`, a button with the class `outline secondary`, labelled "Re-score" or "Re-scoring…" and disabled while working, followed by its note. In `web/components/panel/PanelHeader.tsx`, render `<PanelRescore …>` first in `details-actions` when `row !== null`, take an `onRescored` prop, and update the purpose comment. Update the existing UI tests that render the panel or the list (`tests/client/panelPostingLink.test.tsx`, `panelHeader.test.tsx`, `panelSections.test.tsx`, `detailsPanel.test.tsx`, `hide.test.tsx`, `applied.test.tsx`, `loadMore.test.tsx`, `rowsList.test.tsx`):
   - add `vi.mock("../../web/lib/rescoreActions.js", …)` in each test file (not in `tests/helpers/panelPage.tsx`), so no server module loads in the `dom` project;
   - in `panelHeader.test.tsx`, expect the buttons `["Re-score", "Applied", "Hide", "Close"]` and `headerButtons()[0] === "Re-score"`;
   - pass `onRescored={vi.fn()}` where they render `PanelHeader` directly.
 
   These are edits to existing tests, with no new count.
-- [ ] T048 [US4] Wire the refresh:
+- [X] T048 [US4] Wire the refresh:
   - **Details reload:** `useJobDetails(key, refresh = 0)` in `web/lib/useJobDetails.ts` takes an optional `refresh` count, defaulting to 0, and adds it to its effect's dependencies. `DetailsPanel.tsx` keeps a `refresh` count, bumps it on `onRescored`, and passes `onRescored` through `PanelContent` to `PanelHeader`.
   - **List row:** `web/lib/pageRows.ts` gains the plain `withJobRow` (T042), `usePageRows.ts` gains `replaceRow(job, row)` built on it, and `useJobChanges.ts` gains `markRescored(job, row)`, which calls `rows.replaceRow` and `panel.noteChange(job, row)`. On Recommended a re-scored job left with no score leaves the list, as a hidden one does. `RowsList.tsx` passes `changes.markRescored` to `DetailsPanel` as `onRescored`.
   - Keep every function ≤ 20 lines, and `DetailsPanel.tsx` ≤ 200 lines.
-- [ ] T049 [US4] In `compose.yaml`, give the `web` service `networks: [default, browser]` (research R9). Check it with `docker compose config --quiet`, never plain `config`.
-- [ ] T050 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S4 and open PR 4
+- [X] T049 [US4] In `compose.yaml`, give the `web` service `networks: [default, browser]` (research R9). Check it with `docker compose config --quiet`, never plain `config`.
+- [X] T050 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S4 and open PR 4
+
+**As built (S4):** `rescoreJob` sits in the existing `web/lib/actions.ts` beside Hide and Applied, with its work in `rescoreFor` (`web/lib/rows.ts`, which checks the input with its own `jobRequest`), rather than a separate `rescoreActions.ts`. Every UI test already mocks `actions.js`, so no test needed a new mock: only `panelHeader.test.tsx` (the button order) and `panelPostingLink.test.tsx` (the new `onRescored` prop) changed. `withJobRow` is `rescoredChange(row, page)` in `web/lib/pageRows.ts`, returning the change and whether it removes a row, in the shape of the file's other changes. `PanelHeader`'s actions moved into `PanelActions` to stay within 20 lines.
 
 **Checkpoint**: PR 4. All four stories work. After merging, rebuild the stack (`npm run docker:up`) and walk through [quickstart.md](quickstart.md) §4.
 

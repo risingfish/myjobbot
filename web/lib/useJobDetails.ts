@@ -13,8 +13,8 @@ interface Answer {
 
 const LOADING: Details = { state: "loading" };
 
-/** Loads the shown job's details each time another job is shown, ignoring answers for a job that is no longer shown. */
-export function useJobDetails(key: JobKey | null): Details {
+/** Loads the shown job's details each time another job is shown or the refresh count moves on, ignoring answers for a job that is no longer shown. */
+export function useJobDetails(key: JobKey | null, refresh = 0): Details {
     const ats = key?.ats ?? null;
     const jobId = key?.jobId ?? null;
     const [answer, setAnswer] = useState<Answer | null>(null);
@@ -29,6 +29,6 @@ export function useJobDetails(key: JobKey | null): Details {
         return () => {
             current = false;
         };
-    }, [ats, jobId]);
+    }, [ats, jobId, refresh]);
     return answer !== null && answer.ats === ats && answer.jobId === jobId ? answer.details : LOADING;
 }

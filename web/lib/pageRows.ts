@@ -1,4 +1,4 @@
-import type { JobRowView, PageData } from "../../src/web/api.js";
+import type { JobRowView, PageData, PageName } from "../../src/web/api.js";
 
 export interface LoadedPage {
     data: PageData | null;
@@ -41,6 +41,12 @@ export function withJobHidden(key: string, hidden: boolean): RowsChange {
 /** Builds the change that marks a job applied at a time, or clears its mark when the time is null. */
 export function withJobApplied(key: string, appliedOn: string | null): RowsChange {
     return withJobFields(key, { applied: appliedOn !== null, appliedOn });
+}
+
+/** Builds the change for a re-scored job: its new row replaces the listed one, except on Recommended, where a job left with no score is dropped. */
+export function rescoredChange(row: JobRowView, page: PageName): { change: RowsChange; removing: boolean } {
+    const removing = page === "recommended" && row.score === null;
+    return { change: removing ? withoutJob(jobKey(row)) : withJobFields(jobKey(row), row), removing };
 }
 
 /** Builds the change that updates some of one job's fields in the rows shown. */

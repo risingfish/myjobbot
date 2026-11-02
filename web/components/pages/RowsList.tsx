@@ -47,7 +47,7 @@ function JobRows({ jobs, rows, more }: { jobs: JobRowView[]; rows: PageRows; mor
     return (
         <>
             <JobTable rows={jobs} action={actions} onApplied={changes.markApplied} more={more} />
-            <DetailsPanel open={key !== null} shown={panel.shown} job={panel.job} onApplied={changes.markApplied} onHidden={changes.hideFromPanel} onClose={close} />
+            <DetailsPanel open={key !== null} shown={panel.shown} job={panel.job} onApplied={changes.markApplied} onHidden={changes.hideFromPanel} onRescored={changes.markRescored} onClose={close} />
         </>
     );
 }

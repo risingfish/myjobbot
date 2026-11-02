@@ -33,7 +33,7 @@ function isJob(job: JobRowView, key: JobKey | null): boolean {
     return key !== null && job.ats === key.ats && job.jobId === key.jobId;
 }
 
-type JobChange = Partial<Pick<JobRowView, "hidden" | "applied" | "appliedOn">>;
+type JobChange = Partial<JobRowView>;
 
 /** Picks the job the panel shows and its row, keeping both after the panel closes or the row leaves the list (hidden on Recommended), and noting changes to the job it shows. */
 export function usePanelJob(rows: JobRowView[], open: JobKey | null) {
