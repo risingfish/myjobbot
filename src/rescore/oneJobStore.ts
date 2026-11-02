@@ -2,8 +2,8 @@ import type { JobKey, JobStore } from "../db/store.js";
 
 export type OneJobStore = Pick<JobStore, "findJob" | "recordVerdict" | "earliestSeen" | "flagInjection"> & { recorded(): boolean };
 
-/** Narrows the job store to one job, so a re-score's model can read and score only that job, and reports once its verdict is saved. */
-export function oneJobStore(store: JobStore, key: JobKey): OneJobStore {
+/** Narrows the job store to one job, so a re-score's model can read and score only that job, and reports once its verdict is saved, with its score. */
+export function oneJobStore(store: JobStore, key: JobKey, onSaved?: (score: number) => void): OneJobStore {
     let recorded = false;
     return {
         findJob: async (jobId) => {
@@ -14,6 +14,7 @@ export function oneJobStore(store: JobStore, key: JobKey): OneJobStore {
             if (verdict.job_id !== key.jobId) return false;
             const known = await store.recordVerdict(verdict, stamp);
             recorded = recorded || known;
+            if (known) onSaved?.(verdict.score);
             return known;
         },
         earliestSeen: (company, normalizedTitle) => store.earliestSeen(company, normalizedTitle),
