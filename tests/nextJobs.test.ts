@@ -33,6 +33,30 @@ test("next_jobs leaves out jobs at excluded companies", async () => {
     expect(tables.companies.map((company) => company.company_key)).toEqual(["stripe"]);
 });
 
+const BODY_FILTER = { body_filter: { include: ["typescript", "golang"], exclude: ["clearance"] } };
+
+function describedBoard(contents: Array<string | null>) {
+    return fakeBoard(greenhouseBoard(["Backend Engineer", "Platform Engineer", "Frontend Engineer"], undefined, contents));
+}
+
+test("next_jobs leaves out jobs whose description holds an excluded term or none of the included ones", async () => {
+    const http = describedBoard(["<p>TypeScript, clearance required</p>", "<p>We write Java</p>", "<p>Golang services</p>"]);
+    const page = await nextPage(testContext({ config: testAppSettings(BODY_FILTER), http }), "Stripe");
+    expect([page.total_unscored, page.jobs.map((job) => job.title)]).toEqual([1, ["Frontend Engineer"]]);
+});
+
+test("next_jobs offers a job with no description whatever the body filter holds", async () => {
+    const page = await nextPage(testContext({ config: testAppSettings(BODY_FILTER), http: describedBoard([null, null, null]) }), "Stripe");
+    expect(page.total_unscored).toBe(3);
+});
+
+test("with only body-filtered jobs left, list_sources counts none unscored and finish ends the run", async () => {
+    const context = testContext({ config: testAppSettings(BODY_FILTER), http: describedBoard(["Clearance", "Clearance", "Clearance"]) });
+    await nextPage(context, "Stripe");
+    expect(await invokeTool(context, "list_sources", {})).toMatchObject([{ name: "Stripe", total_unscored: 0 }]);
+    expect(await invokeTool(context, "finish", { summary: "done" })).toEqual({ ok: true });
+});
+
 test("next_jobs flags postings open longer than the ghost threshold", async () => {
     const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer"], "2026-07-01T00:00:00Z")) });
     expect((await nextPage(context, "Stripe")).jobs[0]).toMatchObject({ days_open: 94, possible_ghost: true });
