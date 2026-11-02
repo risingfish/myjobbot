@@ -377,7 +377,7 @@ dialog.details-panel[open] {
     list-style: none;
     border: var(--pico-border-width) solid var(--pico-muted-border-color);
     border-radius: var(--pico-border-radius);
-    background: var(--pico-card-sectioning-background-color);
+    background: color-mix(in srgb, var(--pico-card-sectioning-background-color), var(--pico-card-background-color));
 }
 .panel .tags .tag .tag-action {
     opacity: 0;
