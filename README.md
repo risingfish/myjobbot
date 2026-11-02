@@ -89,13 +89,14 @@ npm run web          # development server, http://localhost:8080
 npm run web:build && npm run web:start   # production build and server
 ```
 
-A Next.js app for browsing the database, with three tabs and a Settings page. Settings is where your
+A Next.js app for browsing the database, with four tabs and a Settings page. Settings is where your
 sources are added (see [Sources](#sources)), where your search settings are made and changed (see
 [Configuration knobs](#configuration-knobs)), and where Gmail is connected (see [Gmail](#gmail)):
 
 | Tab | Shows |
 |---|---|
 | **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after boosts), most recently posted first, with the model's reasons and gaps |
+| **Applied** | Every job you've marked applied, most recently marked first, hidden ones included. Clearing a job's mark here takes it off the list |
 | **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter, the body filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
 

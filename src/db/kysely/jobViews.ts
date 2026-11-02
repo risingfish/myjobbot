@@ -58,10 +58,33 @@ export class KyselyJobViews implements JobViews {
 
     /** Counts every stored job, for paginating the all-jobs tab. */
     async countAllJobs(): Promise<number> {
-        const row = await this.db
+        return this.countJobs(false);
+    }
+
+    /** Returns one page of the jobs marked applied, hidden or not, most recently marked first, for the Applied tab. */
+    async appliedJobs(page: Page): Promise<JobView[]> {
+        const rows = await this.db
             .selectFrom("jobs")
-            .select((eb) => eb.fn.countAll().as("count"))
-            .executeTakeFirstOrThrow();
+            .select([...JOB_COLUMNS])
+            .where("applied", "=", 1)
+            .orderBy("applied_on", "desc")
+            .orderBy("ats")
+            .orderBy("job_id")
+            .limit(page.limit)
+            .offset(page.offset)
+            .execute();
+        return jobViews.parse(rows);
+    }
+
+    /** Counts the jobs marked applied, for paginating the Applied tab. */
+    async countApplied(): Promise<number> {
+        return this.countJobs(true);
+    }
+
+    /** Counts the stored jobs, or only those marked applied. */
+    private async countJobs(appliedOnly: boolean): Promise<number> {
+        const query = this.db.selectFrom("jobs").select((eb) => eb.fn.countAll().as("count"));
+        const row = await (appliedOnly ? query.where("applied", "=", 1) : query).executeTakeFirstOrThrow();
         return Number(row.count);
     }
 

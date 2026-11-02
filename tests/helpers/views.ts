@@ -15,6 +15,7 @@ export interface SeedJob {
     description?: string;
     descriptionFormat?: "markdown" | "text";
     parts?: { base: number; bonus: number };
+    appliedOn?: string;
 }
 
 export async function seededStores(entries: SeedJob[]): Promise<Stores> {
@@ -22,6 +23,7 @@ export async function seededStores(entries: SeedJob[]): Promise<Stores> {
     for (const entry of entries) await stores.jobStore.upsertAll([seedJob(entry)], "2026-10-01T00:00:00.000Z", entry.source ?? "Stripe");
     const scored = entries.filter((entry) => entry.score !== undefined);
     for (const entry of scored) await stores.jobStore.recordVerdict(seedVerdict(entry), { scoredAt: "2026-10-02T00:00:00.000Z", runId: "run-1" });
+    for (const entry of entries) if (entry.appliedOn !== undefined) await stores.jobViews.setApplied({ ats: "greenhouse", jobId: entry.id, applied: true, at: entry.appliedOn });
     return stores;
 }
 

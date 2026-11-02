@@ -83,6 +83,8 @@ export interface JobViews {
     setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null>;
     allJobs(page: Page): Promise<JobView[]>;
     countAllJobs(): Promise<number>;
+    appliedJobs(page: Page): Promise<JobView[]>;
+    countApplied(): Promise<number>;
     verdictHistory(page: Page): Promise<VerdictView[]>;
     countVerdicts(): Promise<number>;
     jobDetail(key: JobKey): Promise<JobDetailRow | null>;

@@ -39,7 +39,7 @@ export function withJobHidden(key: string, hidden: boolean): RowsChange {
 }
 
 /** Builds the change that marks a job applied at a time, or clears its mark when the time is null. */
-export function withJobApplied(key: string, appliedOn: string | null): RowsChange {
+function withJobApplied(key: string, appliedOn: string | null): RowsChange {
     return withJobFields(key, { applied: appliedOn !== null, appliedOn });
 }
 
@@ -47,6 +47,12 @@ export function withJobApplied(key: string, appliedOn: string | null): RowsChang
 export function rescoredChange(row: JobRowView, page: PageName): { change: RowsChange; removing: boolean } {
     const removing = page === "recommended" && row.score === null;
     return { change: removing ? withoutJob(jobKey(row)) : withJobFields(jobKey(row), row), removing };
+}
+
+/** Builds the change for a job's applied mark: it updates the row, except on Applied, where a job whose mark is cleared is dropped. */
+export function appliedChange(job: JobRowView, appliedOn: string | null, page: PageName): { change: RowsChange; removing: boolean } {
+    const removing = page === "applied" && appliedOn === null;
+    return { change: removing ? withoutJob(jobKey(job)) : withJobApplied(jobKey(job), appliedOn), removing };
 }
 
 /** Builds the change that updates some of one job's fields in the rows shown. */
