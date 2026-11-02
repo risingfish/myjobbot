@@ -6,7 +6,7 @@ import type { SaveResult } from "../../../src/web/settingsSave.js";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
-import { Problems, SaveStatus, Setting } from "./SettingParts.js";
+import { Problems, SaveStatus, Setting, SettingCard } from "./SettingParts.js";
 import { Tag, TagButton, TagCloud } from "./Tags.js";
 
 type TermName = "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
@@ -61,12 +61,11 @@ export function FiltersSection({ view }: { view: SettingsView }) {
 /** Renders one group of filter lists as a Pico card headed by the group's name. */
 function FilterGroup({ title, lists }: { title: string; lists: TermListProps[] }) {
     return (
-        <article>
-            <header>{title}</header>
+        <SettingCard title={title}>
             {lists.map((list) => (
                 <TermList key={list.name} {...list} />
             ))}
-        </article>
+        </SettingCard>
     );
 }
 

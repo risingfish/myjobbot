@@ -7,7 +7,7 @@ import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
 import { BoostTags } from "./BoostTags.js";
-import { Problems, SaveStatus, Setting } from "./SettingParts.js";
+import { Problems, SaveStatus, Setting, SettingCard } from "./SettingParts.js";
 
 type Threshold = FieldView<number>;
 type Boosts = FieldView<Array<[string, number]>>;
@@ -25,11 +25,15 @@ export function ScoringSection({ view }: { view: SettingsView }) {
     const scoring = useScoring(view);
     return (
         <Panel title="Scoring">
-            <ThresholdSetting threshold={scoring.threshold} result={scoring.result} onType={scoring.typeThreshold} onCommit={scoring.commitThreshold} onReset={scoring.resetThreshold} />
-            <Setting label="Title boosts" field={scoring.boosts} onReset={() => scoring.changeBoosts(resetField(view.defaults.title_boosts))}>
-                <BoostTags boosts={scoring.boosts} result={scoring.result} onChange={scoring.changeBoosts} />
-                <Problems result={scoring.result} field="title_boosts" />
-            </Setting>
+            <SettingCard title="Threshold">
+                <ThresholdSetting threshold={scoring.threshold} result={scoring.result} onType={scoring.typeThreshold} onCommit={scoring.commitThreshold} onReset={scoring.resetThreshold} />
+            </SettingCard>
+            <SettingCard title="Boosts">
+                <Setting label="Title boosts" field={scoring.boosts} onReset={() => scoring.changeBoosts(resetField(view.defaults.title_boosts))}>
+                    <BoostTags boosts={scoring.boosts} result={scoring.result} onChange={scoring.changeBoosts} />
+                    <Problems result={scoring.result} field="title_boosts" />
+                </Setting>
+            </SettingCard>
             <SaveStatus result={scoring.result} saving={scoring.saving} />
         </Panel>
     );

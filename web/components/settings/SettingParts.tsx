@@ -67,3 +67,13 @@ export function SaveStatus({ result, saving }: { result: SaveResult | null; savi
         </footer>
     );
 }
+
+/** Renders a group of settings as a Pico card headed by the group's name. */
+export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <article>
+            <header>{title}</header>
+            {children}
+        </article>
+    );
+}
