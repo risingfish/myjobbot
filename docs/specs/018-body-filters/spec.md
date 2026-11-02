@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-31
 
-**Status**: Draft
+**Status**: Implemented (#78–#83, docs in PR 5)
 
 ## Clarifications
 

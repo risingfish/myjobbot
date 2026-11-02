@@ -73,6 +73,15 @@ Each run gets a UUID (printed as `run <id> finished after …`). Every log line 
 
 Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 
+To score one job again at once, from its current description and your current resume and settings:
+
+```bash
+npm start -- rescore <ats> <job_id>     # e.g. rescore greenhouse 4012345
+```
+
+It prints `scored`, `filtered (hidden by …)` or `failed` (exit code 1); see [Re-score](#re-score)
+for what each does. Each re-score gets its own run id and files, like a run.
+
 ## Web UI
 
 ```bash
@@ -87,7 +96,7 @@ sources are added (see [Sources](#sources)), where your search settings are made
 | Tab | Shows |
 |---|---|
 | **Recommended** | Jobs from your configured sources scoring at or above `match_threshold` (after boosts), most recently posted first, with the model's reasons and gaps |
-| **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter or `exclude_companies` hid from the model |
+| **All jobs** | Every job retrieved, scored or not, most recently posted first, including ones the title filter, the body filter or `exclude_companies` hid from the model |
 | **Reasoning** | Every scoring decision with its run ID, newest first. Kept as history in the `verdicts` table, so re-scoring never overwrites the earlier reasoning |
 
 Each job row has a **Hide** button. Hiding sets the job's `hidden` flag: it disappears from
@@ -98,12 +107,12 @@ Each row also starts with an **Applied** column: a blue **?** until you've appli
 to mark the job applied, and then a green **✓**. Hovering the check shows the date you marked it, in
 your browser's time zone. Clicking the check asks "Mark as not applied?" and, if you confirm, clears
 the mark. Applied and Hide are independent: marking a job doesn't move it on or off Recommended or
-change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, and
+change its score, and the mark stays through runs and re-scoring. Hiding, marking a job applied, Re-score and
 the Settings page are the UI's only writes; they accept requests from its own pages only.
 
 **Job details.** On Recommended and All jobs, a job's title opens a panel from the right, over
 about 60% of the window, without leaving the list: you can still scroll, hide jobs or click
-another title to switch. Its header, beside the title, has a green **Applied** button (which becomes
+another title to switch. Its header, beside the title, has **Re-score** (see [Re-score](#re-score)), a green **Applied** button (which becomes
 **Applied ✓**, and undoes the mark after the same confirmation), **Hide** (which hides the job as its
 row's Hide does and closes the panel; it is greyed out for a job already hidden, which you bring back
 with Unhide on All jobs) and **Close**. The panel has five sections:
@@ -124,6 +133,23 @@ Close it with its button, Escape or a click outside it. The open job is in the a
 tab. The icon left of **Hide** opens the original posting. Reasoning keeps its titles as links to
 the posting.
 
+<a id="re-score"></a>**Re-score.** The panel's **Re-score** scores the job again at once, from its current
+description against your current resume, preferences and filters. It reads "Re-scoring…" while it
+works, then the panel shows the new score, reasons and gaps, and History gains a row (the old
+verdicts stay). Use it after changing your preferences, your resume or a filter, since saved
+filters only apply to jobs scored after them.
+- **A job a filter now hides** (an excluded company, the title filter or the body filter) isn't
+  sent to the model. Its score is cleared, the panel says which filter hides it, and it leaves
+  Recommended; All jobs notes the filter. Its hidden and applied marks stay.
+- **A job with no description** (a LinkedIn alert job) has its description looked up first with
+  the [careers lookup](#careers-lookup), for at most 2 minutes. If nothing is found, it is scored
+  from the alert, as a run does.
+- **A failure** (the model can't be reached, say) keeps the old score and says so.
+
+A re-score normally takes under 30 seconds (up to about 5 minutes with a lookup). While it runs,
+the page's other actions (Hide, Applied, Load more, opening another job) wait for it: Next.js runs
+one server action at a time. It is traced like a run, in its own `data/runs/` file.
+
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
 bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
 "…", with the full title on hover. See
@@ -131,7 +157,8 @@ bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 c
 
 Each tab shows 100 rows and loads the next 100 as you scroll (or via "Load more"). Search settings
 you save on the Settings page, and edits to `data/config.json`, show up on the next page load. Set `MYJOBBOT_PORT` to change the port. There
-is no login: keep it on your LAN. The web UI needs no LLM settings, only `data/`.
+is no login: keep it on your LAN. The web UI needs `data/` and, for Re-score, the same `LLM_*`
+settings as a run (and `MYJOBBOT_SEARXNG_URL` for its careers lookup).
 
 **Which hosts may connect.** Every request must name the UI in its `Host`, or it gets 421; that
 stops other websites reaching it through DNS tricks. By default that's `localhost` and
@@ -403,6 +430,7 @@ container.
 |---|---|
 | Open the web UI | `http://<server>:8080` (the `web` service; `MYJOBBOT_PORT` in `.env` changes the port) |
 | Run once now | `docker compose run --rm myjobbot run` |
+| Re-score one job | The job panel's **Re-score** (or `npm start -- rescore <ats> <job_id>` from a checkout with `.env`) |
 | Change search settings | The web UI's Settings page: Sources, Preferences, Scoring and Filters, each with its own Save |
 | Watch runs | `docker compose logs -f myjobbot` |
 | Update after `git pull` | Nothing for code under `src/` or `web/`; `docker compose up -d --build` when `package.json`, `package-lock.json`, `Dockerfile`, `docker/`, `web/next.config.ts` or `web/tsconfig.json` changed (or leave `npm run docker:watch` running) |
@@ -425,6 +453,9 @@ new package crashes both services until the image is rebuilt. `npm run docker:wa
 works while that command is running (a reboot or a plain `up -d` leaves nothing watching), and
 recreating `myjobbot` stops a scheduled run that is in progress (check with
 `docker compose top myjobbot` before changing dependencies near 01:00, 09:00 or 17:00).
+
+Both services join the `browser` network as well as the default one: runs and the web UI's
+Re-score both use the careers lookup, which renders pages in the `browser` service.
 
 The container runs as uid 1000. If your server user has a different uid, run
 `sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),
@@ -791,15 +822,20 @@ flowchart LR
 A job's score is decided in four stages. Only the third involves the model.
 
 **1. Filters decide what the model sees** (before scoring, in code). `next_jobs` offers only
-jobs whose title passes `title_filter` (an include term, matched at the start of a word, and no
-exclude term, matched as a whole word) and whose company isn't in `exclude_companies`. Filtered jobs are stored but never
-scored; All jobs marks them.
+jobs whose company isn't in `exclude_companies`, whose title passes `title_filter` (an include term,
+matched at the start of a word, and no exclude term, matched as a whole word), and whose description
+passes `body_filter` (one of its include terms when there are any, and none of its exclude terms,
+all matched as whole words or phrases in the text the model reads). A job with no description yet
+passes the body filter. The three are checked in that order (`filterMatch`,
+`src/jobs/filterMatch.ts`), so All jobs names the first that hides a job. Filtered jobs are stored
+but never scored. A filter you add later doesn't touch jobs already scored; Re-score a job to apply
+it.
 
 **2. The model reads what looks promising.** `next_jobs` returns metadata only. For each job
 whose title, seniority and location could plausibly fit, the prompt asks the model to call
 `get_job_details` and read the description (first 6,000 characters) before scoring.
 
-**3. The model scores with a rubric, in two parts** (`src/agent/prompt.ts`). For each job it
+**3. The model scores with a rubric, in two parts** (`src/agent/rubric.ts`, shared by runs and Re-score). For each job it
 returns a `base` and a `bonus` to `record_matches`; code checks each is an integer from 0 to
 50 and stores their sum as the score, keeping both parts.
 
@@ -864,7 +900,8 @@ Settings live in two places:
   - **Sources**: your saved sources (see [Sources](#sources)), each saved on its own;
   - **Preferences**: the preferences text;
   - **Scoring**: the match threshold and title boosts;
-  - **Filters**: the title filter and excluded companies and publishers.
+  - **Filters**: the title filter, the body filter (description terms) and excluded companies and
+    publishers.
 
   Each section has its own Save, and each setting shows "(default)" until you change it, or offers
   **Reset to default** once you have. Only what you set is stored, so defaults still apply. A save
@@ -895,6 +932,8 @@ section stores the value in effect and clears the notice.
 | `match_threshold` | 70 | Score at which a job counts as a match |
 | `title_filter.include` / `.exclude` | engineering terms / sales, recruiting, management, interns | Which postings the model sees |
 | `title_filter.extra_exclude` | `[]` | More exclude terms, added to `exclude` instead of replacing it |
+| `body_filter.include` | `[]` | "Description must include one of" on the Settings page: when it has terms, a job whose description mentions none of them isn't scored. Whole words or phrases, any case, punctuation as spaces, an optional plural "s" (`"go"` never matches "good") |
+| `body_filter.exclude` | `[]` | "Description must not include": a job whose description mentions one of these isn't scored (`"security clearance"` matches "Security-Clearance"). It wins over `include`. A job with no description passes both lists; already-scored jobs keep their score |
 | `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |
 | `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title or description (each term counted once) |
 
@@ -956,7 +995,8 @@ when needed; and data markers around outside text. Feature specs are in `docs/sp
 
 Also built: descriptions kept as Markdown so their structure shows (feature 012); and modular
 job sources (feature 017): every source is a module, saved sources are added on Settings by
-pasting a link, and Workday sites are a source.
+pasting a link, and Workday sites are a source; and body filters on job descriptions with a
+per-job Re-score (feature 018).
 
 Still to come: a step-by-step trace of how each job was categorized, an email digest, and Glassdoor
 ratings.
