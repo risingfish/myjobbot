@@ -9,6 +9,9 @@ test.each([
     ["https://boards.greenhouse.io/affirm", { kind: "greenhouse", slug: "affirm", postingId: null }],
     ["https://job-boards.greenhouse.io/affirm/jobs/7815948003", { kind: "greenhouse", slug: "affirm", postingId: "7815948003" }],
     ["https://jobs.lever.co/acme", { kind: "lever", slug: "acme", postingId: null }],
+    ["https://jobs.gem.com/bigpanda", { kind: "gem", slug: "bigpanda", postingId: null }],
+    ["https://jobs.gem.com/bigpanda/am9icG9zdDpnBhVy7828ukBg7JowC_uG", { kind: "gem", slug: "bigpanda", postingId: "am9icG9zdDpnBhVy7828ukBg7JowC_uG" }],
+    ["https://api.gem.com/job_board/v0/bigpanda/job_posts/", { kind: "gem", slug: "bigpanda", postingId: null }],
     [`https://jobs.lever.co/acme/${UUID}`, { kind: "lever", slug: "acme", postingId: UUID }],
     ["https://cisco.wd5.myworkdayjobs.com/Cisco_Careers", { kind: "workday", slug: "cisco", postingId: null, host: "cisco.wd5.myworkdayjobs.com", site: "Cisco_Careers" }],
     ["https://cisco.wd5.myworkdayjobs.com/en-US/Cisco_Careers/job/San-Jose/Engineer_R1", { kind: "workday", slug: "cisco", postingId: "/job/San-Jose/Engineer_R1", host: "cisco.wd5.myworkdayjobs.com", site: "Cisco_Careers" }],
@@ -16,14 +19,6 @@ test.each([
     expect(parseBoardLink(url)).toEqual(link);
 });
 
-test.each([
-    "https://boards.greenhouse.io/embed/job_app?for=affirm&token=1",
-    "https://careers.example.com/en-US/External/job/X_R1",
-    "https://jobs.ashbyhq.com/",
-    "http://evil.wd1.myworkdayjobs.com.attacker.example/x",
-    "https://x.wd1.myworkdayjobs.com:8443/s",
-    "https://jobs.lever.co/acme/123/extra/parts",
-    "ftp://jobs.lever.co/acme",
-])("%s is not a board link", (url) => {
+test.each(["https://boards.greenhouse.io/embed/job_app?for=affirm&token=1", "https://careers.example.com/en-US/External/job/X_R1", "https://jobs.ashbyhq.com/", "https://jobs.gem.com/", "https://api.gem.com/other/v0/bigpanda", "http://evil.wd1.myworkdayjobs.com.attacker.example/x", "https://x.wd1.myworkdayjobs.com:8443/s", "https://jobs.lever.co/acme/123/extra/parts", "ftp://jobs.lever.co/acme"])("%s is not a board link", (url) => {
     expect(parseBoardLink(url)).toBeNull();
 });

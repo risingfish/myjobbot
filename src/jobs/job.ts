@@ -1,6 +1,6 @@
 import { capDescription } from "../descriptions/cap.js";
 
-type Ats = "greenhouse" | "lever" | "ashby";
+type Ats = "greenhouse" | "lever" | "ashby" | "gem";
 export const DESCRIPTION_FORMATS = ["markdown", "text"] as const;
 export type DescriptionFormat = (typeof DESCRIPTION_FORMATS)[number];
 

@@ -15,6 +15,10 @@ export function ashbyBoard(postings: Array<Posting & { id: string }>, slug = "Ac
     return { jobs: postings.map((posting) => ({ id: posting.id, title: posting.title, jobUrl: `https://jobs.ashbyhq.com/${slug}/${posting.id}`, location: posting.location, descriptionHtml: `<p>${posting.title} builds APIs.</p>`, isListed: true })) };
 }
 
+export function gemBoard(postings: Array<Posting & { id: string }>, slug = "acme") {
+    return postings.map((posting) => ({ id: posting.id, title: posting.title, absolute_url: `https://jobs.gem.com/${slug}/${posting.id}`, location: { name: posting.location }, first_published_at: "2026-09-14T10:24:59.731Z", content: `<div>${posting.title} builds &amp; ships APIs.</div>` }));
+}
+
 export function fakeBoardHttp(answers: Record<string, unknown>) {
     const calls: string[] = [];
     const answer = async (url: string) => {
