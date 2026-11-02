@@ -12,6 +12,7 @@ import { descriptionContract } from "../helpers/descriptionContract.js";
 import { gmailStoreContract } from "../helpers/gmailStoreContract.js";
 import { jobDetailContract } from "../helpers/jobDetailContract.js";
 import { rescoreContract } from "../helpers/rescoreContract.js";
+import { rescoreLogContract } from "../helpers/rescoreLogContract.js";
 import { searchSettingsContract } from "../helpers/searchSettingsContract.js";
 import { sourceContract } from "../helpers/sourceContract.js";
 import { storeContract } from "../helpers/storeContract.js";
@@ -43,6 +44,7 @@ jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
 appliedContract(emptyStores);
 rescoreContract(emptyStores);
+rescoreLogContract(emptyStores);
 sourceContract(emptyStores, {
     jobLinks: () => db.selectFrom("jobs").select(["job_id", "source", "source_id"]).orderBy("job_id").execute(),
     seedCompany: async () => Number((await db.insertInto("companies").values({ company_key: "stripe", name: "Stripe", created_date: "2026-10-28", last_found_date: "2026-10-28" }).executeTakeFirstOrThrow()).insertId),

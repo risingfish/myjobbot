@@ -144,23 +144,29 @@ export class KyselyJobStore implements JobStore {
         return z.object({ earliest: z.string() }).parse(row).earliest;
     }
 
-    /** Deletes jobs not seen since a cutoff, except those marked applied, and their now-orphaned verdicts; returns the number of jobs removed. */
+    /** Deletes jobs not seen since a cutoff, except those marked applied, and their now-orphaned verdicts and re-score runs (whose steps go with them); returns the number of jobs removed. */
     async pruneLastSeenBefore(cutoff: string): Promise<number> {
         const result = await this.db.deleteFrom("jobs").where("last_seen", "<", cutoff).where("applied", "=", 0).executeTakeFirst();
+        await this.deleteOrphansOf("verdicts");
+        await this.deleteOrphansOf("rescore_runs");
+        return Number(result.numDeletedRows);
+    }
+
+    /** Deletes a table's rows whose job no longer exists. */
+    private async deleteOrphansOf(table: "verdicts" | "rescore_runs"): Promise<void> {
         await this.db
-            .deleteFrom("verdicts")
+            .deleteFrom(table)
             .where(({ not, exists, selectFrom }) =>
                 not(
                     exists(
                         selectFrom("jobs")
                             .select(sql`1`.as("one"))
-                            .whereRef("jobs.ats", "=", "verdicts.ats")
-                            .whereRef("jobs.job_id", "=", "verdicts.job_id"),
+                            .whereRef("jobs.ats", "=", `${table}.ats`)
+                            .whereRef("jobs.job_id", "=", `${table}.job_id`),
                     ),
                 ),
             )
             .execute();
-        return Number(result.numDeletedRows);
     }
 
     /** Looks up a single job by its id, or null if no such job is stored. */

@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { CompanyStore } from "./companyStore.js";
 import type { JobSource } from "./jobSource.js";
+import type { RescoreLogStore } from "./rescoreLogStore.js";
 import type { SearchSettingsStore } from "./searchSettingsStore.js";
 import type { SourceStore } from "./sourceStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
@@ -185,6 +186,7 @@ export interface CareersStore {
 
 export interface Stores {
     jobStore: JobStore;
+    rescoreLog: RescoreLogStore;
     jobViews: JobViews;
     apiCalls: ApiCallLog;
     gmail: GmailStore;

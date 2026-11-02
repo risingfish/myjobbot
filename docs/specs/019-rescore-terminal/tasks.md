@@ -45,7 +45,7 @@ text) land in S2–S3; US3 (looking away) lands with S3's stored-log stream; US4
 ### Sitting S0: the design docs (docs PR)
 
 - [X] T001 Remove the Sync Impact Report comment from `.specify/memory/constitution.md`, then, when the owner asks, commit `docs/specs/019-rescore-terminal/` together with the 2.4.0 amendment (`.specify/memory/constitution.md`, `.specify/templates/overrides/tasks-template.md`, `CLAUDE.md`), as Governance requires, and open the docs PR
-- [ ] T002 After the docs PR merges, run `npm run check` and `npm run check:db` on `main`, correct the ledger's baseline row below if it differs from 790 unit / 61 integration / 63 UI, and recompute that every share still moves toward 95 / 4 / 1 (the integration margin is thin; add a unit test if needed)
+- [X] T002 After the docs PR merges, run `npm run check` and `npm run check:db` on `main`, correct the ledger's baseline row below if it differs from 790 unit / 61 integration / 63 UI, and recompute that every share still moves toward 95 / 4 / 1 (the integration margin is thin; add a unit test if needed)
 
 ---
 
@@ -53,20 +53,22 @@ text) land in S2–S3; US3 (looking away) lands with S3's stored-log stream; US4
 
 ### Sitting S1: the tables and `RescoreLogStore` (PR 1)
 
-- [ ] T003 Stop the Docker stack (`docker compose stop`), confirm `docker:watch` isn't running, and create `.specify/sitting-in-progress` naming S1
-- [ ] T004 [P] Write the contract `tests/helpers/rescoreLogContract.ts` with `rescoreLogContract(make)`, 2 tests, run from `tests/storeContract.test.ts` (unit, 2) and `tests/integration/storeContract.test.ts` (integration, 2):
+- [X] T003 Stop the Docker stack (`docker compose stop`), confirm `docker:watch` isn't running, and create `.specify/sitting-in-progress` naming S1
+- [X] T004 [P] Write the contract `tests/helpers/rescoreLogContract.ts` with `rescoreLogContract(make)`, 2 tests, run from `tests/storeContract.test.ts` (unit, 2) and `tests/integration/storeContract.test.ts` (integration, 2):
   - **runs:** `begin(key, id, at)` gives `{ started: id }`; a second `begin` for the same job gives `{ running: id }`; two `begin`s at once (`Promise.all`) give exactly one `started`; `begin` for a job that isn't stored gives `{ missing: true }`; a run begun 10 minutes or more before `at` doesn't block (`{ started }`); `end(id, { outcome, filter, score }, at)` closes it; `runsFor(key)` lists the job's runs newest first with their outcome, filter, score, `startedAt`, `endedAt`; `run(id)` gives one or null;
   - **steps:** `addStep(id, { seq, elapsedMs, kind, fields })` stores steps; `stepsAfter(id, seq)` gives those with a larger `seq`, in order; after `pruneLastSeenBefore` removes the job, `runsFor` and `stepsAfter` give nothing, while an applied job's runs stay.
-- [ ] T005 Create `src/db/migrations/014_rescore_runs.ts` with the schema builder, `utf8mb4_bin` table options as in `012_user_sources.ts`, list it in `src/db/migrations/index.ts`, add `rescore_steps` then `rescore_runs` to `TABLES` in `tests/helpers/testDb.ts` (so `emptyTables` and the fresh-database drop cover them), and update `tests/integration/migrate.test.ts`'s migration-name lists and collation list (0 new tests):
+- [X] T005 Create `src/db/migrations/014_rescore_runs.ts` with the schema builder, `utf8mb4_bin` table options as in `012_user_sources.ts`, list it in `src/db/migrations/index.ts`, add `rescore_steps` then `rescore_runs` to `TABLES` in `tests/helpers/testDb.ts` (so `emptyTables` and the fresh-database drop cover them), and update `tests/integration/migrate.test.ts`'s migration-name lists and collation list (0 new tests):
   - `rescore_runs`: `id varchar(36)` primary key, `ats varchar(32)` not null, `job_id varchar(255)` not null, `started_at varchar(32)` not null, `ended_at varchar(32)` null, `outcome varchar(16)` null, `filter varchar(16)` null, `score integer` null; index `rescore_runs_job` on `(ats, job_id, started_at)`;
   - `rescore_steps`: `run_id varchar(36)` not null, `seq integer` not null, `elapsed_ms integer` not null, `kind varchar(24)` not null, `fields text` not null; primary key `(run_id, seq)`; foreign key `run_id` → `rescore_runs.id` with `onDelete("cascade")`, so a run's steps go with it.
-- [ ] T006 Add both tables to `src/db/schema.ts` (`RescoreRunsTable`, `RescoreStepsTable`, entries in `Database`).
-- [ ] T007 Create `src/db/rescoreLogStore.ts`: the `RescoreLogStore` interface (`begin`, `end`, `addStep`, `stepsAfter`, `run`, `runsFor`), `RescoreRun`, `StoredStep`, `RescoreEnd` (`{ outcome: "scored" | "filtered" | "failed"; filter: "company" | "title" | "body" | null; score: number | null }`, the stream's `end` event and `rescoreNote`'s input), `BeginResult` (`{ started: string } | { running: string } | { missing: true }`) types, and `OPEN_RUN_MINUTES = 10`. A run open `OPEN_RUN_MINUTES` or more is reported as `failed` everywhere it is shown.
-- [ ] T008 Create `src/db/kysely/rescoreLogStore.ts`, `KyselyRescoreLogStore`, with Kysely builders only: `begin` inside `db.transaction()` first locks the job's row (`selectFrom("jobs")…forUpdate()`; none gives `{ missing: true }`), then selects an open run of the job started after `at − 10 min` and inserts if none, so two presses can't both start (InnoDB's plain select takes no lock); `fields` stored as JSON text and parsed back.
-- [ ] T009 Create `tests/helpers/memoryRescoreLog.ts` (`MemoryRescoreLog` over the shared `Tables` in `tests/helpers/memoryJobViews.ts`, which gain `rescoreRuns` and `rescoreSteps`) and add `rescoreLog` to both `memoryStores` and `storesWithSettings` in `tests/helpers/memoryStore.ts`.
-- [ ] T010 Add `rescoreLog: RescoreLogStore` to `Stores` in `src/db/store.ts` (keep it ≤ 200 lines; import the type from `rescoreLogStore.ts`) and to `storesOver` in `src/db/kysely/stores.ts`.
-- [ ] T011 In `src/db/kysely/jobStore.ts`, pull `pruneLastSeenBefore`'s verdicts clause into one private helper, `deleteOrphansOf(table: "verdicts" | "rescore_runs")` (delete the rows whose job is gone, the existing `not exists` shape), and call it for both tables; the steps go by cascade (T005). Keep the function ≤ 20 lines and the file ≤ 200; mirror it in the memory job store. Update its purpose comment.
-- [ ] T012 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S1 and open PR 1
+- [X] T006 Add both tables to `src/db/schema.ts` (`RescoreRunsTable`, `RescoreStepsTable`, entries in `Database`).
+- [X] T007 Create `src/db/rescoreLogStore.ts`: the `RescoreLogStore` interface (`begin`, `end`, `addStep`, `stepsAfter`, `run`, `runsFor`), `RescoreRun`, `StoredStep`, `RescoreEnd` (`{ outcome: "scored" | "filtered" | "failed"; filter: "company" | "title" | "body" | null; score: number | null }`, the stream's `end` event and `rescoreNote`'s input), `BeginResult` (`{ started: string } | { running: string } | { missing: true }`) types, and `OPEN_RUN_MINUTES = 10`. A run open `OPEN_RUN_MINUTES` or more is reported as `failed` everywhere it is shown.
+- [X] T008 Create `src/db/kysely/rescoreLogStore.ts`, `KyselyRescoreLogStore`, with Kysely builders only: `begin` inside `db.transaction()` first locks the job's row (`selectFrom("jobs")…forUpdate()`; none gives `{ missing: true }`), then selects an open run of the job started after `at − 10 min` and inserts if none, so two presses can't both start (InnoDB's plain select takes no lock); `fields` stored as JSON text and parsed back.
+- [X] T009 Create `tests/helpers/memoryRescoreLog.ts` (`MemoryRescoreLog` over the shared `Tables` in `tests/helpers/memoryJobViews.ts`, which gain `rescoreRuns` and `rescoreSteps`) and add `rescoreLog` to both `memoryStores` and `storesWithSettings` in `tests/helpers/memoryStore.ts`.
+- [X] T010 Add `rescoreLog: RescoreLogStore` to `Stores` in `src/db/store.ts` (keep it ≤ 200 lines; import the type from `rescoreLogStore.ts`) and to `storesOver` in `src/db/kysely/stores.ts`.
+- [X] T011 In `src/db/kysely/jobStore.ts`, pull `pruneLastSeenBefore`'s verdicts clause into one private helper, `deleteOrphansOf(table: "verdicts" | "rescore_runs")` (delete the rows whose job is gone, the existing `not exists` shape), and call it for both tables; the steps go by cascade (T005). Keep the function ≤ 20 lines and the file ≤ 200; mirror it in the memory job store. Update its purpose comment.
+- [X] T012 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S1 and open PR 1
+
+**As built (S1):** `tests/integration/companyMigrations.test.ts` also lists migration names (four lists), so it gained `014_rescore_runs` too; the collation list in `migrate.test.ts` gained both tables. `OPEN_RUN_MINUTES` stays private to `src/db/rescoreLogStore.ts` until S3 reads it, and `openSince(at)` gives the earliest start that still blocks.
 
 **Checkpoint**: PR 1. The tables exist; nothing writes them yet.
 
@@ -173,13 +175,13 @@ text) land in S2–S3; US3 (looking away) lands with S3's stored-log stream; US4
 
 | | Unit | Integration | UI |
 |---|---|---|---|
-| Baseline (2026-11-02, T002) | 790 (86.43%) | 61 (6.67%) | 63 (6.89%) |
+| Baseline (2026-11-03, T002) | 790 (86.34%) | 62 (6.78%) | 63 (6.89%) |
 | Planned new | 27 (T004 2, T014 7, T015 4, T016 2, T017 4, T027 3, T029 2, T038 3) | 2 (T004's MariaDB run) | 1 (T028) |
 | Planned removed | 0 | 0 | 0 |
-| Planned after | 817 (86.55%) | 63 (6.67%) | 64 (6.78%) |
+| Planned after | 817 (86.46%) | 64 (6.77%) | 64 (6.77%) |
 | After PR 5 (T045) | | | |
 
-Every share moves toward 95 / 4 / 1 (integration 6.674% → 6.674%, down by 0.0003 points).
+Every share moves toward 95 / 4 / 1 (integration 6.776% → 6.772%). T002 found 62 integration tests on `main` (61 passing and the real-browser test, which is skipped without `MYJOBBOT_TEST_BROWSER_URL`), not 61.
 
 ## Notes
 
