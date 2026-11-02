@@ -399,3 +399,6 @@ dialog.details-panel[open] {
 .setting .boost-form input[type="number"] {
     flex: 0 0 6em;
 }
+.panel article > header {
+    color: var(--pico-contrast);
+}
