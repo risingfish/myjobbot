@@ -416,3 +416,14 @@ dialog.details-panel[open] {
         background: var(--pico-form-element-selected-background-color);
     }
 }
+.note.saved {
+    /* 25% larger than a plain note, which the browser sizes "smaller" (1/1.2 of its parent). */
+    font-size: calc(1em * 1.25 / 1.2);
+    color: var(--pico-ins-color);
+    animation: fade-out 4s forwards;
+}
+@keyframes fade-out {
+    to {
+        opacity: 0;
+    }
+}

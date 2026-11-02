@@ -62,7 +62,7 @@ export function SaveStatus({ result, saving }: { result: SaveResult | null; savi
         <footer aria-live="polite">
             <Problems result={result} field={null} />
             {saving && <small className="note">Saving…</small>}
-            {result?.ok === true && <small className="note">Saved</small>}
+            {result?.ok === true && <small className="note saved">Saved</small>}
             <SaveFailedNote status={result !== null && "failed" in result ? "failed" : "idle"} />
         </footer>
     );
