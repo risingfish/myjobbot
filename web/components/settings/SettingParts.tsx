@@ -55,3 +55,25 @@ export function SaveBar({ section, result, saving }: { section: string; result: 
         </footer>
     );
 }
+
+/** Says how a section's automatic save went: saving, stored, refused at the top, or couldn't run. */
+export function SaveStatus({ result, saving }: { result: SaveResult | null; saving: boolean }) {
+    return (
+        <footer className="save-status" aria-live="polite">
+            <Problems result={result} field={null} />
+            {saving && <small className="note">Saving…</small>}
+            {result?.ok === true && <small className="note saved">Saved</small>}
+            <SaveFailedNote status={result !== null && "failed" in result ? "failed" : "idle"} />
+        </footer>
+    );
+}
+
+/** Renders a group of settings as a Pico card headed by the group's name. */
+export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <article>
+            <header>{title}</header>
+            {children}
+        </article>
+    );
+}

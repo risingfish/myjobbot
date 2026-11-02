@@ -37,8 +37,23 @@ function holdsSectionFields({ section, edits }: { section: SectionName; edits: R
 }
 
 /** Adds a row to a list field, which stops it taking its default. */
-export function addRow<T>(field: FieldView<T[]>, row: T): FieldView<T[]> {
+function addRow<T>(field: FieldView<T[]>, row: T): FieldView<T[]> {
     return { value: [...field.value, row], isDefault: false };
+}
+
+/** Adds a typed term to a list of terms, trimmed, leaving the list as it is when the term is blank or already listed in any case. */
+export function addTerm(field: FieldView<string[]>, typed: string): FieldView<string[]> {
+    const term = typed.trim();
+    const listed = field.value.some((existing) => existing.toLowerCase() === term.toLowerCase());
+    return term === "" || listed ? field : addRow(field, term);
+}
+
+/** Adds a title boost, or replaces the one at an index, trimmed; a term already boosted in any case gets the new points, and a blank term leaves the boosts as they are. */
+export function putBoost(field: FieldView<Array<[string, number]>>, [typed, points]: [string, number], at: number | null): FieldView<Array<[string, number]>> {
+    const term = typed.trim();
+    if (term === "") return field;
+    const listed = at ?? field.value.findIndex(([existing]) => existing.toLowerCase() === term.toLowerCase());
+    return listed === -1 ? addRow(field, [term, points]) : updateRow(field, listed, [term, points]);
 }
 
 /** Removes the row at an index from a list field. */
@@ -47,7 +62,7 @@ export function removeRow<T>(field: FieldView<T[]>, index: number): FieldView<T[
 }
 
 /** Replaces the row at an index in a list field. */
-export function updateRow<T>(field: FieldView<T[]>, index: number, row: T): FieldView<T[]> {
+function updateRow<T>(field: FieldView<T[]>, index: number, row: T): FieldView<T[]> {
     return { value: field.value.map((current, at) => (at === index ? row : current)), isDefault: false };
 }
 
