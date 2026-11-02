@@ -9,6 +9,7 @@ import type { JobKey, Stores } from "./db/store.js";
 import { describeError } from "./errors.js";
 import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
+import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
 const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path>";
 
@@ -33,7 +34,7 @@ async function runCommand(environment: Environment): Promise<number> {
     return report.status === "finished" ? 0 : 1;
 }
 
-/** Re-scores one job at once from the command line, printing its outcome and mapping a failure to exit code 1. */
+/** Re-scores one job at once from the command line, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */
 async function rescoreCommand(environment: Environment, [ats, jobId]: string[]): Promise<number> {
     if (!ats || !jobId) return usage();
     const stores = await openStores(parseDbSettings(environment));
@@ -44,16 +45,25 @@ async function rescoreCommand(environment: Environment, [ats, jobId]: string[]):
     }
 }
 
-/** Opens a re-score against open stores, runs it for one job and prints the outcome, closing its page renderer afterward. */
+/** Opens a re-score against open stores and records its run, printing each step as it happens, or that one is already running; closes its page renderer afterward. */
 async function rescoreWith(environment: Environment, stores: Stores, key: JobKey): Promise<number> {
-    const opened = await openRescore(environment, stores);
+    const opened = await openRescore(environment, stores, (line, elapsedMs) => console.log(consoleLine(line, elapsedMs)));
     try {
+        const begun = await opened.begin(key);
+        if ("running" in begun) console.log(alreadyRunningLine(key, begun.running));
+        if (!("started" in begun)) return "missing" in begun ? printed(`rescore ${key.ats} ${key.jobId}: failed`, 1) : 1;
+        console.log(commandLine(key));
         const result = await rescore(opened.deps, key);
-        console.log(`rescore ${key.ats} ${key.jobId}: ${result.outcome}${result.outcome === "filtered" ? ` (${result.note})` : ""}`);
-        return result.outcome === "failed" ? 1 : 0;
+        return printed(`rescore ${key.ats} ${key.jobId}: ${result.outcome}${result.outcome === "filtered" ? ` (${result.note})` : ""}`, result.outcome === "failed" ? 1 : 0);
     } finally {
         await opened.close();
     }
+}
+
+/** Prints a line and gives back an exit code. */
+function printed(line: string, code: number): number {
+    console.log(line);
+    return code;
 }
 
 /** Copies an old SQLite database into the configured MariaDB database once, printing the row counts. */

@@ -5,6 +5,7 @@ import type { Trace } from "../agent/trace.js";
 import { reportLookalike } from "../app/lookalikes.js";
 import type { AppConfig } from "../config/load.js";
 import type { JobKey, JobStore } from "../db/store.js";
+import type { RescoreLog } from "./log.js";
 import { oneJobStore } from "./oneJobStore.js";
 import { RESCORE_COMPACTION_NOTICE, RESCORE_NUDGE, rescoreMessages } from "./prompt.js";
 import { rescoreTools, type RescoreToolContext } from "./tools.js";
@@ -21,14 +22,19 @@ interface SessionDeps {
     runId: string;
     now: () => Date;
     markers: DataMarkers;
+    log: Pick<RescoreLog, "step">;
 }
 
-/** Scores one job in its own short agent session, reporting whether its verdict was saved. */
-export async function scoreOne(deps: SessionDeps): Promise<boolean> {
-    const store = oneJobStore(deps.store, deps.key);
+/** Scores one job in its own short agent session, logging the score once it is saved and giving it back, or null when none was. */
+export async function scoreOne(deps: SessionDeps): Promise<number | null> {
+    let saved: number | null = null;
+    const store = oneJobStore(deps.store, deps.key, (score) => {
+        saved = score;
+        deps.log.step({ kind: "saved", fields: { score } });
+    });
     const context = { store, key: deps.key, config: deps.config.settings, now: deps.now, runId: deps.runId };
     await runAgent(agentDeps(deps, context), rescoreMessages(deps.config, deps.markers));
-    return store.recorded();
+    return saved;
 }
 
 /** Assembles the agent loop's dependencies for a re-score: its tools, tight limits and its own nudge and compaction notice. */
