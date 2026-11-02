@@ -7,7 +7,7 @@ vi.mock("../../web/lib/actions.js", () => ({ setJobApplied: vi.fn(), setJobHidde
 
 function showHeader(url: string | null) {
     const job = jobRowView({ url });
-    return render(<PanelHeader job={job} details={{ state: "loading" }} titleId="t" onApplied={vi.fn()} onHidden={vi.fn()} onClose={vi.fn()} />);
+    return render(<PanelHeader job={job} details={{ state: "loading" }} titleId="t" onApplied={vi.fn()} onHidden={vi.fn()} onRescored={vi.fn()} onClose={vi.fn()} />);
 }
 
 test("the panel's posting link opens the posting in a new tab, just after the title and outside its heading", () => {

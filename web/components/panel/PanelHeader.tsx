@@ -5,6 +5,7 @@ import { useHide } from "../../lib/useHide.js";
 import type { Details } from "../../lib/useJobDetails.js";
 import { PostingLink } from "../common/PostingLink.js";
 import { SaveFailedNote } from "../forms/SaveFailedNote.js";
+import { PanelRescore } from "./PanelRescore.js";
 
 interface PanelHeaderProps {
     job: JobRowView | null;
@@ -12,11 +13,14 @@ interface PanelHeaderProps {
     titleId: string;
     onApplied: (job: JobRowView, appliedOn: string | null) => void;
     onHidden: (job: JobRowView) => void;
+    onRescored: (job: JobRowView, row: JobRowView) => void;
     onClose: () => void;
 }
 
+type ActionsProps = Pick<PanelHeaderProps, "onApplied" | "onHidden" | "onRescored" | "onClose"> & { row: JobRowView | null };
+
 /** Renders the panel's header: the shown job's title as its heading with the link to its posting, then the actions on the job and the close button. */
-export function PanelHeader({ job, details, titleId, onApplied, onHidden, onClose }: PanelHeaderProps) {
+export function PanelHeader({ job, details, titleId, ...actions }: PanelHeaderProps) {
     const row = job ?? (details.state === "found" ? details.view.job : null);
     return (
         <header className="details-head">
@@ -26,14 +30,22 @@ export function PanelHeader({ job, details, titleId, onApplied, onHidden, onClos
                 </h2>
                 {row !== null && <PostingLink url={row.url} />}
             </div>
-            <div className="details-actions">
-                {row !== null && <PanelApplied job={row} onApplied={(appliedOn) => onApplied(row, appliedOn)} />}
-                {row !== null && <PanelHide job={row} onHidden={onHidden} />}
-                <button type="button" className="outline secondary" onClick={onClose}>
-                    Close
-                </button>
-            </div>
+            <PanelActions row={row} {...actions} />
         </header>
+    );
+}
+
+/** Renders the actions on the shown job, Re-score, Applied and Hide, once it is known, then the close button. */
+function PanelActions({ row, onApplied, onHidden, onRescored, onClose }: ActionsProps) {
+    return (
+        <div className="details-actions">
+            {row !== null && <PanelRescore job={row} onRescored={(updated) => onRescored(row, updated)} />}
+            {row !== null && <PanelApplied job={row} onApplied={(appliedOn) => onApplied(row, appliedOn)} />}
+            {row !== null && <PanelHide job={row} onHidden={onHidden} />}
+            <button type="button" className="outline secondary" onClick={onClose}>
+                Close
+            </button>
+        </div>
     );
 }
 

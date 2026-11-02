@@ -24,7 +24,10 @@ function inPanel() {
 }
 
 async function clickInPanel(name: string, confirmed = true) {
-    vi.stubGlobal("confirm", vi.fn(() => confirmed));
+    vi.stubGlobal(
+        "confirm",
+        vi.fn(() => confirmed),
+    );
     await userEvent.click(await inPanel().findByRole("button", { name }));
 }
 
@@ -37,7 +40,7 @@ function headerButtons(): string[] {
 async function marksFromThePanel() {
     showPage();
     await openTitle("Software Engineer a");
-    expect([headerButtons()[0], headerButtons().at(-1)]).toEqual(["Applied", "Close"]);
+    expect([headerButtons()[0], headerButtons().at(-1)]).toEqual(["Re-score", "Close"]);
     await clickInPanel("Applied");
     expect(actions.setJobApplied).toHaveBeenLastCalledWith("greenhouse", "a", true);
     expect(await inPanel().findByRole("button", { name: "Applied ✓" })).toBeTruthy();
@@ -122,7 +125,7 @@ async function disabledForAHiddenJob() {
 test("the panel's Hide sits between Applied and Close, hides the job and closes the panel, and is disabled for a hidden job", async () => {
     showPage();
     await openTitle("Software Engineer a");
-    expect(headerButtons()).toEqual(["Applied", "Hide", "Close"]);
+    expect(headerButtons()).toEqual(["Re-score", "Applied", "Hide", "Close"]);
     cleanup();
     await hidesAndCloses("recommended");
     await hidesAndCloses("jobs");

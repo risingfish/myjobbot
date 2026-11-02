@@ -44,6 +44,7 @@ services:
             - ./data:/data
             - ./src:/app/src:ro
             - ./web:/app/web
+        networks: [default, browser]
         develop: *rebuild-on-dependency-change
 
     searxng:

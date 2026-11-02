@@ -4,7 +4,7 @@ import type { PageRows } from "./usePageRows.js";
 
 type PanelJob = ReturnType<typeof usePanelJob>;
 
-/** Applies a job's saved changes to both the listed rows and the details panel showing it, closing the panel after a hide made from it. */
+/** Applies a job's saved changes and re-scores to both the listed rows and the details panel showing it, closing the panel after a hide made from it. */
 export function useJobChanges(rows: PageRows, panel: PanelJob, close: () => void) {
     const markHidden = (job: JobRowView, hidden: boolean) => {
         rows.markHidden(job, hidden);
@@ -18,5 +18,9 @@ export function useJobChanges(rows: PageRows, panel: PanelJob, close: () => void
         markHidden(job, true);
         close();
     };
-    return { markHidden, markApplied, hideFromPanel };
+    const markRescored = (job: JobRowView, row: JobRowView) => {
+        rows.replaceRow(row);
+        panel.noteChange(job, row);
+    };
+    return { markHidden, markApplied, hideFromPanel, markRescored };
 }
