@@ -31,9 +31,6 @@ header .main-title {
 
 .panel {
     overflow-x: auto;
-    background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: var(--pico-border-radius);
     padding: 10px;
     margin-bottom: 20px;
 }
@@ -125,7 +122,6 @@ form.applied-form button {
     font-size: 13px;
     color: var(--pico-color);
     background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-muted-border-color);
     border-radius: var(--pico-border-radius);
 }
 .score:hover .tip,
