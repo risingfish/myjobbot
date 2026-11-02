@@ -7,7 +7,7 @@ import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
 import { Problems, SaveStatus, Setting } from "./SettingParts.js";
-import { Tag, TagButton } from "./Tags.js";
+import { Tag, TagButton, TagCloud } from "./Tags.js";
 
 type TermName = "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 type Terms = FieldView<string[]>;
@@ -66,13 +66,13 @@ function TermList({ name, label, terms, defaults, result, onChange }: TermListPr
     };
     return (
         <Setting label={label} field={terms} onReset={() => onChange(resetField(defaults))}>
-            <ul className="tags" aria-label={label}>
+            <TagCloud label={label} count={terms.value.length}>
                 {terms.value.map((term, index) => (
                     <Tag key={`${index}-${term}`} text={term} problems={<Problems result={result} field={name} entry={index} />}>
                         <TagButton label={`Remove ${term} from ${label}`} symbol="×" remove onClick={() => onChange(removeRow(terms, index))} />
                     </Tag>
                 ))}
-            </ul>
+            </TagCloud>
             <AddTerm label={label} onAdd={add} />
             <Problems result={result} field={name} />
         </Setting>

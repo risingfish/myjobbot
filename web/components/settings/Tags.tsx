@@ -1,5 +1,18 @@
 import type { ReactNode } from "react";
 
+/** Renders a setting's values as a cloud of tags under its label, with a separator before what follows once there are any. */
+export function TagCloud({ label, count, children }: { label: string; count: number; children: ReactNode }) {
+    if (count === 0) return null;
+    return (
+        <>
+            <ul className="tags" aria-label={label}>
+                {children}
+            </ul>
+            <hr />
+        </>
+    );
+}
+
 /** Renders one setting value as a tag, with its action buttons, shown on hover or focus, and the problems a refused save found with it. */
 export function Tag({ text, problems, children }: { text: string; problems: ReactNode; children: ReactNode }) {
     return (

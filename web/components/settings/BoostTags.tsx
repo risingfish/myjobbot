@@ -3,7 +3,7 @@ import { putBoost, removeRow } from "../../../src/web/settingsForm.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
 import type { FieldView } from "../../../src/web/settingsView.js";
 import { Problems } from "./SettingParts.js";
-import { Tag, TagButton } from "./Tags.js";
+import { Tag, TagButton, TagCloud } from "./Tags.js";
 
 type Boosts = FieldView<Array<[string, number]>>;
 type Boost = [string, number];
@@ -47,14 +47,14 @@ function useBoostEdits(boosts: Boosts, onChange: (boosts: Boosts) => void) {
 /** Renders each boost as a tag reading "term: points", with its edit and delete buttons and the problems a refused save found with it. */
 function BoostList({ boosts, result, onEdit, onRemove }: BoostListProps) {
     return (
-        <ul className="tags" aria-label="Title boosts">
+        <TagCloud label="Title boosts" count={boosts.value.length}>
             {boosts.value.map(([term, points], index) => (
                 <Tag key={`${index}-${term}`} text={`${term}: ${Number.isNaN(points) ? "?" : points}`} problems={<Problems result={result} field="title_boosts" entry={index} />}>
                     <TagButton label={`Edit the boost for ${term}`} symbol="✎" onClick={() => onEdit(index)} />
                     <TagButton label={`Remove the boost for ${term}`} symbol="×" remove onClick={() => onRemove(index, term)} />
                 </Tag>
             ))}
-        </ul>
+        </TagCloud>
     );
 }
 
