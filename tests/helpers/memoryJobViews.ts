@@ -38,6 +38,12 @@ export class MemoryJobViews implements JobViews {
         return job !== undefined;
     }
 
+    async clearScore(key: JobKey): Promise<boolean> {
+        const job = this.job(key.ats, key.jobId);
+        if (job) Object.assign(job, { score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, scored_at: null });
+        return job !== undefined;
+    }
+
     async setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null> {
         const job = this.job(change.ats, change.jobId);
         if (!job) return null;

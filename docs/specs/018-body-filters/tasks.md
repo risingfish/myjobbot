@@ -214,58 +214,58 @@ The core's production entry point in this sitting is a CLI command, `npm start -
 (`src/cli.ts`). It uses the same `openRescore` the server action uses in S4, so knip stays clean
 and the owner can try PR 3 from a terminal.
 
-- [ ] T024 Create `.specify/sitting-in-progress` naming S3
+- [X] T024 Create `.specify/sitting-in-progress` naming S3
 
 #### Tests for User Story 4 (S3)
 
-- [ ] T025 [P] [US4] Write the contract `tests/helpers/rescoreContract.ts` with `rescoreContract(make)`. After a verdict, `views.clearScore({ ats, jobId })`:
+- [X] T025 [P] [US4] Write the contract `tests/helpers/rescoreContract.ts` with `rescoreContract(make)`. After a verdict, `views.clearScore({ ats, jobId })`:
   - returns `true`;
   - leaves `score`, `base_score`, `bonus_score`, `reasons`, `gaps` and `scored_at` null in `jobDetail`;
   - keeps `hidden`, `applied` and `applied_on`;
   - keeps `jobVerdicts`' rows.
 
   For an unknown key it returns `false`. Run it from `tests/storeContract.test.ts` (unit, 1) and `tests/integration/storeContract.test.ts` (integration, 1).
-- [ ] T026 [P] [US4] Write unit tests (5) in `tests/rescorePlan.test.ts` for `rescoreStep(job, config, { lookedUp })`:
+- [X] T026 [P] [US4] Write unit tests (5) in `tests/rescorePlan.test.ts` for `rescoreStep(job, config, { lookedUp })`:
   - an excluded company gives `filtered`/`company` even with a matching title and body;
   - a title-filtered job gives `filtered`/`title`, and no `lookup` is planned for it;
   - a job whose description matches an exclude term, and one that misses every include term, give `filtered`/`body` (one test, two cases);
   - no description with `lookedUp: false` gives `lookup`;
   - no description with `lookedUp: true` gives `score`.
-- [ ] T027 [P] [US4] Write unit tests (2) in `tests/oneJobStore.test.ts` for `oneJobStore(store, key)`:
+- [X] T027 [P] [US4] Write unit tests (2) in `tests/oneJobStore.test.ts` for `oneJobStore(store, key)`:
   - `findJob` gives the job for its id and null for any other;
   - `recordVerdict` for another job id returns `false`, writes nothing and leaves `recorded()` false, while for its own id it writes through and `recorded()` turns true.
-- [ ] T028 [P] [US4] Write a unit test (1) in `tests/prompt.test.ts`, before T032 runs:
+- [X] T028 [P] [US4] Write a unit test (1) in `tests/prompt.test.ts`, before T032 runs:
   - the run's system prompt equals a fixed copy of today's text (`toMatchInlineSnapshot`), so T032's move is checked byte for byte;
   - the run's system prompt and the re-score's system prompt both contain the same `scoringRubric` text;
   - the re-score prompt, nudge and compaction notice name `get_job` and `record_matches`, and never `next_jobs`, `get_job_details`, `list_sources` or `finish`;
   - no job field or job id appears in either prompt.
-- [ ] T029 [P] [US4] Write unit tests (6) in `tests/rescore.test.ts` for `rescore(deps, key)`, with the memory stores, `scriptedChat` (`tests/helpers/chat.ts`), a fake `deps.lookUp` and a memory trace:
+- [X] T029 [P] [US4] Write unit tests (6) in `tests/rescore.test.ts` for `rescore(deps, key)`, with the memory stores, `scriptedChat` (`tests/helpers/chat.ts`), a fake `deps.lookUp` and a memory trace:
   - **(a) scored:** the model calls `get_job`, whose tool result is wrapped in the markers, then `record_matches`. The result is `scored`, the verdict's `run_id` is the re-score's id, and the trace holds `{ type: "rescore", ats, job_id }` before the session's `start`. A key whose `ats` differs from the stored job's gives `failed`.
   - **(b) filtered:** a body-filtered job makes no chat call, its score is cleared, and the result is `filtered` with "hidden by body filter".
   - **(c) lookup:** a job with no description triggers one lookup that stores a description containing a term. The result is `filtered`/body, with no scoring chat call.
   - **(d) failed:** the chat throws. The result is `failed`, and the job's old score and verdicts are unchanged.
   - **(e) lookup finds nothing:** the job is scored from its alert fields, and the verdict carries the "scored from the alert only" gap.
   - **(f) lookup throws:** the error is traced as `rescore_lookup_failed`, and the job is still scored.
-- [ ] T030 [US4] Update `tests/toolDeclarations.test.ts` so the expected map also holds the re-score's tools, `get_job: true` and `record_matches: false`, by adding `rescoreTools(...)` to the listed tools (existing test, 0 new). Also write an integration test (1) in `tests/integration/openRescore.test.ts`: `openRescore` against a temporary data folder (a `config.json` and `resume.md`), a temporary log folder (`MYJOBBOT_LOG_DIR`), placeholder `LLM_*` values in its environment, and the memory stores builds deps whose run id names a new trace file, and `close()` resolves; no model call is made.
+- [X] T030 [US4] Update `tests/toolDeclarations.test.ts` so the expected map also holds the re-score's tools, `get_job: true` and `record_matches: false`, by adding `rescoreTools(...)` to the listed tools (existing test, 0 new). Also write an integration test (1) in `tests/integration/openRescore.test.ts`: `openRescore` against a temporary data folder (a `config.json` and `resume.md`), a temporary log folder (`MYJOBBOT_LOG_DIR`), placeholder `LLM_*` values in its environment, and the memory stores builds deps whose run id names a new trace file, and `close()` resolves; no model call is made.
 
 #### Implementation for User Story 4 (S3)
 
-- [ ] T031 [P] [US4] Add `clearScore(key: JobKey): Promise<boolean>` to `JobViews` in `src/db/store.ts`, then implement it:
+- [X] T031 [P] [US4] Add `clearScore(key: JobKey): Promise<boolean>` to `JobViews` in `src/db/store.ts`, then implement it:
   - in `src/db/kysely/jobViews.ts`, with `updateTable("jobs").set({ score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, scored_at: null }).where("ats", "=", …).where("job_id", "=", …)`, reporting `numUpdatedRows > 0`;
   - in `tests/helpers/memoryJobViews.ts`, to match. T025 passes.
-- [ ] T032 [P] [US4] Move the scoring rules, rubric and preferences block out of `SYSTEM_PROMPT` in `src/agent/prompt.ts` into `src/agent/rubric.ts`, as `scoringRubric(config: AppConfig, markers: DataMarkers): string`:
+- [X] T032 [P] [US4] Move the scoring rules, rubric and preferences block out of `SYSTEM_PROMPT` in `src/agent/prompt.ts` into `src/agent/rubric.ts`, as `scoringRubric(config: AppConfig, markers: DataMarkers): string`:
   - it holds only what both prompts share: the `{data}` sentence, the ghost line, "Copy job_id values exactly", the rubric and the preferences block, filling `{data}`, `{threshold}` and `{preferences}`. The line naming `next_jobs` and `get_job_details` stays in the run's own prompt;
   - `systemPrompt` builds the run's steps plus `scoringRubric`;
   - the run's prompt text stays byte-for-byte the same, which `tests/prompt.test.ts`' existing tests check.
-- [ ] T033 [P] [US4] Move `careersDeps` from `src/tools/careersStep.ts` into `src/careers/deps.ts`, exported as `careersDeps(parts: CareersParts): CareersDeps`, where `CareersParts` is a plain interface in `deps.ts` (store, searxngUrl, lookup, pages, boards, renderer, settings, chat, trace, jobs, runId, now, http, markers), so `src/careers` still never reads the tool context (research R9). `careersStep.ts` maps its context onto `CareersParts`. Move `soughtJob` alongside it, exported.
-- [ ] T034 [US4] Create `src/rescore/plan.ts`:
+- [X] T033 [P] [US4] Move `careersDeps` from `src/tools/careersStep.ts` into `src/careers/deps.ts`, exported as `careersDeps(parts: CareersParts): CareersDeps`, where `CareersParts` is a plain interface in `deps.ts` (store, searxngUrl, lookup, pages, boards, renderer, settings, chat, trace, jobs, runId, now, http, markers), so `src/careers` still never reads the tool context (research R9). `careersStep.ts` maps its context onto `CareersParts`. Move `soughtJob` alongside it, exported.
+- [X] T034 [US4] Create `src/rescore/plan.ts`:
   - `type RescoreStep = { kind: "filtered"; by: "company" | "title" | "body" } | { kind: "lookup" } | { kind: "score" }`;
   - `rescoreStep(job: JobRow, config: Settings, progress: { lookedUp: boolean }): RescoreStep`: `filtered` when `filterMatch(job, filterSet(config))` names a filter (T014; a job with no description passes the body filter there), then `lookup` when there is no description and `lookedUp` is false, else `score`. The notes come from `FILTER_NOTES` in `src/jobs/filterMatch.ts`.
-- [ ] T035 [US4] Create `src/rescore/oneJobStore.ts`: `oneJobStore(store: JobStore, key: JobKey): OneJobStore`, where `OneJobStore` is `Pick<JobStore, "findJob" | "recordVerdict" | "earliestSeen" | "flagInjection"> & { recorded(): boolean }`:
+- [X] T035 [US4] Create `src/rescore/oneJobStore.ts`: `oneJobStore(store: JobStore, key: JobKey): OneJobStore`, where `OneJobStore` is `Pick<JobStore, "findJob" | "recordVerdict" | "earliestSeen" | "flagInjection"> & { recorded(): boolean }`:
   - `findJob` and `recordVerdict` answer only for `key.jobId`, and the rest delegate;
   - `recorded()` reports whether a `recordVerdict` for the job has returned `true`;
   - the type satisfies every narrowed store type from T022.
-- [ ] T036 [US4] Create `src/rescore/session.ts`:
+- [X] T036 [US4] Create `src/rescore/session.ts`:
   - `rescoreTools(context)` returns `[getJobTool(context), recordMatchesTool(context)]`. `get_job` has no parameters and `outsideText: true`, and calls `jobDetails(context, key.jobId)`, now exported from `getJobDetails.ts`. Its description never names the job.
   - `rescoreMessages(config, markers)` returns a system message (the re-score steps, then `scoringRubric`) and a user message ("My resume:\n\n<resume>\n\nRe-score the job now.").
   - `scoreOne(deps)` calls `runAgent` with:
@@ -275,7 +275,7 @@ and the owner can try PR 3 from a terminal.
     - the re-score's own `RESCORE_NUDGE` ("Respond only with tool calls: get_job, then record_matches.") and compaction notice, never the run's, which name tools the session doesn't have.
 
     It returns whether the verdict was recorded.
-- [ ] T037 [US4] Create `src/rescore/rescore.ts`:
+- [X] T037 [US4] Create `src/rescore/rescore.ts`:
   - `interface RescoreDeps { config: AppConfig; store: JobStore; views: JobViews; chat: ChatFn; trace: Trace; runId: string; now: () => Date; lookUp: (job: SoughtJob) => Promise<unknown>; markers: DataMarkers }`;
   - `rescore(deps, key): Promise<RescoreOutcome>` (`{ outcome: "scored" } | { outcome: "filtered"; note } | { outcome: "failed" }`) follows [contracts/rescore.md](contracts/rescore.md) Flow:
     1. trace `{ type: "rescore", ats, job_id }`;
@@ -285,18 +285,20 @@ and the owner can try PR 3 from a terminal.
     5. an unknown job, or any other thrown error, is traced (`{ type: "rescore_failed", error: describeError(error) }`) and returns `failed`.
 
   Keep each function ≤ 20 lines by splitting the steps into helpers.
-- [ ] T038 [US4] Create `src/rescore/open.ts` with `openRescore(environment: Environment, stores: Stores): Promise<OpenRescore>`, returning `{ deps: RescoreDeps; close(): Promise<void> }`:
+- [X] T038 [US4] Create `src/rescore/open.ts` with `openRescore(environment: Environment, stores: Stores): Promise<OpenRescore>`, returning `{ deps: RescoreDeps; close(): Promise<void> }`:
   - load `loadConfig(environment)`;
   - open `openRunLogs(loaded)` and resolve `settingsForRun(loaded, stores.searchSettings, logs.trace)`;
   - create `createChat(config.env, logs.llm)`, `runClients(config, {})` and `pageRenderer(config, {}, { logs, stores })`;
   - build `CareersParts` from those parts with `dataMarkers(logs.runId)`, with the careers lookup settings' `max_minutes` and `max_total_minutes` capped at `RESCORE_LOOKUP_MINUTES = 2` (SC-005), and `lookUp: (job) => lookUpCareers(careersDeps(parts), [job])`;
   - `close` closes the renderer.
-- [ ] T039 [US4] Add a `rescore` command to `COMMANDS` in `src/cli.ts`:
+- [X] T039 [US4] Add a `rescore` command to `COMMANDS` in `src/cli.ts`:
   - `rescoreCommand(environment, [ats, jobId])` opens the stores like `runOnce` (`openStores(parseDbSettings(environment))`), calls `openRescore` and then `rescore`, and prints `rescore <ats> <job_id>: <outcome>` (plus the note when filtered);
   - it closes the renderer and the stores in `finally`, and returns 0 for `scored`/`filtered` and 1 for `failed`;
   - update `USAGE` to `usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path>`, and `tests/cli.test.ts` to expect the new line (existing test, 0 new);
   - add the command to CLAUDE.md's Commands list in T053.
-- [ ] T040 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S3 and open PR 3
+- [X] T040 Run `npm run check` and `npm run check:db` until green, delete the marker, and when the owner asks, commit S3 and open PR 3
+
+**As built (S3):** habit-hooks flagged the re-score's prompt texts and tools as reachable only from tests while they lived in `session.ts`, so they sit in their own modules, `src/rescore/prompt.ts` (`rescoreMessages`, `RESCORE_NUDGE`, `RESCORE_COMPACTION_NOTICE`) and `src/rescore/tools.ts` (`rescoreTools`), which `session.ts` imports. T028's byte-for-byte check of the run prompt was taken as an inline snapshot before T032's move and kept as a file snapshot (`tests/__snapshots__/prompt.test.ts.snap`), so the test stays within 20 lines. `dataSentence` moved with the rubric into `src/agent/rubric.ts`, and `CareersAccess` moved into `src/careers/deps.ts`. A cleared score reads back with empty `reasons` and `gaps` lists, as any unscored job does.
 
 **Checkpoint**: PR 3. `npm start -- rescore <ats> <job_id>` re-scores one job end to end, with a lookup or a filter as needed, and the web UI is unchanged.
 

@@ -79,6 +79,7 @@ export interface JobKey {
 export interface JobViews {
     scoredFrom(filter: ScoreFilter): Promise<JobView[]>;
     setHidden(flag: HiddenFlag): Promise<boolean>;
+    clearScore(key: JobKey): Promise<boolean>;
     setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null>;
     allJobs(page: Page): Promise<JobView[]>;
     countAllJobs(): Promise<number>;

@@ -2,14 +2,13 @@ import type { ChatFn } from "../agent/llm.js";
 import type { CompanyStore } from "../db/companyStore.js";
 import type { Trace } from "../agent/trace.js";
 import type { DataMarkers } from "../agent/markers.js";
-import type { HostLookup } from "../careers/fetchPage.js";
-import type { PageRenderer } from "../careers/renderState.js";
+import type { CareersAccess } from "../careers/deps.js";
 import type { Settings } from "../config/schema.js";
 import type { SavedSource, SourceStore } from "../db/sourceStore.js";
-import type { AlertStore, ApiCallLog, CareersStore, GmailStore, JobStore } from "../db/store.js";
+import type { AlertStore, ApiCallLog, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
 import type { SecretKeyStatus } from "../gmail/secretKey.js";
-import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
+import type { JsonGetter } from "../http/client.js";
 import type { SourceHttp } from "../sources/module.js";
 import type { CareersSummary } from "../careers/lookUpJobs.js";
 import type { AlertSummary } from "../gmail/alertFetch.js";
@@ -51,15 +50,6 @@ export interface ToolContext {
 interface SavedSources {
     store: SourceStore;
     list: SavedSource[];
-}
-
-interface CareersAccess {
-    store: CareersStore;
-    searxngUrl: string | null;
-    lookup: HostLookup;
-    pages: TextGetter;
-    boards: JsonGetter & JsonPoster;
-    renderer: PageRenderer;
 }
 
 interface GmailAccess {

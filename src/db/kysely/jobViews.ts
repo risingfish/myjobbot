@@ -32,6 +32,12 @@ export class KyselyJobViews implements JobViews {
         return Number(result.numUpdatedRows) > 0;
     }
 
+    /** Removes a job's score, reasons, gaps and scored time, keeping its marks and verdict history; reports whether the job existed. */
+    async clearScore(key: JobKey): Promise<boolean> {
+        const result = await this.db.updateTable("jobs").set({ score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, scored_at: null }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).executeTakeFirst();
+        return Number(result.numUpdatedRows) > 0;
+    }
+
     /** Marks a job applied, keeping the time it was first marked, or clears the mark; gives the stored time, or null when the job doesn't exist. */
     async setApplied(change: AppliedChange): Promise<{ appliedOn: string | null } | null> {
         const result = await this.db

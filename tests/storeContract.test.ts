@@ -11,6 +11,7 @@ import { jobDetailContract } from "./helpers/jobDetailContract.js";
 import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
+import { rescoreContract } from "./helpers/rescoreContract.js";
 import { searchSettingsContract } from "./helpers/searchSettingsContract.js";
 import { sourceContract } from "./helpers/sourceContract.js";
 import { storeContract } from "./helpers/storeContract.js";
@@ -30,6 +31,7 @@ companyContract(
     memoryCompanyHooks(() => companyTables),
 );
 appliedContract(async () => memoryStores());
+rescoreContract(async () => memoryStores());
 let sourceTables = newTables();
 sourceContract(
     async () => {
