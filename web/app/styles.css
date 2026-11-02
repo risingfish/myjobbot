@@ -35,6 +35,11 @@ header .main-title {
     margin-bottom: 20px;
 }
 
+.panel + .panel {
+    border-top: var(--pico-border-width) solid var(--pico-muted-border-color);
+    padding-top: var(--pico-typography-spacing-vertical);
+}
+
 .panel > h4 {
     --pico-font-size: calc(1.25rem * 1.25);
 }
