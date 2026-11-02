@@ -49,9 +49,9 @@ export function rescoredChange(row: JobRowView, page: PageName): { change: RowsC
     return { change: removing ? withoutJob(jobKey(row)) : withJobFields(jobKey(row), row), removing };
 }
 
-/** Builds the change for a job's applied mark: it updates the row, except on Applied, where a job whose mark is cleared is dropped. */
+/** Builds the change for a job's applied mark: it updates the row, except where the job no longer belongs, dropping it from Recommended once marked and from Applied once cleared. */
 export function appliedChange(job: JobRowView, appliedOn: string | null, page: PageName): { change: RowsChange; removing: boolean } {
-    const removing = page === "applied" && appliedOn === null;
+    const removing = (page === "recommended" && appliedOn !== null) || (page === "applied" && appliedOn === null);
     return { change: removing ? withoutJob(jobKey(job)) : withJobApplied(jobKey(job), appliedOn), removing };
 }
 

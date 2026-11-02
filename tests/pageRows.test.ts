@@ -76,6 +76,12 @@ test("a re-scored row replaces the listed one, and on recommended a row left wit
     expect([unscoredOnAll.removing, titles(state(unscoredOnAll.change(listed)))]).toEqual([false, ["Job 0 unscored", "Job 1"]]);
 });
 
+test("marking a job applied drops its row from the recommended page", () => {
+    const listed = jobPage(jobs(0, 2), { total: 2, nextOffset: null });
+    const marked = appliedChange(jobRowView({ jobId: "0" }), "2026-10-20T09:00:00.000Z", "recommended");
+    expect([marked.removing, titles(state(marked.change(listed)))]).toEqual([true, ["Job 1"]]);
+});
+
 test("clearing a job's applied mark drops its row from the applied page, and only marks it elsewhere", () => {
     const listed = jobPage(jobs(0, 2), { total: 2, nextOffset: null });
     const cleared = appliedChange(jobRowView({ jobId: "0" }), null, "applied");

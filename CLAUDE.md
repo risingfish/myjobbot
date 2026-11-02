@@ -121,7 +121,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever) never is.
 - The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
   `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
-  on a repeat. The cleanup after each run never prunes an applied job. Hide and Applied save through
+  on a repeat. The cleanup after each run never prunes an applied job. Applied jobs are listed on the Applied tab (`JobViews.appliedJobs`) and left out of Recommended. Hide and Applied save through
   `useSave` and show `SaveFailedNote`; a new job action should too (Re-score is the one exception,
   below).
 - Companies (feature 014) live in `companies`, one row per `normalizeCompany` key, and every job

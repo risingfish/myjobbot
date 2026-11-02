@@ -17,7 +17,10 @@ beforeEach(() => {
 });
 
 async function click(name: string, confirmed = true) {
-    vi.stubGlobal("confirm", vi.fn(() => confirmed));
+    vi.stubGlobal(
+        "confirm",
+        vi.fn(() => confirmed),
+    );
     await userEvent.click(await screen.findByRole("button", { name }));
 }
 
@@ -27,7 +30,7 @@ function failNext(how: "refused" | "rejected") {
 }
 
 test("a row's mark marks the job applied, and undoes it only once the owner confirms, saying when a save fails", async () => {
-    const { container } = render(<RowsList name="recommended" initial={jobPage([jobRowView()])} />);
+    const { container } = render(<RowsList name="jobs" initial={jobPage([jobRowView()])} />);
     await click("Mark as applied");
     expect([actions.setJobApplied.mock.lastCall, container.querySelectorAll("tr.job").length]).toEqual([["greenhouse", "a", true], 1]);
     await click(APPLIED_NAME, false);

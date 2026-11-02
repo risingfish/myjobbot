@@ -38,11 +38,11 @@ async function loadRecommended({ views, config, sourceNames, page, now }: PageIn
     return { kind: "jobs", rows, total: jobs.length, nextOffset: nextOffset(page, jobs.length), ...text };
 }
 
-/** Returns the jobs, from saved sources, whose boosted score meets the match threshold. */
+/** Returns the jobs, from saved sources and not marked applied, whose boosted score meets the match threshold. */
 async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
     const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(config.title_boosts) });
-    const shown = scored.filter((job) => !isExcludedCompany(job.company, config.exclude_companies));
+    const shown = scored.filter((job) => !job.applied && !isExcludedCompany(job.company, config.exclude_companies));
     return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
 }
 
