@@ -404,6 +404,9 @@ dialog.details-panel[open] {
     font-weight: bold;
 }
 @media (prefers-color-scheme: dark) {
+    .panel article {
+        border: var(--pico-border-width) solid var(--pico-form-element-selected-background-color);
+    }
     .panel article > header {
         background: var(--pico-form-element-selected-background-color);
     }
