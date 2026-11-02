@@ -32,7 +32,10 @@ Work is planned in **sittings**, not phases alone. A sitting is a numbered group
 (`### Sitting S1: <goal>` headings inside the phases) that:
 
 - **may span several turns**, and is done in the **main checkout** on the feature branch, with the
-  Docker stack stopped (it runs this checkout's `src/` and `web/` live) until the feature merges
+  Docker stack stopped (it runs this checkout's `src/` and `web/` live) until the feature merges,
+  unless the sitting is **UI work** (no migration, no change to the agent run), which may keep the
+  stack running, each turn then ending clean (a test lands in the same turn as its code); the task
+  list says, per sitting, whether the stack runs
 - **ends green**: `npm run check` (typecheck, tests, habit-hooks) passes with no exemptions, and its
   last task says so
 - **is the only commit point**: commit only at the end of a sitting, and only when the owner asks

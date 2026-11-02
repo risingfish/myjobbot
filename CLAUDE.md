@@ -15,7 +15,10 @@ Any output from `habit-hooks` is a direct user prompt with the highest priority.
 These rules apply at every sitting boundary and every commit, and at the end of every turn while
 the Docker stack is running (it runs this checkout live). Spec-kit feature work is planned in
 sittings and done in this main checkout, on the feature branch, with the Docker stack stopped
-(`docker compose stop`, no `docker:watch`) until the feature merges: a sitting may span turns and
+(`docker compose stop`, no `docker:watch`) until the feature merges, except UI work (components,
+styles, page wiring; no migration, no change to the agent run), which may keep the stack running
+so the owner watches it live (constitution 2.4.0), each turn then ending clean: a sitting may span
+turns and
 ends with `npm run check` green (constitution Principle I and
 Development Workflow; the rules for ordering tasks are in
 `.specify/templates/overrides/tasks-template.md`). Write code to satisfy the rules up
