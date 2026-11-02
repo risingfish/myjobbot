@@ -1,4 +1,4 @@
-type BoardKind = "ashby" | "greenhouse" | "lever" | "workday";
+type BoardKind = "ashby" | "gem" | "greenhouse" | "lever" | "workday";
 
 export interface BoardLink {
     kind: BoardKind;
@@ -9,22 +9,29 @@ export interface BoardLink {
 }
 
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
-const GREENHOUSE_HOSTS = new Set(["boards.greenhouse.io", "job-boards.greenhouse.io"]);
 export const WORKDAY_HOST = /^([a-z0-9-]+)\.wd\d+\.myworkdayjobs\.com$/;
 const LOCALE = /^[a-z]{2}-[A-Z]{2}$/;
+const HOST_LINKS = new Map<string, (parts: string[]) => BoardLink | null>([
+    ["jobs.ashbyhq.com", (parts) => slugAndId("ashby", parts)],
+    ["jobs.lever.co", (parts) => slugAndId("lever", parts)],
+    ["jobs.gem.com", (parts) => slugAndId("gem", parts)],
+    ["api.gem.com", gemApiLink],
+    ["boards.greenhouse.io", greenhouseLink],
+    ["job-boards.greenhouse.io", greenhouseLink],
+]);
 
 /** Recognises an address on a job board that publishes its postings as data, naming the board and any posting. */
 export function parseBoardLink(address: string): BoardLink | null {
     if (!URL.canParse(address)) return null;
     const url = new URL(address);
     if (!WEB_PROTOCOLS.has(url.protocol) || url.port !== "") return null;
-    const parts = url.pathname.split("/").filter((part) => part !== "").map(decodeURIComponent);
+    const parts = url.pathname
+        .split("/")
+        .filter((part) => part !== "")
+        .map(decodeURIComponent);
     const workday = WORKDAY_HOST.exec(url.hostname);
     if (workday?.[1] !== undefined) return workdayLink(url.hostname, workday[1], parts);
-    if (url.hostname === "jobs.ashbyhq.com") return slugAndId("ashby", parts);
-    if (url.hostname === "jobs.lever.co") return slugAndId("lever", parts);
-    if (GREENHOUSE_HOSTS.has(url.hostname)) return greenhouseLink(parts);
-    return null;
+    return HOST_LINKS.get(url.hostname)?.(parts) ?? null;
 }
 
 /** Reads a board address shaped /<slug>[/<posting>]. */
@@ -32,6 +39,11 @@ function slugAndId(kind: BoardKind, parts: string[]): BoardLink | null {
     const [slug, postingId = null] = parts;
     if (slug === undefined || parts.length > 2) return null;
     return { kind, slug, postingId };
+}
+
+/** Reads a Gem job board data address shaped /job_board/v0/<slug>[/...], naming the board only. */
+function gemApiLink([api, version, slug]: string[]): BoardLink | null {
+    return api === "job_board" && version === "v0" && slug !== undefined ? { kind: "gem", slug, postingId: null } : null;
 }
 
 /** Reads a Greenhouse address shaped /<slug>[/jobs/<id>], leaving out its embed pages. */

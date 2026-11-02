@@ -3,7 +3,7 @@ import type { Job } from "../../jobs/job.js";
 import { parseBoardLink } from "../boardLink.js";
 import type { BoardPosting, SourceContext, SourceHttp, SourceModule, SourcePage } from "../module.js";
 
-type SlugBoardId = "greenhouse" | "lever" | "ashby";
+type SlugBoardId = "greenhouse" | "lever" | "ashby" | "gem";
 
 interface BoardParams {
     slug: string;

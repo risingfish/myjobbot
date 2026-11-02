@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { FetchRefused } from "../src/careers/fetchPage.js";
 import { readPage } from "../src/careers/readPage.js";
 import { trimPage } from "../src/careers/trim.js";
-import { ashbyBoard } from "./helpers/boardData.js";
+import { ashbyBoard, gemBoard } from "./helpers/boardData.js";
 import { listingPage, scriptOnlyPage } from "./helpers/careersPages.js";
 import { fakeBrowser } from "./helpers/fakeBrowser.js";
 import { fakeDns } from "./helpers/fakeDns.js";
@@ -38,6 +38,13 @@ test("a board link whose data address is refused is not fallen back from", async
     const { deps } = await lookupSetup({ pages: { [ASHBY_JOB]: LISTING } });
     const refusing = { ...deps, pages: { ...deps.pages, lookup: fakeDns({ "api.ashbyhq.com": ["10.0.0.5"] }) } };
     await expect(readPage(refusing, { url: ASHBY_JOB, kind: "job_page", sought: JOB.title })).rejects.toBeInstanceOf(FetchRefused);
+});
+
+test("a careers page that only names a job board in its HTML is read from that board's data, under its own address", async () => {
+    const page = `<html><body><a href="/about">About</a><script>var gemApi = "https://api.gem.com/job_board/v0/acme/job_posts/";</script></body></html>`;
+    const boards = { "https://api.gem.com/job_board/v0/acme/job_posts/": gemBoard([{ id: "j1", title: JOB.title, location: "Remote" }]) };
+    const { deps } = await lookupSetup({ pages: { [CAREERS_URL]: page }, boards });
+    expect(await readPage(deps, { url: CAREERS_URL, kind: "careers_page", sought: JOB.title })).toMatchObject({ url: CAREERS_URL, source: "board", board: "gem:acme", links: [{ text: expect.stringContaining(JOB.title), url: "https://jobs.gem.com/acme/j1" }] });
 });
 
 const BLANK_JOB = "https://acme.example/careers/backend";

@@ -1,6 +1,7 @@
 import type { Settings } from "../config/schema.js";
 import { parseBoardLink } from "../sources/boardLink.js";
 import { boardPage, type BoardAccess } from "./boardPages.js";
+import { embeddedBoard } from "./embeddedBoard.js";
 import { fetchPublicPage, FetchRefused, type PageFetchDeps } from "./fetchPage.js";
 import { capDescription } from "../descriptions/cap.js";
 import { pageToMarkdown } from "../descriptions/toMarkdown.js";
@@ -48,14 +49,25 @@ function unlessRefused(error: unknown): null {
     return null;
 }
 
-/** Downloads a public page and trims it, rendering it in the browser instead when the download is unreadable. */
+/** Downloads a public page and trims it, reading the job board a careers page fills itself from instead, or rendering it in the browser when the download is unreadable. */
 async function plainPage(deps: ReadDeps, request: ReadRequest, fallback: string | null): Promise<PageRead> {
     const page = await fetchPublicPage(deps.pages, request.url);
     const plain = trimmed(deps, request, page);
+    const board = request.kind === "careers_page" ? embeddedBoard(page.html, plain.links) : null;
+    const fromBoard = board === null ? null : await embeddedRead(deps, request, board);
+    if (fromBoard !== null) return fromBoard;
     if (!unreadable(plain, request)) return { ...plain, source: "html", fallback, board: null, description: pageDescription(request, page.html) };
     const rendered = await deps.renderer.render(page.url);
     if ("fallback" in rendered) return { ...plain, source: "html", fallback: [fallback, rendered.fallback].filter((each) => each !== null).join(","), board: null, description: null };
     return { ...trimmed(deps, request, rendered.page), source: "rendered", fallback, board: null, description: pageDescription(request, rendered.page.html) };
+}
+
+/** Reads a careers page's job list from the board it is filled from, under the page's own address, or null when the board can't be read. */
+async function embeddedRead(deps: ReadDeps, request: ReadRequest, board: string): Promise<PageRead | null> {
+    const link = parseBoardLink(board);
+    if (link === null) return null;
+    const read = await boardPage({ boards: deps.boards, lookup: deps.pages.lookup, maxChars: deps.settings.page_chars }, { ...request, url: board, link }).catch(unlessRefused);
+    return read === null ? null : { ...read, url: request.url };
 }
 
 /** Converts a job page's HTML to the Markdown description to store if the lookup finds the job there; careers pages carry none. */

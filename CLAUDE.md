@@ -98,7 +98,8 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   addresses and sizes only, never page text. Check compose changes with `docker compose config
   --quiet`; plain `docker compose config` prints `.env`. Pages are read in order (feature 010,
   `readPage.ts`): a job board's own data (`src/sources/boardLink.ts`, then the module's `postings`
-  through `src/careers/boardPages.ts`),
+  through `src/careers/boardPages.ts`; a downloaded careers page that names exactly one board only
+  in its HTML is read from it too, `embeddedBoard.ts`),
   then the download, then rendering in the owner's Playwright browser when the download is
   unreadable. Every board and browser request goes through `assertPublic`; the browser never gets a
   redirect to follow on its own (`browser.ts`). `playwright-core` and the compose `browser` image
@@ -118,7 +119,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   (react-markdown 10.1.0, pinned; `skipHtml`, an allow-list, `http(s)` links via `isWebAddress`);
   never `dangerouslySetInnerHTML` or `rehype-raw`. The model and title boosts read
   `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
-  (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever) never is.
+  (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever, Gem) never is.
 - The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
   `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
   on a repeat. The cleanup after each run never prunes an applied job. Applied jobs are listed on the Applied tab (`JobViews.appliedJobs`) and left out of Recommended. Hide and Applied save through

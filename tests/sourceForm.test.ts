@@ -23,7 +23,7 @@ test("a link no source type recognises gives nothing", () => {
 
 test("the source types the owner can add are plain data: id, name, description, fields and availability", () => {
     const choices = sourceChoices(MET);
-    expect(choices.map((choice) => choice.id)).toEqual(["greenhouse", "lever", "ashby", "workday", "jsearch"]);
+    expect(choices.map((choice) => choice.id)).toEqual(["greenhouse", "lever", "ashby", "gem", "workday", "jsearch"]);
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
     expect(choices[0]).toEqual({ id: "greenhouse", name: "Greenhouse", description: expect.any(String), fields: [{ name: "slug", label: "Board id", input: "text" }], unavailable: null });
 });

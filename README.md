@@ -1,7 +1,7 @@
 # myjobbot
 
 An autonomous agent that pulls software-engineering postings from company job boards
-(Greenhouse, Lever, Ashby, Workday), saved JSearch searches (Google for Jobs: LinkedIn, Indeed and more)
+(Greenhouse, Lever, Ashby, Gem, Workday), saved JSearch searches (Google for Jobs: LinkedIn, Indeed and more)
 and your LinkedIn job-alert emails, looks up missing descriptions on employers' own careers pages,
 scores every job against your resume with a local LLM, and keeps history in MariaDB to spot
 long-open "ghost" postings. A web UI lists the results and explains each score.
@@ -193,6 +193,7 @@ every job remembers the one it came from (`jobs.source_id`).
 | Greenhouse | company board | board id (`boards.greenhouse.io/<id>`) | every run, the whole board |
 | Lever | company board | board id (`jobs.lever.co/<id>`) | every run, the whole board |
 | Ashby | company board | board id (`jobs.ashbyhq.com/<id>`) | every run, the whole board |
+| Gem | company board | board id (`jobs.gem.com/<id>`) | every run, the whole board |
 | Workday | company jobs site | host, tenant, site (`<tenant>.wd<N>.myworkdayjobs.com/<site>`) | every run, at most 100 postings, continuing where the last run stopped |
 | JSearch | saved search | search, country, remote only | once per `jsearch.refresh_hours`, within `jsearch.monthly_request_cap`; needs `JSEARCH_API_KEY` |
 | Gmail alerts | your mailbox | none | every run, once Gmail is connected (see [Gmail](#gmail)) |
@@ -301,11 +302,13 @@ on the employer's own careers page before the agent scores them:
 
 **How a page is read**, in order (each open's audit row says which, in `page_source`):
 
-1. **Board data**: links on Ashby, Greenhouse, Lever and Workday (`*.myworkdayjobs.com`) are read
+1. **Board data**: links on Ashby, Gem, Greenhouse, Lever and Workday (`*.myworkdayjobs.com`) are read
    from the board's own published data, through the same source modules as the job-board sources. A careers page becomes the board's job list (Workday: its search for the
    sought title), a job page the posting itself. If that fails, the page is downloaded instead
    (`fallback = 'board_failed'`).
-2. **Download**: the page's HTML, trimmed.
+2. **Download**: the page's HTML, trimmed. A careers page that links to no board but names exactly
+   one in its HTML (a script or frame that fills its job list, as BigPanda's names Gem) is read
+   from that board's data instead, under the page's own address.
 3. **Rendering**: when the download is unreadable (a job page with no text, or a careers page
    with no job links, as JavaScript-built sites give), the page is rendered in a browser service
    and trimmed the same way. Every request the page makes is checked against the same address
@@ -614,7 +617,7 @@ Everything below the agent is ordinary, deterministic code.
 flowchart TD
     AGENT["agent/<br/>loop · budget · compaction · prompt · LLM client · trace · data markers<br/><i>knows nothing about jobs</i>"]
     TOOLS["tools/<br/>thin adapters from model requests to the layers below"]
-    SOURCES["sources/<br/>modules: Greenhouse · Lever · Ashby · Workday · JSearch · Gmail alerts<br/>fetch phase · ingest"]
+    SOURCES["sources/<br/>modules: Greenhouse · Lever · Ashby · Gem · Workday · JSearch · Gmail alerts<br/>fetch phase · ingest"]
     GMAIL["gmail/<br/>IMAP (read-only) · alert email parsing"]
     CAREERS["careers/<br/>careers-page lookup: its own short loop,<br/>address checks, page trimming, rendering"]
     HTTP["http/<br/>1 s spacing per host · 300 requests per host per run<br/>retry 429 and 5xx with backoff"]
@@ -762,6 +765,7 @@ posting's headings, lists and emphasis survive:
 |---|---|
 | Greenhouse | Markdown from its HTML (sent escaped, decoded once) |
 | Ashby | Markdown from `descriptionHtml` |
+| Gem | Markdown from its HTML (sent raw) |
 | Lever | Markdown of the whole posting: the opening, each list ("Requirements"…) under its own heading, then the closing section |
 | Careers lookup | Markdown of the job page (a Workday or other board page's own posting, or the downloaded or rendered page without its menus, header, footer or hidden parts) |
 | JSearch | Plain text, as JSearch sends it |
