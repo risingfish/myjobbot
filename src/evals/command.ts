@@ -4,12 +4,13 @@ import { loadConfig, type Environment } from "../config/load.js";
 import { envSchema } from "../config/schema.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
+import { answerKeyCommand } from "./answerKey.js";
 import { captureCases } from "./captureCommand.js";
 import { checkEvals } from "./check.js";
 import { EvalFiles } from "./files.js";
 import { nodeFilePort, type FilePort } from "./filePort.js";
 
-const USAGE = "usage: myjobbot eval check | capture <ats> <job_id> | capture --recent <N>";
+const USAGE = "usage: myjobbot eval check | capture <ats> <job_id> | capture --recent <N> | answer-key <case-id> <verdict>";
 const UNTRACED: Trace = { write: () => {} };
 
 interface Context {
@@ -20,7 +21,7 @@ interface Context {
 
 type Subcommand = (context: Context, args: string[]) => Promise<number>;
 
-const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand, capture: captureCommand };
+const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand, capture: captureCommand, "answer-key": ({ files }, args) => answerKeyCommand(args, { files, now: () => new Date(), print: (line) => console.log(line) }) };
 
 /** Runs one `eval` subcommand against the eval files in the data folder, returning the process exit code. */
 export async function evalCommand(environment: Environment, args: string[]): Promise<number> {
