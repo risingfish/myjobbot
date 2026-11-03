@@ -1,3 +1,12 @@
+FROM node:24.21.0-bookworm-slim AS build
+
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.json ./
+RUN npm ci
+COPY src ./src
+COPY web ./web
+RUN NEXT_TELEMETRY_DISABLED=1 NEXT_DIST_DIR=.next-prod node_modules/.bin/next build web
+
 FROM node:24.21.0-bookworm-slim
 
 ARG TARGETARCH
@@ -25,6 +34,7 @@ COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY src ./src
 COPY --chown=node:node web ./web
+COPY --from=build --chown=node:node /app/web/.next-prod ./web/.next-prod
 COPY docker ./docker
 
 ENV MYJOBBOT_DATA_DIR=/data \
