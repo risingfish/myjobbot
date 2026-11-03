@@ -33,7 +33,8 @@
 - The filter runs before the model scores a job, so a filtered job costs no model call, and before
   LinkedIn alert jobs are looked up, so it saves lookups too. It never deletes a job.
 - On the All jobs page, a filtered job carries the note "hidden by title filter". Jobs scored before a
-  filter changed stay on Recommended.
+  filter changed stay on Recommended. (Changed 2026-11-03, owner decision: Recommended now leaves out
+  every job the current filters hide; scores are kept.)
 - The lists are edited in the Settings page's Filters section and stored with the other search
   settings. `title_boosts` already add points when a term appears in the title **or** the
   description, so boosting by description text exists today.
@@ -192,7 +193,7 @@ that the job's score, reasons and gaps are replaced and its scored time moves fo
   edited only in the Settings page's Filters section, saved with that section's other lists.
 - **FR-007**: A body filter term with no letter or digit MUST be refused on save, with the message
   shown on that term's row.
-- **FR-008**: Jobs already scored when a body filter term is added MUST keep their score and stay on
+- **FR-008** (superseded 2026-11-03: they keep their score but leave Recommended while a filter hides them): Jobs already scored when a body filter term is added MUST keep their score and stay on
   Recommended, as title-filtered jobs do today; the filter applies to jobs scored after it is saved, and
   to a job the owner re-scores (FR-011).
 - **FR-009**: On the All jobs page, a job the body filter matches MUST carry a note saying it is hidden

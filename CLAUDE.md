@@ -163,7 +163,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `readableDescription`; a job with no description passes both. One order of checks, company, then
   title, then body, lives in `filterMatch` (`src/jobs/filterMatch.ts`) with its `FILTER_NOTES`, and
   runs (`isWanted`, the one gate before the model), the All jobs note and Re-score all use it.
-  Filters never touch jobs already scored.
+  Filters never change jobs already scored, but Recommended (`recommendedJobs` in
+  `src/web/pageData.ts`) leaves out every job `filterMatch` hides under the current settings
+  (owner decision, 2026-11-03).
 - Re-score (feature 018) lives in `src/rescore/`, knows nothing about Next.js, and has two entry
   points: `npm start -- rescore <ats> <job_id>` and the panel's `startRescore` server action
   (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rows.ts`, input checked before any
