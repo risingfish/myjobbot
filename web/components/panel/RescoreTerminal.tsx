@@ -32,7 +32,9 @@ export function RescoreTerminal({ run, job, onEnd, onClose }: TerminalProps) {
 /** Shows the command, then each line with its time, a cursor while the run goes on, and keeps the newest line in view. */
 function TerminalBody({ job, log: { lines, end, lost } }: { job: JobKey; log: Log }) {
     const body = useRef<HTMLDivElement>(null);
-    useEffect(() => body.current?.scrollTo({ top: body.current.scrollHeight }), [lines.length, lost]);
+    useEffect(() => {
+        body.current?.scrollTo({ top: body.current.scrollHeight });
+    }, [lines.length, lost]);
     return (
         <div className="terminal-body" role="log" aria-live="polite" ref={body}>
             <div>{commandLine(job)}</div>

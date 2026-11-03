@@ -9,11 +9,13 @@ beforeEach(() => {
     vi.useFakeTimers();
     FakeSource.opened = [];
     vi.stubGlobal("EventSource", FakeSource);
+    vi.spyOn(Element.prototype, "scrollTo").mockReturnValue(Promise.resolve() as unknown as undefined);
 });
 
 afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
 });
 
 function shown(run: string) {
