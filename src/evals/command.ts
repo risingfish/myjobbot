@@ -1,14 +1,26 @@
+import type { Trace } from "../agent/trace.js";
+import { settingsForRun } from "../app/runSettings.js";
+import { loadConfig, type Environment } from "../config/load.js";
 import { envSchema } from "../config/schema.js";
-import type { Environment } from "../config/load.js";
+import { openStores } from "../db/connect.js";
+import { parseDbSettings } from "../db/settings.js";
+import { captureCases } from "./captureCommand.js";
 import { checkEvals } from "./check.js";
 import { EvalFiles } from "./files.js";
-import { nodeFilePort } from "./filePort.js";
+import { nodeFilePort, type FilePort } from "./filePort.js";
 
-const USAGE = "usage: myjobbot eval check";
+const USAGE = "usage: myjobbot eval check | capture <ats> <job_id> | capture --recent <N>";
+const UNTRACED: Trace = { write: () => {} };
 
-type Subcommand = (files: EvalFiles, args: string[]) => Promise<number>;
+interface Context {
+    environment: Environment;
+    files: EvalFiles;
+    port: FilePort;
+}
 
-const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand };
+type Subcommand = (context: Context, args: string[]) => Promise<number>;
+
+const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand, capture: captureCommand };
 
 /** Runs one `eval` subcommand against the eval files in the data folder, returning the process exit code. */
 export async function evalCommand(environment: Environment, args: string[]): Promise<number> {
@@ -18,13 +30,24 @@ export async function evalCommand(environment: Environment, args: string[]): Pro
         console.error(USAGE);
         return 2;
     }
-    const root = envSchema.shape.MYJOBBOT_DATA_DIR.parse(environment.MYJOBBOT_DATA_DIR);
-    return subcommand(new EvalFiles(nodeFilePort(root)), rest);
+    const port = nodeFilePort(envSchema.shape.MYJOBBOT_DATA_DIR.parse(environment.MYJOBBOT_DATA_DIR));
+    return subcommand({ environment, files: new EvalFiles(port), port }, rest);
 }
 
 /** Prints how many eval files of each kind there are and every bad one, failing when any is bad. */
-async function checkCommand(files: EvalFiles): Promise<number> {
+async function checkCommand({ files }: Context): Promise<number> {
     const { lines, code } = await checkEvals(files);
     for (const line of lines) console.log(line);
     return code;
+}
+
+/** Captures stored jobs as cases, with the resume and settings resolved as a run resolves them, and closes the database after. */
+async function captureCommand({ environment, files, port }: Context, args: string[]): Promise<number> {
+    const stores = await openStores(parseDbSettings(environment));
+    try {
+        const config = await settingsForRun(loadConfig(environment), stores.searchSettings, UNTRACED);
+        return await captureCases(args, { stores, files, port, config, now: () => new Date(), print: (line) => console.log(line) });
+    } finally {
+        await stores.close();
+    }
 }

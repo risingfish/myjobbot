@@ -1,4 +1,5 @@
-import type { AuditEntry, CareersStore, CompanyPage, JobKey } from "../../src/db/store.js";
+import type { CompanyPage, JobKey } from "../../src/db/store.js";
+import type { AuditEntry, CareersStore } from "../../src/db/careersStore.js";
 import { recordMemoryCompanies } from "./memoryCompanies.js";
 import { newTables, type Row, type Tables } from "./memoryJobViews.js";
 
@@ -44,6 +45,11 @@ export class MemoryCareersStore implements CareersStore {
     async pruneAuditBefore(cutoff: string): Promise<void> {
         const kept = this.rows.filter((row) => row.at >= cutoff);
         this.rows.splice(0, this.rows.length, ...kept);
+    }
+
+    async descriptionFoundAt(key: JobKey): Promise<string | null> {
+        const found = this.rows.filter((row) => row.ats === key.ats && row.jobId === key.jobId && row.step === "finish" && row.outcome === "found").map((row) => row.at);
+        return found.length === 0 ? null : found.sort().at(-1) ?? null;
     }
 
     private company(companyKey: string): Row | undefined {

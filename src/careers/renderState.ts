@@ -1,6 +1,6 @@
 import type { Trace } from "../agent/trace.js";
 import type { Settings } from "../config/schema.js";
-import type { CareersStore } from "../db/store.js";
+import type { CareersStore } from "../db/careersStore.js";
 import type { TextPage } from "../http/client.js";
 import type { BrowserPort } from "./browser.js";
 import { assertPublic, FetchRefused, type HostLookup } from "./fetchPage.js";

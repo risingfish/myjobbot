@@ -120,6 +120,12 @@ export class KyselyJobViews implements JobViews {
         return verdictViews.parse(rows);
     }
 
+    /** Lists the jobs scored most recently, by their latest verdict, each once, newest first. */
+    async recentlyScored(limit: number): Promise<JobKey[]> {
+        const rows = await this.db.selectFrom("verdicts").select(["ats", "job_id"]).select(({ fn }) => fn.max("scored_at").as("latest")).groupBy(["ats", "job_id"]).orderBy("latest", "desc").limit(limit).execute();
+        return rows.map((row) => ({ ats: row.ats, jobId: row.job_id }));
+    }
+
     /** Starts a query over every verdict joined with its job's details, newest first, later verdicts first on a tie. */
     private verdictsNewestFirst() {
         return this.db

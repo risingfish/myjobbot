@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { AuditEntry } from "../src/db/store.js";
+import type { AuditEntry } from "../src/db/careersStore.js";
 import { makeJob } from "../src/jobs/job.js";
 import { alertContext } from "./helpers/alertContext.js";
 import { jobPage, searxngJson } from "./helpers/careersPages.js";

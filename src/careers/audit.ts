@@ -1,4 +1,4 @@
-import type { AuditEntry, CareersStore } from "../db/store.js";
+import type { AuditEntry, CareersStore } from "../db/careersStore.js";
 import type { SoughtJob } from "./session.js";
 
 export type StepRecord = Omit<AuditEntry, "runId" | "at" | "ats" | "jobId" | "company">;

@@ -93,6 +93,15 @@ export class MemoryJobViews implements JobViews {
         return this.verdictsNewestFirst(this.tables.verdicts.filter((verdict) => verdict.ats === key.ats && verdict.job_id === key.jobId));
     }
 
+    async recentlyScored(limit: number): Promise<JobKey[]> {
+        const newest = [...this.tables.verdicts].sort((a, b) => asc(b.scored_at, a.scored_at) || Number(b.id) - Number(a.id));
+        const keys = [...new Set(newest.map((verdict) => JSON.stringify([verdict.ats, verdict.job_id])))];
+        return keys.slice(0, limit).map((key) => {
+            const [ats, jobId] = JSON.parse(key) as [string, string];
+            return { ats, jobId };
+        });
+    }
+
     private verdictsNewestFirst(verdicts: Row[]): VerdictView[] {
         const ordered = [...verdicts].sort((a, b) => asc(b.scored_at, a.scored_at) || Number(b.id) - Number(a.id));
         return ordered.map((verdict) => this.withJob(verdict));

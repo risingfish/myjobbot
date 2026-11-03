@@ -63,6 +63,28 @@ export class EvalFiles {
         return { items, bad };
     }
 
+    /** Stores a profile once, leaving one already stored as it is, since its name is its content. */
+    async writeProfile(id: string, profile: Profile): Promise<void> {
+        const file = `${ROOT}/profiles/${id}.json`;
+        if ((await this.port.read(file)) === null) await this.atomic(file, profile);
+    }
+
+    /** Stores a case under its own id, replacing one already there. */
+    writeCase(value: EvalCase): Promise<void> {
+        return this.atomic(`${ROOT}/cases/${value.id}.json`, value);
+    }
+
+    /** Tells whether a case is stored under an id, whether or not it reads cleanly. */
+    async hasCase(id: string): Promise<boolean> {
+        return (await this.port.read(`${ROOT}/cases/${id}.json`)) !== null;
+    }
+
+    /** Writes a file whole or not at all: to a temporary name first, then renamed into place. */
+    private async atomic(file: string, value: unknown): Promise<void> {
+        await this.port.write(`${file}.tmp`, `${JSON.stringify(value, null, 2)}\n`);
+        await this.port.rename(`${file}.tmp`, file);
+    }
+
     /** Reads every `.json` file in one folder as one kind. */
     private async folder<K extends FileKind>(dir: string, kind: K): Promise<Loaded<Named<FileOf<K>>>> {
         const names = (await this.port.list(`${ROOT}/${dir}`)).filter((name) => name.endsWith(".json"));
