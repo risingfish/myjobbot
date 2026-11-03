@@ -7,23 +7,29 @@ import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
 import type { JobKey, Stores } from "./db/store.js";
 import { describeError } from "./errors.js";
+import { evalCommand } from "./evals/command.js";
 import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path>";
+const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check>";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: runCommand, rescore: rescoreCommand, "import-sqlite": importCommand };
+const COMMANDS: Record<string, Command> = { run: positional(runCommand), rescore: positional(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand };
 
-/** Parses argv and dispatches to the matching subcommand, returning the process exit code. */
+/** Dispatches to the command named first, handing it the rest of the arguments as given, and returns the process exit code. */
 async function main(argv: string[]): Promise<number> {
-    const { positionals } = parseArgs({ args: argv, allowPositionals: true });
-    const command = COMMANDS[positionals[0] ?? ""];
+    const [name = "", ...args] = argv;
+    const command = COMMANDS[name];
     if (!command) return usage();
     if (existsSync(".env")) process.loadEnvFile(".env");
-    return command(process.env, positionals.slice(1));
+    return command(process.env, args);
+}
+
+/** Wraps a command that takes positional arguments only, refusing any flag as before. */
+function positional(command: Command): Command {
+    return (environment, args) => command(environment, parseArgs({ args, allowPositionals: true }).positionals);
 }
 
 /** Runs one agent session, prints its outcome, and maps the result to an exit code. */
