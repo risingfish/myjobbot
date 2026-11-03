@@ -1,0 +1,29 @@
+image:
+    tag: "0.1.0"
+secret:
+    create: true
+    values:
+        LLM_BASE_URL: https://llm.example/v1
+        LLM_MODEL: example-model
+        LLM_API_KEY: not-a-key
+        SEARXNG_SECRET: not-a-secret
+config:
+    existingConfigMap: myjobbot-config
+resume:
+    existingSecret: myjobbot-resume
+persistence:
+    storageClass: standard
+ingress:
+    enabled: true
+    className: nginx
+    hosts: [myjobbot.example.com]
+    tls:
+        - secretName: myjobbot-tls
+          hosts: [myjobbot.example.com]
+extraEnv:
+    - name: EXAMPLE
+      value: "1"
+browser:
+    enabled: true
+searxng:
+    enabled: true

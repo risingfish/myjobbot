@@ -1,0 +1,10 @@
+apiVersion: v2
+name: myjobbot
+description: Autonomous job-search agent with a web UI; the agent runs on a schedule as a CronJob.
+type: application
+version: 0.1.0
+appVersion: "main"
+license: GPL-3.0
+home: https://github.com/risingfish/myjobbot
+sources:
+    - https://github.com/risingfish/myjobbot
