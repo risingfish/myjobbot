@@ -1,16 +1,15 @@
 import { z } from "zod";
-import type { Environment } from "../../src/config/load.js";
 import type { Settings } from "../../src/config/schema.js";
-import type { JobKey, JobViews, Stores } from "../../src/db/store.js";
-import { openRescore } from "../../src/rescore/open.js";
+import type { JobKey, JobViews } from "../../src/db/store.js";
+import type { OpenedRescore } from "../../src/rescore/open.js";
 import { rescore } from "../../src/rescore/rescore.js";
-import type { JobDetailView, JobRowView, PageData, RescoreResult } from "../../src/web/api.js";
+import type { JobDetailView, PageData, RescoreStart } from "../../src/web/api.js";
 import { toJobDetailView } from "../../src/web/jobDetail.js";
 import { loadPageData, rowContext, type PageSettings } from "../../src/web/pageData.js";
-import { toJobRowView } from "../../src/web/rowViews.js";
 import { PAGE_NAMES } from "./pages.js";
 
 export type HideResult = { ok: true } | { ok: false; error: string };
+type StartedRescore = RescoreStart | { run: string; work: () => Promise<void> };
 export type AppliedResult = { ok: true; appliedOn: string | null } | { ok: false; error: string };
 
 const PAGE_SIZE = 100;
@@ -51,22 +50,25 @@ export async function loadDetailsFor(views: JobViews, config: Settings, request:
     return row === null ? null : toJobDetailView(row, verdicts, rowContext(config, new Date()));
 }
 
-/** Re-scores one job at once for its panel, refusing a malformed request before any model call, and answers with the job's refreshed row unless the re-score failed. */
-export async function rescoreFor(stores: Stores, environment: Environment, request: unknown): Promise<RescoreResult> {
+/** Starts one job's re-score for its panel: refuses a malformed request before any work, gives the run already open for the job, or records a new run and gives the work that carries it out. */
+export async function startRescoreFor(open: () => Promise<OpenedRescore>, request: unknown): Promise<StartedRescore> {
     const parsed = jobRequest.safeParse(request);
-    if (!parsed.success) return { outcome: "failed" };
-    const opened = await openRescore(environment, stores);
+    if (!parsed.success) return { failed: true };
+    const opened = await open();
+    const begun = await opened.begin(parsed.data).catch(async (error: unknown) => {
+        await opened.close();
+        throw error;
+    });
+    if ("started" in begun) return { run: begun.started, work: () => carriedOut(opened, parsed.data) };
+    await opened.close();
+    return "running" in begun ? { run: begun.running } : { failed: true };
+}
+
+/** Runs a started re-score to its end, then closes what it opened. */
+async function carriedOut(opened: OpenedRescore, key: JobKey): Promise<void> {
     try {
-        const result = await rescore(opened.deps, parsed.data);
-        return result.outcome === "failed" ? result : { ...result, row: await refreshedRow(stores.jobViews, opened.deps.config.settings, parsed.data) };
+        await rescore(opened.deps, key);
     } finally {
         await opened.close();
     }
-}
-
-/** Rebuilds a job's list row after a re-score, so the list and the panel show its new score or its filter note. */
-async function refreshedRow(views: JobViews, config: Settings, key: JobKey): Promise<JobRowView> {
-    const row = await views.jobDetail(key);
-    if (row === null) throw new Error("No such job.");
-    return toJobRowView(row, rowContext(config, new Date()));
 }

@@ -4,10 +4,11 @@ import { userEvent } from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import type { JobRowView } from "../../src/web/api.js";
 import { RowsList } from "../../web/components/pages/RowsList.js";
+import { FakeSource } from "../helpers/fakeEventSource.js";
 import { deferred, details, heading, listedDetails, openTitle, panel, ROWS, showPage } from "../helpers/panelPage.js";
 import { jobRowView, verdictPage, verdictRowView } from "../helpers/rowFixtures.js";
 
-const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn(), loadJobDetails: vi.fn() }));
+const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn(), loadJobDetails: vi.fn(), startRescore: vi.fn() }));
 
 vi.mock("../../web/lib/actions.js", () => actions);
 vi.mock("next/navigation.js", () => import("../helpers/navigation.js"));
@@ -27,12 +28,26 @@ test("clicking a title opens a panel named by the job, showing its details, with
     expect(location.search).toBe("?job=greenhouse%3Aa");
 });
 
-test("clicking another title switches the panel to that job", async () => {
+async function rescoreShown() {
+    vi.stubGlobal("EventSource", FakeSource);
+    actions.startRescore.mockResolvedValue({ run: "run-1" });
+    await userEvent.click(screen.getByRole("button", { name: "Re-score" }));
+    const terminal = await screen.findByRole("region", { name: "Re-score log" });
+    expect([terminal.previousElementSibling?.tagName, terminal.textContent?.includes("$ myjobbot rescore greenhouse a")]).toEqual(["HEADER", true]);
+    FakeSource.opened.at(-1)?.emit("end", { outcome: "filtered", filter: "body", score: null });
+    expect(await screen.findByText("Not re-scored: hidden by body filter")).toBeTruthy();
+    expect(actions.loadJobDetails.mock.calls.filter(([, jobId]) => jobId === "a")).toHaveLength(2);
+    vi.unstubAllGlobals();
+}
+
+test("clicking another title switches the panel to that job, dropping a re-score's terminal", async () => {
     showPage();
     await openTitle("Software Engineer a");
+    await rescoreShown();
     await openTitle("Backend Engineer b");
     expect(within(panel() as HTMLElement).getByRole("heading", { level: 2 }).textContent).toBe("Backend Engineer b");
     expect(location.search).toBe("?job=greenhouse%3Ab");
+    expect(screen.queryByRole("region", { name: "Re-score log" })).toBeNull();
 });
 
 test("the close button, Escape and a click outside close the panel and take the job out of the address", async () => {

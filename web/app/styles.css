@@ -430,3 +430,67 @@ dialog.details-panel[open] {
         opacity: 0;
     }
 }
+.rescore-terminal {
+    margin: var(--pico-spacing) 20px 0;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-background-color);
+    color: var(--pico-code-color);
+    font-family: var(--pico-font-family-monospace);
+    font-size: 13px;
+    overflow: hidden;
+}
+.terminal-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(var(--pico-spacing) / 4) calc(var(--pico-spacing) / 2);
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    background: var(--pico-code-background-color);
+    color: var(--pico-muted-color);
+}
+.rescore-terminal .terminal-close {
+    margin: 0;
+    padding: 0 calc(var(--pico-spacing) / 4);
+    border: none;
+    background: none;
+    color: var(--pico-muted-color);
+    font-size: 18px;
+    line-height: 1;
+}
+.rescore-terminal .terminal-close:hover,
+.rescore-terminal .terminal-close:focus-visible {
+    color: var(--pico-color);
+}
+.terminal-body {
+    max-height: 16rem;
+    overflow-y: auto;
+    padding: calc(var(--pico-spacing) / 2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.terminal-body > div {
+    padding-left: 9ch;
+    text-indent: -9ch;
+}
+.terminal-lost {
+    color: var(--pico-del-color);
+}
+.terminal-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    vertical-align: text-bottom;
+    background: var(--pico-code-color);
+    animation: terminal-blink 1s steps(1) infinite;
+}
+@keyframes terminal-blink {
+    50% {
+        opacity: 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .terminal-cursor {
+        animation: none;
+    }
+}

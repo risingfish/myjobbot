@@ -1,8 +1,11 @@
 import { expect, test } from "vitest";
-import type { JobViews } from "../src/db/store.js";
+import type { BeginResult, RescoreEnd } from "../src/db/rescoreLogStore.js";
+import type { JobStore, JobViews } from "../src/db/store.js";
+import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
-import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor } from "../web/lib/rows.js";
+import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, startRescoreFor } from "../web/lib/rows.js";
 import { testAppSettings } from "./helpers/config.js";
+import { memoryTrace } from "./helpers/trace.js";
 import { seededStores } from "./helpers/views.js";
 
 const config = testAppSettings();
@@ -125,4 +128,30 @@ test("an applied request with an empty job id is refused", async () => {
 
 test("an applied request that isn't yes or no is refused", async () => {
     await expect(setAppliedFor(await seededViews([{ id: "a" }]), { ...JOB_A, applied: "yes" }, NOW)).rejects.toThrow("Invalid applied request");
+});
+
+function fakeOpener(begun: BeginResult) {
+    const calls: string[] = [];
+    const log = { step: () => {}, end: async (end: RescoreEnd) => void calls.push(`end ${end.outcome}`) };
+    const deps = { trace: memoryTrace(), fallbacks: 0, store: { findJob: async () => null } as Partial<JobStore> as JobStore, log } as Partial<RescoreDeps> as RescoreDeps;
+    const opened = { deps, begin: async () => (calls.push("begin"), begun), close: async () => void calls.push("close") };
+    return { calls, open: async () => (calls.push("open"), opened) };
+}
+
+test("a re-score asked for while one is open gives that run, does no work and closes, and a malformed request opens nothing", async () => {
+    const running = fakeOpener({ running: "run-1" });
+    const missing = fakeOpener({ missing: true });
+    expect([await startRescoreFor(running.open, JOB_A), await startRescoreFor(missing.open, { ats: "greenhouse", jobId: "gone" }), await startRescoreFor(running.open, { ats: "", jobId: "a" })]).toEqual([{ run: "run-1" }, { failed: true }, { failed: true }]);
+    expect([running.calls, missing.calls]).toEqual([
+        ["open", "begin", "close"],
+        ["open", "begin", "close"],
+    ]);
+});
+
+test("a started re-score gives its run and the work, which runs the re-score to its end and then closes", async () => {
+    const started = fakeOpener({ started: "run-2" });
+    const result = await startRescoreFor(started.open, JOB_A);
+    expect([result, started.calls]).toEqual([{ run: "run-2", work: expect.any(Function) }, ["open", "begin"]]);
+    if ("work" in result) await result.work();
+    expect(started.calls).toEqual(["open", "begin", "end failed", "close"]);
 });

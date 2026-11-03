@@ -3,10 +3,12 @@ import type { JobKey } from "../../../src/db/store.js";
 import type { JobDetailView, JobRowView } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
 import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
+import { useRescoreTerminal } from "../../lib/useRescoreTerminal.js";
 import { DescriptionSection } from "./DescriptionSection.js";
 import { HistorySection } from "./HistorySection.js";
 import { JobSection } from "./JobSection.js";
 import { PanelHeader } from "./PanelHeader.js";
+import { RescoreTerminal } from "./RescoreTerminal.js";
 import { ScoreSection } from "./ScoreSection.js";
 import { WarningsSection } from "./WarningsSection.js";
 
@@ -26,7 +28,7 @@ interface ContentProps {
     titleId: string;
     onApplied: (job: JobRowView, appliedOn: string | null) => void;
     onHidden: (job: JobRowView) => void;
-    onRescored: (job: JobRowView, row: JobRowView) => void;
+    rescore: ReturnType<typeof useRescoreTerminal>;
     onClose: () => void;
 }
 
@@ -38,24 +40,22 @@ export function DetailsPanel({ open, shown, job, onApplied, onHidden, onRescored
     const titleId = useId();
     const [refresh, setRefresh] = useState(0);
     const details = useJobDetails(shown, refresh);
-    const rescored = (rescoredJob: JobRowView, row: JobRowView) => {
-        setRefresh((count) => count + 1);
-        onRescored(rescoredJob, row);
-    };
+    const rescore = useRescoreTerminal(open ? shown : null, { details, bump: () => setRefresh((count) => count + 1), onRescored });
     useShown(panel, open && shown !== null ? jobParam(shown) : null);
     useDismissal(panel, open, onClose);
     return (
         <dialog ref={panel} className="details-panel" aria-labelledby={titleId}>
-            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onRescored={rescored} onClose={onClose} />}
+            {shown !== null && <PanelContent job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} rescore={rescore} onClose={onClose} />}
         </dialog>
     );
 }
 
-/** Renders the shown job: its header, with the title and the actions on the job, and the job's sections. */
-function PanelContent({ job, details, titleId, onApplied, onHidden, onRescored, onClose }: ContentProps) {
+/** Renders the shown job: its header, with the title and the actions on the job, its re-score terminal while one is open, and the job's sections. */
+function PanelContent({ job, details, titleId, onApplied, onHidden, rescore, onClose }: ContentProps) {
     return (
         <>
-            <PanelHeader job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} onRescored={onRescored} onClose={onClose} />
+            <PanelHeader job={job} details={details} titleId={titleId} onApplied={onApplied} onHidden={onHidden} rescore={rescore.controls} onClose={onClose} />
+            {rescore.terminal !== null && <RescoreTerminal key={rescore.terminal.run} run={rescore.terminal.run} job={rescore.terminal.key} onEnd={rescore.ended} onClose={rescore.close} />}
             <div className="details-body">
                 <PanelStatus details={details} />
                 <PanelSections job={job} details={details} />
