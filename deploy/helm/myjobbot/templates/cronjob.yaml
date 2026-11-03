@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-agent
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  schedule: {{ .Values.agent.schedule | quote }}
+  timeZone: {{ .Values.timeZone | quote }}
+  suspend: {{ .Values.agent.suspend }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: {{ .Values.agent.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ .Values.agent.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.agent.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.agent.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.agent.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+            {{- include "myjobbot.labels" . | nindent 12 }}
+            app.kubernetes.io/component: agent
+        spec:
+          restartPolicy: Never
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          {{- with include "myjobbot.seedContainers" . }}
+          initContainers:
+            {{- . | trim | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: agent
+              image: {{ include "myjobbot.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args: ["run"]
+              securityContext:
+                {{- toYaml .Values.containerSecurityContext | nindent 16 }}
+              env:
+                {{- include "myjobbot.env" . | nindent 16 }}
+              envFrom:
+                {{- include "myjobbot.envFrom" . | nindent 16 }}
+              {{- with .Values.agent.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+          volumes:
+            {{- include "myjobbot.volumes" . | nindent 12 }}
+          {{- with .Values.agent.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.agent.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if eq .Values.persistence.accessMode "ReadWriteOnce" }}
+          {{- /* A ReadWriteOnce volume mounts on one node only, so the run goes where the web UI is. */}}
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchLabels:
+                      {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "web") | nindent 22 }}
+          {{- end }}

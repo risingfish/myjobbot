@@ -1,0 +1,104 @@
+{{- if .Values.browser.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-browser
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: browser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "browser") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "myjobbot.labels" . | nindent 8 }}
+        app.kubernetes.io/component: browser
+    spec:
+      {{- /* The pause container becomes PID 1 and reaps Chromium's children, as compose's init: true does. */}}
+      shareProcessNamespace: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: browser
+          image: {{ printf "%s:%s" .Values.browser.image.repository .Values.browser.image.tag }}
+          imagePullPolicy: {{ .Values.browser.image.pullPolicy }}
+          workingDir: /home/pwuser
+          command:
+            - npx
+            - -y
+            - {{ printf "playwright@%s" .Values.browser.playwrightVersion | quote }}
+            - run-server
+            - --port
+            - "3000"
+            - --host
+            - 0.0.0.0
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: ws
+              containerPort: 3000
+          readinessProbe:
+            tcpSocket:
+              port: ws
+            periodSeconds: 10
+          {{- with .Values.browser.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.browser.shmSize }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-browser
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: browser
+spec:
+  selector:
+    {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "browser") | nindent 4 }}
+  ports:
+    - name: ws
+      port: 3000
+      targetPort: ws
+---
+{{- /* Only this release's web UI and agent may drive the browser, as compose's private browser network allows. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-browser
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: browser
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "browser") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: [{{ .Release.Name | quote }}]
+              - key: app.kubernetes.io/component
+                operator: In
+                values: [web, agent]
+      ports:
+        - port: 3000
+{{- end }}

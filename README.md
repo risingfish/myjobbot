@@ -493,6 +493,32 @@ add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yam
 
 `tests/docker.sh` builds the image and checks the container's behaviour (needs Docker).
 
+## Deploy with Kubernetes
+
+CI publishes the image as `ghcr.io/risingfish/myjobbot` (`:main` and `:sha-<short>` from `main`,
+`:X.Y.Z`, `:X.Y` and `:latest` from `v*` tags) and the Helm chart in `deploy/helm/myjobbot/` as
+`oci://ghcr.io/risingfish/charts/myjobbot` on `v*` tags. The image's web UI is built in; it serves
+it with `next start` when `MYJOBBOT_WEB_MODE=production`, which the chart sets.
+
+```bash
+kubectl create secret generic myjobbot-env --from-env-file=.env   # LLM_*, MYJOBBOT_DB_*, MYJOBBOT_SECRET_KEY, ...
+kubectl create configmap myjobbot-config --from-file=config.json=data/config.json
+kubectl create secret generic myjobbot-resume --from-file=resume.md=data/resume.md
+helm install myjobbot oci://ghcr.io/risingfish/charts/myjobbot --version X.Y.Z \
+  --set secret.existingSecret=myjobbot-env \
+  --set config.existingConfigMap=myjobbot-config --set resume.existingSecret=myjobbot-resume \
+  --set ingress.enabled=true --set 'ingress.hosts={myjobbot.example.com}'
+```
+
+The chart runs the web UI as a Deployment and each agent run as a CronJob (`agent.schedule`, in
+`timeZone`), sharing one `/data` volume (traces and logs; `config.json` and `resume.md` are copied
+onto it at every start). With the default `ReadWriteOnce` volume, run pods are placed on the web
+pod's node. The UI answers only to `web.hosts` (default: the ingress hosts plus `localhost:8080`
+for the probes and `kubectl port-forward`). `browser.enabled` and `searxng.enabled` add the
+Playwright browser and SearXNG, wired in automatically; only this release's pods may reach the
+browser. Start a run now with `kubectl create job --from=cronjob/myjobbot-agent myjobbot-now`.
+`values.yaml` documents every option.
+
 ---
 
 ## How it works

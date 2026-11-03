@@ -1,0 +1,21 @@
+myjobbot is installed as {{ include "myjobbot.fullname" . }}.
+
+The web UI answers only to these Host names: {{ include "myjobbot.hosts" . }}
+{{- if .Values.ingress.enabled }}
+Open it at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ . }}/
+{{- end }}
+{{- else }}
+Reach it with:
+  kubectl port-forward svc/{{ include "myjobbot.fullname" . }}-web {{ .Values.web.port }}:{{ .Values.web.service.port }}
+  then open http://localhost:{{ .Values.web.port }}/
+{{- end }}
+
+The agent runs on "{{ .Values.agent.schedule }}" ({{ .Values.timeZone }}). Start one run now with:
+  kubectl create job --from=cronjob/{{ include "myjobbot.fullname" . }}-agent {{ include "myjobbot.fullname" . }}-agent-manual
+{{- if not (or .Values.config.existingConfigMap .Values.resume.existingSecret) }}
+
+config.json and resume.md must be on the data volume ({{ include "myjobbot.claimName" . }}) before
+the pods start; or set config.existingConfigMap and resume.existingSecret.
+{{- end }}
