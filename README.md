@@ -859,8 +859,10 @@ passes `body_filter` (one of its include terms when there are any, and none of i
 all matched as whole words or phrases in the text the model reads). A job with no description yet
 passes the body filter. The three are checked in that order (`filterMatch`,
 `src/jobs/filterMatch.ts`), so All jobs names the first that hides a job. Filtered jobs are stored
-but never scored. A filter you add later doesn't touch jobs already scored; Re-score a job to apply
-it.
+but never scored. A filter you add later doesn't change jobs already scored, but Recommended checks
+every job against the filters as they stand, so a scored job a filter now hides leaves it at once
+(All jobs keeps it, with its score and the filter's note) and comes back if you remove the term.
+Re-score a job to have the filter clear its score.
 
 **2. The model reads what looks promising.** `next_jobs` returns metadata only. For each job
 whose title, seniority and location could plausibly fit, the prompt asks the model to call

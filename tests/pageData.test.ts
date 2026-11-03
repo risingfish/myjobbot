@@ -50,6 +50,25 @@ test("excluded companies drop out of recommended and are marked in all jobs", as
     expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden: excluded company");
 });
 
+test("jobs scored before a title or body filter hid them drop out of recommended, keeping their score, and are marked in all jobs", async () => {
+    const jobs = [
+        { id: "s", score: 90, title: "Account Executive" },
+        { id: "c", score: 90, description: "Requires an active clearance." },
+        { id: "a", score: 90 },
+    ];
+    const page = pagesOf(jobs, { body_filter: { include: [], exclude: ["clearance"] } });
+    expect(jobRows(await page("recommended")).map((row) => row.jobId)).toEqual(["a"]);
+    expect(
+        jobRows(await page("jobs"))
+            .map((row) => [row.jobId, row.score?.value, row.filterNote])
+            .sort(),
+    ).toEqual([
+        ["a", 90, null],
+        ["c", 90, "hidden by body filter"],
+        ["s", 90, "hidden by title filter"],
+    ]);
+});
+
 test("scores carry the base and bonus breakdown, and boosts count matches in the description", async () => {
     const job = { id: "b", score: 62, parts: { base: 32, bonus: 30 }, description: "Vue and TypeScript." };
     const page = pagesOf([job], { title_boosts: { typescript: 10 } });
@@ -72,12 +91,6 @@ test("all jobs lists every job and marks titles the filter hides", async () => {
     expect(data.summary).toBe("2 jobs");
     expect(jobRows(data).find((row) => row.jobId === "e")?.filterNote).toBe("hidden by title filter");
     expect(jobRows(data).find((row) => row.jobId === "a")?.filterNote).toBeNull();
-});
-
-test("a scored job whose description holds an excluded term is marked in all jobs and stays on recommended", async () => {
-    const page = pagesOf([{ id: "c", score: 90, description: "Active security clearance required." }], { body_filter: { exclude: ["clearance"] } });
-    expect(jobRows(await page("jobs"))[0]?.filterNote).toBe("hidden by body filter");
-    expect(jobRows(await page("recommended")).map((row) => row.jobId)).toEqual(["c"]);
 });
 
 test("a job whose description mentions none of the included terms is marked in all jobs", async () => {

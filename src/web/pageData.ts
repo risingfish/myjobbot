@@ -2,8 +2,7 @@ import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
-import { isExcludedCompany } from "../jobs/companyFilter.js";
-import { filterSet } from "../jobs/filterMatch.js";
+import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
@@ -38,11 +37,12 @@ async function loadRecommended({ views, config, sourceNames, page, now }: PageIn
     return { kind: "jobs", rows, total: jobs.length, nextOffset: nextOffset(page, jobs.length), ...text };
 }
 
-/** Returns the jobs, from saved sources and not marked applied, whose boosted score meets the match threshold. */
+/** Returns the jobs, from saved sources, not marked applied and not hidden by a filter as the filters stand now, whose boosted score meets the match threshold. */
 async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
     const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(config.title_boosts) });
-    const shown = scored.filter((job) => !job.applied && !isExcludedCompany(job.company, config.exclude_companies));
+    const filters = filterSet(config);
+    const shown = scored.filter((job) => !job.applied && filterMatch(job, filters) === null);
     return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
 }
 
