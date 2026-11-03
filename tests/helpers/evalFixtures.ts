@@ -1,3 +1,5 @@
+import { parseFile, type FileKind, type FileOf } from "../../src/evals/format.js";
+
 export const AT = "2026-11-03T18:00:00.000Z";
 
 export function profile(overrides: Record<string, unknown> = {}) {
@@ -24,4 +26,10 @@ export function run(overrides: Record<string, unknown> = {}) {
 
 export function result(overrides: Record<string, unknown> = {}) {
     return { schema: 1, case: "greenhouse-4012345", attempt: 1, base: 40, bonus: 32, score: 72, reasons: [], gaps: [], failure: null, tokensIn: 4210, tokensOut: 180, ms: 5300, passed: true, ...overrides };
+}
+
+export function parsed<K extends FileKind>(kind: K, raw: unknown): FileOf<K> {
+    const result = parseFile(kind, raw);
+    if (!result.ok) throw new Error(`fixture ${kind}: ${result.problem}`);
+    return result.value;
 }

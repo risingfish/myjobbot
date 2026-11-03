@@ -1,5 +1,5 @@
 import type { Trace, TraceEvent } from "../agent/trace.js";
-import type { AuditEntry, CareersStore } from "../db/store.js";
+import type { AuditEntry, CareersStore } from "../db/careersStore.js";
 import { parseStep, type Step } from "./steps.js";
 
 type StepLog = { step(entry: Step): void };
@@ -43,6 +43,7 @@ export function loggedCareers(store: CareersStore, log: StepLog): CareersStore {
         attempted: (keys) => store.attempted(keys),
         retries: () => store.retries(),
         pruneAuditBefore: (cutoff) => store.pruneAuditBefore(cutoff),
+        descriptionFoundAt: (key) => store.descriptionFoundAt(key),
     };
 }
 

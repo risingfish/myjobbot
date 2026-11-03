@@ -12,7 +12,7 @@ import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check>";
+const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check|capture>";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 

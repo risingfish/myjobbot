@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { AuditEntry, CareersStore } from "../src/db/store.js";
+import type { AuditEntry, CareersStore } from "../src/db/careersStore.js";
 import type { Step } from "../src/rescore/steps.js";
 import { loggedCareers, stepsFromTrace } from "../src/rescore/traceSteps.js";
 import { memoryTrace } from "./helpers/trace.js";

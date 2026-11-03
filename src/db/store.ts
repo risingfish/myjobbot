@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { CompanyStore } from "./companyStore.js";
 import type { JobSource } from "./jobSource.js";
+import type { CareersStore } from "./careersStore.js";
 import type { RescoreLogStore } from "./rescoreLogStore.js";
 import type { SearchSettingsStore } from "./searchSettingsStore.js";
 import type { SourceStore } from "./sourceStore.js";
@@ -90,6 +91,7 @@ export interface JobViews {
     countVerdicts(): Promise<number>;
     jobDetail(key: JobKey): Promise<JobDetailRow | null>;
     jobVerdicts(key: JobKey): Promise<VerdictView[]>;
+    recentlyScored(limit: number): Promise<JobKey[]>;
 }
 
 export interface ApiCallLog {
@@ -144,44 +146,10 @@ export interface AlertStore {
     clear(): Promise<void>;
 }
 
-type AuditStep = "retry" | "render_check" | "search" | "remembered" | "open_careers" | "open_job" | "finish" | "skipped";
-
-type AuditOutcome = "ok" | "found" | "failed";
-
-export interface AuditEntry {
-    runId: string;
-    at: string;
-    ats: string;
-    jobId: string;
-    company: string;
-    step: AuditStep;
-    url: string | null;
-    chars?: number | null;
-    cut?: boolean;
-    morePages?: boolean;
-    outcome: AuditOutcome;
-    reason: string | null;
-    warning?: boolean;
-    detail?: string | null;
-    pageSource?: string | null;
-    fallback?: string | null;
-    board?: string | null;
-}
-
 export interface CompanyPage {
     key: string;
     name: string;
     url: string;
-}
-
-export interface CareersStore {
-    careersPage(companyKey: string): Promise<string | null>;
-    setLookupPage(page: CompanyPage, at: string): Promise<void>;
-    clearLookupPage(companyKey: string): Promise<void>;
-    audit(entry: AuditEntry): Promise<void>;
-    attempted(keys: JobKey[]): Promise<JobKey[]>;
-    retries(): Promise<JobKey[]>;
-    pruneAuditBefore(cutoff: string): Promise<void>;
 }
 
 export interface Stores {

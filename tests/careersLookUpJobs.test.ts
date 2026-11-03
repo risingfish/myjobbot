@@ -3,7 +3,7 @@ import type { ChatFn } from "../src/agent/llm.js";
 import { lookUpCareers, type CareersDeps } from "../src/careers/lookUpJobs.js";
 import { SEARCH_FAILED } from "../src/careers/searxng.js";
 import type { SoughtJob } from "../src/careers/session.js";
-import type { AuditEntry } from "../src/db/store.js";
+import type { AuditEntry } from "../src/db/careersStore.js";
 import type { JsonGetter } from "../src/http/client.js";
 import { jobPage, scriptOnlyPage, searxngJson } from "./helpers/careersPages.js";
 import { finish, JOB, lookupSetup, open, POSTING_URL, search } from "./helpers/careersLookup.js";

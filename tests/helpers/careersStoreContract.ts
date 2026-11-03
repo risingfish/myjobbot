@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { AuditEntry } from "../../src/db/store.js";
+import type { AuditEntry } from "../../src/db/careersStore.js";
 import type { MakeStores } from "./storeContract.js";
 
 export interface PageFields {
@@ -84,6 +84,15 @@ async function case6(make: MakeStores, hooks: CareersHooks) {
     expect(await careers.retries()).toEqual([keys[0], keys[1]]);
 }
 
+async function case7(make: MakeStores) {
+    const { careers } = await make();
+    await careers.audit(entry("li_found", { outcome: "found", reason: null, warning: false }));
+    await careers.audit(entry("li_found", { at: DAY_TWO, outcome: "found", reason: null, warning: false }));
+    await careers.audit(entry("li_found", { at: "2026-10-18T12:00:00.000Z", step: "search", outcome: "ok", reason: null }));
+    await careers.audit(entry("li_failed"));
+    expect([await careers.descriptionFoundAt({ ats: "linkedin", jobId: "li_found" }), await careers.descriptionFoundAt({ ats: "linkedin", jobId: "li_failed" }), await careers.descriptionFoundAt({ ats: "greenhouse", jobId: "li_found" })]).toEqual([DAY_TWO, null, null]);
+}
+
 const CASES: Array<[string, (make: MakeStores, hooks: CareersHooks) => Promise<void>]> = [
     ["only lookups that ended for good count as attempted, never steps, retryable failures or skipped rows", case1],
     ["pruning removes only audit rows before the cutoff", case2],
@@ -91,6 +100,7 @@ const CASES: Array<[string, (make: MakeStores, hooks: CareersHooks) => Promise<v
     ["clearing a careers page removes only that company's and keeps it among the turned-down addresses", case4],
     ["an open step keeps how its page was read, its fallbacks and its board", case5],
     ["a finish marked for one retry is owed it until a later finish other than a model or search failure", case6],
+    ["a description's arrival is the job's latest finish that found it, for that board only", (make) => case7(make)],
 ];
 
 export function careersStoreContract(make: MakeStores, hooks: CareersHooks): void {

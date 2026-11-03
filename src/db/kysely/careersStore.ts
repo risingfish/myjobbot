@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../schema.js";
-import type { AuditEntry, CareersStore, CompanyPage, JobKey } from "../store.js";
+import type { CompanyPage, JobKey } from "../store.js";
+import type { AuditEntry, CareersStore } from "../careersStore.js";
 import { ensureCompany } from "./companyRows.js";
 
 const MAX_DETAIL = 2000;
@@ -38,6 +39,12 @@ export class KyselyCareersStore implements CareersStore {
             .where("careers_url", "=", row.careers_url)
             .where("careers_source", "in", ["lookup", "search"])
             .execute();
+    }
+
+    /** Gives when the careers lookup last found a job's description, or null when it never has. */
+    async descriptionFoundAt(key: JobKey): Promise<string | null> {
+        const row = await this.db.selectFrom("careers_audit").select(({ fn }) => fn.max("at").as("found")).where("ats", "=", key.ats).where("job_id", "=", key.jobId).where("step", "=", "finish").where("outcome", "=", "found").executeTakeFirst();
+        return row?.found ?? null;
     }
 
     /** Appends one step of a careers lookup to the audit log, keeping only addresses and counts, never page text. */
