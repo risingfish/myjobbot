@@ -25,8 +25,8 @@ export async function setJobApplied(ats: string, jobId: string, applied: boolean
 
 /** Loads one job's details for the browser when its panel opens. */
 export async function loadJobDetails(ats: string, jobId: string): Promise<JobDetailView | null> {
-    const { views, config } = await getUiState();
-    return loadDetailsFor(views, config, { ats, jobId });
+    const { views, rescoreLog, config } = await getUiState();
+    return loadDetailsFor({ views, rescoreLog }, config, { ats, jobId });
 }
 
 /** Starts one job's re-score from its panel and answers with its run at once, the re-score carrying on after the answer; failed, with the detail in the server log only, when it can't start. */

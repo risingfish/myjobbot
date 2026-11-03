@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Settings } from "../../src/config/schema.js";
+import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { JobKey, JobViews } from "../../src/db/store.js";
 import type { OpenedRescore } from "../../src/rescore/open.js";
 import { rescore } from "../../src/rescore/rescore.js";
@@ -9,6 +10,11 @@ import { loadPageData, rowContext, type PageSettings } from "../../src/web/pageD
 import { PAGE_NAMES } from "./pages.js";
 
 export type HideResult = { ok: true } | { ok: false; error: string };
+interface DetailStores {
+    views: JobViews;
+    rescoreLog: RescoreLogStore;
+}
+
 type StartedRescore = RescoreStart | { run: string; work: () => Promise<void> };
 export type AppliedResult = { ok: true; appliedOn: string | null } | { ok: false; error: string };
 
@@ -42,12 +48,12 @@ export async function setAppliedFor(views: JobViews, change: unknown, now: Date)
     return saved === null ? { ok: false, error: "No such job." } : { ok: true, appliedOn: saved.appliedOn };
 }
 
-/** Loads one job's details for its panel, refusing a malformed request and giving null for a job that doesn't exist. */
-export async function loadDetailsFor(views: JobViews, config: Settings, request: unknown): Promise<JobDetailView | null> {
+/** Loads one job's details, with its re-scores, for its panel, refusing a malformed request and giving null for a job that doesn't exist. */
+export async function loadDetailsFor({ views, rescoreLog }: DetailStores, config: Settings, request: unknown): Promise<JobDetailView | null> {
     const parsed = jobRequest.safeParse(request);
     if (!parsed.success) throw new Error("Invalid job request");
-    const [row, verdicts] = await Promise.all([views.jobDetail(parsed.data), views.jobVerdicts(parsed.data)]);
-    return row === null ? null : toJobDetailView(row, verdicts, rowContext(config, new Date()));
+    const [row, verdicts, runs] = await Promise.all([views.jobDetail(parsed.data), views.jobVerdicts(parsed.data), rescoreLog.runsFor(parsed.data)]);
+    return row === null ? null : toJobDetailView(row, { verdicts, runs }, rowContext(config, new Date()));
 }
 
 /** Starts one job's re-score for its panel: refuses a malformed request before any work, gives the run already open for the job, or records a new run and gives the work that carries it out. */

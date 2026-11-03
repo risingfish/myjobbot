@@ -6,6 +6,7 @@ import { splitSettings } from "../../src/config/searchSettings.js";
 import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
@@ -17,6 +18,7 @@ import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceR
 
 interface UiState {
     views: JobViews;
+    rescoreLog: RescoreLogStore;
     gmail: GmailStore;
     alerts: AlertStore;
     key: SecretKeyStatus;
@@ -82,12 +84,12 @@ export async function getStores(): Promise<OpenStores> {
     return { stores: await stores(), key: secretKey() };
 }
 
-/** Returns the database views, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
+/** Returns the database views, the re-score log, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
 export async function getUiState(): Promise<UiState> {
     const { stores: opened, key } = await getStores();
     const { settings, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings);
     const names = sourceNames(await opened.sources.list(OWNER_ID));
-    return { views: opened.jobViews, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
+    return { views: opened.jobViews, rescoreLog: opened.rescoreLog, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
 }
 
 /** Returns what the Settings page shows for one request: the search settings in effect, what they report and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */

@@ -80,19 +80,21 @@ test("a job without a description says no description was found", async () => {
 
 const WARNING = "On 2026-10-20 13:05, text from this job's pages tried to escape the data markers that keep it apart from the model's instructions. It was removed before the model read it.";
 const HISTORY = [
-    { scoredAt: "2026-10-21 08:15", total: 65, base: 40, bonus: 25, run: "0f29a1a3" },
-    { scoredAt: "2026-10-19 07:00", total: 50, base: null, bonus: null, run: null },
+    { scoredAt: "2026-10-22 09:00", total: null, base: null, bonus: null, run: "aaaaaaaa", rescore: { id: "aaaaaaaa-run", state: "filtered" as const, filter: "body" } },
+    { scoredAt: "2026-10-21 08:15", total: 65, base: 40, bonus: 25, run: "0f29a1a3", rescore: null },
+    { scoredAt: "2026-10-19 07:00", total: 50, base: null, bonus: null, run: null, rescore: null },
 ];
 
-test("a flagged job shows its warning, and the score history lists every score newest first", async () => {
+test("a flagged job shows its warning, and the history lists every score and re-score newest first, a re-score with its Log", async () => {
     actions.loadJobDetails.mockResolvedValue(details(jobRowView(), {}, { warnings: [WARNING], history: HISTORY }));
     showPage();
     await openTitle("Software Engineer a");
     await vi.waitFor(() => expect(section("Warnings").textContent).toContain(WARNING));
     const rows = within(section("History")).getAllByRole("row").slice(1);
     expect(rows.map((row) => [...row.querySelectorAll("td")].map((cell) => cell.textContent))).toEqual([
-        ["2026-10-21 08:15", "65", "40 + 25", "0f29a1a3"],
-        ["2026-10-19 07:00", "50", "unknown", "unknown"],
+        ["2026-10-22 09:00", "filtered: body filter", "", "aaaaaaaa", "Log"],
+        ["2026-10-21 08:15", "65", "40 + 25", "0f29a1a3", ""],
+        ["2026-10-19 07:00", "50", "unknown", "unknown", ""],
     ]);
 });
 

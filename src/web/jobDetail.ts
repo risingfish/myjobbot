@@ -1,12 +1,19 @@
+import type { RescoreRun } from "../db/rescoreLogStore.js";
 import type { JobDetailRow, VerdictView } from "../db/store.js";
-import type { DescriptionDetail, DescriptionOrigin, HistoryEntry, JobDetailView, JobRowView, ScoreDetail } from "./api.js";
-import { boostText, minutes, scoreBoost, shortRun, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
+import type { DescriptionDetail, DescriptionOrigin, JobDetailView, JobRowView, ScoreDetail } from "./api.js";
+import { historyRows } from "./history.js";
+import { boostText, minutes, scoreBoost, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
 
-/** Converts one stored job and its verdicts, newest first, into the details its panel shows. */
-export function toJobDetailView(row: JobDetailRow, verdicts: VerdictView[], context: RowContext): JobDetailView {
+interface Recorded {
+    verdicts: VerdictView[];
+    runs: RescoreRun[];
+}
+
+/** Converts one stored job, its verdicts and its re-scores into the details its panel shows. */
+export function toJobDetailView(row: JobDetailRow, { verdicts, runs }: Recorded, context: RowContext): JobDetailView {
     const job = toJobRowView(row, context);
     const terms = { pay: row.compensation, workplace: row.workplace_type };
-    const notes = { warnings: warnings(row), history: verdicts.map(historyEntry) };
+    const notes = { warnings: warnings(row), history: historyRows(verdicts, runs, context.now) };
     return { job: { ...job, ...terms }, score: scoreDetail(row, job, context), description: descriptionDetail(row), ...notes };
 }
 
@@ -35,9 +42,4 @@ function warnings(row: JobDetailRow): string[] {
     if (row.injection_seen_at === null) return [];
     const seen = minutes(row.injection_seen_at);
     return [`On ${seen}, text from this job's pages tried to escape the data markers that keep it apart from the model's instructions. It was removed before the model read it.`];
-}
-
-/** Turns one recorded verdict into a line of the job's score history. */
-function historyEntry(verdict: VerdictView): HistoryEntry {
-    return { scoredAt: minutes(verdict.scored_at), total: verdict.score, base: verdict.base_score, bonus: verdict.bonus_score, run: shortRun(verdict.run_id) };
 }

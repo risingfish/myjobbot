@@ -40,7 +40,7 @@ async function rescoreShown() {
     vi.unstubAllGlobals();
 }
 
-test("clicking another title switches the panel to that job, dropping a re-score's terminal", async () => {
+test("clicking another title switches the panel to that job, dropping a re-score's terminal, and a job with a re-score running opens its terminal", async () => {
     showPage();
     await openTitle("Software Engineer a");
     await rescoreShown();
@@ -48,7 +48,19 @@ test("clicking another title switches the panel to that job, dropping a re-score
     expect(within(panel() as HTMLElement).getByRole("heading", { level: 2 }).textContent).toBe("Backend Engineer b");
     expect(location.search).toBe("?job=greenhouse%3Ab");
     expect(screen.queryByRole("region", { name: "Re-score log" })).toBeNull();
+    await runningOpens();
 });
+
+async function runningOpens() {
+    vi.stubGlobal("EventSource", FakeSource);
+    const running = { scoredAt: "2026-11-03 10:00", total: null, base: null, bonus: null, run: "run-2", rescore: { id: "run-2", state: "running" as const, filter: null } };
+    actions.loadJobDetails.mockImplementation(async (ats: string, jobId: string) => ({ ...(await listedDetails(ats, jobId)), history: [running] }));
+    await openTitle("Software Engineer a");
+    expect([(await screen.findByRole("region", { name: "Re-score log" })) !== null, FakeSource.opened.at(-1)?.url]).toEqual([true, "/api/rescores/run-2"]);
+    await userEvent.click(screen.getByRole("button", { name: "Close the re-score log" }));
+    expect(screen.queryByRole("region", { name: "Re-score log" })).toBeNull();
+    vi.unstubAllGlobals();
+}
 
 test("the close button, Escape and a click outside close the panel and take the job out of the address", async () => {
     showPage();
