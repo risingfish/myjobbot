@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { EvalFiles } from "../src/evals/files.js";
-import { evalCase, label, profile, result, run } from "./helpers/evalFixtures.js";
+import { answerKey, evalCase, profile, result, run } from "./helpers/evalFixtures.js";
 import { memoryFilePort } from "./helpers/memoryFilePort.js";
 
 const json = (value: unknown) => JSON.stringify(value);
@@ -13,7 +13,7 @@ const SEEDED = {
     "evals/cases/lever-3.json": json(evalCase({ id: "lever-3", schema: 2 })),
     "evals/cases/lever-4.json": json(evalCase({ id: "lever-9" })),
     "evals/cases/lever-5.json.tmp": "half written",
-    "evals/labels/greenhouse-4012345.json": json(label()),
+    "evals/answer_keys/greenhouse-4012345.json": json(answerKey()),
     "evals/prompts/prompt1.json": json({ schema: 1, text: "rubric" }),
 };
 
@@ -21,7 +21,7 @@ test("each kind is read with its good files kept and every bad one named with a 
     const { port } = memoryFilePort(SEEDED);
     const files = new EvalFiles(port);
     const cases = await files.cases();
-    expect([(await files.profiles()).items.map((item) => item.id), cases.items.map((item) => item.id), (await files.labels()).items.length, (await files.prompts()).items.length]).toEqual([["p1"], ["greenhouse-4012345"], 1, 1]);
+    expect([(await files.profiles()).items.map((item) => item.id), cases.items.map((item) => item.id), (await files.answerKeys()).items.length, (await files.prompts()).items.length]).toEqual([["p1"], ["greenhouse-4012345"], 1, 1]);
     expect(cases.bad).toEqual([
         { file: "cases/lever-1.json", problem: "not valid JSON" },
         { file: "cases/lever-2.json", problem: "job.days_open: invalid_type" },
@@ -41,6 +41,6 @@ test("a run's results are read line by line, a bad line named by its number and 
 
 test("a missing evals folder lists every kind as empty", async () => {
     const files = new EvalFiles(memoryFilePort().port);
-    const all = await Promise.all([files.profiles(), files.cases(), files.labels(), files.prompts(), files.runs(), files.results("none")]);
+    const all = await Promise.all([files.profiles(), files.cases(), files.answerKeys(), files.prompts(), files.runs(), files.results("none")]);
     expect(all).toEqual(Array.from({ length: 6 }, () => ({ items: [], bad: [] })));
 });

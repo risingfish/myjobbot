@@ -8,7 +8,7 @@ UTC strings. A file whose `schema` is not 1 is reported as `needs upgrade (schem
 data/evals/
   profiles/<profileId>.json
   cases/<caseId>.json
-  labels/<caseId>.json
+  answer_keys/<caseId>.json
   prompts/<promptId>.json
   runs/<runId>/run.json
   runs/<runId>/results.jsonl     one result per line
@@ -47,7 +47,7 @@ data/evals/
 Rules: `shiftedDays = daysOpenAtCapture − daysOpenAsScored`; `job.days_open = daysOpenAsScored`
 (when `days_open` is present); `observed: null` ⇒ `shiftedDays = 0`.
 
-## Label (`labels/<caseId>.json`)
+## Answer key (`answer_keys/<caseId>.json`)
 
 | Field | Type | Rules |
 |---|---|---|
@@ -57,10 +57,10 @@ Rules: `shiftedDays = daysOpenAtCapture − daysOpenAsScored`; `job.days_open = 
 | base, bonus | `{ min, max }` \| null | 0..50, min ≤ max |
 | mustMention | string[] | ≤ 10, each 1..60 chars |
 | note | string | ≤ 2,000 chars |
-| labeledAt | ISO time | |
-| history | array | earlier labels (same fields, no `schema`/`history`), newest first, ≤ 50 |
+| writtenAt | ISO time | |
+| history | array | earlier answer keys (same fields, no `schema`/`history`), newest first, ≤ 50 |
 
-A label whose case file is missing is reported as `orphaned`.
+An answer key whose case file is missing is reported as `orphaned`.
 
 ## Prompt (`prompts/<promptId>.json`)
 
@@ -99,10 +99,10 @@ A label whose case file is missing is reported as `orphaned`.
 | failure | `no_record` \| `invalid_tool_call` \| `timed_out` \| `model_error` \| null | research R9 |
 | tokensIn, tokensOut | int \| null | null when the server reports no usage |
 | ms | int | ≥ 0 |
-| passed | bool \| null | against the label at run time; null when unlabeled |
+| passed | bool \| null | against the answer key at run time; null without an answer key |
 
 A bad line is reported as `runs/<id>/results.jsonl:<line>` and skipped; reports re-judge against
-current labels and say when a label changed since the run (spec edge case).
+current answer keys and say when one changed since the run (spec edge case).
 
 ## Derived (not stored)
 

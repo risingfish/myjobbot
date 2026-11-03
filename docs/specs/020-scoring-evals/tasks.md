@@ -16,7 +16,7 @@ description: "Tasks for feature 020: scoring evals"
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: can run in parallel (different files, no dependencies)
-- **[Story]**: US1 capture, US2 labels, US3 run, US4 report
+- **[Story]**: US1 capture, US2 answer keys, US3 run, US4 report
 
 ## Sittings
 
@@ -47,16 +47,16 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 #### Tests (S1)
 
 - [x] T002 [P] Create `tests/helpers/memoryFilePort.ts`: an in-memory `FilePort` (`read`, `write`, `append`, `list`, `rename`, `exists`) over a `Map<string, string>`, a missing folder listing as empty, recording writes in order
-- [x] T003 [P] Write unit tests (6) in `tests/evalFormat.test.ts` for `src/evals/format.ts`: a full profile, case, label, prompt (`{schema, text}`), run and result parse; each refuses unknown fields (strict); a `schema` other than 1 is told apart as "needs upgrade (schema N)"; a case refuses `shiftedDays` ≠ `daysOpenAtCapture − daysOpenAsScored`, `job.days_open` ≠ `daysOpenAsScored`, and a shift other than 0 with `observed: null`; a label refuses verdict `maybe`, a score range breaking "0..100, min ≤ max" (`{min: 90, max: 80}`, `{min: -1, max: 5}`), base/bonus outside "0..50", more than 10 `mustMention` words or one over 60 chars, a note over 2,000 chars; tags must be `[a-z0-9-]{1,40}`, ≤ 20; a run needs ≥ 1 case and ≥ 1 `prompts` entry and `repeats` 1..20; a result refuses `failure` outside `no_record | invalid_tool_call | timed_out | model_error` and `attempt` < 1
+- [x] T003 [P] Write unit tests (6) in `tests/evalFormat.test.ts` for `src/evals/format.ts`: a full profile, case, answer key, prompt (`{schema, text}`), run and result parse; each refuses unknown fields (strict); a `schema` other than 1 is told apart as "needs upgrade (schema N)"; a case refuses `shiftedDays` ≠ `daysOpenAtCapture − daysOpenAsScored`, `job.days_open` ≠ `daysOpenAsScored`, and a shift other than 0 with `observed: null`; an answer key refuses verdict `maybe`, a score range breaking "0..100, min ≤ max" (`{min: 90, max: 80}`, `{min: -1, max: 5}`), base/bonus outside "0..50", more than 10 `mustMention` words or one over 60 chars, a note over 2,000 chars; tags must be `[a-z0-9-]{1,40}`, ≤ 20; a run needs ≥ 1 case and ≥ 1 `prompts` entry and `repeats` 1..20; a result refuses `failure` outside `no_record | invalid_tool_call | timed_out | model_error` and `attempt` < 1
 - [x] T004 [P] Write unit tests (3) in `tests/evalFiles.test.ts` for the readers of `EvalFiles` (`src/evals/files.ts`) over the memory port: reading each kind returns the good items and `bad` entries naming each file (one broken JSON, one schema failure, one `schema: 2`, one file whose `id` differs from its name), each problem made only of zod issue paths and codes (e.g. `job.days_open: invalid_type`), never the file's text; `runs/<id>/results.jsonl` with a bad line reports `results.jsonl:<line>` and keeps the others; a missing `evals/` folder lists every kind as empty
-- [x] T005 Write unit tests (2) in `tests/evalCheck.test.ts` for `checkEvals(files)` in `src/evals/check.ts`: counts per kind and `bad:` lines per contracts/eval-cli.md, exit 1 when any is bad and 0 when none; a label with no case and a case naming a missing profile are reported `orphaned`
+- [x] T005 Write unit tests (2) in `tests/evalCheck.test.ts` for `checkEvals(files)` in `src/evals/check.ts`: counts per kind and `bad:` lines per contracts/eval-cli.md, exit 1 when any is bad and 0 when none; an answer key with no case and a case naming a missing profile are reported `orphaned`
 - [x] T006 Write an integration test (1) in `tests/integration/evalFiles.test.ts`: `nodeFilePort` in a fresh `os.tmpdir()` folder writes (creating parent folders), lists, appends, renames and reads back, and a missing folder lists as empty
 
 #### Implementation (S1)
 
-- [x] T007 [P] Create `src/evals/format.ts`: strict zod schemas and types for Profile, Case, Label, Prompt, Run and Result exactly per data-model.md (rules quoted there; `schema: z.literal(1)`), the cross-field rules of T003 as `superRefine`s, and `problemOf(error)` (paths and codes only)
+- [x] T007 [P] Create `src/evals/format.ts`: strict zod schemas and types for Profile, Case, AnswerKey, Prompt, Run and Result exactly per data-model.md (rules quoted there; `schema: z.literal(1)`), the cross-field rules of T003 as `superRefine`s, and `problemOf(error)` (paths and codes only)
 - [x] T008 [P] Create `src/evals/filePort.ts`: the `FilePort` interface and `nodeFilePort(root)` over `node:fs/promises` (plain `write` creating parent folders, `append`, `rename`, `list` empty on ENOENT), rooted at the data folder
-- [x] T009 Create `src/evals/files.ts` with the readers only: `profiles()`, `cases()`, `labels()`, `prompts()`, `runs()`, `results(runId)`, each returning `{ items, bad }`, files under `evals/`
+- [x] T009 Create `src/evals/files.ts` with the readers only: `profiles()`, `cases()`, `answerKeys()`, `prompts()`, `runs()`, `results(runId)`, each returning `{ items, bad }`, files under `evals/`
 - [x] T010 Change `main` in `src/cli.ts` to take the command name without parsing flags and pass the raw remaining arguments on (research R12); `run`, `rescore` and `import-sqlite` parse their own positionals as before (their usage errors still exit 2); add `COMMANDS.eval` with a subcommand table and `eval check` (`src/evals/check.ts`, `checkEvals(files): { lines, code }`, the port rooted at `MYJOBBOT_DATA_DIR`); update `USAGE`
 - [x] T011 Run `npm run check` and `npm run check:db` until green; quickstart §1; delete the marker; when the owner asks, commit S1 and open PR 1
 
@@ -97,16 +97,16 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ---
 
-## Phase 4: User Story 2 - Label cases on one scale (P1)
+## Phase 4: User Story 2 - Write answer keys on one scale (P1)
 
 **Goal**: FR-007.
 
 **Independent Test**: quickstart §3.
 
-### Sitting S3: `eval label` (PR 3)
+### Sitting S3: `eval answer_key` (PR 3)
 
-- [ ] T026 [P] [US2] Create `.specify/sitting-in-progress` naming S3; write unit tests (4) in `tests/evalLabel.test.ts` for `src/evals/label.ts`: `parseLabelArgs` turns `recommend --score 65-85 --bonus 25-40 --mention TypeScript --note "…"` into a label; a range `90-80`, `x-5` or outside its limits is refused with a message naming the flag; `relabeled(old, next)` puts the old label (without `history`) first in `history`, keeping at most 50; `rangeWarning(label, threshold)` warns for `recommend 65-85` at 70 and not for `recommend 70-85`; labeling a case id with no case file is refused
-- [ ] T027 [US2] Create `src/evals/label.ts` (`parseLabelArgs`, `relabeled`, `rangeWarning`, `labelCommand`), add the label writer to `src/evals/files.ts`, and wire `eval label` in `src/cli.ts`
+- [ ] T026 [P] [US2] Create `.specify/sitting-in-progress` naming S3; write unit tests (4) in `tests/evalAnswerKey.test.ts` for `src/evals/answerKey.ts`: `parseAnswerKeyArgs` turns `recommend --score 65-85 --bonus 25-40 --mention TypeScript --note "…"` into an answer key; a range `90-80`, `x-5` or outside its limits is refused with a message naming the flag; `rewritten(old, next)` puts the old answer key (without `history`) first in `history`, keeping at most 50; `rangeWarning(answerKey, threshold)` warns for `recommend 65-85` at 70 and not for `recommend 70-85`; writing an answer key for a case id with no case file is refused
+- [ ] T027 [US2] Create `src/evals/answerKey.ts` (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`, `answerKeyCommand`), add the answer key writer to `src/evals/files.ts`, and wire `eval answer_key` in `src/cli.ts`
 - [ ] T028 [US2] Run `npm run check` and `npm run check:db` until green; quickstart §3; delete the marker; when the owner asks, commit S3 and open PR 3
 
 ---
@@ -122,10 +122,10 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 #### Tests (S4)
 
 - [ ] T029 [P] [US3] Create `.specify/sitting-in-progress` naming S4; create `tests/helpers/usageChat.ts`: `usageChat(replies, usage)` gives a `makeChat(responseLog)` that answers from `scriptedChat` and writes `{ type: "llm_response", response: { usage } }` per reply (usage omitted when not given)
-- [ ] T030 [P] [US3] Write unit tests (5) in `tests/evalJudge.test.ts` and `tests/evalIds.test.ts`: `judge(label, attempt, threshold)` per research R8 (recommend at 60 with threshold 60 passes, at 59 fails; borderline passes within 10 points either side; zero only at 0; a range or a `mustMention` word missing from reasons and gaps, case-insensitive, fails a passing verdict; a failed attempt never passes; no label gives null) in 4 tests; `runId(date, random)` is `yyyymmdd-hhmmss-<4 hex>` and sorts by time (1)
+- [ ] T030 [P] [US3] Write unit tests (5) in `tests/evalJudge.test.ts` and `tests/evalIds.test.ts`: `judge(answerKey, attempt, threshold)` per research R8 (recommend at 60 with threshold 60 passes, at 59 fails; borderline passes within 10 points either side; zero only at 0; a range or a `mustMention` word missing from reasons and gaps, case-insensitive, fails a passing verdict; a failed attempt never passes; no answer key gives null) in 4 tests; `runId(date, random)` is `yyyymmdd-hhmmss-<4 hex>` and sorts by time (1)
 - [ ] T031 [P] [US3] Write unit tests (1) in `tests/evalFailure.test.ts` for `failureOf(result, tally)` in `src/evals/failure.ts`: a recorded verdict gives null; a reason starting `LLM error:` gives `model_error`; wall-clock exhaustion gives `timed_out`; calls that all failed give `invalid_tool_call`; anything else gives `no_record`
 - [ ] T032 [P] [US3] Write unit tests (3) in `tests/evalSession.test.ts` for `scoreCase(caseFile, profile, deps)` in `src/evals/session.ts` with `usageChat`: a model that calls `get_job` then `record_matches` gives the parts, reasons and gaps, the `get_job` result being the case's `job` with its frozen `days_open`, wrapped in markers built from a random id (not the run id); an alert-only case (`"(none provided)"`, ats `linkedin`) gets the "scored from the alert only" gap; tokens are summed from the session's usage, null when the replies carry none
-- [ ] T033 [P] [US3] Write unit tests (3) in `tests/evalRunCases.test.ts` for `runCases(args, deps)` in `src/evals/runCases.ts` over the memory port and `usageChat`: `--tag` and `--case` select cases and an empty selection is refused (exit 1); `--repeats 2` over 2 cases appends 4 results, a failing attempt in the middle doesn't stop the rest, each judged against the label as it is at run time; `run.json` is written with `endedAt: null` before the first attempt and its `endedAt` set at the end, with one `prompts` entry per profile used
+- [ ] T033 [P] [US3] Write unit tests (3) in `tests/evalRunCases.test.ts` for `runCases(args, deps)` in `src/evals/runCases.ts` over the memory port and `usageChat`: `--tag` and `--case` select cases and an empty selection is refused (exit 1); `--repeats 2` over 2 cases appends 4 results, a failing attempt in the middle doesn't stop the rest, each judged against the answer key as it is at run time; `run.json` is written with `endedAt: null` before the first attempt and its `endedAt` set at the end, with one `prompts` entry per profile used
 - [ ] T034 [US3] Extend `tests/toolDeclarations.test.ts` (0 new) so the eval `get_job` is listed as declaring `outsideText: true`
 
 #### Implementation (S4)
@@ -145,7 +145,7 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ### Sitting S5: `eval report` (PR 5)
 
-- [ ] T039 [P] [US4] Create `.specify/sitting-in-progress` naming S5; write unit tests (5) in `tests/evalReport.test.ts` for `src/evals/report.ts` and `reportText.ts`: pass rate, labeled count, and token and time totals per case and per run from known results; spread per case and `unstable` when pass states are mixed or the range is ≥ 10; against another run, moves (pass state changed, or medians ≥ 5 apart), fixed and broken counts, and the change in pass rate, tokens and time; against observed, cases with `read ≠ details` or a changed description left out and counted by reason; the text names title and company, never `job.description`, adds reasons and gaps only with `--reasons`, shows a run with `endedAt: null` as unfinished and notes a label changed since the run
+- [ ] T039 [P] [US4] Create `.specify/sitting-in-progress` naming S5; write unit tests (5) in `tests/evalReport.test.ts` for `src/evals/report.ts` and `reportText.ts`: pass rate, the count of cases with answer keys, and token and time totals per case and per run from known results; spread per case and `unstable` when pass states are mixed or the range is ≥ 10; against another run, moves (pass state changed, or medians ≥ 5 apart), fixed and broken counts, and the change in pass rate, tokens and time; against observed, cases with `read ≠ details` or a changed description left out and counted by reason; the text names title and company, never `job.description`, adds reasons and gaps only with `--reasons`, shows a run with `endedAt: null` as unfinished and notes an answer key changed since the run
 - [ ] T040 [US4] Create `src/evals/report.ts` (pure summaries) and `src/evals/reportText.ts` (lines per contracts/eval-cli.md), and wire `eval report <run-id> [--against <run-id>|observed] [--reasons]` in `src/cli.ts`
 - [ ] T041 [US4] Run `npm run check` and `npm run check:db` until green; quickstart §5–§6; delete the marker; when the owner asks, commit S5 and open PR 5
 
@@ -155,7 +155,7 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ### Sitting S6: documentation (PR 6, stack stopped)
 
-- [ ] T042 [P] Create `.specify/sitting-in-progress` naming S6; add an "Evals" section to `README.md` (what a case, label, run and report are; the five commands; data in `data/evals/`, never in git; evals call the real model and aren't part of the checks) and a Commands entry
+- [ ] T042 [P] Create `.specify/sitting-in-progress` naming S6; add an "Evals" section to `README.md` (what a case, answer key, run and report are; the five commands; data in `data/evals/`, never in git; evals call the real model and aren't part of the checks) and a Commands entry
 - [ ] T043 [P] Add an evals paragraph to `CLAUDE.md` (`src/evals/` knows nothing of Next.js; files only through `EvalFiles` over a `FilePort`, every file `schema: 1` and strict; cases replay the re-score path with a frozen `get_job`, markers from a random id; capture only reads the database; reports never print description text) and the commands
 - [ ] T044 Fill the ledger's last row, run `npm run check` and `npm run check:db`, delete the marker; when the owner asks, commit S6 and open PR 6; restart the stack once the feature has merged
 
@@ -164,13 +164,13 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 ## Dependencies & Execution Order
 
 - S1 → S2 → S3 → S4 → S5 → S6, each PR merged before the next (small PRs).
-- S2 needs S1's format and readers; S3 needs S2's cases to label; S4 needs S1–S3 (judging reads
-  labels); S5 needs S4's results.
+- S2 needs S1's format and readers; S3 needs S2's cases to write answer keys for; S4 needs S1–S3 (judging reads
+  answer keys); S5 needs S4's results.
 - Within a sitting, its tests come first and fail first.
 - First production callers (knip's production pass): `format`, `filePort`, the readers of `files`,
   `check` from `eval check` (S1); `ids.caseId`/`contentId`, the profile and case writers,
   `capture`, `captureCommand`, `observedRead`, `descriptionFoundAt`, `recentlyScored` from
-  `eval capture` (S2); the label writer and `label` (S3); `runId`, `judge`, `failure`, `session`,
+  `eval capture` (S2); the answer key writer and `answerKey` (S3); `runId`, `judge`, `failure`, `session`,
   the prompt/run/result writers, `runCases`, `oneJobAgentDeps` (S4); `report`, `reportText` (S5).
 
 ## Parallel Opportunities
@@ -182,9 +182,9 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ## Implementation Strategy
 
-- **MVP**: S1–S3 give a labeled, validated case set from real jobs; S4 makes it measurable; S5
+- **MVP**: S1–S3 give a validated case set with answer keys from real jobs; S4 makes it measurable; S5
   makes it a decision.
-- **Incremental**: PR 1 (format) → PR 2 (capture) → PR 3 (labels) → PR 4 (run) → PR 5 (report)
+- **Incremental**: PR 1 (format) → PR 2 (capture) → PR 3 (answer keys) → PR 4 (run) → PR 5 (report)
   → PR 6 (docs).
 
 ## Test ledger (constitution Principle II, target 95 / 4 / 1)

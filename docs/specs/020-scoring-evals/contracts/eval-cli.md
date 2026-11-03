@@ -11,10 +11,10 @@ printed (FR-013).
 Loads every file and prints one line per kind and one per bad file:
 
 ```text
-profiles 2 · cases 37 · labels 21 · prompts 3 · runs 4
+profiles 2 · cases 37 · answer keys 21 · prompts 3 · runs 4
 bad: cases/greenhouse-4012345.json: job.days_open: invalid_type
 bad: cases/lever-77.json: needs upgrade (schema 2)
-bad: labels/lever-9a.json: orphaned (no case)
+bad: answer_keys/lever-9a.json: orphaned (no case)
 bad: cases/ashby-3.json: orphaned (no profile 9b1e…)
 bad: runs/20261103-181200-3f2a/results.jsonl:14: score: too_big
 ```
@@ -45,15 +45,15 @@ note: observed scores used the resume and preferences of their time; cases use t
 
 Exit 1 if any job is unknown.
 
-## `eval label` (S3)
+## `eval answer_key` (S3)
 
 ```text
-eval label <case-id> <recommend|borderline|reject|zero> [--score 65-85] [--base a-b] [--bonus a-b]
+eval answer_key <case-id> <recommend|borderline|reject|zero> [--score 65-85] [--base a-b] [--bonus a-b]
            [--mention word]... [--note "text"]
 ```
 
-Validates against the label schema; an earlier label moves into `history`. Prints
-`labeled greenhouse-4012345 recommend 65-85`, plus `warning: 65-69 can't pass recommend at
+Validates against the answer key schema; an earlier answer key moves into `history`. Prints
+`answer key written: greenhouse-4012345 recommend 65-85`, plus `warning: 65-69 can't pass recommend at
 threshold 70` when a range contradicts the verdict (saved anyway), or the rule broken (exit 1).
 
 ## `eval run` (S4)
@@ -84,12 +84,12 @@ eval report <run-id> [--against <run-id> | --against observed] [--reasons]
 
 ```text
 run 20261103-181200-3f2a · model qwen3 · prompt 9b1e… · 10 cases × 3 · unfinished
-passed 24/30 (80%) · labeled 10/10 · tokens 128,410 in / 5,902 out · 3m12s
+passed 24/30 (80%) · with answer keys 10/10 · tokens 128,410 in / 5,902 out · 3m12s
 cases:
   greenhouse-4012345  Senior Engineer · Acme   recommend 65-85   52 58 61  fail  12.6k tok  15.1s
   lever-9a            Backend Dev · Beta       borderline        55 66 60  mixed  12.0k tok  14.0s
 unstable (mixed or range ≥ 10): lever-9a (55-66)
-label changed since the run: lever-9a
+answer key changed since the run: lever-9a
 against 20261102-090000-aa11: 21→24 passed (+3 fixed, 0 broken) · tokens +4% · time −12s
   greenhouse-4012345  fail → fail   61 → 57
   lever-9a            fail → pass   55 → 66

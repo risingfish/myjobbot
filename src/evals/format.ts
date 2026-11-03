@@ -64,14 +64,14 @@ function checkDates(value: z.infer<typeof caseShape>, context: z.RefinementCtx):
     if (value.job.days_open !== daysOpenAsScored) context.addIssue({ code: "custom", path: ["job", "days_open"], message: "age sent isn't the age as scored" });
 }
 
-const labelFields = {
+const answerKeyFields = {
     verdict: z.enum(["recommend", "borderline", "reject", "zero"]),
     score: range(100),
     base: range(50),
     bonus: range(50),
     mustMention: z.array(z.string().min(1).max(60)).max(10),
     note: z.string().max(2000),
-    labeledAt: iso,
+    writtenAt: iso,
 };
 
 const results = z.strictObject({
@@ -106,7 +106,7 @@ const runs = z.strictObject({
 const SCHEMAS = {
     profile: z.strictObject({ schema: version, resume: z.string().min(1), preferences: z.string(), matchThreshold: total, ghostThresholdDays: z.number().int().min(1), capturedAt: iso }),
     case: caseShape.superRefine(checkDates),
-    label: z.strictObject({ schema: version, ...labelFields, history: z.array(z.strictObject(labelFields)).max(50) }),
+    answer_key: z.strictObject({ schema: version, ...answerKeyFields, history: z.array(z.strictObject(answerKeyFields)).max(50) }),
     prompt: z.strictObject({ schema: version, text: z.string().min(1) }),
     run: runs,
     result: results,
@@ -115,7 +115,7 @@ const SCHEMAS = {
 export type FileKind = keyof typeof SCHEMAS;
 export type Profile = z.infer<(typeof SCHEMAS)["profile"]>;
 export type EvalCase = z.infer<(typeof SCHEMAS)["case"]>;
-export type Label = z.infer<(typeof SCHEMAS)["label"]>;
+export type AnswerKey = z.infer<(typeof SCHEMAS)["answer_key"]>;
 export type Prompt = z.infer<(typeof SCHEMAS)["prompt"]>;
 export type Run = z.infer<(typeof SCHEMAS)["run"]>;
 export type Result = z.infer<(typeof SCHEMAS)["result"]>;

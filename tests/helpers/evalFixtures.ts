@@ -14,8 +14,8 @@ export function evalCase(overrides: Record<string, unknown> = {}) {
     return { schema: 1, id: "greenhouse-4012345", profile: "p1", source: { ats: "greenhouse", jobId: "4012345" }, title: "Senior Engineer", company: "Acme", job: job(), dates, observed, descriptionChangedSinceScored: false, tags: ["seniority-edge"], ...overrides };
 }
 
-export function label(overrides: Record<string, unknown> = {}) {
-    return { schema: 1, verdict: "recommend", score: { min: 70, max: 85 }, base: null, bonus: null, mustMention: [], note: "stack matches", labeledAt: AT, history: [], ...overrides };
+export function answerKey(overrides: Record<string, unknown> = {}) {
+    return { schema: 1, verdict: "recommend", score: { min: 70, max: 85 }, base: null, bonus: null, mustMention: [], note: "stack matches", writtenAt: AT, history: [], ...overrides };
 }
 
 export function run(overrides: Record<string, unknown> = {}) {

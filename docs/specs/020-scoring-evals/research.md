@@ -75,7 +75,7 @@
 
 ## R6. Files and validation
 
-- **Decision**: one JSON file per profile, case, label and prompt; a run as `runs/<id>/run.json`
+- **Decision**: one JSON file per profile, case, answer key and prompt; a run as `runs/<id>/run.json`
   plus `results.jsonl` (appended one line per attempt, so a stopped run keeps what it has) and the
   run's agent trace `runs/<id>/trace.jsonl` (kept for debugging; it holds job text and stays in
   `data/`). Every file carries `schema: 1` and is parsed with a zod strict schema; reading a
@@ -102,10 +102,10 @@
 - **Decision**: with threshold T from the case's profile and the model's score S (base + bonus,
   no title boosts): `recommend` passes at S ≥ T, `reject` at S < T, `zero` at S = 0, `borderline`
   at |S − T| ≤ 10; given ranges and `mustMention` words (case-insensitive substring of any reason
-  or gap) must also hold; a failed attempt never passes; an unlabeled case's `passed` is null.
+  or gap) must also hold; a failed attempt never passes; a case without an answer key has `passed` null.
 - **Rationale**: the same threshold Recommended uses. Recommended adds title boosts afterwards;
   they aren't model behaviour, so they are out of scope (spec Assumptions).
-- **Label sanity**: `eval label` warns (and still saves) when a range contradicts the verdict at
+- **Answer key sanity**: `eval answer_key` warns (and still saves) when a range contradicts the verdict at
   the case's threshold, e.g. `recommend 65-85` at T = 70.
 
 ## R9. Running a case

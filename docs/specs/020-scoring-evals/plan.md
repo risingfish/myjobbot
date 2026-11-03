@@ -6,7 +6,7 @@
 
 ## Summary
 
-A new `src/evals/` module holds the eval format: strict zod schemas for profiles, cases, labels,
+A new `src/evals/` module holds the eval format: strict zod schemas for profiles, cases, answer keys,
 prompts, runs and results, each file carrying `schema: 1`, and an `EvalFiles` store that reads and
 writes them under `<data>/evals/` (gitignored) through a small file-system port, so the store is
 unit-tested in memory and checked once on a real directory. Commands arrive through the CLI as
@@ -17,7 +17,7 @@ in the sitting of its first production caller:
 2. `eval capture <ats> <job_id> | --recent N`: freeze stored jobs as cases from the database (the
    profile and case writers, ids), with the job's age computed as of its observed score (FR-004),
    the description-arrival flag (FR-005) and whether production read the full details (FR-005a).
-3. `eval label <case-id> …`: write a label on the fixed scale, keeping its history.
+3. `eval answer_key <case-id> …`: write an answer key on the fixed scale, keeping its history.
 4. `eval run [--tag] [--case] [--repeats N] [--model M]`: score each case in a one-job session that
    shares the re-score's agent deps, prompt and `record_matches`, with a `get_job` that returns the
    case's frozen job; prompts per profile, results and the trace to `runs/<run-id>/`.
@@ -91,13 +91,13 @@ docs/specs/020-scoring-evals/
 src/evals/
 ├── format.ts           strict zod schemas and types (S1)
 ├── filePort.ts         FilePort and nodeFilePort, rooted at the data folder (S1)
-├── files.ts            EvalFiles: readers (S1); profile/case writers (S2), label (S3), prompt/run/result (S4)
+├── files.ts            EvalFiles: readers (S1); profile/case writers (S2), answer key (S3), prompt/run/result (S4)
 ├── check.ts            eval check (S1)
 ├── ids.ts              caseId, contentId (S2); runId (S4)
 ├── capture.ts          profileOf, buildCase, asScoredDates (pure, S2)
 ├── captureCommand.ts   eval capture (S2)
 ├── observedRead.ts     details | summary | unknown from the observed trace (S2)
-├── label.ts            parseLabelArgs, relabeled, rangeWarning, label command (S3)
+├── answerKey.ts        parseAnswerKeyArgs, rewritten, rangeWarning, answer_key command (S3)
 ├── judge.ts            pass rules (S4)
 ├── failure.ts          failureOf (S4)
 ├── session.ts          scoreCase: one case through the model (S4)
@@ -112,7 +112,7 @@ src/rescore/traceSteps.ts  loggedCareers wraps descriptionFoundAt (S2)
 
 tests/
 ├── evalFormat, evalFiles, evalCheck (S1); evalIds, evalFileWrites, evalCapture, evalObservedRead (S2);
-│   evalLabel (S3); evalJudge, evalFailure, evalSession, evalRunCases (S4); evalReport (S5)
+│   evalAnswerKey (S3); evalJudge, evalFailure, evalSession, evalRunCases (S4); evalReport (S5)
 ├── helpers/memoryFilePort.ts (S1), helpers/usageChat.ts (S4)
 ├── toolDeclarations.test.ts (S4: the eval get_job)
 ├── helpers/careersStoreContract.ts and helpers/storeContract.ts (S2: the two queries)

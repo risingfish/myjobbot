@@ -1,4 +1,4 @@
-import { parseFile, type EvalCase, type FileKind, type FileOf, type Label, type Parsed, type Profile, type Prompt, type Result, type Run } from "./format.js";
+import { parseFile, type EvalCase, type FileKind, type FileOf, type AnswerKey, type Parsed, type Profile, type Prompt, type Result, type Run } from "./format.js";
 import type { FilePort } from "./filePort.js";
 
 const ROOT = "evals";
@@ -37,9 +37,9 @@ export class EvalFiles {
         return this.folder("cases", "case");
     }
 
-    /** Reads the stored labels, named by the case they judge. */
-    labels(): Promise<Loaded<Named<Label>>> {
-        return this.folder("labels", "label");
+    /** Reads the stored answer keys, named by the case they judge. */
+    answerKeys(): Promise<Loaded<Named<AnswerKey>>> {
+        return this.folder("answer_keys", "answer_key");
     }
 
     /** Reads the stored prompts, named by their content ids. */

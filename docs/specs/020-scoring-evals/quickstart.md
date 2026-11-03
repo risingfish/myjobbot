@@ -25,9 +25,9 @@ Evals never run in either (FR-015).
    `job.days_open` against the job's age on its scoring day (SC-003), `observed.read`, and
    `descriptionChangedSinceScored`. Capture the first again: `exists`, file unchanged.
    `--recent 20` finishes in under a minute (SC-001).
-3. **Labels (S3).** Label a case, relabel it: the old one is in `history`. A range of `90-80` or a
+3. **Answer keys (S3).** Write a case's answer key, then rewrite it: the old one is in `history`. A range of `90-80` or a
    verdict `maybe` is refused; `recommend --score 65-85` at threshold 70 saves with a warning.
-4. **Run (S4).** Run 5 labeled cases with `--repeats 2`: 10 results, each profile's prompt saved
+4. **Run (S4).** Run 5 cases with answer keys with `--repeats 2`: 10 results, each profile's prompt saved
    once, `endedAt` set, no change to any score in the web UI. Run again and stop it with Ctrl-C:
    its results so far remain and `endedAt` stays null.
 5. **Report (S5).** Report the first run, then against a second run of the same cases with no
