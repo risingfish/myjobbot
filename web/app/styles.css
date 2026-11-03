@@ -161,7 +161,8 @@ form.hide {
     margin: 0;
 }
 form.hide button,
-.details-head button {
+.details-head button,
+.details-history button {
     margin: 0;
     font-size: 13px;
     padding: 2px 10px;

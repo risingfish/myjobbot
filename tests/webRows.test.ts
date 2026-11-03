@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { BeginResult, RescoreEnd } from "../src/db/rescoreLogStore.js";
-import type { JobStore, JobViews } from "../src/db/store.js";
+import type { JobStore, JobViews, Stores } from "../src/db/store.js";
 import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, startRescoreFor } from "../web/lib/rows.js";
@@ -72,24 +72,31 @@ test("a job whose text tried to escape the data markers is marked on its row", a
     expect(Object.fromEntries(jobRows(data).map((row) => [row.jobId, row.injection]))).toEqual({ a: true, b: false });
 });
 
+function detailStores(stores: Stores) {
+    return { views: stores.jobViews, rescoreLog: stores.rescoreLog };
+}
+
 test("loadDetailsFor refuses a malformed job request", async () => {
-    const views = await seededViews([{ id: "a" }]);
+    const views = detailStores(await seededStores([{ id: "a" }]));
     const requests = [{ ats: "", jobId: "a" }, { ats: "x".repeat(33), jobId: "a" }, { ats: "greenhouse", jobId: "" }, { ats: "greenhouse", jobId: "x".repeat(256) }, { ats: "greenhouse" }, "greenhouse:a"];
     for (const request of requests) await expect(loadDetailsFor(views, config, request)).rejects.toThrow("Invalid job request");
 });
 
 test("loadDetailsFor returns a known job's details and null for an unknown one", async () => {
-    const views = await seededViews([{ id: "a" }]);
+    const views = detailStores(await seededStores([{ id: "a" }]));
     expect((await loadDetailsFor(views, config, JOB_A))?.job).toMatchObject({ jobId: "a", title: "Software Engineer a", pay: null });
     expect(await loadDetailsFor(views, config, { ats: "greenhouse", jobId: "nope" })).toBeNull();
 });
 
-test("loadDetailsFor includes the job's score history, newest first", async () => {
+test("loadDetailsFor includes the job's score history and its re-scores, newest first", async () => {
     const stores = await seededStores([{ id: "a", score: 70 }]);
     await stores.jobStore.recordVerdict({ job_id: "a", score: 80, reasons: [], gaps: [] }, { scoredAt: "2026-10-03T00:00:00.000Z", runId: "run-2" });
-    expect((await loadDetailsFor(stores.jobViews, config, JOB_A))?.history.map((entry) => [entry.total, entry.run])).toEqual([
-        [80, "run-2"],
-        [70, "run-1"],
+    await stores.rescoreLog.begin(JOB_A, "run-3", "2026-10-04T00:00:00.000Z");
+    await stores.rescoreLog.end("run-3", { outcome: "filtered", filter: "title", score: null }, "2026-10-04T00:00:01.000Z");
+    expect((await loadDetailsFor(detailStores(stores), config, JOB_A))?.history.map((entry) => [entry.total, entry.run, entry.rescore?.state ?? null])).toEqual([
+        [null, "run-3", "filtered"],
+        [80, "run-2", null],
+        [70, "run-1", null],
     ]);
 });
 

@@ -41,3 +41,9 @@ export interface RescoreLogStore {
 export function openSince(at: string): string {
     return new Date(new Date(at).getTime() - OPEN_RUN_MINUTES * 60_000).toISOString();
 }
+
+/** Gives how a run ended, a failure when it has been open too long to still be running, or null while it runs. */
+export function runEnd(run: RescoreRun, now: Date): RescoreEnd | null {
+    if (run.endedAt !== null && run.outcome !== null) return { outcome: run.outcome, filter: run.filter, score: run.score };
+    return run.startedAt <= openSince(now.toISOString()) ? { outcome: "failed", filter: null, score: null } : null;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { JobKey } from "../../../src/db/store.js";
-import type { JobDetailView, JobRowView } from "../../../src/web/api.js";
+import type { JobDetailView, JobRowView, RescoreMark } from "../../../src/web/api.js";
 import { jobParam } from "../../lib/jobParam.js";
 import { useJobDetails, type Details } from "../../lib/useJobDetails.js";
 import { useRescoreTerminal } from "../../lib/useRescoreTerminal.js";
@@ -33,6 +33,7 @@ interface ContentProps {
 }
 
 type PanelRef = RefObject<HTMLDialogElement | null>;
+type OpenLog = (mark: RescoreMark) => void;
 
 /** Shows the open job's details in a panel at the right of the page, leaving the list usable behind it, and reloads them after a re-score. */
 export function DetailsPanel({ open, shown, job, onApplied, onHidden, onRescored, onClose }: DetailsPanelProps) {
@@ -58,7 +59,7 @@ function PanelContent({ job, details, titleId, onApplied, onHidden, rescore, onC
             {rescore.terminal !== null && <RescoreTerminal key={rescore.terminal.run} run={rescore.terminal.run} job={rescore.terminal.key} onEnd={rescore.ended} onClose={rescore.close} />}
             <div className="details-body">
                 <PanelStatus details={details} />
-                <PanelSections job={job} details={details} />
+                <PanelSections job={job} details={details} onOpenLog={rescore.openLog} />
             </div>
         </>
     );
@@ -72,26 +73,26 @@ function PanelStatus({ details }: { details: Details }) {
 }
 
 /** Shows the job's sections from its listed row, adding what only the loaded details hold once they arrive. */
-function PanelSections({ job, details }: { job: JobRowView | null; details: Details }) {
+function PanelSections({ job, details, onOpenLog }: { job: JobRowView | null; details: Details; onOpenLog: OpenLog }) {
     const view = details.state === "found" ? details.view : null;
     const facts = job ?? view?.job ?? null;
     if (details.state === "missing" || facts === null) return null;
     return (
         <>
             <JobSection job={facts} terms={view?.job ?? null} />
-            {view !== null && <LoadedSections view={view} />}
+            {view !== null && <LoadedSections view={view} onOpenLog={onOpenLog} />}
         </>
     );
 }
 
-/** Shows the sections only the loaded details can fill, in the panel's order: score, description, warnings and history. */
-function LoadedSections({ view }: { view: JobDetailView }) {
+/** Shows the sections only the loaded details can fill, in the panel's order: score, description, warnings and history, whose re-scores open their logs. */
+function LoadedSections({ view, onOpenLog }: { view: JobDetailView; onOpenLog: OpenLog }) {
     return (
         <>
             <ScoreSection score={view.score} />
             <DescriptionSection description={view.description} />
             <WarningsSection warnings={view.warnings} />
-            <HistorySection history={view.history} />
+            <HistorySection history={view.history} onOpenLog={onOpenLog} />
         </>
     );
 }

@@ -51,12 +51,19 @@ export interface DescriptionDetail {
     origin: DescriptionOrigin | null;
 }
 
+export interface RescoreMark {
+    id: string;
+    state: "scored" | "filtered" | "failed" | "running";
+    filter: string | null;
+}
+
 export interface HistoryEntry {
     scoredAt: string;
-    total: number;
+    total: number | null;
     base: number | null;
     bonus: number | null;
     run: string | null;
+    rescore: RescoreMark | null;
 }
 
 export interface JobDetailView {
