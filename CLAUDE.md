@@ -165,18 +165,28 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   runs (`isWanted`, the one gate before the model), the All jobs note and Re-score all use it.
   Filters never touch jobs already scored.
 - Re-score (feature 018) lives in `src/rescore/`, knows nothing about Next.js, and has two entry
-  points: `npm start -- rescore <ats> <job_id>` and the panel's `rescoreJob` server action
-  (`web/lib/actions.ts`, work in `rescoreFor` in `web/lib/rows.ts`, input checked before any
-  model call). A filtered job loses its score through `JobViews.clearScore`, which keeps the marks
+  points: `npm start -- rescore <ats> <job_id>` and the panel's `startRescore` server action
+  (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rows.ts`, input checked before any
+  model call), which records the run, hands the work to `after()` and answers with the run's id. A filtered job loses its score through `JobViews.clearScore`, which keeps the marks
   and verdict history; a job with no description is looked up first, with the careers lookup built
   from `CareersParts` (`src/careers/deps.ts`) and capped at 2 minutes. Scoring is a one-job
   `runAgent` session (6 steps, 3 minutes) whose model reads the job only through `get_job`, inside
   the data markers, and saves it through `oneJobStore`; it shares the run's rubric
   (`src/agent/rubric.ts`), and the run prompt is pinned by `tests/__snapshots__/prompt.test.ts.snap`.
   The panel's messages come only from `rescoreNote`. The Re-score button uses `useRescore`, not
-  `useSave`, the one exception to the job-action rule above, and a running re-score holds up the
-  page's other actions (Next.js runs one server action at a time). The `web` service is on the
+  `useSave`, the one exception to the job-action rule above. The `web` service is on the
   `browser` network for the lookup's rendering.
+- The re-score log (feature 019): each re-score is a row in `rescore_runs` with its steps in
+  `rescore_steps`, written only through `RescoreLogStore` (`RescoreLog` in `src/rescore/log.ts`
+  numbers and stores them; the careers audit and the trace feed it through `src/rescore/traceSteps.ts`).
+  A step is a kind with schema-checked fields (`src/rescore/steps.ts`), and every terminal or CLI
+  line is built by `stepLine` from those fields alone, never from page or model text; a stored step
+  that doesn't parse is never shown. A job has one open run at a time (`begin` locks the job row);
+  a run not ended within 10 minutes counts as failed (`openSince`, `runEnd`). The panel follows a
+  run over server-sent events from `web/app/api/rescores/[id]/route.ts` (`streamEvents` in
+  `src/web/rescoreStream.ts`, polling the stored log, a named `ping` heartbeat), shown by
+  `RescoreTerminal` (`useRescoreLog`, `useRescoreTerminal`); History merges verdicts and runs in
+  `historyRows` (`src/web/history.ts`), each re-score with its Log.
 
 ## Commands
 
@@ -184,7 +194,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - `npm run check:db`: the MariaDB integration tests against `myjobbot_test` (needs `.env`'s
   `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
-- `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints scored, filtered or failed)
+- `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

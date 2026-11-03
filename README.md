@@ -79,8 +79,23 @@ To score one job again at once, from its current description and your current re
 npm start -- rescore <ats> <job_id>     # e.g. rescore greenhouse 4012345
 ```
 
-It prints `scored`, `filtered (hidden by …)` or `failed` (exit code 1); see [Re-score](#re-score)
-for what each does. Each re-score gets its own run id and files, like a run.
+It prints the command, then each step as it happens with the seconds since the start, then
+`scored`, `filtered (hidden by …)` or `failed` (exit code 1):
+
+```text
+$ myjobbot rescore greenhouse 4012345
+[  0.0s] settings loaded
+[  0.0s] filters passed
+[  0.1s] model reading the job
+[  6.8s] model score saved: 72
+[  6.8s] done: model score 72
+rescore greenhouse 4012345: scored
+```
+
+A job has one re-score at a time: if one is already running (from the CLI or the web UI), it
+prints `rescore <ats> <job_id>: already running (<run id>)` and exits 1. See
+[Re-score](#re-score) for what each outcome does. Each re-score gets its own run id and files, like
+a run, and its steps are kept with the job (shown in the panel's History).
 
 ## Web UI
 
@@ -128,7 +143,9 @@ with Unhide on All jobs) and **Close**. The panel has five sections:
   stored as Markdown show formatted (headings, lists, emphasis, links opening in a new tab); plain
   text shows with its line breaks. See [How descriptions are stored](#how-descriptions-are-stored).
 - **Warnings**: only when text from the job tried to escape the model's data markers.
-- **History**: every score the job has had, newest first, with its parts and run.
+- **History**: every score and re-score the job has had, newest first, with its parts and run. A
+  re-score that saved no score (filtered, failed or still running) shows that instead, and every
+  re-score has **Log**, which opens its steps in the terminal (see [Re-score](#re-score)).
 
 Close it with its button, Escape or a click outside it. The open job is in the address
 (`?job=<board>:<id>`), so reload, back and forward keep it, and Ctrl/Cmd-click opens a job in a new
@@ -136,9 +153,13 @@ tab. The icon left of **Hide** opens the original posting. Reasoning keeps its t
 the posting.
 
 <a id="re-score"></a>**Re-score.** The panel's **Re-score** scores the job again at once, from its current
-description against your current resume, preferences and filters. It reads "Re-scoring…" while it
-works, then the panel shows the new score, reasons and gaps, and History gains a row (the old
-verdicts stay). Use it after changing your preferences, your resume or a filter, since saved
+description against your current resume, preferences and filters. A terminal-style window opens
+under the panel's header and shows each step as it happens, as `[  2.4s] <step>` lines after
+`$ myjobbot rescore <board> <id>`: the filters checked, the careers search and each page opened
+(with its address, size and how it was read), the model reading the job, the score saved and the
+outcome. It never shows page or model text. The button reads "Re-scoring…" until the re-score ends;
+then the panel shows the new score, reasons and gaps, and History gains a row (the old verdicts
+stay). The terminal stays until you close it with its ×, open another job or close the panel. Use it after changing your preferences, your resume or a filter, since saved
 filters only apply to jobs scored after them.
 - **A job a filter now hides** (an excluded company, the title filter or the body filter) isn't
   sent to the model. Its score is cleared, the panel says which filter hides it, and it leaves
@@ -148,9 +169,13 @@ filters only apply to jobs scored after them.
   from the alert, as a run does.
 - **A failure** (the model can't be reached, say) keeps the old score and says so.
 
-A re-score normally takes under 30 seconds (up to about 5 minutes with a lookup). While it runs,
-the page's other actions (Hide, Applied, Load more, opening another job) wait for it: Next.js runs
-one server action at a time. It is traced like a run, in its own `data/runs/` file.
+A re-score normally takes under 30 seconds (up to about 5 minutes with a lookup). It runs on the
+server whether or not you watch: you can keep using the page, reload it or open other jobs.
+Reopening the job while its re-score runs opens the terminal again, with the lines so far, and
+follows it; pressing Re-score then follows the running one rather than starting another, since a
+job has one re-score at a time. A re-score that hasn't ended after 10 minutes counts as failed.
+If the live view drops, the terminal says so; reopen the log from History. It is traced like a
+run, in its own `data/runs/` file.
 
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
 bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in

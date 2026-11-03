@@ -150,10 +150,12 @@ text) land in S2–S3; US3 (looking away) lands with S3's stored-log stream; US4
 
 ### Sitting S5: documentation (PR 5)
 
-- [ ] T042 Create `.specify/sitting-in-progress` naming S5
-- [ ] T043 [P] Update `README.md`: the Web UI's Re-score paragraph (the terminal, following a running re-score, one at a time, History's Log), the CLI's `rescore` output and `already running`, and remove the "server action holds the page's other actions" note.
-- [ ] T044 [P] Update `CLAUDE.md`'s Re-score paragraph (and its Commands line for `rescore`, which now also prints the log and `already running`, and drop the "holds up the page's other actions" sentence): `rescore_runs` / `rescore_steps` written only through `RescoreLogStore`; lines only from `stepLine` (never page or model text); `startRescore` with `after()`; the `api/rescores/[id]` stream follows the stored log; one run per job, 10-minute open limit.
-- [ ] T045 Run [quickstart.md](quickstart.md) §1–§6 on the stack, fill the ledger's last row, run `npm run check` and `npm run check:db`, delete the marker, and when the owner asks, commit S5 and open PR 5
+- [x] T042 Create `.specify/sitting-in-progress` naming S5
+- [x] T043 [P] Update `README.md`: the Web UI's Re-score paragraph (the terminal, following a running re-score, one at a time, History's Log), the CLI's `rescore` output and `already running`, and remove the "server action holds the page's other actions" note.
+- [x] T044 [P] Update `CLAUDE.md`'s Re-score paragraph (and its Commands line for `rescore`, which now also prints the log and `already running`, and drop the "holds up the page's other actions" sentence): `rescore_runs` / `rescore_steps` written only through `RescoreLogStore`; lines only from `stepLine` (never page or model text); `startRescore` with `after()`; the `api/rescores/[id]` stream follows the stored log; one run per job, 10-minute open limit.
+- [x] T045 Run [quickstart.md](quickstart.md) §1–§6 on the stack, fill the ledger's last row, run `npm run check` and `npm run check:db`, delete the marker, and when the owner asks, commit S5 and open PR 5
+
+**As built (S5):** README's CLI and Re-score sections and CLAUDE.md's Re-score paragraph, a new re-score log paragraph and the `rescore` command line describe the terminal, the stored log, the stream and History's Log. Quickstart §2, §4 and §5 were exercised on the running stack: the owner's re-scores on 2026-11-03 (a live run, four in a row, History's failed row) and read-only browser checks with the writing calls faked. §1 and §3 (CLI and a lookup re-score) write production scores, so they are the owner's to run; the 01:38 lookup re-score showed §3's lines before the lookup stalled (a run-path issue, separate).
 
 ---
 
@@ -185,7 +187,7 @@ text) land in S2–S3; US3 (looking away) lands with S3's stored-log stream; US4
 | Planned new | 27 (T004 2, T014 7, T015 4, T016 2, T017 4, T027 3, T029 2, T038 3) | 2 (T004's MariaDB run) | 1 (T028) |
 | Planned removed | 0 | 0 | 0 |
 | Planned after | 817 (86.46%) | 64 (6.77%) | 64 (6.77%) |
-| After PR 5 (T045) | | | |
+| After PR 5 (T045) | 817 (86.46%) | 64 (6.77%) | 64 (6.77%) |
 
 Every share moves toward 95 / 4 / 1 (integration 6.776% → 6.772%). T002 found 62 integration tests on `main` (61 passing and the real-browser test, which is skipped without `MYJOBBOT_TEST_BROWSER_URL`), not 61.
 
