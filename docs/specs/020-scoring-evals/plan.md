@@ -17,7 +17,7 @@ in the sitting of its first production caller:
 2. `eval capture <ats> <job_id> | --recent N`: freeze stored jobs as cases from the database (the
    profile and case writers, ids), with the job's age computed as of its observed score (FR-004),
    the description-arrival flag (FR-005) and whether production read the full details (FR-005a).
-3. `eval answer_key <case-id> …`: write an answer key on the fixed scale, keeping its history.
+3. `eval answer-key <case-id> …`: write an answer key on the fixed scale, keeping its history.
 4. `eval run [--tag] [--case] [--repeats N] [--model M]`: score each case in a one-job session that
    shares the re-score's agent deps, prompt and `record_matches`, with a `get_job` that returns the
    case's frozen job; prompts per profile, results and the trace to `runs/<run-id>/`.
@@ -97,7 +97,7 @@ src/evals/
 ├── capture.ts          profileOf, buildCase, asScoredDates (pure, S2)
 ├── captureCommand.ts   eval capture (S2)
 ├── observedRead.ts     details | summary | unknown from the observed trace (S2)
-├── answerKey.ts        parseAnswerKeyArgs, rewritten, rangeWarning, answer_key command (S3)
+├── answerKey.ts        parseAnswerKeyArgs, rewritten, rangeWarning, answer-key command (S3)
 ├── judge.ts            pass rules (S4)
 ├── failure.ts          failureOf (S4)
 ├── session.ts          scoreCase: one case through the model (S4)

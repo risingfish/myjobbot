@@ -60,7 +60,7 @@ Rules: `shiftedDays = daysOpenAtCapture − daysOpenAsScored`; `job.days_open = 
 | writtenAt | ISO time | |
 | history | array | earlier answer keys (same fields, no `schema`/`history`), newest first, ≤ 50 |
 
-An answer key whose case file is missing is reported as `orphaned`.
+An answer key whose case file is missing is reported as `orphaned (no case)`, and one whose case file is there but bad as `orphaned (case is bad)`; a case whose profile is missing or bad likewise.
 
 ## Prompt (`prompts/<promptId>.json`)
 

@@ -49,7 +49,7 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 - [x] T002 [P] Create `tests/helpers/memoryFilePort.ts`: an in-memory `FilePort` (`read`, `write`, `append`, `list`, `rename`, `exists`) over a `Map<string, string>`, a missing folder listing as empty, recording writes in order
 - [x] T003 [P] Write unit tests (6) in `tests/evalFormat.test.ts` for `src/evals/format.ts`: a full profile, case, answer key, prompt (`{schema, text}`), run and result parse; each refuses unknown fields (strict); a `schema` other than 1 is told apart as "needs upgrade (schema N)"; a case refuses `shiftedDays` ≠ `daysOpenAtCapture − daysOpenAsScored`, `job.days_open` ≠ `daysOpenAsScored`, and a shift other than 0 with `observed: null`; an answer key refuses verdict `maybe`, a score range breaking "0..100, min ≤ max" (`{min: 90, max: 80}`, `{min: -1, max: 5}`), base/bonus outside "0..50", more than 10 `mustMention` words or one over 60 chars, a note over 2,000 chars; tags must be `[a-z0-9-]{1,40}`, ≤ 20; a run needs ≥ 1 case and ≥ 1 `prompts` entry and `repeats` 1..20; a result refuses `failure` outside `no_record | invalid_tool_call | timed_out | model_error` and `attempt` < 1
 - [x] T004 [P] Write unit tests (3) in `tests/evalFiles.test.ts` for the readers of `EvalFiles` (`src/evals/files.ts`) over the memory port: reading each kind returns the good items and `bad` entries naming each file (one broken JSON, one schema failure, one `schema: 2`, one file whose `id` differs from its name), each problem made only of zod issue paths and codes (e.g. `job.days_open: invalid_type`), never the file's text; `runs/<id>/results.jsonl` with a bad line reports `results.jsonl:<line>` and keeps the others; a missing `evals/` folder lists every kind as empty
-- [x] T005 Write unit tests (2) in `tests/evalCheck.test.ts` for `checkEvals(files)` in `src/evals/check.ts`: counts per kind and `bad:` lines per contracts/eval-cli.md, exit 1 when any is bad and 0 when none; an answer key with no case and a case naming a missing profile are reported `orphaned`
+- [x] T005 Write unit tests (2) in `tests/evalCheck.test.ts` for `checkEvals(files)` in `src/evals/check.ts`: counts per kind and `bad:` lines per contracts/eval-cli.md, exit 1 when any is bad and 0 when none; an answer key whose case is missing or bad, and a case whose profile is missing, are reported `orphaned`, saying which
 - [x] T006 Write an integration test (1) in `tests/integration/evalFiles.test.ts`: `nodeFilePort` in a fresh `os.tmpdir()` folder writes (creating parent folders), lists, appends, renames and reads back, and a missing folder lists as empty
 
 #### Implementation (S1)
@@ -103,10 +103,10 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 **Independent Test**: quickstart §3.
 
-### Sitting S3: `eval answer_key` (PR 3)
+### Sitting S3: `eval answer-key` (PR 3)
 
 - [ ] T026 [P] [US2] Create `.specify/sitting-in-progress` naming S3; write unit tests (4) in `tests/evalAnswerKey.test.ts` for `src/evals/answerKey.ts`: `parseAnswerKeyArgs` turns `recommend --score 65-85 --bonus 25-40 --mention TypeScript --note "…"` into an answer key; a range `90-80`, `x-5` or outside its limits is refused with a message naming the flag; `rewritten(old, next)` puts the old answer key (without `history`) first in `history`, keeping at most 50; `rangeWarning(answerKey, threshold)` warns for `recommend 65-85` at 70 and not for `recommend 70-85`; writing an answer key for a case id with no case file is refused
-- [ ] T027 [US2] Create `src/evals/answerKey.ts` (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`, `answerKeyCommand`), add the answer key writer to `src/evals/files.ts`, and wire `eval answer_key` in `src/cli.ts`
+- [ ] T027 [US2] Create `src/evals/answerKey.ts` (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`, `answerKeyCommand`), add the answer key writer to `src/evals/files.ts`, and wire `eval answer-key` in `src/cli.ts`
 - [ ] T028 [US2] Run `npm run check` and `npm run check:db` until green; quickstart §3; delete the marker; when the owner asks, commit S3 and open PR 3
 
 ---

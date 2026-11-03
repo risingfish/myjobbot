@@ -105,7 +105,7 @@
   or gap) must also hold; a failed attempt never passes; a case without an answer key has `passed` null.
 - **Rationale**: the same threshold Recommended uses. Recommended adds title boosts afterwards;
   they aren't model behaviour, so they are out of scope (spec Assumptions).
-- **Answer key sanity**: `eval answer_key` warns (and still saves) when a range contradicts the verdict at
+- **Answer key sanity**: `eval answer-key` warns (and still saves) when a range contradicts the verdict at
   the case's threshold, e.g. `recommend 65-85` at T = 70.
 
 ## R9. Running a case

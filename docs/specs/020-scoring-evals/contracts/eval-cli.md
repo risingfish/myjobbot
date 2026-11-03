@@ -15,6 +15,7 @@ profiles 2 · cases 37 · answer keys 21 · prompts 3 · runs 4
 bad: cases/greenhouse-4012345.json: job.days_open: invalid_type
 bad: cases/lever-77.json: needs upgrade (schema 2)
 bad: answer_keys/lever-9a.json: orphaned (no case)
+bad: answer_keys/lever-77.json: orphaned (case is bad)
 bad: cases/ashby-3.json: orphaned (no profile 9b1e…)
 bad: runs/20261103-181200-3f2a/results.jsonl:14: score: too_big
 ```
@@ -45,10 +46,10 @@ note: observed scores used the resume and preferences of their time; cases use t
 
 Exit 1 if any job is unknown.
 
-## `eval answer_key` (S3)
+## `eval answer-key` (S3)
 
 ```text
-eval answer_key <case-id> <recommend|borderline|reject|zero> [--score 65-85] [--base a-b] [--bonus a-b]
+eval answer-key <case-id> <recommend|borderline|reject|zero> [--score 65-85] [--base a-b] [--bonus a-b]
            [--mention word]... [--note "text"]
 ```
 
