@@ -79,6 +79,27 @@ export class EvalFiles {
         return this.atomic(`${ROOT}/answer_keys/${caseId}.json`, answerKey);
     }
 
+    /** Stores a prompt once, leaving one already stored as it is, since its name is its content. */
+    async writePrompt(id: string, prompt: Prompt): Promise<void> {
+        const file = `${ROOT}/prompts/${id}.json`;
+        if ((await this.port.read(file)) === null) await this.atomic(file, prompt);
+    }
+
+    /** Stores a run's record, replacing the one before, as when the run ends. */
+    writeRun(run: Run): Promise<void> {
+        return this.atomic(`${ROOT}/runs/${run.id}/run.json`, run);
+    }
+
+    /** Adds one attempt's result to its run, one line each, so a stopped run keeps the results it has. */
+    appendResult(runId: string, result: Result): Promise<void> {
+        return this.port.append(`${ROOT}/runs/${runId}/results.jsonl`, `${JSON.stringify(result)}\n`);
+    }
+
+    /** Adds the agent trace of one attempt to its run, kept for looking into how the model answered. */
+    appendTrace(runId: string, events: unknown[]): Promise<void> {
+        return this.port.append(`${ROOT}/runs/${runId}/trace.jsonl`, events.map((event) => `${JSON.stringify(event)}\n`).join(""));
+    }
+
     /** Tells whether a case is stored under an id, whether or not it reads cleanly. */
     async hasCase(id: string): Promise<boolean> {
         return (await this.port.read(`${ROOT}/cases/${id}.json`)) !== null;
