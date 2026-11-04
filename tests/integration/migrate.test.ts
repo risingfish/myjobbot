@@ -8,10 +8,10 @@ import { makeJob } from "../../src/jobs/job.js";
 import { columnTypes, LEGACY_TABLES, storedJob } from "../helpers/migrationSteps.js";
 import { connectTestDb, emptyTables, TABLES, testDatabase, testSettings } from "../helpers/testDb.js";
 
-test("the production and test databases use the same character set and collation", async () => {
+test("the app and test databases use the same character set and collation", async () => {
     const db = await testDatabase();
     try {
-        const names = ["myjobbot", testSettings().database];
+        const names = [process.env.MYJOBBOT_DB_NAME ?? "myjobbot", testSettings().database];
         const rows = await sql<{ SCHEMA_NAME: string; CS: string; CO: string }>`SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME AS CS, DEFAULT_COLLATION_NAME AS CO FROM information_schema.SCHEMATA WHERE SCHEMA_NAME IN (${sql.join(names)})`.execute(db);
         expect(rows.rows).toHaveLength(2);
         expect(new Set(rows.rows.map((row) => `${row.CS}/${row.CO}`)).size).toBe(1);

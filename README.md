@@ -421,7 +421,9 @@ npm run check:db   # integration tests against myjobbot_test (needs the MYJOBBOT
 
 Most tests run on in-memory stores; the same store contract runs against MariaDB in
 `tests/integration/`, which only ever touches the test database (`myjobbot_test`, or
-`MYJOBBOT_TEST_DB_NAME`, which must end in `_test`).
+`MYJOBBOT_TEST_DB_NAME`, which must hold `_test` at its end or before another `_`, as in
+`myjobbot_test_alt`). `MYJOBBOT_TEST_DB_HOST`, `_PORT`, `_USER` and
+`_PASSWORD` connect to it with their own values, each falling back to its `MYJOBBOT_DB_*` setting.
 
 On GitHub, the `Tests` workflow runs `npm test` (unit and UI tests) on every pull request and push
 to `main`. Its `unit-tests` check is required by the `main: tests must pass` ruleset, which has no

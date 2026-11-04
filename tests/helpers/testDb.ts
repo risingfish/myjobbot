@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { sql, type Kysely } from "kysely";
+import type { Environment } from "../../src/config/load.js";
 import { createDatabase } from "../../src/db/database.js";
 import { migrateToLatest } from "../../src/db/migrate.js";
 import type { Database } from "../../src/db/schema.js";
@@ -7,11 +8,21 @@ import { describeConnectionError, parseDbSettings, type DbSettings } from "../..
 
 export const TABLES = ["rescore_steps", "rescore_runs", "verdicts", "jobs", "user_sources", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "user_settings", "users"] as const;
 
+const TEST_KEYS = ["HOST", "PORT", "USER", "PASSWORD"] as const;
+
+export function testEnvironment(env: Environment): Environment {
+    const database = env.MYJOBBOT_TEST_DB_NAME ?? "myjobbot_test";
+    if (!/_test(_|$)/.test(database)) throw new Error(`refusing to run tests against ${database}: the test database name must hold _test, at its end or before another _`);
+    const overrides = TEST_KEYS.flatMap((key) => {
+        const value = env[`MYJOBBOT_TEST_DB_${key}`];
+        return value === undefined ? [] : [[`MYJOBBOT_DB_${key}`, value]];
+    });
+    return { ...env, ...Object.fromEntries(overrides), MYJOBBOT_DB_NAME: database };
+}
+
 export function testSettings(): DbSettings {
     if (existsSync(".env")) process.loadEnvFile(".env");
-    const database = process.env.MYJOBBOT_TEST_DB_NAME ?? "myjobbot_test";
-    if (!database.endsWith("_test")) throw new Error(`refusing to run tests against ${database}: the test database name must end in _test`);
-    return parseDbSettings({ ...process.env, MYJOBBOT_DB_NAME: database });
+    return parseDbSettings(testEnvironment(process.env));
 }
 
 export async function testDatabase(): Promise<Kysely<Database>> {
