@@ -11,9 +11,10 @@ import { captureCases } from "./captureCommand.js";
 import { checkEvals } from "./check.js";
 import { EvalFiles } from "./files.js";
 import { nodeFilePort, type FilePort } from "./filePort.js";
+import { reportCommand } from "./reportCommand.js";
 import { runCases } from "./runCases.js";
 
-const USAGE = "usage: myjobbot eval check | capture <ats> <job_id> | capture --recent <N> | answer-key <case-id> <verdict> | run [--tag t] [--case id] [--repeats N] [--model name]";
+const USAGE = "usage: myjobbot eval check | capture <ats> <job_id> | capture --recent <N> | answer-key <case-id> <verdict> | run [--tag t] [--case id] [--repeats N] [--model name] | report <run-id> [--against <run-id>|observed] [--reasons]";
 const UNTRACED: Trace = { write: () => {} };
 
 interface Context {
@@ -24,7 +25,7 @@ interface Context {
 
 type Subcommand = (context: Context, args: string[]) => Promise<number>;
 
-const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand, capture: captureCommand, run: runCommand, "answer-key": ({ files }, args) => answerKeyCommand(args, { files, now: () => new Date(), print: (line) => console.log(line) }) };
+const SUBCOMMANDS: Record<string, Subcommand> = { check: checkCommand, capture: captureCommand, run: runCommand, report: ({ files }, args) => reportCommand(args, { files, print: (line) => console.log(line) }), "answer-key": ({ files }, args) => answerKeyCommand(args, { files, now: () => new Date(), print: (line) => console.log(line) }) };
 
 /** Runs one `eval` subcommand against the eval files in the data folder, returning the process exit code. */
 export async function evalCommand(environment: Environment, args: string[]): Promise<number> {
