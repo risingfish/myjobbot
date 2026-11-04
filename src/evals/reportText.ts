@@ -15,7 +15,8 @@ export function reportLines(report: RunReport, comparison: RunComparison | Obser
 function headerLine({ run }: RunReport): string {
     const prompts = Object.values(run.prompts);
     const prompt = prompts.length === 1 ? `prompt ${prompts[0]}` : `${prompts.length} prompts`;
-    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${run.endedAt === null ? " · unfinished" : ""}`;
+    const variant = run.variant === undefined || run.variant === null ? "" : ` · variant ${run.variant}${run.promptChanged === true ? " · prompt changed since export" : ""}`;
+    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${variant}${run.endedAt === null ? " · unfinished" : ""}`;
 }
 
 /** Gives the pass rate, how many cases have answer keys, and the tokens and time used. */
@@ -56,7 +57,7 @@ function comparisonLines(comparison: RunComparison | ObservedComparison): string
 }
 
 /** Lays rows of cells out as indented lines with their columns lined up. */
-function aligned(cells: Array<Array<string | number>>): string[] {
+export function aligned(cells: Array<Array<string | number>>): string[] {
     const widths = cells[0]?.map((_, column) => Math.max(...cells.map((line) => String(line[column]).length))) ?? [];
     return cells.map(
         (line) =>
@@ -68,7 +69,7 @@ function aligned(cells: Array<Array<string | number>>): string[] {
 }
 
 /** Cuts a long title so the case lines stay readable. */
-function shortened(text: string): string {
+export function shortened(text: string): string {
     return text.length > MAX_TITLE ? `${text.slice(0, MAX_TITLE - 1)}…` : text;
 }
 
@@ -78,7 +79,7 @@ function scoreText(score: number | null): string {
 }
 
 /** Writes a length of time as minutes and seconds. */
-function duration(ms: number): string {
+export function duration(ms: number): string {
     const seconds = Math.round(ms / 1000);
     return `${Math.floor(seconds / 60)}m${seconds % 60}s`;
 }

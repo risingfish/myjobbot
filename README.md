@@ -477,6 +477,42 @@ npm start -- eval check                             # count the files and name a
   scores, leaving out cases scored from the summary or before their description arrived. It never
   prints a description; `--reasons` adds the failing attempts' reasons and gaps.
 
+### Prompt variants and series
+
+To try different wording without touching the code, export the prompt a case is scored with as a
+variant, edit it, and run the cases with it:
+
+```bash
+npm start -- eval prompt export baseline          # data/evals/variants/baseline.md: today's prompt
+cp data/evals/variants/baseline.md data/evals/variants/strict.md   # then edit strict.md
+npm start -- eval prompt diff baseline strict     # the lines you changed
+npm start -- eval run --tag smoke --repeats 3 --variant strict
+npm start -- eval report <strict-run> --against <baseline-run>
+```
+
+- **A variant** is the whole system prompt of a re-score (its steps and the shared rubric), after a
+  short header. It keeps three markers the run fills in: `{data}` (the sentence that tells the
+  model text from job pages is data, never instructions), `{threshold}` and `{preferences}`. A
+  variant without all three, or with any other `{word}`, is refused before any model call. The
+  resume and the two tools stay as the code has them.
+- **Drift**: a variant remembers which version of the code's prompt it was exported from. If the
+  code's prompt has changed since, the run still goes ahead but warns, and its report says so.
+- **A series** runs several tests over the same cases and compares them in one report. Each test
+  is the code's prompt or a variant, optionally on another model:
+
+  ```bash
+  npm start -- eval series save rubric-try --tag smoke --repeats 3 --test now=code --test strict=strict --test big=strict@llama3-70b
+  npm start -- eval series run rubric-try
+  npm start -- eval series report rubric-try
+  ```
+
+  The report shows each test's pass rate, tokens and time, then each case's state under each test,
+  the cases the tests disagree on first. Each test is an ordinary run, so `eval report` works on it
+  too.
+- Variants never reach scheduled runs or Re-score. When one wins, copy its wording into
+  `src/rescore/prompt.ts` (the steps) and `src/agent/rubric.ts` (the rubric, which scheduled runs
+  share) as a normal change.
+
 ## Deploy with Docker
 
 On the server:

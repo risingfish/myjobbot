@@ -19,6 +19,7 @@ export interface SessionDeps {
     config: AppConfig;
     makeChat: (responseLog: Trace) => ChatFn;
     trace: Trace;
+    template?: string;
 }
 
 /** Scores one case once, as a re-score scores one job, with its frozen job inside fresh data markers, and reports the score or why there is none. */
@@ -31,16 +32,16 @@ export async function scoreCase(evalCase: EvalCase, profile: Profile, deps: Sess
     const started = Date.now();
     const onLookalike = (hit: Parameters<typeof reportLookalike>[1]) => reportLookalike({ store, trace: deps.trace, now: () => new Date() }, hit);
     const session = { chat: deps.makeChat({ write: (event) => void responses.push(event) }), trace: deps.trace, tools: caseTools(evalCase, store, tally), settings: config.settings, isFinished: () => store.recorded() !== null, markers, onLookalike };
-    const result = await runAgent(oneJobAgentDeps(session), rescoreMessages(config, markers));
+    const result = await runAgent(oneJobAgentDeps(session), rescoreMessages(config, markers, deps.template));
     const verdict = store.recorded();
     const failure = failureOf(result, { ...tally, recorded: verdict !== null });
     const scored = verdict === null ? { base: null, bonus: null, score: null, reasons: [], gaps: [] } : { base: verdict.base ?? null, bonus: verdict.bonus ?? null, score: verdict.score, reasons: verdict.reasons, gaps: verdict.gaps };
     return { ...scored, failure, ...usageOf(responses), ms: Date.now() - started };
 }
 
-/** Gives the system prompt a profile's cases are scored under, with the data markers left as placeholders, so equal prompts read the same. */
-export function promptFor(config: AppConfig, profile: Profile): string {
-    const [system] = rescoreMessages(configFor(config, profile), PLACEHOLDERS);
+/** Gives the system prompt a profile's cases are scored under, from the code's template or a variant's, with the data markers left as placeholders, so equal prompts read the same. */
+export function promptFor(config: AppConfig, profile: Profile, template?: string): string {
+    const [system] = rescoreMessages(configFor(config, profile), PLACEHOLDERS, template);
     return typeof system?.content === "string" ? system.content : "";
 }
 

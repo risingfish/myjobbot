@@ -1,6 +1,6 @@
 import type { Message } from "../agent/llm.js";
 import type { DataMarkers } from "../agent/markers.js";
-import { scoringRubric } from "../agent/rubric.js";
+import { fillTemplate, rubricTemplate, rubricValues } from "../agent/rubric.js";
 import type { AppConfig } from "../config/load.js";
 
 export const RESCORE_NUDGE = "Respond only with tool calls: get_job, then record_matches.";
@@ -15,10 +15,15 @@ Work only through tool calls:
 Scoring rules:
 `;
 
-/** Builds the system and user messages that seed a re-score with the shared scoring rubric and the resume. */
-export function rescoreMessages(config: AppConfig, markers: DataMarkers): Message[] {
+/** Gives the re-score's system message as a template: its steps, then the shared rubric, the markers unfilled. */
+export function rescoreSystemTemplate(): string {
+    return STEPS + rubricTemplate();
+}
+
+/** Builds the system and user messages that seed a re-score with the shared scoring rubric and the resume, from the code's template or another one. */
+export function rescoreMessages(config: AppConfig, markers: DataMarkers, template = rescoreSystemTemplate()): Message[] {
     return [
-        { role: "system", content: STEPS + scoringRubric(config, markers) },
+        { role: "system", content: fillTemplate(template, rubricValues(config, markers)) },
         { role: "user", content: `My resume:\n\n${config.resume}\n\nRe-score the job now.` },
     ];
 }
