@@ -33,6 +33,10 @@ case "${1:-schedule}" in
     fi
     cd /app
     export NEXT_TELEMETRY_DISABLED=1
+    if [ "${MYJOBBOT_WEB_MODE:-dev}" = production ]; then
+      export NEXT_DIST_DIR=.next-prod
+      exec node_modules/.bin/next start web --hostname 0.0.0.0 --port "${MYJOBBOT_PORT:-8080}"
+    fi
     exec node_modules/.bin/next dev web --hostname 0.0.0.0 --port "${MYJOBBOT_PORT:-8080}"
     ;;
   *)

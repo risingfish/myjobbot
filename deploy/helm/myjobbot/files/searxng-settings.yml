@@ -1,0 +1,10 @@
+# SearXNG for myjobbot's careers lookup (feature 008). Private: no published port, reached as
+# http://searxng:8080 inside the compose network. The secret comes from SEARXNG_SECRET in .env.
+use_default_settings: true
+server:
+  limiter: false
+  image_proxy: false
+search:
+  formats:
+    - html
+    - json

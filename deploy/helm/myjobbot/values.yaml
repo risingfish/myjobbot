@@ -1,0 +1,115 @@
+# myjobbot: the web UI (Deployment) and the scheduled agent run (CronJob) share one /data volume
+# and one Secret holding the environment (.env.example lists every variable).
+
+image:
+    repository: ghcr.io/risingfish/myjobbot
+    # Defaults to the chart's appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Timezone for the agent's schedule and the app's clock.
+timeZone: America/Los_Angeles
+
+# The environment: LLM_*, MYJOBBOT_DB_*, MYJOBBOT_SECRET_KEY, JSEARCH_API_KEY, SEARXNG_SECRET.
+secret:
+    # Name of a Secret you created (recommended); its keys become environment variables.
+    existingSecret: ""
+    # Or let the chart create one from `values` (keeps secrets in your values file; for testing).
+    create: false
+    values: {}
+
+# Extra plain environment variables for every myjobbot pod.
+extraEnv: []
+
+# config.json and resume.md must be in /data. Name a ConfigMap and/or Secret holding them and an
+# init container copies them onto the volume at every start; leave empty to manage them on the
+# volume yourself.
+config:
+    existingConfigMap: ""
+    key: config.json
+resume:
+    existingSecret: ""
+    key: resume.md
+
+persistence:
+    existingClaim: ""
+    storageClass: ""
+    # ReadWriteOnce pins the agent's job pods to the web pod's node so both can mount it.
+    accessMode: ReadWriteOnce
+    size: 2Gi
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+        type: RuntimeDefault
+containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop: [ALL]
+
+web:
+    port: 8080
+    # Every host:port the UI is opened with. Empty: the ingress hosts plus localhost:<port>.
+    hosts: []
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    service:
+        type: ClusterIP
+        port: 8080
+
+ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    #  - myjobbot.example.com
+    tls: []
+    #  - secretName: myjobbot-tls
+    #    hosts: [myjobbot.example.com]
+
+agent:
+    schedule: "0 1/8 * * *"
+    suspend: false
+    # A failed run waits for the next schedule instead of spending model calls again.
+    backoffLimit: 0
+    activeDeadlineSeconds: 7200
+    startingDeadlineSeconds: 600
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+
+# Playwright browser for pages built by JavaScript (careers lookup, re-score). Keep its version
+# equal to the app's playwright-core.
+browser:
+    enabled: false
+    image:
+        repository: mcr.microsoft.com/playwright
+        tag: v1.64.1-noble
+        pullPolicy: IfNotPresent
+    playwrightVersion: 1.64.1
+    shmSize: 1Gi
+    resources: {}
+# Used when browser.enabled is false, e.g. ws://playwright.example:3000/
+externalBrowserUrl: ""
+
+# SearXNG answering JSON for the careers lookup; its secret is SEARXNG_SECRET in the Secret.
+searxng:
+    enabled: false
+    image:
+        repository: searxng/searxng
+        tag: 2026.10.15-b00212a83
+        pullPolicy: IfNotPresent
+    resources: {}
+# Used when searxng.enabled is false.
+externalSearxngUrl: ""

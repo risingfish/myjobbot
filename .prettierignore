@@ -11,3 +11,8 @@ package-lock.json
 # Next.js output:
 web/.next*/
 web/next-env.d.ts
+
+# Helm templates are Go templates, not YAML:
+deploy/helm/*/templates/
+# Copied byte for byte from docker/ (the chart workflow diffs them):
+deploy/helm/*/files/

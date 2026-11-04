@@ -1,0 +1,80 @@
+{{- if .Values.searxng.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-searxng
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: searxng
+data:
+  settings.yml: |
+    {{- .Files.Get "files/searxng-settings.yml" | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-searxng
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: searxng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "searxng") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "myjobbot.labels" . | nindent 8 }}
+        app.kubernetes.io/component: searxng
+      annotations:
+        checksum/settings: {{ .Files.Get "files/searxng-settings.yml" | sha256sum }}
+    spec:
+      containers:
+        - name: searxng
+          image: {{ printf "%s:%s" .Values.searxng.image.repository .Values.searxng.image.tag }}
+          imagePullPolicy: {{ .Values.searxng.image.pullPolicy }}
+          env:
+            - name: SEARXNG_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myjobbot.secretName" . }}
+                  key: SEARXNG_SECRET
+          securityContext:
+            allowPrivilegeEscalation: false
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          {{- with .Values.searxng.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: settings
+              mountPath: /etc/searxng/settings.yml
+              subPath: settings.yml
+              readOnly: true
+      volumes:
+        - name: settings
+          configMap:
+            name: {{ include "myjobbot.fullname" . }}-searxng
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-searxng
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: searxng
+spec:
+  selector:
+    {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "searxng") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+{{- end }}
