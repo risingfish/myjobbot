@@ -27,3 +27,11 @@ function sorted(value: unknown): unknown {
             .map(([key, inner]) => [key, sorted(inner)]),
     );
 }
+
+/** Names a run by when it started, to the second, and four random hex characters, so runs sort by time. */
+export function runId(now: Date, random: () => number): string {
+    const stamp = now.toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-");
+    return `${stamp}-${Math.floor(random() * 0x10000)
+        .toString(16)
+        .padStart(4, "0")}`;
+}
