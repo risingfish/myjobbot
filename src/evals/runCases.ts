@@ -8,12 +8,15 @@ import { contentId, runId } from "./ids.js";
 import { judge } from "./judge.js";
 import { attemptLine, summaryLine } from "./runText.js";
 import { promptFor, scoreCase } from "./session.js";
+import type { ExperimentFiles } from "./experimentFiles.js";
+import { loadVariant } from "./variantCheck.js";
 
-const USAGE = "usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name]";
+const USAGE = "usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name] [--variant name]";
 const MAX_REPEATS = 20;
 
 export interface RunDeps {
     files: EvalFiles;
+    experiments: ExperimentFiles;
     config: AppConfig;
     chatFor: (model: string) => (responseLog: Trace) => ChatFn;
     now: () => Date;
@@ -33,30 +36,67 @@ interface Running {
     run: Run;
     selection: Selection;
     makeChat: (responseLog: Trace) => ChatFn;
+    template: string | undefined;
+}
+
+interface ChosenPrompt {
+    template: string | undefined;
+    variant: string | null;
+    drifted: boolean;
+}
+
+interface Starting {
+    deps: RunDeps;
+    selection: Selection;
+    prompt: ChosenPrompt;
+}
+
+export interface RunOptions {
+    tags: string[];
+    ids: string[];
+    repeats: number;
+    model: string | undefined;
+    variant: string | null;
 }
 
 /** Scores the chosen cases against the model, each a number of times, saving every attempt judged against its answer key; never writes the database. */
 export async function runCases(args: string[], deps: RunDeps): Promise<number> {
     const options = readArgs(args);
     if (options === null) return printed(deps, [USAGE], 2);
+    return (await executeRun(options, deps)).code;
+}
+
+/** Runs already-chosen options: checks the variant, if any, then scores every case and ends the run, giving the exit code and the run made. */
+export async function executeRun(options: RunOptions, deps: RunDeps): Promise<{ code: number; run: Run | null }> {
+    const prompt = await promptOf(options.variant, deps);
+    if ("refusal" in prompt) return { code: printed(deps, [prompt.refusal], 1), run: null };
     const selection = await select(deps.files, options);
-    if (selection.cases.length === 0) return printed(deps, ["no cases to run"], 1);
+    if (selection.cases.length === 0) return { code: printed(deps, ["no cases to run"], 1), run: null };
     const model = options.model ?? deps.config.env.LLM_MODEL;
-    const run = await started(deps, selection, { ...options, model });
-    const results = await attempts({ deps, run, selection, makeChat: deps.chatFor(model) });
+    const run = await started({ deps, selection, prompt }, { ...options, model });
+    const results = await attempts({ deps, run, selection, makeChat: deps.chatFor(model), template: prompt.template });
     const endedAt = deps.now().toISOString();
     await deps.files.writeRun({ ...run, endedAt });
-    return printed(deps, [summaryLine(run, results, endedAt)], 0);
+    return { code: printed(deps, [summaryLine(run, results, endedAt)], 0), run: { ...run, endedAt } };
+}
+
+/** Picks the template a run scores with: the code's, or a variant's once it passes its checks, warning when the code has changed since its export. */
+async function promptOf(name: string | null, deps: RunDeps): Promise<ChosenPrompt | { refusal: string }> {
+    if (name === null) return { template: undefined, variant: null, drifted: false };
+    const loaded = await loadVariant(deps.experiments, name);
+    if (!loaded.ok) return { refusal: loaded.refusal };
+    if (loaded.drifted) deps.print(`warning: the code's prompt has changed since ${name} was exported`);
+    return { template: loaded.variant.text, variant: name, drifted: loaded.drifted };
 }
 
 /** Reads the flags, or null when they don't fit the command's form. */
 function readArgs(args: string[]) {
     try {
-        const options = { tag: { type: "string", multiple: true }, case: { type: "string", multiple: true }, repeats: { type: "string" }, model: { type: "string" } } as const;
+        const options = { tag: { type: "string", multiple: true }, case: { type: "string", multiple: true }, repeats: { type: "string" }, model: { type: "string" }, variant: { type: "string" } } as const;
         const { values, positionals } = parseArgs({ args, options });
         const repeats = Number(values.repeats ?? "1");
         if (positionals.length > 0 || !Number.isInteger(repeats) || repeats < 1 || repeats > MAX_REPEATS) return null;
-        return { tags: values.tag ?? [], ids: values.case ?? [], repeats, model: values.model };
+        return { tags: values.tag ?? [], ids: values.case ?? [], repeats, model: values.model, variant: values.variant ?? null };
     } catch {
         return null;
     }
@@ -70,16 +110,16 @@ async function select(files: EvalFiles, { tags, ids }: { tags: string[]; ids: st
     return { cases: chosen.filter((each) => profileMap.has(each.value.profile)), profiles: profileMap, keys: new Map(keys.items.map((each) => [each.id, each.value])) };
 }
 
-/** Records the run as begun, with the prompt each profile's cases are scored under, before its first attempt. */
-async function started(deps: RunDeps, selection: Selection, options: { tags: string[]; repeats: number; model: string }): Promise<Run> {
+/** Records the run as begun, with the prompt each profile's cases are scored under and the variant it came from, before its first attempt. */
+async function started({ deps, selection, prompt: chosen }: Starting, options: { tags: string[]; repeats: number; model: string }): Promise<Run> {
     const prompts: Record<string, string> = {};
     for (const id of new Set(selection.cases.map((each) => each.value.profile))) {
-        const prompt = { schema: 1 as const, text: promptFor(deps.config, selection.profiles.get(id) as Profile) };
+        const prompt = { schema: 1 as const, text: promptFor(deps.config, selection.profiles.get(id) as Profile, chosen.template) };
         prompts[id] = contentId({ text: prompt.text });
         await deps.files.writePrompt(prompts[id], prompt);
     }
     const now = deps.now();
-    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null };
+    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted };
     await deps.files.writeRun(run);
     return run;
 }
@@ -100,10 +140,10 @@ async function attempts(running: Running): Promise<Result[]> {
 }
 
 /** Scores one case once and saves its result, judged against the case's answer key as it stands now, and its trace. */
-async function oneAttempt({ deps, run, selection, makeChat }: Running, each: Named<EvalCase>, attempt: number): Promise<Result> {
+async function oneAttempt({ deps, run, selection, makeChat, template }: Running, each: Named<EvalCase>, attempt: number): Promise<Result> {
     const profile = selection.profiles.get(each.value.profile) as Profile;
     const events: TraceEvent[] = [];
-    const scored = await scoreCase(each.value, profile, { config: deps.config, makeChat, trace: { write: (event) => void events.push(event) } });
+    const scored = await scoreCase(each.value, profile, { config: deps.config, makeChat, template, trace: { write: (event) => void events.push(event) } });
     const passed = judge(selection.keys.get(each.id) ?? null, scored, profile.matchThreshold);
     const result: Result = { schema: 1, case: each.id, attempt, ...scored, passed };
     await deps.files.appendResult(run.id, result);

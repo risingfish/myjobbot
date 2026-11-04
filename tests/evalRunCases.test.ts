@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import type { AssistantMessage } from "../src/agent/llm.js";
 import type { Trace } from "../src/agent/trace.js";
 import { EvalFiles } from "../src/evals/files.js";
+import { ExperimentFiles } from "../src/evals/experimentFiles.js";
 import { runCases } from "../src/evals/runCases.js";
 import { testAppConfig } from "./helpers/config.js";
 import { answerKey, AT, evalCase, profile } from "./helpers/evalFixtures.js";
@@ -20,7 +21,7 @@ function setup(scripts: AssistantMessage[][]) {
     const lines: string[] = [];
     const queue = [...scripts];
     const makeChat = (log: Trace) => usageChat(queue.shift() ?? [], { prompt_tokens: 500, completion_tokens: 20 }).makeChat(log);
-    const deps = { files: new EvalFiles(port), config: testAppConfig(), chatFor: () => makeChat, now: () => new Date(AT), random: () => 0.25, gitCommit: () => "abc123", print: (line: string) => void lines.push(line) };
+    const deps = { files: new EvalFiles(port), experiments: new ExperimentFiles(port), config: testAppConfig(), chatFor: () => makeChat, now: () => new Date(AT), random: () => 0.25, gitCommit: () => "abc123", print: (line: string) => void lines.push(line) };
     return { stored, writes, lines, run: (args: string[]) => runCases(args, deps) };
 }
 

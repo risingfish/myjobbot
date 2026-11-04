@@ -39,7 +39,7 @@ function readArgs(args: string[]) {
 }
 
 /** Reads the cases, answer keys and profiles a report judges against. */
-async function contextOf(files: EvalFiles): Promise<Context> {
+export async function contextOf(files: EvalFiles): Promise<Context> {
     const [cases, keys, profiles] = await Promise.all([files.cases(), files.answerKeys(), files.profiles()]);
     const map = <T>(items: Array<{ id: string; value: T }>) => new Map(items.map((each) => [each.id, each.value]));
     return { cases: map(cases.items), keys: map(keys.items), profiles: map(profiles.items) };

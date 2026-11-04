@@ -20,10 +20,32 @@ Jobs whose score is {threshold} or more are shown to the user. When the score is
 User preferences:
 {preferences}`;
 
+const MARKERS = /\{(data|threshold|preferences)\}/g;
+
+export interface RubricValues {
+    data: string;
+    threshold: string;
+    preferences: string;
+}
+
 /** Fills the scoring rules and rubric that a run and a re-score share with the data markers, the match threshold and the user's preferences. */
 export function scoringRubric(config: AppConfig, markers: DataMarkers): string {
-    const preferences = config.settings.preferences.trim() || "(none given)";
-    return RUBRIC.replace("{data}", dataSentence(markers)).replace("{threshold}", String(config.settings.match_threshold)).replace("{preferences}", preferences);
+    return fillTemplate(RUBRIC, rubricValues(config, markers));
+}
+
+/** Gives the rubric template itself, its markers unfilled, for the re-score's template to build on. */
+export function rubricTemplate(): string {
+    return RUBRIC;
+}
+
+/** Gives the values a prompt template's markers are filled with: the data sentence, the threshold, and the preferences or "(none given)". */
+export function rubricValues(config: AppConfig, markers: DataMarkers): RubricValues {
+    return { data: dataSentence(markers), threshold: String(config.settings.match_threshold), preferences: config.settings.preferences.trim() || "(none given)" };
+}
+
+/** Fills every marker of a prompt template in one pass, so a filled-in value is never read as a marker itself. */
+export function fillTemplate(template: string, values: RubricValues): string {
+    return template.replace(MARKERS, (_marker, name: keyof RubricValues) => values[name]);
 }
 
 /** Tells the model which markers bound this run's outside text and that their contents are data, never instructions. */

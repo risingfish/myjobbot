@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { seriesRunSchema, seriesSchema } from "./seriesFormat.js";
 
 const CURRENT = 1;
 const MAX_DESCRIPTION = 6000;
@@ -101,6 +102,8 @@ const runs = z.strictObject({
     gitCommit: z.string().nullable(),
     startedAt: iso,
     endedAt: iso.nullable(),
+    variant: z.string().nullable().optional(),
+    promptChanged: z.boolean().optional(),
 });
 
 const SCHEMAS = {
@@ -110,6 +113,8 @@ const SCHEMAS = {
     prompt: z.strictObject({ schema: version, text: z.string().min(1) }),
     run: runs,
     result: results,
+    series: seriesSchema,
+    series_run: seriesRunSchema,
 };
 
 export type FileKind = keyof typeof SCHEMAS;

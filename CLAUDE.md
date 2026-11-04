@@ -201,6 +201,14 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   from `randomUUID()`) and `record_matches` into a one-case store that writes nothing. Pass rules
   are `judge` (`src/evals/judge.ts`); reports re-judge against current answer keys and never print
   description text. Evals call the real model and are never part of `npm run check`.
+  Prompt variants (feature 022): the re-score's system message is one template
+  (`rescoreSystemTemplate()`, its steps plus the shared rubric) filled by `fillTemplate` with
+  `rubricValues` (`src/agent/rubric.ts`), the only place the `(none given)` rule lives; the code,
+  runs and every variant fill through it, and the run prompt snapshot pins that production is
+  unchanged. A variant (`data/evals/variants/<name>.md`, a versioned header then the text) must
+  hold `{data}`, `{threshold}` and `{preferences}` and no other `{word}` (`loadVariant`,
+  `src/evals/variantCheck.ts`), or it is refused before any model call. `executeRun`
+  (`src/evals/runCases.ts`) is the one way a run starts, for `eval run` and every test of a series.
 
 ## Commands
 
@@ -209,7 +217,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
-- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run | report <run-id>`: the scoring evals (README "Evals"); `run` calls the real model
+- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (README "Evals"); `run` and `series run` call the real model
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

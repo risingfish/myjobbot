@@ -1,3 +1,4 @@
+import type { Series, SeriesRun } from "./seriesFormat.js";
 import { parseFile, type EvalCase, type FileKind, type FileOf, type AnswerKey, type Parsed, type Profile, type Prompt, type Result, type Run } from "./format.js";
 import type { FilePort } from "./filePort.js";
 
@@ -45,6 +46,26 @@ export class EvalFiles {
     /** Reads the stored prompts, named by their content ids. */
     prompts(): Promise<Loaded<Named<Prompt>>> {
         return this.folder("prompts", "prompt");
+    }
+
+    /** Reads the saved series, named by their files. */
+    series(): Promise<Loaded<Named<Series>>> {
+        return this.folder("series", "series");
+    }
+
+    /** Reads every record of a series having run, each checked to carry its file's name as its id. */
+    seriesRuns(): Promise<Loaded<Named<SeriesRun>>> {
+        return this.folder("series-runs", "series_run");
+    }
+
+    /** Stores a series under its name, replacing the one before. */
+    writeSeries(name: string, series: Series): Promise<void> {
+        return this.atomic(`${ROOT}/series/${name}.json`, series);
+    }
+
+    /** Stores the record of one time a series ran, as it goes. */
+    writeSeriesRun(record: SeriesRun): Promise<void> {
+        return this.atomic(`${ROOT}/series-runs/${record.id}.json`, record);
     }
 
     /** Reads every run's record, each checked to carry its folder's name as its id. */
