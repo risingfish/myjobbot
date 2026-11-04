@@ -14,6 +14,11 @@ test("each MYJOBBOT_TEST_DB_* setting replaces its app setting for the tests onl
     expect(parseDbSettings(testEnvironment({ ...APP, MYJOBBOT_TEST_DB_USER: "test-user" }))).toMatchObject({ host: "app-host", user: "test-user", password: "app-secret" });
 });
 
+test("a blank MYJOBBOT_TEST_DB_* setting falls back to its app setting", () => {
+    const blank = { ...APP, MYJOBBOT_TEST_DB_HOST: "", MYJOBBOT_TEST_DB_PORT: "", MYJOBBOT_TEST_DB_USER: "", MYJOBBOT_TEST_DB_PASSWORD: "" };
+    expect(parseDbSettings(testEnvironment(blank))).toEqual({ host: "app-host", port: 3306, database: "myjobbot_test", user: "app-user", password: "app-secret" });
+});
+
 test("a test database is accepted only when _test is a whole part of its name", () => {
     expect(testEnvironment({ ...APP, MYJOBBOT_TEST_DB_NAME: "myjobbot_test_alt" }).MYJOBBOT_DB_NAME).toBe("myjobbot_test_alt");
     for (const name of ["myjobbot_dev_alt", "myjobbot", "myjobbot_testing", "myjobbot_contest"]) {

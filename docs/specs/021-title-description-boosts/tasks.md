@@ -58,7 +58,7 @@ feature (spec, Delivery).
 
 - [X] T001 In `/home/zac/code/myjobbot-021-boosts`, run `npm ci` (lockfile only), once the owner has created `myjobbot_dev_alt`, `myjobbot_test_alt` and their user (quickstart §1), copy `.env` with `cp ../myjobbot/.env .env` and set `MYJOBBOT_DB_NAME` and `MYJOBBOT_TEST_DB_NAME` to them with `sed`/an append, never printing the file (the owner sets that user's `MYJOBBOT_DB_USER` / `MYJOBBOT_DB_PASSWORD`); confirm `git config core.hooksPath` is `.githooks`
 - [X] T002 Run `npm run check` and `npm run check:db` in the worktree on the unchanged branch and write the unit / integration / UI test counts into the ledger's baseline row at the end of this file
-- [X] T002a Add `MYJOBBOT_TEST_DB_HOST`/`_PORT`/`_USER`/`_PASSWORD` to `testEnvironment` in `tests/helpers/testDb.ts` (each falls back to its `MYJOBBOT_DB_*` setting; a name must hold `_test` at its end or before another `_`), with 3 unit tests in `tests/testDbSettings.test.ts`, the collation test comparing the app's own database, and `.env.example`, README and CLAUDE.md describing it (owner request, 2026-11-04)
+- [X] T002a Add `MYJOBBOT_TEST_DB_HOST`/`_PORT`/`_USER`/`_PASSWORD` to `testEnvironment` in `tests/helpers/testDb.ts` (each falls back to its `MYJOBBOT_DB_*` setting when unset or blank; a name must hold `_test` at its end or before another `_`), with 4 unit tests in `tests/testDbSettings.test.ts`, the collation test comparing the app's own database, and `.env.example`, README and CLAUDE.md describing it (owner request, 2026-11-04)
 
 ---
 
@@ -202,7 +202,7 @@ T019 / T020 / T021 / T022 tests/boosts.test.ts (one file: write in sequence)   T
 
 | Point | Unit | Integration | UI |
 |-------|------|-------------|----|
-| Baseline (T002, on `main` 359b111) | 889 (+3 from the test-database settings, 892) | 67 (+1 skipped: real browser) | 64 |
+| Baseline (T002, on `main` 359b111) | 889 (+4 from the test-database settings, 893) | 67 (+1 skipped: real browser) | 64 |
 | S1 adds/changes | ~35 new (6 of them moved from the deleted `titleBoost.test.ts`) + 9 changed (T004–T008, T019–T023, T026) | 1 new + 3 files' step lists (T015) | 2 changed (T014, T028) |
 | S2 adds | 0 | 0 | 0 (T031 removed) |
 | Final (T039) | — | — | — |

@@ -15,7 +15,7 @@ export function testEnvironment(env: Environment): Environment {
     if (!/_test(_|$)/.test(database)) throw new Error(`refusing to run tests against ${database}: the test database name must hold _test, at its end or before another _`);
     const overrides = TEST_KEYS.flatMap((key) => {
         const value = env[`MYJOBBOT_TEST_DB_${key}`];
-        return value === undefined ? [] : [[`MYJOBBOT_DB_${key}`, value]];
+        return value ? [[`MYJOBBOT_DB_${key}`, value]] : [];
     });
     return { ...env, ...Object.fromEntries(overrides), MYJOBBOT_DB_NAME: database };
 }
