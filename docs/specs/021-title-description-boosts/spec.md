@@ -18,6 +18,9 @@
   its points, so each job's boost is unchanged on the day the feature ships; the owner then prunes
   each list.
 - Owner addition: the feature ships as one PR (see Delivery).
+- Owner addition (during S2): remove every Settings "Reset to default" button and "(default)"
+  marker; every default is to become an empty state until the resume is read in, which, with the
+  match threshold defaulting to 0, is a later spec, not this one.
 
 **Input**: User description: "Change how boosts work. Description Boosts: Change Title boost to
 Description boosts and use it on the description body. A boost may only be applied once, and any
@@ -148,7 +151,7 @@ list each term with where it matched and its points, and that the totals add up.
 
 In Settings, the owner finds a Boosts area laid out as a grid of cards like the Filters section: a
 "Title boosts" card and a "Description boosts" card, each with its tag list of term and points,
-saved as soon as it changes, with its own reset to default and its own problems shown under it.
+saved as soon as it changes, with its own problems shown under it.
 
 **Why this priority**: The lists can't be used without an editor, but the layout itself is
 presentation; it follows the pattern already in place.
@@ -210,8 +213,9 @@ the right list; add a term twice to one card and check it is refused on that car
   from the current settings on every load; no boost result is stored per job, in History or in the
   run trace.
 - **FR-010**: The Settings page MUST show Title boosts and Description boosts as two cards in the
-  same grid layout the Filters section uses, each with its tag editor, reset to default and
-  problems, saving as soon as either changes.
+  same grid layout the Filters section uses, each with its tag editor and problems, saving as soon
+  as either changes. No setting on the Settings page offers a reset to default or a "(default)"
+  marker (owner decision, 2026-11-04: the Settings page has no Reset buttons or "(default)" markers; empty defaults come with the resume-import spec).
 - **FR-011**: Each list MUST refuse a term listed twice within it, on the repeated row; the same
   term in both lists MUST be accepted.
 - **FR-012**: Each list MUST validate and fall back independently when stored data is bad, with a

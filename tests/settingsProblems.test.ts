@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { settingsSchema } from "../src/config/schema.js";
 import { mergeSettings } from "../src/config/searchSettings.js";
 import type { SaveRequest } from "../src/web/settingsForm.js";
-import { sectionProblems } from "../src/web/settingsProblems.js";
+import { repeatedBoosts, sectionProblems } from "../src/web/settingsProblems.js";
 
 const value = (v: unknown) => ({ kind: "value" as const, value: v });
 const DEFAULT = { kind: "default" as const };
@@ -55,4 +55,54 @@ test("a rule with no path goes to the top of the saved section", () => {
 
 test("a bad runtime value goes to the top of the saved section, with zod's own message", () => {
     expect(problemsOf({ preferences: "Remote" }, PREFERENCES, { http: { timeout_s: 0 } })).toEqual([{ field: null, entry: null, message: "Too small: expected number to be >=1" }]);
+});
+
+function boostLists(title: unknown[][], description: unknown[][]): SaveRequest {
+    return { section: "scoring", edits: { match_threshold: DEFAULT, title_boosts: value(title), description_boosts: value(description) } };
+}
+
+test("a description boost repeated within its list is refused on the repeat's row", () => {
+    expect(
+        repeatedBoosts(
+            boostLists(
+                [],
+                [
+                    ["react", 5],
+                    ["react", 8],
+                ],
+            ),
+        ),
+    ).toEqual([{ field: "description_boosts", entry: 1, message: "this term is already boosted above" }]);
+});
+
+test("a repeat that differs only in case is refused too, as the form treats it", () => {
+    expect(
+        repeatedBoosts(
+            boostLists(
+                [
+                    ["React", 5],
+                    ["react", 8],
+                ],
+                [],
+            ),
+        ),
+    ).toEqual([{ field: "title_boosts", entry: 1, message: "this term is already boosted above" }]);
+});
+
+test("the same term in both lists is accepted (FR-011)", () => {
+    expect(repeatedBoosts(boostLists([["react", 5]], [["react", 10]]))).toEqual([]);
+});
+
+test("a description boost's bad points go on its own row", () => {
+    const problems = problemsOf(
+        { description_boosts: { go: 5, rust: 0 } },
+        boostLists(
+            [],
+            [
+                ["go", 5],
+                ["rust", 0],
+            ],
+        ),
+    );
+    expect(problems).toEqual([{ field: "description_boosts", entry: 1, message: "Too small: expected number to be >=1" }]);
 });

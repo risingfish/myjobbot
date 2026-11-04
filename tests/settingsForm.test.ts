@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { addTerm, editedField, putBoost, removeRow, resetField, saveRequest, sectionRequest } from "../src/web/settingsForm.js";
+import { addTerm, editedField, putBoost, removeRow, saveRequest, sectionRequest } from "../src/web/settingsForm.js";
 
 const BOOSTS = { value: [["go", 5] as [string, number]], isDefault: false };
 
@@ -43,10 +43,6 @@ test("removing a row drops the row at its index", () => {
     expect(removeRow({ value: ["a", "b", "c"], isDefault: false }, 1)).toEqual({ value: ["a", "c"], isDefault: false });
 });
 
-test("resetting a field puts its default back, marked", () => {
-    expect(resetField(70)).toEqual({ value: 70, isDefault: true });
-});
-
 test("editing a field clears its default marker", () => {
     expect(editedField(75)).toEqual({ value: 75, isDefault: false });
 });
@@ -54,7 +50,7 @@ test("editing a field clears its default marker", () => {
 test("a section's request sends an untouched default field as default and every other field as its value (SC-007)", () => {
     expect(sectionRequest("scoring", { match_threshold: { value: 70, isDefault: true }, title_boosts: BOOSTS })).toEqual({
         section: "scoring",
-        edits: { match_threshold: { kind: "default" }, title_boosts: { kind: "value", value: [["go", 5]] } },
+        edits: { match_threshold: { kind: "default" }, title_boosts: { kind: "value", value: [["go", 5]] }, description_boosts: { kind: "default" } },
     });
 });
 
@@ -69,5 +65,5 @@ test("a request holding another section's field is refused", () => {
 
 test("a row with extra parts is refused rather than stored", () => {
     const title_boosts = { kind: "value", value: [["go", 5, "admin"]] };
-    expect(saveRequest.safeParse({ section: "scoring", edits: { match_threshold: { kind: "default" }, title_boosts } }).success).toBe(false);
+    expect(saveRequest.safeParse({ section: "scoring", edits: { match_threshold: { kind: "default" }, title_boosts, description_boosts: { kind: "default" } } }).success).toBe(false);
 });

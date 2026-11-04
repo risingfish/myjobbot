@@ -1,7 +1,7 @@
 import { isRawObject, sanitizeSearchSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import type { SaveRequest } from "./settingsForm.js";
-import { fieldsOf, SECTIONS, type FieldName } from "./settingsSections.js";
+import { fieldsOf, isBoostField, SECTIONS, type FieldName } from "./settingsSections.js";
 
 const ROOTS = new Set(SECTIONS.map((field) => field.stored[0]));
 
@@ -26,7 +26,7 @@ function withEdits(doc: RawSearchSettings, request: SaveRequest): RawSearchSetti
 function editedValue(name: FieldName, request: SaveRequest): unknown {
     const edit = request.edits[name];
     if (edit === undefined || edit.kind === "default") return undefined;
-    if (name !== "title_boosts" || !Array.isArray(edit.value)) return edit.value;
+    if (!isBoostField(name) || !Array.isArray(edit.value)) return edit.value;
     return Object.fromEntries(edit.value.filter(Array.isArray).map(([term, points]: unknown[]) => [String(term), points]));
 }
 

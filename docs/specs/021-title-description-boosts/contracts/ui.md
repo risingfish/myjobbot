@@ -7,22 +7,26 @@
 │ ┌ Threshold ──────────────┐                                          │
 │ │ Match threshold [ 70 ]  │                                          │
 │ └─────────────────────────┘                                          │
-│ ┌ Title boosts ─────────────────┐ ┌ Description boosts ────────────┐ │   Pico .grid: side by side
+│ ┌ Title Boosts ─────────────────┐ ┌ Description Boosts ────────────┐ │   Pico .grid: side by side
 │ │ senior: 5 ✎ ×  backend: 5 ✎ × │ │ typescript: 10 ✎ ×  react: 8 … │ │   when wide, stacked when
-│ │ [Term] [1] [Add]   Reset      │ │ [Term] [1] [Add]   Reset       │ │   narrow (same as Filters)
+│ │ [Term] [1] [Add]              │ │ [Term] [1] [Add]               │ │   narrow (same as Filters)
 │ │ problems for this list        │ │ problems for this list         │ │
 │ └───────────────────────────────┘ └────────────────────────────────┘ │
 │ Saved ✓                                                              │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-- The two cards are `<article>`s titled "Title boosts" and "Description boosts". `BoostCards`
-  takes `{ view, lists, result, onChange }`, where `lists` holds both fields' rows and
-  `onChange(field)(rows)` saves one; it maps over `BOOST_FIELDS`.
-- Each card is a `SettingCard` holding one `Setting` (label "Title boosts" / "Description boosts",
-  its own default marker and Reset) wrapping `BoostTags` for that field, then `Problems` for that
-  field. The tag cloud's accessible label is the card's label.
-- Any change in either card, or a reset, saves the whole `scoring` section at once (threshold and
+- The two cards are `<article>`s headed "Title Boosts" and "Description Boosts" (owner, 2026-11-04),
+  each opening with a one-line note on what its list does instead of a setting label:
+  - Title Boosts: "Points added when a job's title has the term, such as a role or level (senior,
+    web developer). Each term counts only once, however often it appears."
+  - Description Boosts: "Points added when a job's description mentions the term, such as a skill
+    or language (TypeScript, mentoring). Each term counts only once, however often it appears."
+- `BoostCards` takes `{ lists, result, onChange }`, where `lists` holds both fields' rows and
+  `onChange(field)(rows)` saves one; it maps over `BOOST_FIELDS`. Under the note come `BoostTags`
+  for that field (its tag cloud labelled with the card's title) and `Problems` for that field, with
+  no default marker or Reset (owner decision, 2026-11-04).
+- Any change in either card saves the whole `scoring` section at once (threshold and
   both lists), as today; a typed threshold still saves on blur or Enter.
 - A term repeated within one card: that row shows "this term is already boosted above", nothing is
   saved. The same term in the other card is accepted.

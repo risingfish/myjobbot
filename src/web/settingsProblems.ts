@@ -1,6 +1,7 @@
 import type { z } from "zod";
+import { normalizeTitle } from "../jobs/normalize.js";
 import type { SaveRequest } from "./settingsForm.js";
-import { fieldsOf, type FieldName } from "./settingsSections.js";
+import { BOOST_FIELDS, fieldsOf, isBoostField, type BoostField, type FieldName } from "./settingsSections.js";
 
 export interface Problem {
     field: string | null;
@@ -15,10 +16,15 @@ export function sectionProblems(issues: z.core.$ZodIssue[], request: SaveRequest
     return issues.flatMap((issue) => reasonsOf(issue).map((message) => ({ ...placeOf(issue.path, request), message })));
 }
 
-/** Refuses a boost term listed twice, on each repeat's row, instead of letting the map keep only one. */
+/** Refuses a boost term listed twice within one list, on each repeat's row, instead of letting the map keep only one. */
 export function repeatedBoosts(request: SaveRequest): Problem[] {
-    const terms = boostRows(request).map(([term]) => String(term));
-    return terms.flatMap((term, index) => (terms.indexOf(term) < index ? [{ field: "title_boosts", entry: index, message: REPEATED_TERM }] : []));
+    return BOOST_FIELDS.flatMap((name) => repeatsIn(name, request));
+}
+
+/** Finds the rows of one boost list whose term, read as matching reads it, an earlier row already holds; a term with no letter or digit is left to the term rule. */
+function repeatsIn(name: BoostField, request: SaveRequest): Problem[] {
+    const terms = boostRows(request, name).map(([term]) => normalizeTitle(String(term)));
+    return terms.flatMap((term, index) => (term !== "" && terms.indexOf(term) < index ? [{ field: name, entry: index, message: REPEATED_TERM }] : []));
 }
 
 /** Gives an issue's reasons, one per nested reason for a bad record key. */
@@ -37,13 +43,13 @@ function placeOf(path: PropertyKey[], request: SaveRequest): Omit<Problem, "mess
 /** Turns the path step after a field into its row: a list index, or a boost term's position in the submitted rows. */
 function entryOf(name: FieldName, step: PropertyKey | undefined, request: SaveRequest): number | null {
     if (typeof step === "number") return step;
-    if (name !== "title_boosts" || typeof step !== "string") return null;
-    const index = boostRows(request).findIndex(([term]) => String(term) === step);
+    if (!isBoostField(name) || typeof step !== "string") return null;
+    const index = boostRows(request, name).findIndex(([term]) => String(term) === step);
     return index === -1 ? null : index;
 }
 
-/** Reads the boost rows a request sends, if it sends any. */
-function boostRows(request: SaveRequest): unknown[][] {
-    const edit = request.edits.title_boosts;
+/** Reads the rows a request sends for one boost list, if it sends any. */
+function boostRows(request: SaveRequest, name: BoostField): unknown[][] {
+    const edit = request.edits[name];
     return edit?.kind === "value" && Array.isArray(edit.value) ? edit.value.filter(Array.isArray) : [];
 }

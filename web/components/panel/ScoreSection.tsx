@@ -1,5 +1,5 @@
 import type { ScoreDetail } from "../../../src/web/api.js";
-import { Fact, PanelSection } from "./PanelSection.js";
+import { Fact, FactLines, PanelSection } from "./PanelSection.js";
 
 /** Explains the job's score in the details panel: the total, how it was boosted, its two parts and the notes behind it. */
 export function ScoreSection({ score }: { score: ScoreDetail | null }) {
@@ -24,7 +24,7 @@ function ScoreFacts({ score }: { score: ScoreDetail }) {
         <dl className="details-facts">
             <Fact label="Score" value={String(score.total)} />
             <Fact label="Model's score" value={String(score.model)} />
-            <Fact label="Title boost" value={score.boost ?? "none"} />
+            <FactLines label="Boosts" headline={score.boost === null ? "none" : `+${score.boost.total}`} lines={score.boost?.lines ?? []} />
             <Fact label="Resume fit" value={partText(score.base)} />
             <Fact label="Preference fit" value={partText(score.bonus)} />
             <Fact label="Scored" value={score.scoredAt ?? "waiting to be scored again"} />

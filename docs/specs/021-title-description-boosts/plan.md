@@ -91,6 +91,8 @@ src/jobs/titleBoost.ts                      DELETED
 src/descriptions/readable.ts                purpose comment: both boost lists read it
 src/config/boostCarryOver.ts                NEW: withDescriptionBoosts (the carry-over decision)
 src/db/migrations/016_description_boosts.ts NEW data step, using boostCarryOver
+src/db/migrations/settingsDocuments.ts      NEW: reads every user's settings document (shared by 013 and 016, which habit-hooks found duplicated)
+src/db/migrations/013_move_sources.ts       reads its documents through settingsDocuments
 src/db/migrations/index.ts                  + 016
 src/web/settingsSections.ts                 + description_boosts field, BOOST_FIELDS
 src/web/settingsForm.ts                     + description_boosts in ROW_SHAPES

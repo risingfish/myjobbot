@@ -1,9 +1,8 @@
 import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { JobView, JobViews, Page } from "../db/store.js";
-import { readableDescription } from "../descriptions/readable.js";
+import { appliedBoosts, boostedScore, boostLists, maxBoost } from "../jobs/boosts.js";
 import { filterMatch, filterSet } from "../jobs/filterMatch.js";
-import { boostedScore, jobBoost, maxBoost } from "../jobs/titleBoost.js";
 import type { PageData, PageName } from "./api.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
 
@@ -40,10 +39,11 @@ async function loadRecommended({ views, config, sourceNames, page, now }: PageIn
 /** Returns the jobs, from saved sources, not marked applied and not hidden by a filter as the filters stand now, whose boosted score meets the match threshold. */
 async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
-    const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(config.title_boosts) });
+    const lists = boostLists(config);
+    const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(lists) });
     const filters = filterSet(config);
     const shown = scored.filter((job) => !job.applied && filterMatch(job, filters) === null);
-    return shown.filter((job) => boostedScore(job.score ?? 0, jobBoost([job.title, readableDescription(job.description, job.description_format)], config.title_boosts)) >= threshold);
+    return shown.filter((job) => boostedScore(job.score ?? 0, appliedBoosts(job, lists)) >= threshold);
 }
 
 /** Loads a page of all retrieved jobs, for the All jobs page. */
@@ -85,5 +85,5 @@ export function sourceNames(saved: SavedSource[]): string[] {
 
 /** Builds the context row views need from the current config and time. */
 export function rowContext(config: Settings, now: Date): RowContext {
-    return { now, ghostDays: config.ghost_threshold_days, boosts: config.title_boosts, ...filterSet(config) };
+    return { now, ghostDays: config.ghost_threshold_days, boosts: boostLists(config), ...filterSet(config) };
 }

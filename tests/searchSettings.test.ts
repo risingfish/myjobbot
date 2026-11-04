@@ -86,6 +86,16 @@ test("a title boost with a bad term and one with bad points are each left out", 
     ]);
 });
 
+test("a bad description boost is left out under its own name, and a good title list is kept", () => {
+    const { settings, notices } = sanitizeSearchSettings({ title_boosts: { senior: 5 }, description_boosts: { typescript: 10, "---": 5 } });
+    expect([settings, notices.map((notice) => notice.setting)]).toEqual([{ title_boosts: { senior: 5 }, description_boosts: { typescript: 10 } }, ["description_boosts[1]"]]);
+    expect(JSON.stringify(notices)).not.toContain("---");
+});
+
+test("description boosts of the wrong shape fall back with one notice naming them (FR-012)", () => {
+    expect(droppedFrom({ description_boosts: ["typescript"] })).toEqual([{}, ["description_boosts"]]);
+});
+
 test("one bad entry in each title filter list is left out", () => {
     const stored = { title_filter: { include: ["engineer", "++"], exclude: ["--", "sales"], extra_exclude: ["staff", ""] } };
     expect(droppedFrom(stored)).toEqual([{ title_filter: { include: ["engineer"], exclude: ["sales"], extra_exclude: ["staff"] } }, ["title_filter.include[1]", "title_filter.exclude[0]", "title_filter.extra_exclude[1]"]]);

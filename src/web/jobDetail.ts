@@ -2,7 +2,8 @@ import type { RescoreRun } from "../db/rescoreLogStore.js";
 import type { JobDetailRow, VerdictView } from "../db/store.js";
 import type { DescriptionDetail, DescriptionOrigin, JobDetailView, JobRowView, ScoreDetail } from "./api.js";
 import { historyRows } from "./history.js";
-import { boostText, minutes, scoreBoost, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
+import { boostDetail } from "./boostViews.js";
+import { minutes, scoreBoost, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
 
 interface Recorded {
     verdicts: VerdictView[];
@@ -22,7 +23,7 @@ function scoreDetail(row: JobDetailRow, job: JobRowView, context: RowContext): S
     if (row.score === null || job.score === null) return null;
     const parts = { base: row.base_score, bonus: row.bonus_score, reasons: row.reasons, gaps: row.gaps };
     const scoredAt = row.scored_at === null ? null : minutes(row.scored_at);
-    return { total: job.score.value, model: row.score, boost: boostText(scoreBoost(row, context)), ...parts, scoredAt };
+    return { total: job.score.value, model: row.score, boost: boostDetail(scoreBoost(row, context)), ...parts, scoredAt };
 }
 
 /** Gathers the job's description with its requirements and skills, and where the description came from. */

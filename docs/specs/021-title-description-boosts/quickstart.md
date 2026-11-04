@@ -62,7 +62,9 @@ Then open `http://<host>:8081/settings`:
 3. Add `senior: 5` to Title boosts and `typescript: 10`, `react: 10` to Description boosts, and
    `react: 5` to Title boosts; each saves at once ("Saved").
 4. Add `react` again to Description boosts → refused on that row.
-5. On All jobs, pick a job whose title has a title-boost term and whose description has a
+5. No setting on the page (Preferences, Scoring, Filters) shows a Reset button or a "(default)"
+   marker.
+6. On All jobs, pick a job whose title has a title-boost term and whose description has a
    description-boost term: its note lists each with `(title)`, `(description)` or `(title and
    description)` and its points, and its panel's Boosts fact lists the same lines.
 

@@ -19,3 +19,22 @@ export function Fact({ label, value }: { label: string; value: string }) {
         </>
     );
 }
+
+/** Shows one labelled fact made of a headline and a line per item under it, such as a boost's total and each term that earned it. */
+export function FactLines({ label, headline, lines }: { label: string; headline: string; lines: string[] }) {
+    return (
+        <>
+            <dt>{label}</dt>
+            <dd>
+                {headline}
+                {lines.length > 0 && (
+                    <ul className="details-notes">
+                        {lines.map((line) => (
+                            <li key={line}>{line}</li>
+                        ))}
+                    </ul>
+                )}
+            </dd>
+        </>
+    );
+}

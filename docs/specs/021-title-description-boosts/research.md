@@ -83,7 +83,7 @@ decisions made while reading the code, each with what was rejected.
 
 - **Decision**: both lists stay in the `scoring` section (one autosave with the threshold, as
   today). `ScoringSection` keeps the Threshold card and adds a Pico `.grid` of two `SettingCard`s,
-  "Title boosts" and "Description boosts", each with `BoostTags`, its reset and its problems,
+  "Title boosts" and "Description boosts", each with `BoostTags` and its problems (no reset, owner 2026-11-04),
   exactly as `FiltersSection` lays out its groups. `BoostTags` takes the field name and label as
   props instead of hard-coding `title_boosts`. The two cards move into a new
   `web/components/settings/BoostCards.tsx` so `ScoringSection.tsx` stays small.
