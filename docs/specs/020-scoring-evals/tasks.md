@@ -163,9 +163,11 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ### Sitting S6: documentation (PR 6, stack stopped)
 
-- [ ] T042 [P] Create `.specify/sitting-in-progress` naming S6; add an "Evals" section to `README.md` (what a case, answer key, run and report are; the five commands; data in `data/evals/`, never in git; evals call the real model and aren't part of the checks) and a Commands entry
-- [ ] T043 [P] Add an evals paragraph to `CLAUDE.md` (`src/evals/` knows nothing of Next.js; files only through `EvalFiles` over a `FilePort`, every file `schema: 1` and strict; cases replay the re-score path with a frozen `get_job`, markers from a random id; capture only reads the database; reports never print description text) and the commands
-- [ ] T044 Fill the ledger's last row, run `npm run check` and `npm run check:db`, delete the marker; when the owner asks, commit S6 and open PR 6; restart the stack once the feature has merged
+- [x] T042 [P] Create `.specify/sitting-in-progress` naming S6; add an "Evals" section to `README.md` (what a case, answer key, run and report are; the five commands; data in `data/evals/`, never in git; evals call the real model and aren't part of the checks) and a Commands entry
+- [x] T043 [P] Add an evals paragraph to `CLAUDE.md` (`src/evals/` knows nothing of Next.js; files only through `EvalFiles` over a `FilePort`, every file `schema: 1` and strict; cases replay the re-score path with a frozen `get_job`, markers from a random id; capture only reads the database; reports never print description text) and the commands
+- [x] T044 Fill the ledger's last row, run `npm run check` and `npm run check:db`, delete the marker; when the owner asks, commit S6 and open PR 6; restart the stack once the feature has merged
+
+**As built (S6):** README gains an "Evals" section (the five commands with examples, and what a case, an answer key, a run and a report are), and CLAUDE.md an evals paragraph and a Commands line. The ledger matches the plan: 867 / 67 / 64. The stack stayed stopped through S6, as planned; restart it once this merges.
 
 ---
 
@@ -203,7 +205,7 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 | Planned new | 50 (S1 11: T003 6, T004 3, T005 2; S2 18: T013 3, T014 1, T015 3, T016 6, T017 2, T018 1, T019 1, T020 1; S3 4: T026; S4 12: T030 5, T031 1, T032 3, T033 3; S5 5: T039) | 3 (T006 1, T018 1, T019 1) | 0 |
 | Planned removed | 0 | 0 | 0 |
 | Planned after | 867 (86.87%) | 67 (6.71%) | 64 (6.41%) |
-| After PR 6 (T044) | | | |
+| After PR 6 (T044) | 867 (86.87%) | 67 (6.71%) | 64 (6.41%) |
 
 The unit share rises and the integration and UI shares fall, toward 95 / 4 / 1.
 
