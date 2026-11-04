@@ -423,6 +423,11 @@ Most tests run on in-memory stores; the same store contract runs against MariaDB
 `tests/integration/`, which only ever touches the test database (`myjobbot_test`, or
 `MYJOBBOT_TEST_DB_NAME`, which must end in `_test`).
 
+On GitHub, the `Tests` workflow runs `npm test` (unit and UI tests) on every pull request and push
+to `main`. Its `unit-tests` check is required by the `main: tests must pass` ruleset, which has no
+bypass, so a pull request can't merge until it passes. The integration tests stay local: GitHub's
+runners can't reach the MariaDB server.
+
 The real-browser rendering test runs only when `MYJOBBOT_TEST_BROWSER_URL` names a Playwright
 1.64.1 server that can reach the test's own `127.0.0.1` server, so not the compose `browser`
 service. A throwaway one:
