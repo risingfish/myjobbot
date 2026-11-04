@@ -74,6 +74,11 @@ export class EvalFiles {
         return this.atomic(`${ROOT}/cases/${value.id}.json`, value);
     }
 
+    /** Stores a case's answer key, replacing the one before it, which the key keeps in its history. */
+    writeAnswerKey(caseId: string, answerKey: AnswerKey): Promise<void> {
+        return this.atomic(`${ROOT}/answer_keys/${caseId}.json`, answerKey);
+    }
+
     /** Tells whether a case is stored under an id, whether or not it reads cleanly. */
     async hasCase(id: string): Promise<boolean> {
         return (await this.port.read(`${ROOT}/cases/${id}.json`)) !== null;

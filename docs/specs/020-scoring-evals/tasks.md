@@ -107,9 +107,11 @@ FR-016), reached from production through `eval check`. Only the readers are buil
 
 ### Sitting S3: `eval answer-key` (PR 3)
 
-- [ ] T026 [P] [US2] Create `.specify/sitting-in-progress` naming S3; write unit tests (4) in `tests/evalAnswerKey.test.ts` for `src/evals/answerKey.ts`: `parseAnswerKeyArgs` turns `recommend --score 65-85 --bonus 25-40 --mention TypeScript --note "…"` into an answer key; a range `90-80`, `x-5` or outside its limits is refused with a message naming the flag; `rewritten(old, next)` puts the old answer key (without `history`) first in `history`, keeping at most 50; `rangeWarning(answerKey, threshold)` warns for `recommend 65-85` at 70 and not for `recommend 70-85`; writing an answer key for a case id with no case file is refused
-- [ ] T027 [US2] Create `src/evals/answerKey.ts` (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`, `answerKeyCommand`), add the answer key writer to `src/evals/files.ts`, and wire `eval answer-key` in `src/cli.ts`
-- [ ] T028 [US2] Run `npm run check` and `npm run check:db` until green; quickstart §3; delete the marker; when the owner asks, commit S3 and open PR 3
+- [x] T026 [P] [US2] Create `.specify/sitting-in-progress` naming S3; write unit tests (4) in `tests/evalAnswerKey.test.ts` for `src/evals/answerKey.ts`: `parseAnswerKeyArgs` turns `recommend --score 65-85 --bonus 25-40 --mention TypeScript --note "…"` into an answer key; a range `90-80`, `x-5` or outside its limits is refused with a message naming the flag; `rewritten(old, next)` puts the old answer key (without `history`) first in `history`, keeping at most 50; `rangeWarning(answerKey, threshold)` warns for `recommend 65-85` at 70 and not for `recommend 70-85`; writing an answer key for a case id with no case file is refused
+- [x] T027 [US2] Create `src/evals/answerKey.ts` (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`, `answerKeyCommand`), add the answer key writer to `src/evals/files.ts`, and wire `eval answer-key` in `src/cli.ts`
+- [x] T028 [US2] Run `npm run check` and `npm run check:db` until green; quickstart §3; delete the marker; when the owner asks, commit S3 and open PR 3
+
+**As built (S3):** the pure rules (`parseAnswerKeyArgs`, `rewritten`, `rangeWarning`) live in `src/evals/answerKeyRules.ts`, and `src/evals/answerKey.ts` holds only the command, so nothing is exported just for tests. Refusals name the flag (`refused --score: min above max`); bad usage prints the usage line and exits 2. The warning shows every part of the range outside the scores where the verdict passes (recommend at or above the threshold, reject below it, zero only at 0, borderline within 10 of it). Quickstart §3 run on a real case in a scratch folder. Tests: 4 unit, as planned.
 
 ---
 
