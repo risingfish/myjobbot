@@ -189,6 +189,18 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `src/web/rescoreStream.ts`, polling the stored log, a named `ping` heartbeat), shown by
   `RescoreTerminal` (`useRescoreLog`, `useRescoreTerminal`); History merges verdicts and runs in
   `historyRows` (`src/web/history.ts`), each re-score with its Log.
+- Evals (feature 020) live in `src/evals/` and know nothing about Next.js. Their data is JSON files
+  under `data/evals/` (profiles, cases, answer keys, prompts, runs with `results.jsonl` and
+  `trace.jsonl`), read and written only through `EvalFiles` over a `FilePort` (`nodeFilePort` in
+  production, `tests/helpers/memoryFilePort.ts` in tests); every file carries `schema: 1`, is
+  parsed strictly (`parseFile`, `src/evals/format.ts`), and a bad file is named by its first zod
+  issue's path and code, never its text. Writes go through a `.tmp` file and a rename. Capture only
+  reads the database (`recentlyScored`, `descriptionFoundAt`); a case's age as scored is counted
+  from `earliestSeen` as a run counts it. A run replays the re-score path (`rescoreMessages`,
+  `oneJobAgentDeps`), with its own `get_job` returning the frozen job (`outsideText: true`, markers
+  from `randomUUID()`) and `record_matches` into a one-case store that writes nothing. Pass rules
+  are `judge` (`src/evals/judge.ts`); reports re-judge against current answer keys and never print
+  description text. Evals call the real model and are never part of `npm run check`.
 
 ## Commands
 
@@ -197,6 +209,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
+- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run | report <run-id>`: the scoring evals (README "Evals"); `run` calls the real model
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

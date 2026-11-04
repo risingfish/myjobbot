@@ -439,6 +439,44 @@ MYJOBBOT_TEST_BROWSER_URL=ws://127.0.0.1:3001/ npm run check:db
 docker stop pw-test
 ```
 
+## Evals
+
+Evals test the scoring step on a fixed set of real jobs, so a change to the rubric, the prompt or
+the model can be judged by numbers rather than by watching Recommended. They call the real model,
+so they're never part of `npm run check`. Everything lives in `data/evals/`, inside the gitignored
+`data/`, so job text and your resume never reach the repository.
+
+```bash
+npm start -- eval capture greenhouse 4012345        # freeze one stored job as a case
+npm start -- eval capture --recent 20 --tag smoke   # or the 20 most recently scored jobs
+npm start -- eval answer-key greenhouse-4012345 recommend --score 65-85 --mention TypeScript --note "remote US, stack matches"
+npm start -- eval run --tag smoke --repeats 3       # score the cases with the model
+npm start -- eval report 20261104-030111-167a --against 20261104-030029-80d2
+npm start -- eval check                             # count the files and name any that are bad
+```
+
+- **A case** is one stored job frozen as the scoring model reads it, with its age as of its latest
+  score (counted as a run counts it), that score, whether that score's model read the full
+  details or only the summary, and whether its description arrived after the score. Your resume
+  and settings at capture are stored once, as a profile. Capture only reads the database.
+- **An answer key** is your judgement of a case on one fixed scale: `recommend` (passes at or above
+  your match threshold), `reject` (below it), `borderline` (within 10 points of it) or `zero`.
+  Optionally it adds score, base or bonus ranges, words the reasons or gaps must mention, and a
+  note. Rewriting a key keeps the old one in its history. Title boosts are not applied: the key
+  judges the model's own score. The rubric leaves reasons empty below 40, so mention words only
+  make sense on keys for scores of 40 or more.
+- **A run** scores each chosen case, once or several times, the way Re-score scores one job: the
+  same prompt and rubric, the frozen job inside fresh data markers, and nothing written to the
+  database. Each attempt is saved with its parts, reasons, gaps, tokens and time, or a fixed reason
+  it failed (`no_record`, `invalid_tool_call`, `timed_out`, `model_error`), and judged against the
+  case's answer key. `--model` tries another model.
+- **A report** re-judges a run against today's answer keys. It shows the pass rate, a line per case
+  (title and company, its key, its scores, pass/fail/mixed, tokens, time) and the unstable cases
+  (mixed, or scores 10 or more apart). With `--against <run-id>` it counts the cases a change fixed
+  and broke and lists those that moved; with `--against observed` it compares with production's own
+  scores, leaving out cases scored from the summary or before their description arrived. It never
+  prints a description; `--reasons` adds the failing attempts' reasons and gaps.
+
 ## Deploy with Docker
 
 On the server:
