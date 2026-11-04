@@ -44,6 +44,10 @@ Expected: both green. The new cases cover the scenarios in the spec:
 | Step 016 copies once, leaves others alone | `tests/integration/boostMigration.test.ts` (integration) |
 | Two cards in the Filters grid, each saving (US5.1) | §3 below, by hand (no UI test in this PR) |
 
+Before the live look, copy the main checkout's `data/config.json` and `data/resume.md` into the
+worktree's `data/` (git-ignored): the web app reads its runtime settings and re-score reads the
+resume from there.
+
 ## 3. Look at it live (required for US5, on this session's `myjobbot_dev_alt` only)
 
 The worktree's own dev server, on another port, on `myjobbot_dev_alt` (from the worktree's

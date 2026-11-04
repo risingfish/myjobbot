@@ -128,7 +128,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `remove`/`addRule`/`escape` extension points), never stored as HTML, and descriptions stay within
   `capDescription`'s 20,000 characters. The panel shows Markdown only through `MarkdownText`
   (react-markdown 10.1.0, pinned; `skipHtml`, an allow-list, `http(s)` links via `isWebAddress`);
-  never `dangerouslySetInnerHTML` or `rehype-raw`. The model and title boosts read
+  never `dangerouslySetInnerHTML` or `rehype-raw`. The model and description boosts read
   `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
   (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever, Gem) never is.
 - The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
@@ -156,7 +156,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   functions in `src/web/sourceRules.ts`; a test on save (`testFetch.ts`) stores no jobs. Scraping
   (kind `web`) isn't a module yet.
 - Search settings (feature 015: `preferences`, `match_threshold`,
-  `title_filter`, `body_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
+  `title_filter`, `body_filter`, `title_boosts`, `description_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
   `user_settings`, one raw document per user (owner `OWNER_ID = 1`, created by the store), written
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by
   `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `settingsSchema`
@@ -217,6 +217,16 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   hold `{data}`, `{threshold}` and `{preferences}` and no other `{word}` (`loadVariant`,
   `src/evals/variantCheck.ts`), or it is refused before any model call. `executeRun`
   (`src/evals/runCases.ts`) is the one way a run starts, for `eval run` and every test of a series.
+- Boosts (feature 021) are two search settings in `user_settings`: `title_boosts`, matched against
+  the job's title only, and `description_boosts`, matched against `readableDescription` only, both
+  matched only in `src/jobs/boosts.ts` (`appliedBoosts`, `maxBoost`). Each term counts once per
+  job; terms are grouped by `normalizeTitle`, so a term in both lists found in both places counts
+  once at the higher value, and the Settings save refuses a repeat within one list
+  (`repeatedBoosts`). Boosts are applied at display time, never stored per job, never seen by the
+  run, the model, re-score or evals; the table note and the panel's Boosts fact come from
+  `src/web/boostViews.ts`. Step `016_description_boosts` copied the title list into the
+  description list once. The Settings page has no reset-to-default buttons or "(default)"
+  markers (owner decision, 2026-11-04); empty defaults come with the resume-import spec.
 
 ## Commands
 

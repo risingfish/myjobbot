@@ -70,7 +70,7 @@ has a matching count method for the summary line.
 
 | Method | Returns |
 |---|---|
-| `scoredFrom(filter)` | Scored jobs whose `source` is in `filter.sources` and `score >= filter.minScore` (the threshold minus the largest possible title boost; the Recommended tab then applies boosts, filters and pages in memory), ordered by `COALESCE(posted_at, first_seen)` desc (newest posting first), then `first_seen` desc, then `ats, job_id` |
+| `scoredFrom(filter)` | Scored jobs whose `source` is in `filter.sources` and `score >= filter.minScore` (the threshold minus the largest possible boost; the Recommended tab then applies boosts, filters and pages in memory), ordered by `COALESCE(posted_at, first_seen)` desc (newest posting first), then `first_seen` desc, then `ats, job_id` |
 | `allJobs(page)` / `countAllJobs()` | Every job row, same newest-first order as `recommended` |
 | `verdictHistory(page)` / `countVerdicts()` | Every verdict joined to its job's title, company, url and source (left join; title shows "(pruned)" if missing), ordered by `scored_at` desc, then `rowid` desc |
 
