@@ -36,6 +36,7 @@ export interface FallbackNotice {
 const SANITIZERS: Record<string, Sanitizer> = {
     preferences: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.preferences, value, "preferences"),
     match_threshold: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.match_threshold, value, "match_threshold"),
+    resume_view: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.resume_view, value, "resume_view"),
     title_filter: (value, fallbacks) => fallbacks.filterLists(value, "title_filter"),
     body_filter: (value, fallbacks) => fallbacks.filterLists(value, "body_filter"),
     title_boosts: (value, fallbacks) => fallbacks.boosts(value, "title_boosts"),

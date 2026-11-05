@@ -5,7 +5,7 @@ import { envSchema, settingsSchema } from "../src/config/schema.js";
 import { LLM_ENV, SAMPLE_CONFIG, testAppSettings } from "./helpers/config.js";
 
 function configFrom(environment: Environment, config: object = SAMPLE_CONFIG) {
-    return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, settingsSchema.parse(config));
+    return appConfigFrom({ env: envSchema.parse(environment), fileRaw: config, resume: "# Jane Doe", dataDir: "data" }, settingsSchema.parse(config), { resume: "# Jane Doe", profile: null });
 }
 
 test("the app config applies defaults", () => {

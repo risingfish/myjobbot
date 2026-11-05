@@ -26,7 +26,7 @@ test("a series with a repeated label, a test that isn't label=variant, or no tes
     const codes = [await saveSeries(["dup", "--test", "a=code", "--test", "a=strict"], deps), await saveSeries(["bad", "--test", "nonsense"], deps), await saveSeries(["empty"], deps)];
     expect([codes, lines.slice(0, 2)]).toEqual([
         [1, 1, 2],
-        ["refused series dup: tests: custom", "refused series bad: test nonsense isn't <label>=<variant|code>[@model]"],
+        ["refused series dup: tests: custom", "refused series bad: test nonsense isn't <label>=<variant|code>[+view][@model]"],
     ]);
 });
 

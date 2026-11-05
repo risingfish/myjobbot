@@ -16,6 +16,10 @@ export const publisherTerm = filterTerm.refine((entry) => !isDomainEntry(entry) 
 
 export const boostPoints = z.number().int().min(1).max(100);
 
+export const RESUME_VIEWS = ["resume", "resume_and_profile", "profile"] as const;
+
+export type ResumeView = (typeof RESUME_VIEWS)[number];
+
 const jsearch = z.object({
     monthly_request_cap: z.number().int().min(1).default(190),
     refresh_hours: z.number().min(1).default(24),
@@ -76,6 +80,7 @@ export const settingsSchema = z
         jsearch: jsearch.prefault({}),
         preferences: z.string().default(""),
         match_threshold: z.number().int().min(0).max(100).default(70),
+        resume_view: z.enum(RESUME_VIEWS).default("resume"),
         ghost_threshold_days: z.number().int().min(1).default(60),
         job_retention_days: z.number().int().min(1).default(90),
         title_filter: titleFilter.prefault({}),

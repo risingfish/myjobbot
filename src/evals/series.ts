@@ -1,11 +1,12 @@
 import { parseArgs } from "node:util";
+import { RESUME_VIEWS, type ResumeView } from "../config/schema.js";
 import { parseFile } from "./format.js";
 import { runId } from "./ids.js";
 import { executeRun, type RunDeps } from "./runCases.js";
 import type { Series, SeriesRun } from "./seriesFormat.js";
 import { loadVariant } from "./variantCheck.js";
 
-const TEST = /^([a-z0-9][a-z0-9-]{0,39})=([^@]+)(?:@(.+))?$/;
+const TEST = /^([a-z0-9][a-z0-9-]{0,39})=([^@+]+)(?:\+(resume|resume_and_profile|profile))?(?:@(.+))?$/;
 const NAME = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const CODE = "code";
 
@@ -46,8 +47,8 @@ export async function runSeries(name: string, deps: RunDeps): Promise<number> {
 /** Runs a series' tests one after another, as ordinary runs, saving after each which run it made. */
 async function runTests(series: Series, record: SeriesRun, deps: RunDeps): Promise<void> {
     for (const test of series.tests) {
-        deps.print(`== ${test.label} (${test.variant ?? CODE}${test.model === null ? "" : ` on ${test.model}`})`);
-        const made = await executeRun({ tags: series.tags, ids: series.cases, repeats: series.repeats, model: test.model ?? undefined, variant: test.variant }, deps);
+        deps.print(`== ${test.label} (${test.variant ?? CODE}${test.view === undefined ? "" : `+${test.view}`}${test.model === null ? "" : ` on ${test.model}`})`);
+        const made = await executeRun({ tags: series.tags, ids: series.cases, repeats: series.repeats, model: test.model ?? undefined, variant: test.variant, view: test.view ?? "resume" }, deps);
         record.runs[test.label] = made.run?.id ?? null;
         await deps.files.writeSeriesRun(record);
     }
@@ -76,7 +77,7 @@ function testsOf(name: string, texts: string[]): string | Array<NonNullable<Retu
     if (!NAME.test(name)) return `refused series ${name}: series names are a-z, 0-9 and -, up to 40`;
     const tests = texts.map(testOf);
     const bad = texts.find((_, index) => tests[index] === null);
-    return bad === undefined ? tests.filter((test) => test !== null) : `refused series ${name}: test ${bad} isn't <label>=<variant|code>[@model]`;
+    return bad === undefined ? tests.filter((test) => test !== null) : `refused series ${name}: test ${bad} isn't <label>=<variant|code>[+view][@model]`;
 }
 
 /** Parses the save command's flags, or null when they don't fit its form. */
@@ -88,14 +89,15 @@ function saveFlags(args: string[]) {
     }
 }
 
-/** Reads one `<label>=<variant|code>[@model]` test, or null when it isn't one. */
-function testOf(text: string): { label: string; variant: string | null; model: string | null } | null {
+/** Reads one `<label>=<variant|code>[+view][@model]` test, or null when it isn't one; everything after @ is the model, colons included. */
+function testOf(text: string): { label: string; variant: string | null; model: string | null; view?: ResumeView } | null {
     const match = TEST.exec(text);
     if (match === null) return null;
-    return { label: match[1] ?? "", variant: match[2] === CODE ? null : (match[2] ?? null), model: match[3] ?? null };
+    const view = RESUME_VIEWS.find((each) => each === match[3]);
+    return { label: match[1] ?? "", variant: match[2] === CODE ? null : (match[2] ?? null), model: match[4] ?? null, ...(view === undefined ? {} : { view }) };
 }
 
-export const SERIES_USAGE = "usage: myjobbot eval series save <name> [--tag t]... [--case id]... [--repeats N] --test <label>=<variant|code>[@model]... [--fresh] | run <name> | report <name> [--run id]";
+export const SERIES_USAGE = "usage: myjobbot eval series save <name> [--tag t]... [--case id]... [--repeats N] --test <label>=<variant|code>[+view][@model]... [--fresh] | run <name> | report <name> [--run id]";
 
 /** Prints lines and gives back an exit code. */
 function printed(deps: Pick<RunDeps, "print">, lines: string[], code: number): number {

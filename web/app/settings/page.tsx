@@ -4,7 +4,9 @@ import { gmailPanelView, type GmailPanelView } from "../../../src/web/gmailPanel
 import { GmailPanel } from "../../components/settings/GmailPanel.js";
 import { SettingsNotices } from "../../components/settings/SettingsNotices.js";
 import { FiltersSection } from "../../components/settings/FiltersSection.js";
+import { PreferencesDraft } from "../../components/settings/PreferencesDraft.js";
 import { PreferencesSection } from "../../components/settings/PreferencesSection.js";
+import { ResumeSection } from "../../components/settings/ResumeSection.js";
 import { ScoringSection } from "../../components/settings/ScoringSection.js";
 import { SourcesSection } from "../../components/settings/SourcesSection.js";
 import { getSettingsState } from "../../lib/uiState.js";
@@ -14,14 +16,17 @@ export const dynamic = "force-dynamic";
 
 type SettingsState = Awaited<ReturnType<typeof getSettingsState>>;
 
-/** Renders the Settings page: what the stored search settings report, the saved sources, an editor for each section of the search settings, and the Gmail connection, even before any search settings are stored. */
+/** Renders the Settings page: what the stored search settings report, the saved sources, an editor for each section of the search settings, the resume, and the Gmail connection, even before any search settings are stored. */
 export default async function SettingsPage() {
     const state = await getSettingsState();
     return (
         <main className="container-fluid" aria-label="Settings">
             <SettingsNotices notices={state.notices} />
             <SourcesSection sources={state.sources} />
-            <PreferencesSection view={state.view} />
+            <PreferencesDraft initial={state.view.fields.preferences}>
+                <PreferencesSection />
+                <ResumeSection shown={state.resume} profile={state.profile} />
+            </PreferencesDraft>
             <ScoringSection view={state.view} />
             <FiltersSection view={state.view} />
             <GmailPanel view={await gmailView(state)} />

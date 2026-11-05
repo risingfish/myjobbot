@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 import type { ChatFn } from "../agent/llm.js";
 import type { Trace, TraceEvent } from "../agent/trace.js";
 import type { AppConfig } from "../config/load.js";
+import { RESUME_VIEWS, type ResumeView } from "../config/schema.js";
 import type { AnswerKey, EvalCase, Profile, Result, Run } from "./format.js";
 import type { EvalFiles, Named } from "./files.js";
 import { contentId, runId } from "./ids.js";
@@ -11,7 +12,7 @@ import { promptFor, scoreCase } from "./session.js";
 import type { ExperimentFiles } from "./experimentFiles.js";
 import { loadVariant } from "./variantCheck.js";
 
-const USAGE = "usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name] [--variant name]";
+const USAGE = "usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name] [--variant name] [--view resume|resume_and_profile|profile]";
 const MAX_REPEATS = 20;
 
 export interface RunDeps {
@@ -57,6 +58,7 @@ export interface RunOptions {
     repeats: number;
     model: string | undefined;
     variant: string | null;
+    view: ResumeView;
 }
 
 /** Scores the chosen cases against the model, each a number of times, saving every attempt judged against its answer key; never writes the database. */
@@ -66,18 +68,28 @@ export async function runCases(args: string[], deps: RunDeps): Promise<number> {
     return (await executeRun(options, deps)).code;
 }
 
-/** Runs already-chosen options: checks the variant, if any, then scores every case and ends the run, giving the exit code and the run made. */
-export async function executeRun(options: RunOptions, deps: RunDeps): Promise<{ code: number; run: Run | null }> {
+/** Runs already-chosen options: checks the variant, if any, and that a view needing a resume profile has one for every case, then scores every case with that view and ends the run, giving the exit code and the run made. */
+export async function executeRun(options: RunOptions, given: RunDeps): Promise<{ code: number; run: Run | null }> {
+    const deps = { ...given, config: { ...given.config, settings: { ...given.config.settings, resume_view: options.view } } };
     const prompt = await promptOf(options.variant, deps);
     if ("refusal" in prompt) return { code: printed(deps, [prompt.refusal], 1), run: null };
     const selection = await select(deps.files, options);
     if (selection.cases.length === 0) return { code: printed(deps, ["no cases to run"], 1), run: null };
+    const refusal = viewRefusal(selection, options.view);
+    if (refusal !== null) return { code: printed(deps, [refusal], 1), run: null };
     const model = options.model ?? deps.config.env.LLM_MODEL;
     const run = await started({ deps, selection, prompt }, { ...options, model });
     const results = await attempts({ deps, run, selection, makeChat: deps.chatFor(model), template: prompt.template });
     const endedAt = deps.now().toISOString();
     await deps.files.writeRun({ ...run, endedAt });
     return { code: printed(deps, [summaryLine(run, results, endedAt)], 0), run: { ...run, endedAt } };
+}
+
+/** Says why a view that reads the resume profile can't run, naming the first case whose profile was captured without one, or null when it can. */
+function viewRefusal(selection: Selection, view: ResumeView): string | null {
+    if (view === "resume") return null;
+    const missing = selection.cases.find((each) => selection.profiles.get(each.value.profile)?.resumeProfile === undefined);
+    return missing === undefined ? null : `refused view ${view}: case ${missing.id} was captured without a resume profile`;
 }
 
 /** Picks the template a run scores with: the code's, or a variant's once it passes its checks, warning when the code has changed since its export. */
@@ -92,14 +104,21 @@ async function promptOf(name: string | null, deps: RunDeps): Promise<ChosenPromp
 /** Reads the flags, or null when they don't fit the command's form. */
 function readArgs(args: string[]) {
     try {
-        const options = { tag: { type: "string", multiple: true }, case: { type: "string", multiple: true }, repeats: { type: "string" }, model: { type: "string" }, variant: { type: "string" } } as const;
+        const options = { tag: { type: "string", multiple: true }, case: { type: "string", multiple: true }, repeats: { type: "string" }, model: { type: "string" }, variant: { type: "string" }, view: { type: "string" } } as const;
         const { values, positionals } = parseArgs({ args, options });
-        const repeats = Number(values.repeats ?? "1");
-        if (positionals.length > 0 || !Number.isInteger(repeats) || repeats < 1 || repeats > MAX_REPEATS) return null;
-        return { tags: values.tag ?? [], ids: values.case ?? [], repeats, model: values.model, variant: values.variant ?? null };
+        const repeats = repeatsOf(values.repeats);
+        const view = RESUME_VIEWS.find((each) => each === (values.view ?? "resume"));
+        if (positionals.length > 0 || repeats === null || view === undefined) return null;
+        return { tags: values.tag ?? [], ids: values.case ?? [], repeats, model: values.model, variant: values.variant ?? null, view };
     } catch {
         return null;
     }
+}
+
+/** Reads how many times each case is scored, one by default, or null when it isn't a whole number from 1 to the limit. */
+function repeatsOf(text: string | undefined): number | null {
+    const repeats = Number(text ?? "1");
+    return Number.isInteger(repeats) && repeats >= 1 && repeats <= MAX_REPEATS ? repeats : null;
 }
 
 /** Picks the cases to run, all of them or those with any chosen tag or id, keeping only those whose profile is stored. */
@@ -111,7 +130,7 @@ async function select(files: EvalFiles, { tags, ids }: { tags: string[]; ids: st
 }
 
 /** Records the run as begun, with the prompt each profile's cases are scored under and the variant it came from, before its first attempt. */
-async function started({ deps, selection, prompt: chosen }: Starting, options: { tags: string[]; repeats: number; model: string }): Promise<Run> {
+async function started({ deps, selection, prompt: chosen }: Starting, options: { tags: string[]; repeats: number; model: string; view: ResumeView }): Promise<Run> {
     const prompts: Record<string, string> = {};
     for (const id of new Set(selection.cases.map((each) => each.value.profile))) {
         const prompt = { schema: 1 as const, text: promptFor(deps.config, selection.profiles.get(id) as Profile, chosen.template) };
@@ -119,7 +138,7 @@ async function started({ deps, selection, prompt: chosen }: Starting, options: {
         await deps.files.writePrompt(prompts[id], prompt);
     }
     const now = deps.now();
-    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted };
+    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted, view: options.view };
     await deps.files.writeRun(run);
     return run;
 }

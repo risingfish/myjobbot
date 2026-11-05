@@ -45,10 +45,10 @@ export function promptFor(config: AppConfig, profile: Profile, template?: string
     return typeof system?.content === "string" ? system.content : "";
 }
 
-/** Swaps the profile's resume, preferences and thresholds into the settings, keeping the run's other settings. */
+/** Swaps the profile's resume, resume profile, preferences and thresholds into the settings, keeping the run's other settings and what the model reads. */
 function configFor(config: AppConfig, profile: Profile): AppConfig {
     const settings = { ...config.settings, preferences: profile.preferences, match_threshold: profile.matchThreshold, ghost_threshold_days: profile.ghostThresholdDays };
-    return { ...config, resume: profile.resume, settings };
+    return { ...config, resume: profile.resume, profile: profile.resumeProfile ?? null, settings };
 }
 
 /** Adds up the tokens the model's responses report, or null when they report none. */

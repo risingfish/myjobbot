@@ -1,6 +1,7 @@
 import type { AppConfig } from "../config/load.js";
 import type { Message } from "./llm.js";
 import type { DataMarkers } from "./markers.js";
+import { ownerMessage } from "./ownerMessage.js";
 import { scoringRubric } from "./rubric.js";
 
 export const NUDGE = "Respond only with tool calls. Call finish when every source has total_unscored 0.";
@@ -24,7 +25,7 @@ Scoring rules:
 export function initialMessages(config: AppConfig, markers: DataMarkers): Message[] {
     return [
         { role: "system", content: systemPrompt(config, markers) },
-        { role: "user", content: `My resume:\n\n${config.resume}\n\nFind and score new jobs for me now.` },
+        { role: "user", content: ownerMessage(config, markers, "Find and score new jobs for me now.") },
     ];
 }
 

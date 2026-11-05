@@ -1,5 +1,6 @@
 import type { Message } from "../agent/llm.js";
 import type { DataMarkers } from "../agent/markers.js";
+import { ownerMessage } from "../agent/ownerMessage.js";
 import { fillTemplate, rubricTemplate, rubricValues } from "../agent/rubric.js";
 import type { AppConfig } from "../config/load.js";
 
@@ -24,6 +25,6 @@ export function rescoreSystemTemplate(): string {
 export function rescoreMessages(config: AppConfig, markers: DataMarkers, template = rescoreSystemTemplate()): Message[] {
     return [
         { role: "system", content: fillTemplate(template, rubricValues(config, markers)) },
-        { role: "user", content: `My resume:\n\n${config.resume}\n\nRe-score the job now.` },
+        { role: "user", content: ownerMessage(config, markers, "Re-score the job now.") },
     ];
 }

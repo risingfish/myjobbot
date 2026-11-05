@@ -25,9 +25,9 @@ secret:
 # Extra plain environment variables for every myjobbot pod.
 extraEnv: []
 
-# config.json and resume.md must be in /data. Name a ConfigMap and/or Secret holding them and an
-# init container copies them onto the volume at every start; leave empty to manage them on the
-# volume yourself.
+# config.json must be in /data; resume.md too until a resume is uploaded on the Settings page.
+# Name a ConfigMap and/or Secret holding them and an init container copies them onto the volume at
+# every start; leave empty to manage them on the volume yourself.
 config:
     existingConfigMap: ""
     key: config.json

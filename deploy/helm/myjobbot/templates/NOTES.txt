@@ -16,6 +16,7 @@ The agent runs on "{{ .Values.agent.schedule }}" ({{ .Values.timeZone }}). Start
   kubectl create job --from=cronjob/{{ include "myjobbot.fullname" . }}-agent {{ include "myjobbot.fullname" . }}-agent-manual
 {{- if not (or .Values.config.existingConfigMap .Values.resume.existingSecret) }}
 
-config.json and resume.md must be on the data volume ({{ include "myjobbot.claimName" . }}) before
-the pods start; or set config.existingConfigMap and resume.existingSecret.
+config.json must be on the data volume ({{ include "myjobbot.claimName" . }}) before the pods start,
+and resume.md too until a resume is uploaded on the Settings page; or set config.existingConfigMap
+and resume.existingSecret.
 {{- end }}

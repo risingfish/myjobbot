@@ -50,7 +50,7 @@ test("editing a field clears its default marker", () => {
 test("a section's request sends an untouched default field as default and every other field as its value (SC-007)", () => {
     expect(sectionRequest("scoring", { match_threshold: { value: 70, isDefault: true }, title_boosts: BOOSTS })).toEqual({
         section: "scoring",
-        edits: { match_threshold: { kind: "default" }, title_boosts: { kind: "value", value: [["go", 5]] }, description_boosts: { kind: "default" } },
+        edits: { match_threshold: { kind: "default" }, resume_view: { kind: "default" }, title_boosts: { kind: "value", value: [["go", 5]] }, description_boosts: { kind: "default" } },
     });
 });
 

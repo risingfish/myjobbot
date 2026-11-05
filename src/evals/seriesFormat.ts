@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { RESUME_VIEWS } from "../config/schema.js";
 
 const LABEL = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const iso = z.iso.datetime();
 const label = z.string().regex(LABEL);
 
-const test = z.strictObject({ label, variant: z.string().min(1).nullable(), model: z.string().min(1).nullable() });
+const test = z.strictObject({ label, variant: z.string().min(1).nullable(), model: z.string().min(1).nullable(), view: z.enum(RESUME_VIEWS).optional() });
 
 export const seriesSchema = z.strictObject({
     schema: z.literal(1),

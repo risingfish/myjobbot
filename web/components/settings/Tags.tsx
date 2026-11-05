@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 
 /** Renders a setting's values as a cloud of tags under its label, with a separator before what follows once there are any. */
 export function TagCloud({ label, count, children }: { label: string; count: number; children: ReactNode }) {
@@ -30,5 +30,27 @@ export function TagButton({ label, symbol, remove = false, onClick }: { label: s
         <button type="button" className={remove ? "tag-action tag-remove" : "tag-action"} aria-label={label} title={label} onClick={onClick}>
             {symbol}
         </button>
+    );
+}
+
+/** Renders the field for adding a term to a list, joined to its Add button as a Pico group; Enter adds too. */
+export function AddTerm({ label, onAdd, placeholder = "Add a term" }: { label: string; onAdd: (typed: string) => void; placeholder?: string }) {
+    const [typed, setTyped] = useState("");
+    const add = () => {
+        onAdd(typed);
+        setTyped("");
+    };
+    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        add();
+    };
+    return (
+        <fieldset role="group">
+            <input aria-label={`New term for ${label}`} placeholder={placeholder} value={typed} onChange={(event) => setTyped(event.target.value)} onKeyDown={onKeyDown} />
+            <button type="button" className="secondary" aria-label={`Add to ${label}`} onClick={add}>
+                Add
+            </button>
+        </fieldset>
     );
 }

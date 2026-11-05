@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { bodyFilterTerms, settingsSchema, titleFilterTerms, type Settings } from "../config/schema.js";
+import { bodyFilterTerms, RESUME_VIEWS, settingsSchema, titleFilterTerms, type ResumeView, type Settings } from "../config/schema.js";
 import { isRawObject, sanitizeSearchSettings, splitSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import { SECTIONS, type FieldName } from "./settingsSections.js";
@@ -7,6 +7,7 @@ import { SECTIONS, type FieldName } from "./settingsSections.js";
 interface FieldValues {
     preferences: string;
     match_threshold: number;
+    resume_view: ResumeView;
     title_boosts: Array<[string, number]>;
     description_boosts: Array<[string, number]>;
     include: string[];
@@ -36,6 +37,7 @@ const boostRows = z.record(z.string(), z.number()).transform((boosts) => Object.
 const SHOWN: { [K in FieldName]: z.ZodType<FieldValues[K]> } = {
     preferences: z.string(),
     match_threshold: z.number(),
+    resume_view: z.enum(RESUME_VIEWS),
     title_boosts: boostRows,
     description_boosts: boostRows,
     include: terms,
@@ -50,6 +52,7 @@ const SHOWN: { [K in FieldName]: z.ZodType<FieldValues[K]> } = {
 const DEFAULTS: Record<FieldName, () => unknown> = {
     preferences: () => settingsSchema.shape.preferences.parse(undefined),
     match_threshold: () => settingsSchema.shape.match_threshold.parse(undefined),
+    resume_view: () => settingsSchema.shape.resume_view.parse(undefined),
     title_boosts: () => settingsSchema.shape.title_boosts.parse(undefined),
     description_boosts: () => settingsSchema.shape.description_boosts.parse(undefined),
     include: () => titleFilterTerms.shape.include.parse(undefined),
@@ -88,6 +91,7 @@ function shownFields(settings: RawSearchSettings): SettingsFields {
     return {
         preferences: shownField("preferences", settings),
         match_threshold: shownField("match_threshold", settings),
+        resume_view: shownField("resume_view", settings),
         title_boosts: shownField("title_boosts", settings),
         description_boosts: shownField("description_boosts", settings),
         include: shownField("include", settings),

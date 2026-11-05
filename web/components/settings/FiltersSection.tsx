@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import { addTerm, removeRow } from "../../../src/web/settingsForm.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
 import { Problems, SaveStatus, Setting, SettingCard } from "./SettingParts.js";
-import { Tag, TagButton, TagCloud } from "./Tags.js";
+import { AddTerm, Tag, TagButton, TagCloud } from "./Tags.js";
 
 type TermName = "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 type Terms = FieldView<string[]>;
@@ -92,27 +92,5 @@ function TermList({ name, label, terms, result, onChange }: TermListProps) {
             <AddTerm label={label} onAdd={add} />
             <Problems result={result} field={name} />
         </Setting>
-    );
-}
-
-/** Renders the field for adding a term to a list, joined to its Add button as a Pico group; Enter adds too. */
-function AddTerm({ label, onAdd }: { label: string; onAdd: (typed: string) => void }) {
-    const [typed, setTyped] = useState("");
-    const add = () => {
-        onAdd(typed);
-        setTyped("");
-    };
-    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (event.key !== "Enter") return;
-        event.preventDefault();
-        add();
-    };
-    return (
-        <fieldset role="group">
-            <input aria-label={`New term for ${label}`} placeholder="Add a term" value={typed} onChange={(event) => setTyped(event.target.value)} onKeyDown={onKeyDown} />
-            <button type="button" className="secondary" aria-label={`Add to ${label}`} onClick={add}>
-                Add
-            </button>
-        </fieldset>
     );
 }

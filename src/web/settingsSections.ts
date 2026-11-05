@@ -2,7 +2,7 @@ export const SECTION_NAMES = ["preferences", "scoring", "filters"] as const;
 
 export type SectionName = (typeof SECTION_NAMES)[number];
 
-export type FieldName = "preferences" | "match_threshold" | "title_boosts" | "description_boosts" | "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
+export type FieldName = "preferences" | "match_threshold" | "resume_view" | "title_boosts" | "description_boosts" | "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 
 export interface FieldSpec {
     name: FieldName;
@@ -14,6 +14,7 @@ export interface FieldSpec {
 export const SECTIONS: readonly FieldSpec[] = [
     { name: "preferences", section: "preferences", stored: ["preferences"], check: ["preferences"] },
     { name: "match_threshold", section: "scoring", stored: ["match_threshold"], check: ["match_threshold"] },
+    { name: "resume_view", section: "scoring", stored: ["resume_view"], check: ["resume_view"] },
     { name: "title_boosts", section: "scoring", stored: ["title_boosts"], check: ["title_boosts"] },
     { name: "description_boosts", section: "scoring", stored: ["description_boosts"], check: ["description_boosts"] },
     { name: "include", section: "filters", stored: ["title_filter", "include"], check: ["title_filter", "include"] },

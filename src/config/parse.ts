@@ -1,10 +1,10 @@
 import { describeError } from "../errors.js";
-import type { AppConfig, LoadedConfig } from "./load.js";
+import type { AppConfig, LoadedConfig, Owner } from "./load.js";
 import type { Settings } from "./schema.js";
 
-/** Builds the app's configuration from the loaded environment, resume and data folder and the resolved settings. */
-export function appConfigFrom(loaded: LoadedConfig, settings: Settings): AppConfig {
-    return { env: loaded.env, settings, resume: loaded.resume, dataDir: loaded.dataDir };
+/** Builds the app's configuration from the loaded environment and data folder, the resolved settings, and the resume and profile in use. */
+export function appConfigFrom(loaded: LoadedConfig, settings: Settings, owner: Owner): AppConfig {
+    return { env: loaded.env, settings, resume: owner.resume, profile: owner.profile, dataDir: loaded.dataDir };
 }
 
 /** Parses JSON text, wrapping any parse error with a message naming the file it came from. */

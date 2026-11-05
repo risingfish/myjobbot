@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { loadFileConfig } from "../../src/config/load.js";
+import { loadFileConfig, readResumeFile } from "../../src/config/load.js";
 import { resolveSettings, settingsNotices, type SettingsNotice } from "../../src/config/resolve.js";
 import type { Settings } from "../../src/config/schema.js";
 import { splitSettings } from "../../src/config/searchSettings.js";
@@ -7,11 +7,13 @@ import { openStores } from "../../src/db/connect.js";
 import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
+import type { ResumeProfile } from "../../src/db/resumeStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
+import { resumeShown, type ResumeShown } from "../../src/web/resumeView.js";
 import { gmailSettings, settingsView, sourceSettings, type SettingsView } from "../../src/web/settingsView.js";
 import { sourceChoices, type Met } from "../../src/web/sourceChoices.js";
 import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceRows.js";
@@ -39,6 +41,8 @@ interface SettingsState {
     notices: SettingsNotice[];
     view: SettingsView;
     sources: SourcesView;
+    resume: ResumeShown;
+    profile: ResumeProfile | null;
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
@@ -92,12 +96,14 @@ export async function getUiState(): Promise<UiState> {
     return { views: opened.jobViews, rescoreLog: opened.rescoreLog, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
 }
 
-/** Returns what the Settings page shows for one request: the search settings in effect, what they report and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
+/** Returns what the Settings page shows for one request: the search settings in effect, what they report, the resume in use, its profile and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
 export async function getSettingsState(): Promise<SettingsState> {
     const { stores: opened, key } = await getStores();
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened) };
+    const [uploaded, profile] = await Promise.all([opened.resume.currentResume(OWNER_ID), opened.resume.profile(OWNER_ID)]);
+    const resume = resumeShown(uploaded, readResumeFile(dataDir()));
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile };
 }
 
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */

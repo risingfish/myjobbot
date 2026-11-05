@@ -8,6 +8,7 @@ const termList = z.array(anything);
 const ROW_SHAPES: Record<FieldName, z.ZodType> = {
     preferences: anything,
     match_threshold: anything,
+    resume_view: anything,
     title_boosts: z.array(z.tuple([anything, anything])),
     description_boosts: z.array(z.tuple([anything, anything])),
     include: termList,

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { RESUME_VIEWS } from "../config/schema.js";
+import { skillSchema } from "../db/resumeStore.js";
 import { seriesRunSchema, seriesSchema } from "./seriesFormat.js";
 
 const CURRENT = 1;
@@ -104,10 +106,11 @@ const runs = z.strictObject({
     endedAt: iso.nullable(),
     variant: z.string().nullable().optional(),
     promptChanged: z.boolean().optional(),
+    view: z.enum(RESUME_VIEWS).optional(),
 });
 
 const SCHEMAS = {
-    profile: z.strictObject({ schema: version, resume: z.string().min(1), preferences: z.string(), matchThreshold: total, ghostThresholdDays: z.number().int().min(1), capturedAt: iso }),
+    profile: z.strictObject({ schema: version, resume: z.string().min(1), preferences: z.string(), matchThreshold: total, ghostThresholdDays: z.number().int().min(1), capturedAt: iso, resumeProfile: z.strictObject({ summary: z.string(), skills: z.array(skillSchema) }).optional() }),
     case: caseShape.superRefine(checkDates),
     answer_key: z.strictObject({ schema: version, ...answerKeyFields, history: z.array(z.strictObject(answerKeyFields)).max(50) }),
     prompt: z.strictObject({ schema: version, text: z.string().min(1) }),
