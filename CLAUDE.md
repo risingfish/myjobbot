@@ -80,7 +80,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - Storage is MariaDB through Kysely (`src/db/`): typed queries checked against `src/db/schema.ts`,
   every table `utf8mb4_bin` (exact comparison, as SQLite was), and `SET NAMES utf8mb4` on every
   connection. To change the schema, add a numbered step `src/db/migrations/00N_name.ts`, list it in
-  `src/db/migrations/index.ts`, update `src/db/schema.ts`, and add or adjust a case in
+  `src/db/migrations/index.ts`, update the table's area file in `src/db/schema/` (jobs, users,
+  gmail, careers, rescore; a new area gets its own file) and its entry in `src/db/schema.ts`'s
+  `Database`, and add or adjust a case in
   the store's contract (`tests/helpers/storeContract.ts`, or a store's own file such as
   `tests/helpers/gmailStoreContract.ts`) if its behaviour changes. Steps run once per database,
   even when the agent and the web app start together.
