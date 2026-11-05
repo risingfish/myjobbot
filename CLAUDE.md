@@ -236,6 +236,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
 - `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (README "Evals"); `run` and `series run` call the real model
+- `scripts/copy-prod.sh myjobbot_dev|myjobbot_dev_alt [--yes]`: replaces every table in a dev database
+  with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (README, Develop);
+  refuses any other target
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

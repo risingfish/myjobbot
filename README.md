@@ -426,6 +426,27 @@ Most tests run on in-memory stores; the same store contract runs against MariaDB
 `myjobbot_test_alt`). `MYJOBBOT_TEST_DB_HOST`, `_PORT`, `_USER` and
 `_PASSWORD` connect to it with their own values, each falling back to its `MYJOBBOT_DB_*` setting.
 
+To work on real data, copy production into a dev database:
+
+```bash
+scripts/copy-prod.sh myjobbot_dev       # or myjobbot_dev_alt; asks you to type the name, or pass --yes
+```
+
+It replaces every table in the target with a consistent snapshot of `myjobbot`
+(`mysqldump --single-transaction`, streamed, no file left behind), including the record of which
+migrations have run, so a branch's newer steps run on the next start. Only `myjobbot_dev` and
+`myjobbot_dev_alt` are accepted as targets. Production is read with a read-only login,
+`MYJOBBOT_COPY_DB_USER` / `MYJOBBOT_COPY_DB_PASSWORD` in `.env`, created once on the server:
+
+```sql
+CREATE USER 'myjobbot_copy'@'%' IDENTIFIED BY '…';
+GRANT SELECT ON myjobbot.* TO 'myjobbot_copy'@'%';
+```
+
+The copy is written with `MYJOBBOT_DB_USER`, which needs full rights on the target database. It needs the `mysql` and `mysqldump` clients (MySQL 8
+or MariaDB). The copied Gmail connection only opens if `.env`'s `MYJOBBOT_SECRET_KEY` is the one
+production uses.
+
 On GitHub, the `Tests` workflow runs `npm test` (unit and UI tests) on every pull request and push
 to `main`. Its `unit-tests` check is required by the `main: tests must pass` ruleset, which has no
 bypass, so a pull request can't merge until it passes. The integration tests stay local: GitHub's
