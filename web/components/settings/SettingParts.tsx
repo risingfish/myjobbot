@@ -1,29 +1,13 @@
 import type { ReactNode } from "react";
 import type { Problem } from "../../../src/web/settingsProblems.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
-import type { FieldView } from "../../../src/web/settingsView.js";
 import { SaveFailedNote } from "../forms/SaveFailedNote.js";
 
-interface SettingProps {
-    label: string;
-    field: FieldView<unknown>;
-    onReset: () => void;
-    children: ReactNode;
-}
-
-/** Renders one editable setting under its label, saying when it takes its default and offering to reset it when it doesn't. */
-export function Setting({ label, field, onReset, children }: SettingProps) {
+/** Renders one editable setting under its label. */
+export function Setting({ label, children }: { label: string; children: ReactNode }) {
     return (
         <section className="setting">
-            <h5>
-                {label}
-                {field.isDefault && <small className="note"> (default)</small>}
-                {!field.isDefault && (
-                    <button type="button" className="reset" aria-label={`Reset ${label} to default`} onClick={onReset}>
-                        Reset to default
-                    </button>
-                )}
-            </h5>
+            <h5>{label}</h5>
             {children}
         </section>
     );

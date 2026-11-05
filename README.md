@@ -136,7 +136,8 @@ with Unhide on All jobs) and **Close**. The panel has five sections:
 
 - **Job**: company, location, remote and workplace terms, pay, source, posting age, whether
   you hid it, and when you marked it applied.
-- **Score**: the total, the model's own score and any title boost, the resume-fit and
+- **Score**: the total, the model's own score and its boosts (each term, its points and where it
+  matched: title, description or both), the resume-fit and
   preference-fit parts, and the reasons and gaps.
 - **Description**: the full text, with requirements and skills, and where it came from (the job's
   own listing, or the careers page the [careers lookup](#careers-lookup) found, linked). Descriptions
@@ -178,7 +179,7 @@ If the live view drops, the terminal says so; reopen the log from History. It is
 run, in its own `data/runs/` file.
 
 On Recommended and All jobs, hover over a score (or tab to it) for its breakdown ("base 38 +
-bonus 40", plus any boost); Reasoning prints it in full. Titles longer than 64 characters end in
+bonus 40", plus any boosts, each with its points and where it matched); Reasoning prints it in full. Titles longer than 64 characters end in
 "…", with the full title on hover. See
 [How scoring works](#how-scoring-works) for what the numbers mean.
 
@@ -421,7 +422,9 @@ npm run check:db   # integration tests against myjobbot_test (needs the MYJOBBOT
 
 Most tests run on in-memory stores; the same store contract runs against MariaDB in
 `tests/integration/`, which only ever touches the test database (`myjobbot_test`, or
-`MYJOBBOT_TEST_DB_NAME`, which must end in `_test`).
+`MYJOBBOT_TEST_DB_NAME`, which must hold `_test` at its end or before another `_`, as in
+`myjobbot_test_alt`). `MYJOBBOT_TEST_DB_HOST`, `_PORT`, `_USER` and
+`_PASSWORD` connect to it with their own values, each falling back to its `MYJOBBOT_DB_*` setting.
 
 On GitHub, the `Tests` workflow runs `npm test` (unit and UI tests) on every pull request and push
 to `main`. Its `unit-tests` check is required by the `main: tests must pass` ruleset, which has no
@@ -462,7 +465,7 @@ npm start -- eval check                             # count the files and name a
 - **An answer key** is your judgement of a case on one fixed scale: `recommend` (passes at or above
   your match threshold), `reject` (below it), `borderline` (within 10 points of it) or `zero`.
   Optionally it adds score, base or bonus ranges, words the reasons or gaps must mention, and a
-  note. Rewriting a key keeps the old one in its history. Title boosts are not applied: the key
+  note. Rewriting a key keeps the old one in its history. Boosts are not applied: the key
   judges the model's own score. The rubric leaves reasons empty below 40, so mention words only
   make sense on keys for scores of 40 or more.
 - **A run** scores each chosen case, once or several times, the way Re-score scores one job: the
@@ -910,7 +913,7 @@ plain text and always show as plain text.
 - **It is shown safely.** The panel renders it with
   [react-markdown](https://github.com/remarkjs/react-markdown): raw HTML is never interpreted, no
   images load, and only `http(s)` links become links (new tab, no referrer).
-- **The model reads a link-free copy.** `get_job_details` and title boosts see the Markdown with each
+- **The model reads a link-free copy.** `get_job_details` and description boosts see the Markdown with each
   link reduced to its words, so a link to `aws.example.com` doesn't count as "aws".
 - **Scored again once.** The first time a scored job's description changes to Markdown, it is marked
   for scoring again, keeping its current score until then.
@@ -999,9 +1002,13 @@ The rubric is written in terms of "the resume" and "the preferences", never spec
 technologies, so editing `data/resume.md` or the `preferences` text changes what counts as a
 fit without touching the prompt.
 
-**4. Boosts and your choices adjust what's shown** (at display time, in the web UI). Each
-`title_boosts` term found as a whole word in the title or description adds its points once,
-capped at 100 ("model 62 · +10 typescript"). Recommended shows jobs whose boosted score is at
+**4. Boosts and your choices adjust what's shown** (at display time, in the web UI). There are
+two lists: a `title_boosts` term adds its points when it is found as a whole word in the job's
+title, and a `description_boosts` term when it is found in its description (the link-free copy).
+Each term adds its points only once, however often it appears; a term in both lists that is
+found in both places adds them once, at the higher of its two values, and terms that differ only
+in case or punctuation count as one. The total is capped at 100 ("model 62 · +15 senior +5
+(title), typescript +10 (description)"). Recommended shows jobs whose boosted score is at
 or above `match_threshold`, minus excluded companies and jobs you hid. None of this is stored,
 so changing boosts or the threshold re-sorts every job on the next page load, without
 re-scoring. The Reasoning tab always shows the model's own score.
@@ -1037,12 +1044,13 @@ Settings live in two places:
   **Settings** page. It has four sections:
   - **Sources**: your saved sources (see [Sources](#sources)), each saved on its own;
   - **Preferences**: the preferences text;
-  - **Scoring**: the match threshold and title boosts;
+  - **Scoring**: the match threshold, and the Title Boosts and Description Boosts lists side by
+    side;
   - **Filters**: the title filter, the body filter (description terms) and excluded companies and
     publishers.
 
-  Each section has its own Save, and each setting shows "(default)" until you change it, or offers
-  **Reset to default** once you have. Only what you set is stored, so defaults still apply. A save
+  Each section has its own Save. Only what you set is stored, so defaults still apply to the
+  rest; the page has no reset-to-default buttons. A save
   is checked together with the rest of your settings and the current `config.json`, then stores
   that section whole or changes nothing. A refused save shows each problem beside its field or row
   and keeps your edits. The last save wins.
@@ -1073,7 +1081,8 @@ section stores the value in effect and clears the notice.
 | `body_filter.include` | `[]` | "Description must include one of" on the Settings page: when it has terms, a job whose description mentions none of them isn't scored. Whole words or phrases, any case, punctuation as spaces, an optional plural "s" (`"go"` never matches "good") |
 | `body_filter.exclude` | `[]` | "Description must not include": a job whose description mentions one of these isn't scored (`"security clearance"` matches "Security-Clearance"). It wins over `include`. A job with no description passes both lists; already-scored jobs keep their score |
 | `exclude_companies` | `[]` | Company names to hide (whole words, any case: `"nvidia"` hides "NVIDIA Corporation"). Their jobs are stored but never scored, and they drop out of Recommended |
-| `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the title or description (each term counted once) |
+| `title_boosts` | `{}` | Points (1-100) added to the score when a term appears as a whole word in the job's title (each term counted once) |
+| `description_boosts` | `{}` | Points (1-100) added when a term appears as a whole word in the job's description (each term counted once). A term in both lists found in both places counts once, at the higher value. Upgrading copies your existing `title_boosts` here once (step 016) |
 
 **Runtime settings (`data/config.json`)**
 

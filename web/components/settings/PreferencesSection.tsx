@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { editedField, resetField, sectionRequest } from "../../../src/web/settingsForm.js";
+import { editedField, sectionRequest } from "../../../src/web/settingsForm.js";
 import type { SettingsView } from "../../../src/web/settingsView.js";
 import { useSectionSave } from "../../lib/useSectionSave.js";
 import { Panel } from "../sections/Panel.js";
@@ -15,7 +15,7 @@ export function PreferencesSection({ view }: { view: SettingsView }) {
     return (
         <Panel title="Preferences">
             <form action={() => save(sectionRequest("preferences", { preferences }))}>
-                <Setting label="Preferences" field={preferences} onReset={() => change(resetField(view.defaults.preferences))}>
+                <Setting label="Preferences">
                     <textarea aria-label="Preferences" rows={6} value={preferences.value} onChange={(event) => change(editedField(event.target.value))} />
                     <Problems result={result} field="preferences" />
                 </Setting>

@@ -37,7 +37,7 @@ test("an unscored job has no score", async () => {
 test("a scored job's score gives the boosted total, the model's score, the boost and the parts behind it", async () => {
     const boosted = rowContext(testAppSettings({ title_boosts: { backend: 5 } }), new Date("2026-10-03T00:00:00.000Z"));
     const row = await storedDetail({}, { job_id: "a", score: 70, base: 40, bonus: 30, reasons: ["Go"], gaps: ["Kafka"] });
-    expect(toJobDetailView(row, NONE, boosted).score).toEqual({ total: 75, model: 70, boost: "+5 backend", base: 40, bonus: 30, reasons: ["Go"], gaps: ["Kafka"], scoredAt: "2026-10-02 09:30" });
+    expect(toJobDetailView(row, NONE, boosted).score).toEqual({ total: 75, model: 70, boost: { total: 5, lines: ["backend +5 (title)"] }, base: 40, bonus: 30, reasons: ["Go"], gaps: ["Kafka"], scoredAt: "2026-10-02 09:30" });
     expect(toJobDetailView(row, NONE, context).score).toMatchObject({ total: 70, model: 70, boost: null });
 });
 

@@ -1,16 +1,15 @@
-import type { Settings } from "../config/schema.js";
 import type { JobView, VerdictView } from "../db/store.js";
-import { readableDescription } from "../descriptions/readable.js";
 import { daysBetween } from "../jobs/age.js";
-import { boostedScore, jobBoost, type Boost } from "../jobs/titleBoost.js";
+import { appliedBoosts, boostedScore, type Boost, type BoostLists } from "../jobs/boosts.js";
 import { FILTER_NOTES, filterMatch, type FilterSet } from "../jobs/filterMatch.js";
 import type { JobRowView, Score, VerdictRowView } from "./api.js";
+import { boostText } from "./boostViews.js";
 import { shortTitle } from "./shortTitle.js";
 
 export interface RowContext extends FilterSet {
     now: Date;
     ghostDays: number;
-    boosts: Settings["title_boosts"];
+    boosts: BoostLists;
 }
 
 const WEB_URL = /^https?:\/\//i;
@@ -109,17 +108,12 @@ function breakdown(parts: { base_score: number | null; bonus_score: number | nul
     return `base ${parts.base_score} + bonus ${parts.bonus_score}`;
 }
 
-/** Works out which title boost terms raise a job's score, and by how much. */
+/** Works out which boosts raise a job's score, where each was found, and by how much. */
 export function scoreBoost(job: JobView, context: RowContext): Boost {
-    return jobBoost([job.title, readableDescription(job.description, job.description_format)], context.boosts);
+    return appliedBoosts(job, context.boosts);
 }
 
-/** Names the points a boost adds and the terms that earned them, as "+5 backend", or null when none did. */
-export function boostText(boost: Boost): string | null {
-    return boost.points === 0 ? null : `+${boost.points} ${boost.terms.join(", ")}`;
-}
-
-/** Formats a note naming the model's score and the boost terms that raised it, or an empty string when none did. */
+/** Formats a note naming the model's score and each boost that raised it, or an empty string when none did. */
 function boostNote(score: number, boost: Boost): string {
     const text = boostText(boost);
     return text === null ? "" : `model ${score} · ${text}`;

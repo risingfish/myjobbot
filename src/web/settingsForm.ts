@@ -9,6 +9,7 @@ const ROW_SHAPES: Record<FieldName, z.ZodType> = {
     preferences: anything,
     match_threshold: anything,
     title_boosts: z.array(z.tuple([anything, anything])),
+    description_boosts: z.array(z.tuple([anything, anything])),
     include: termList,
     exclude: termList,
     extra_exclude: termList,
@@ -64,11 +65,6 @@ export function removeRow<T>(field: FieldView<T[]>, index: number): FieldView<T[
 /** Replaces the row at an index in a list field. */
 function updateRow<T>(field: FieldView<T[]>, index: number, row: T): FieldView<T[]> {
     return { value: field.value.map((current, at) => (at === index ? row : current)), isDefault: false };
-}
-
-/** Puts a field back to its default, marked, so the next save unsets it. */
-export function resetField<T>(defaultValue: T): FieldView<T> {
-    return { value: defaultValue, isDefault: true };
 }
 
 /** Gives a field the value the owner typed, which stops it taking its default. */

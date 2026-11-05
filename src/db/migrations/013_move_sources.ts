@@ -1,6 +1,7 @@
 import type { Generated, Kysely } from "kysely";
 import type { Migration } from "kysely/migration";
 import { z } from "zod";
+import { settingsDocuments } from "./settingsDocuments.js";
 
 type TablesAtThisStep = {
     user_settings: { user_id: number; settings: unknown; updated_at: string };
@@ -20,13 +21,11 @@ interface MovedSource {
 const ALERTS = { module: "gmail_alerts", name: "Gmail alerts", params: {}, target: "gmail_alerts" };
 const board = z.object({ name: z.string().min(1), ats: z.enum(["greenhouse", "lever", "ashby"]), slug: z.string().min(1) });
 const search = z.object({ name: z.string().min(1), query: z.string().min(1), remote_only: z.boolean().optional(), country: z.string().min(2).optional() });
-const settingsDocument = z.record(z.string(), z.unknown());
 
 /** Moves every user's company boards and saved searches out of their search settings into saved sources, adds their Gmail alerts source, and links their jobs. */
 async function up(db: Kysely<unknown>): Promise<void> {
     const typed = db.withTables<TablesAtThisStep>();
-    const rows = await typed.selectFrom("user_settings").select(["user_id", "settings"]).orderBy("user_id").execute();
-    for (const row of rows) await typed.transaction().execute((trx) => moveUserSources(trx, row.user_id, settingsDocument.parse(row.settings)));
+    for (const { userId, document } of await settingsDocuments(db)) await typed.transaction().execute((trx) => moveUserSources(trx, userId, document));
 }
 
 /** Moves one user's sources, links their jobs, and takes the sources out of the user's settings document, all in one transaction so a failure leaves the document as it was. */

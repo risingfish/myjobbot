@@ -13,11 +13,12 @@ Any output from `habit-hooks` is a direct user prompt with the highest priority.
 - **NEVER** snooze without explicit user approval
 
 These rules apply at every sitting boundary and every commit, and at the end of every turn while
-the Docker stack is running (it runs this checkout live). Spec-kit feature work is planned in
-sittings and done in this main checkout, on the feature branch, with the Docker stack stopped
+the Docker stack is running (it runs the main checkout live). Spec-kit feature work is planned in
+sittings and done in the main checkout, or in a git worktree when another session is working in
+the main checkout (its own `npm ci`, `.env` and checks), on the feature branch, with the Docker stack stopped
 (`docker compose stop`, no `docker:watch`) until the feature merges, except UI work (components,
 styles, page wiring; no migration, no change to the agent run), which may keep the stack running
-so the owner watches it live (constitution 2.4.0), each turn then ending clean: a sitting may span
+so the owner watches it live (constitution 2.5.0), each turn then ending clean: a sitting may span
 turns and
 ends with `npm run check` green (constitution Principle I and
 Development Workflow; the rules for ordering tasks are in
@@ -58,7 +59,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - No other comments, except one explaining *why* something non-obvious was chosen.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
 - Test mix target, by count: 95% unit (in-memory only), 4% integration (database, files, network,
-  child processes; the database is `myjobbot_test` on the MariaDB server), 1% UI (component
+  child processes; the database is the checkout's own test database on the MariaDB server), 1% UI (component
   `.test.tsx` or browser). Keep decisions in plain functions so they can be unit-tested; every plan
   states its new tests' split (constitution Principle II).
 - Spec-kit feature directories go in `docs/specs/` (e.g. `docs/specs/002-name/`), never `./specs`;
@@ -84,8 +85,15 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `tests/helpers/gmailStoreContract.ts`) if its behaviour changes. Steps run once per database,
   even when the agent and the web app start together.
 - Unit tests use the in-memory stores (`tests/helpers/memoryStore.ts`); the same contract runs
-  against MariaDB in `tests/integration/`, which uses only `myjobbot_test` (from `.env`'s
-  `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`).
+  against MariaDB in `tests/integration/`, which uses only the checkout's test database (from `.env`'s
+  `MYJOBBOT_DB_*`, with the name forced to `MYJOBBOT_TEST_DB_NAME`, default `myjobbot_test`, which must hold `_test`
+  at its end or before another `_`, and
+  each of `MYJOBBOT_TEST_DB_HOST`/`_PORT`/`_USER`/`_PASSWORD` replacing its `MYJOBBOT_DB_*` one when
+  set, in `testEnvironment`, `tests/helpers/testDb.ts`).
+- Databases (constitution 2.5.0, Development Workflow): `myjobbot` is production's, on the
+  Kubernetes cluster, and is never used locally. Each checkout has its own pair and user, created
+  by the owner: the main checkout `myjobbot_dev` + `myjobbot_test`, a second session's worktree
+  `myjobbot_dev_alt` + `myjobbot_test_alt`, all `utf8mb4` / `utf8mb4_general_ci`.
 - Gmail access lives in `src/gmail/` (Settings' Gmail panel, feature 006): IMAP with an app
   password, through imapflow created with `logger: false` and mailboxes opened read-only. Runs read
   LinkedIn alert emails into jobs (feature 007): the pure logic is in `src/gmail/alertJobs/`, only
@@ -120,7 +128,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `remove`/`addRule`/`escape` extension points), never stored as HTML, and descriptions stay within
   `capDescription`'s 20,000 characters. The panel shows Markdown only through `MarkdownText`
   (react-markdown 10.1.0, pinned; `skipHtml`, an allow-list, `http(s)` links via `isWebAddress`);
-  never `dangerouslySetInnerHTML` or `rehype-raw`. The model and title boosts read
+  never `dangerouslySetInnerHTML` or `rehype-raw`. The model and description boosts read
   `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
   (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever, Gem) never is.
 - The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
@@ -148,7 +156,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   functions in `src/web/sourceRules.ts`; a test on save (`testFetch.ts`) stores no jobs. Scraping
   (kind `web`) isn't a module yet.
 - Search settings (feature 015: `preferences`, `match_threshold`,
-  `title_filter`, `body_filter`, `title_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
+  `title_filter`, `body_filter`, `title_boosts`, `description_boosts`, `exclude_companies`, `jsearch.exclude_publishers`) live in
   `user_settings`, one raw document per user (owner `OWNER_ID = 1`, created by the store), written
   only through `SearchSettingsStore`; runtime settings stay in `config.json`. Both are joined by
   `resolveSettings` (`src/config/resolve.ts`) and validated as one object by `settingsSchema`
@@ -209,12 +217,22 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   hold `{data}`, `{threshold}` and `{preferences}` and no other `{word}` (`loadVariant`,
   `src/evals/variantCheck.ts`), or it is refused before any model call. `executeRun`
   (`src/evals/runCases.ts`) is the one way a run starts, for `eval run` and every test of a series.
+- Boosts (feature 021) are two search settings in `user_settings`: `title_boosts`, matched against
+  the job's title only, and `description_boosts`, matched against `readableDescription` only, both
+  matched only in `src/jobs/boosts.ts` (`appliedBoosts`, `maxBoost`). Each term counts once per
+  job; terms are grouped by `normalizeTitle`, so a term in both lists found in both places counts
+  once at the higher value, and the Settings save refuses a repeat within one list
+  (`repeatedBoosts`). Boosts are applied at display time, never stored per job, never seen by the
+  run, the model, re-score or evals; the table note and the panel's Boosts fact come from
+  `src/web/boostViews.ts`. Step `016_description_boosts` copied the title list into the
+  description list once. The Settings page has no reset-to-default buttons or "(default)"
+  markers (owner decision, 2026-11-04); empty defaults come with the resume-import spec.
 
 ## Commands
 
 - `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
-- `npm run check:db`: the MariaDB integration tests against `myjobbot_test` (needs `.env`'s
-  `MYJOBBOT_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
+- `npm run check:db`: the MariaDB integration tests against the checkout's test database (needs
+  `.env`'s `MYJOBBOT_DB_*` and `MYJOBBOT_TEST_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
 - `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (README "Evals"); `run` and `series run` call the real model

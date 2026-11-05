@@ -38,7 +38,8 @@ const SANITIZERS: Record<string, Sanitizer> = {
     match_threshold: (value, fallbacks) => fallbacks.checked(settingsSchema.shape.match_threshold, value, "match_threshold"),
     title_filter: (value, fallbacks) => fallbacks.filterLists(value, "title_filter"),
     body_filter: (value, fallbacks) => fallbacks.filterLists(value, "body_filter"),
-    title_boosts: (value, fallbacks) => fallbacks.boosts(value),
+    title_boosts: (value, fallbacks) => fallbacks.boosts(value, "title_boosts"),
+    description_boosts: (value, fallbacks) => fallbacks.boosts(value, "description_boosts"),
     exclude_companies: (value, fallbacks) => fallbacks.list(value, { name: "exclude_companies", entry: filterTerm }),
     [PUBLISHERS]: (value, fallbacks) => fallbacks.list(value, { name: `jsearch.${PUBLISHERS}`, entry: publisherTerm, reason: publisherReason }),
 };
@@ -142,11 +143,11 @@ class Fallbacks {
         return Object.fromEntries(parts.filter(([, terms]) => terms !== undefined));
     }
 
-    /** Keeps the stored title boosts whose term and points both pass, recording each other one by its position. */
-    boosts(value: unknown): unknown {
-        if (!isRawObject(value)) return this.checked(z.record(z.string(), z.unknown()), value, "title_boosts");
+    /** Keeps the stored boosts of one list whose term and points both pass, recording each other one by its list's name and position. */
+    boosts(value: unknown, name: string): unknown {
+        if (!isRawObject(value)) return this.checked(z.record(z.string(), z.unknown()), value, name);
         const entries = Object.entries(value);
-        const kept = entries.filter((entry, index) => this.keeps(entry, `title_boosts[${index}]`, { name: "title_boosts", entry: BOOST_ENTRY }));
+        const kept = entries.filter((entry, index) => this.keeps(entry, `${name}[${index}]`, { name, entry: BOOST_ENTRY }));
         return kept.length === 0 && entries.length > 0 ? undefined : Object.fromEntries(kept);
     }
 

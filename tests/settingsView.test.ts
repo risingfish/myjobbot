@@ -65,3 +65,8 @@ test("the Gmail alert senders come from config.json's runtime settings, with the
     expect(gmailSettings({ gmail: { alert_senders: ["alerts@example.com"] } }).alert_senders).toEqual(["alerts@example.com"]);
     expect(gmailSettings({}).alert_senders.length).toBeGreaterThan(0);
 });
+
+test("description boosts show as rows when stored, and as an empty default otherwise", () => {
+    expect(settingsView({ description_boosts: { typescript: 10 } }).fields.description_boosts).toEqual({ value: [["typescript", 10]], isDefault: false });
+    expect(settingsView(null).fields.description_boosts).toEqual({ value: [], isDefault: true });
+});

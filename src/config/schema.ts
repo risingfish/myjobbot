@@ -82,6 +82,7 @@ export const settingsSchema = z
         body_filter: bodyFilterTerms.prefault({}),
         exclude_companies: z.array(filterTerm).default([]),
         title_boosts: z.record(filterTerm, boostPoints).default({}),
+        description_boosts: z.record(filterTerm, boostPoints).default({}),
         agent: agent.prefault({}),
         http: http.prefault({}),
         gmail: gmail.prefault({}),

@@ -36,6 +36,16 @@ test("title boosts default to none and need 1-100 points per term", () => {
     expect(() => testAppSettings({ title_boosts: { "++": 10 } })).toThrow(/letter or digit/);
 });
 
+test("description boosts default to none", () => {
+    expect(testAppSettings().description_boosts).toEqual({});
+});
+
+test("description boosts keep good terms and need 1-100 points per term", () => {
+    expect(testAppSettings({ description_boosts: { typescript: 10 } }).description_boosts).toEqual({ typescript: 10 });
+    expect(() => testAppSettings({ description_boosts: { typescript: 0 } })).toThrow();
+    expect(() => testAppSettings({ description_boosts: { typescript: 101 } })).toThrow();
+});
+
 test("jsearch.exclude_publishers needs a letter or digit per name", () => {
     expect(() => testAppSettings({ jsearch: { exclude_publishers: ["--"] } })).toThrow(/letter or digit/);
 });

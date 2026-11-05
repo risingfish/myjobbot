@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
-import { addTerm, removeRow, resetField } from "../../../src/web/settingsForm.js";
+import { addTerm, removeRow } from "../../../src/web/settingsForm.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
@@ -32,7 +32,6 @@ interface TermListProps {
     name: TermName;
     label: string;
     terms: Terms;
-    defaults: string[];
     result: SaveResult | null;
     onChange: (terms: Terms) => void;
 }
@@ -50,7 +49,7 @@ export function FiltersSection({ view }: { view: SettingsView }) {
         <Panel title="Filters">
             <div className="grid">
                 {GROUPS.map(([title, names]) => (
-                    <FilterGroup key={title} title={title} lists={names.map((name) => ({ name, label: LABELS[name], terms: lists[name], defaults: view.defaults[name], result, onChange: change(name) }))} />
+                    <FilterGroup key={title} title={title} lists={names.map((name) => ({ name, label: LABELS[name], terms: lists[name], result, onChange: change(name) }))} />
                 ))}
             </div>
             <SaveStatus result={result} saving={saving} />
@@ -76,13 +75,13 @@ function listsOf({ fields }: SettingsView): Record<TermName, Terms> {
 }
 
 /** Renders one list of terms as a cloud of tags, each removable from the button that shows when it is hovered or focused, then one field for adding a term. */
-function TermList({ name, label, terms, defaults, result, onChange }: TermListProps) {
+function TermList({ name, label, terms, result, onChange }: TermListProps) {
     const add = (typed: string) => {
         const next = addTerm(terms, typed);
         if (next !== terms) onChange(next);
     };
     return (
-        <Setting label={label} field={terms} onReset={() => onChange(resetField(defaults))}>
+        <Setting label={label}>
             <TagCloud label={label} count={terms.value.length}>
                 {terms.value.map((term, index) => (
                     <Tag key={`${index}-${term}`} text={term} problems={<Problems result={result} field={name} entry={index} />}>

@@ -335,10 +335,6 @@ dialog.details-panel[open] {
     --pico-border-color: var(--pico-secondary-hover-border);
     --pico-color: var(--pico-secondary-hover);
 }
-.setting h5 .reset {
-    margin-left: 8px;
-    margin-bottom: 0;
-}
 .setting .row {
     display: flex;
     flex-wrap: wrap;

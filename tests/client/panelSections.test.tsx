@@ -8,7 +8,7 @@ const actions = vi.hoisted(() => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn()
 vi.mock("../../web/lib/actions.js", () => actions);
 vi.mock("next/navigation.js", () => import("../helpers/navigation.js"));
 
-const SCORE = { total: 75, model: 70, boost: "+5 backend", base: 40, bonus: 30, reasons: ["Strong Go", "<script>alert(1)</script>"], gaps: ["No Kafka"], scoredAt: "2026-10-02 09:30" };
+const SCORE = { total: 75, model: 70, boost: { total: 5, lines: ["backend +5 (title)"] }, base: 40, bonus: 30, reasons: ["Strong Go", "<script>alert(1)</script>"], gaps: ["No Kafka"], scoredAt: "2026-10-02 09:30" };
 
 beforeEach(() => {
     actions.loadJobDetails.mockReset().mockImplementation(listedDetails);
@@ -19,8 +19,9 @@ test("the score section explains the score: total, the model's score, the boost,
     showPage();
     await openTitle("Software Engineer a");
     await vi.waitFor(() => expect(section("Score").textContent).toContain("75"));
-    for (const text of ["70", "+5 backend", "Resume fit40 of 50", "Preference fit30 of 50", "2026-10-02 09:30", "Strong Go", "No Kafka"]) expect(section("Score").textContent).toContain(text);
+    for (const text of ["70", "Boosts+5", "Resume fit40 of 50", "Preference fit30 of 50", "2026-10-02 09:30", "Strong Go", "No Kafka"]) expect(section("Score").textContent).toContain(text);
     expect([section("Score").querySelector("script"), within(section("Score")).getByText("<script>alert(1)</script>")]).toEqual([null, expect.anything()]);
+    expect(within(section("Score")).getByText("backend +5 (title)").tagName).toBe("LI");
 });
 
 test("an unscored job's panel says it hasn't been scored yet", async () => {

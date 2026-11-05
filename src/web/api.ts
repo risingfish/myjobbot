@@ -29,10 +29,15 @@ export interface JobRowView {
 
 export type RescoreStart = { run: string } | { failed: true };
 
+export interface BoostDetail {
+    total: number;
+    lines: string[];
+}
+
 export interface ScoreDetail {
     total: number;
     model: number;
-    boost: string | null;
+    boost: BoostDetail | null;
     base: number | null;
     bonus: number | null;
     reasons: string[];

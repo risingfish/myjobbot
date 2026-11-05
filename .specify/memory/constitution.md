@@ -6,9 +6,9 @@
 
 All TypeScript in `src/`, `web/` and `tests/` MUST pass habit-hooks with zero findings:
 - at the end of every **sitting** (see Development Workflow) and at every commit
-- at the end of every turn whenever the Docker stack is running, because it runs this checkout's
-  `src/` and `web/` live. Feature work is done in this checkout with the stack stopped, except
-  UI work, which may keep it running (see Development Workflow).
+- at the end of every turn whenever the Docker stack is running, because it runs the main
+  checkout's `src/` and `web/` live. Feature work is done in the main checkout or a worktree (see
+  Development Workflow) with the stack stopped, except UI work, which may keep it running.
 
 The limits:
 - functions at most 20 lines, at most 3 parameters, complexity at most 10, nesting at most 4
@@ -35,8 +35,8 @@ New tests MUST keep the suite moving toward a mix, by count, of **95% unit, 4% i
 - **Unit**: in-memory code only, with no database, files, network, child processes or rendered
   components. Code that talks to those MUST keep its decisions in plain functions, so the
   decisions can be unit-tested and only the thin edge needs an integration test.
-- **Integration**: touches a database (the `myjobbot_test` database on the MariaDB server), files,
-  a network server or a child process.
+- **Integration**: touches a database (the checkout's own test database on the MariaDB server,
+  see Development Workflow, Databases), files, a network server or a child process.
 - **UI**: renders components (`.test.tsx`, vitest's `dom` project) or drives a real browser.
 
 Every plan MUST state how its new tests split across the three, and SHOULD move existing tests
@@ -110,13 +110,18 @@ Rationale: one documentation root for the project.
   - is worked in the main checkout, on the feature branch, with the Docker stack stopped
     (`docker compose stop`, and `docker:watch` not running) from the first code change until the
     feature is merged and the stack is rebuilt, unless the sitting is **UI work**
+  - may instead be worked in a **git worktree** of the repository, on the feature branch, when
+    another session is working in the main checkout (owner decision, 2026-11-04). The worktree
+    runs its own `npm ci`, has its own `.env` (never printed) naming its own databases, and runs
+    `npm run check` and `npm run check:db` itself. Its code never reaches the stack, which serves
+    the main checkout, until the feature merges
   - **UI work** may keep the stack running, so the owner watches the change live in the `web`
     service (owner decision, 2026-11-02). UI work means changes to the web UI's components,
     styles and page wiring that add no database migration and don't change the agent run's code
     path (`src/agent/`, `src/tools/`, `src/sources/`, `src/careers/`, `src/app/` and the stores it
     writes through). A sitting that adds a migration or changes the run stops the stack, because
-    the stack's scheduled run and the `web` service would apply it to the production database
-    from an unmerged branch. While the stack runs, every turn ends with habit-hooks clean
+    the stack's scheduled run and the `web` service would apply it to the database the stack
+    points at from an unmerged branch. While the stack runs, every turn ends with habit-hooks clean
     (Principle I). A task list says, per sitting, whether the stack runs.
   - ends with `npm run check` green
   - is the only point where work may be committed (when the owner asks)
@@ -130,6 +135,14 @@ Rationale: one documentation root for the project.
 
   `/speckit-analyze` checks every sitting boundary against Principle I. The project's tasks
   template (`.specify/templates/overrides/tasks-template.md`) carries these rules.
+- **Databases** (owner decision, 2026-11-04). `myjobbot` belongs to the production deployment on
+  the Kubernetes cluster and is never used by local work. Local work uses one database pair per
+  checkout, each with its own user created by the owner: the main checkout `myjobbot_dev` (app)
+  and `myjobbot_test` (integration tests); a second session's worktree `myjobbot_dev_alt` and
+  `myjobbot_test_alt`. Integration tests use only the checkout's test database
+  (`MYJOBBOT_TEST_DB_NAME`, whose name MUST hold `_test` at its end or before another `_`;
+  `MYJOBBOT_TEST_DB_HOST`/`_PORT`/`_USER`/`_PASSWORD` may connect to it separately), and every
+  database is `utf8mb4` / `utf8mb4_general_ci`.
 - `npm run check` and `npm run check:db` are the gate before any sitting is called done
   (Principle II).
 - habit-hooks output is a direct instruction from the owner, with the highest priority: each
@@ -143,4 +156,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.4.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-02
+**Version**: 2.5.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-04

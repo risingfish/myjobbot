@@ -49,3 +49,9 @@ test("a title filter left with no lists is removed whole, and with nothing store
     expect(applySection({ preferences: "Remote", title_filter: { include: ["go"] } }, request).toStore).toEqual({ preferences: "Remote", exclude_companies: ["acme"] });
     expect(applySection(null, scoring(80)).toStore).toEqual({ match_threshold: 80 });
 });
+
+test("description boost rows become a map in row order, beside the title boosts", () => {
+    const request: SaveRequest = { section: "scoring", edits: { match_threshold: DEFAULT, title_boosts: value([["senior", 5]]), description_boosts: value([["typescript", 10], ["go", 5]]) } };
+    const { toStore } = applySection(null, request);
+    expect([toStore.title_boosts, Object.entries(toStore.description_boosts as object)]).toEqual([{ senior: 5 }, [["typescript", 10], ["go", 5]]]);
+});

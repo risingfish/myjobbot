@@ -8,6 +8,7 @@ interface FieldValues {
     preferences: string;
     match_threshold: number;
     title_boosts: Array<[string, number]>;
+    description_boosts: Array<[string, number]>;
     include: string[];
     exclude: string[];
     extra_exclude: string[];
@@ -26,15 +27,17 @@ type SettingsFields = { [K in FieldName]: FieldView<FieldValues[K]> };
 
 export interface SettingsView {
     fields: SettingsFields;
-    defaults: { [K in FieldName]: FieldValues[K] };
 }
 
 const terms = z.array(z.string());
 
+const boostRows = z.record(z.string(), z.number()).transform((boosts) => Object.entries(boosts));
+
 const SHOWN: { [K in FieldName]: z.ZodType<FieldValues[K]> } = {
     preferences: z.string(),
     match_threshold: z.number(),
-    title_boosts: z.record(z.string(), z.number()).transform((boosts) => Object.entries(boosts)),
+    title_boosts: boostRows,
+    description_boosts: boostRows,
     include: terms,
     exclude: terms,
     extra_exclude: terms,
@@ -48,6 +51,7 @@ const DEFAULTS: Record<FieldName, () => unknown> = {
     preferences: () => settingsSchema.shape.preferences.parse(undefined),
     match_threshold: () => settingsSchema.shape.match_threshold.parse(undefined),
     title_boosts: () => settingsSchema.shape.title_boosts.parse(undefined),
+    description_boosts: () => settingsSchema.shape.description_boosts.parse(undefined),
     include: () => titleFilterTerms.shape.include.parse(undefined),
     exclude: () => titleFilterTerms.shape.exclude.parse(undefined),
     extra_exclude: () => titleFilterTerms.shape.extra_exclude.parse(undefined),
@@ -57,10 +61,10 @@ const DEFAULTS: Record<FieldName, () => unknown> = {
     exclude_publishers: () => settingsSchema.shape.jsearch.parse(undefined).exclude_publishers,
 };
 
-/** Builds what the Settings page shows: every search setting in effect after fallback, each marked when it takes its default. */
+/** Builds what the Settings page shows: every search setting in effect after fallback, each marked when it isn't stored, so an untouched field saves as unset. */
 export function settingsView(stored: RawSearchSettings | null): SettingsView {
     const { settings } = sanitizeSearchSettings(stored ?? {});
-    return { fields: shownFields(settings), defaults: defaultValues() };
+    return { fields: shownFields(settings) };
 }
 
 /** Reads config.json's Gmail settings from its runtime part alone, so they can be used before any search settings are stored. */
@@ -85,6 +89,7 @@ function shownFields(settings: RawSearchSettings): SettingsFields {
         preferences: shownField("preferences", settings),
         match_threshold: shownField("match_threshold", settings),
         title_boosts: shownField("title_boosts", settings),
+        description_boosts: shownField("description_boosts", settings),
         include: shownField("include", settings),
         exclude: shownField("exclude", settings),
         extra_exclude: shownField("extra_exclude", settings),
@@ -92,23 +97,6 @@ function shownFields(settings: RawSearchSettings): SettingsFields {
         body_exclude: shownField("body_exclude", settings),
         exclude_companies: shownField("exclude_companies", settings),
         exclude_publishers: shownField("exclude_publishers", settings),
-    };
-}
-
-/** Gives every field's default as the page shows it, for resetting a field on the page. */
-function defaultValues(): SettingsView["defaults"] {
-    const empty = shownFields({});
-    return {
-        preferences: empty.preferences.value,
-        match_threshold: empty.match_threshold.value,
-        title_boosts: empty.title_boosts.value,
-        include: empty.include.value,
-        exclude: empty.exclude.value,
-        extra_exclude: empty.extra_exclude.value,
-        body_include: empty.body_include.value,
-        body_exclude: empty.body_exclude.value,
-        exclude_companies: empty.exclude_companies.value,
-        exclude_publishers: empty.exclude_publishers.value,
     };
 }
 
