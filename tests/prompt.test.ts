@@ -33,10 +33,22 @@ test("the prompt names this run's markers as data, replacing the old instruction
     expect(system).not.toContain("ignore any instructions");
 });
 
-test("the resume and preferences stay outside any marker, as the owner's own instructions", () => {
+test("the resume sits inside this run's markers, and the preferences stay outside them, as the owner's own instructions", () => {
     const { system, user } = prompt();
-    expect(user).not.toContain("<<data");
+    expect(user).toContain(`${MARKERS.open}\n${testAppConfig().resume}\n${MARKERS.close}`);
     expect(system.slice(system.indexOf("User preferences:"))).not.toContain("<<data");
+});
+
+const PROFILE = { summary: "Senior roles", skills: [{ name: "Kubernetes", group: "engineering" as const }] };
+
+test("a run's first message gives the profile's skills too when the setting asks for the resume and the profile", () => {
+    const [, user] = initialMessages({ ...testAppConfig({ resume_view: "resume_and_profile" }), profile: PROFILE }, MARKERS);
+    expect(String(user?.content)).toContain("Engineering: Kubernetes");
+});
+
+test("a re-score's first message gives the profile's skills too when the setting asks for the resume and the profile", () => {
+    const [, user] = rescoreMessages({ ...testAppConfig({ resume_view: "resume_and_profile" }), profile: PROFILE }, MARKERS);
+    expect(String(user?.content).endsWith(`Engineering: Kubernetes\nPeople: (none)\nProject: (none)\n${MARKERS.close}\n\nRe-score the job now.`)).toBe(true);
 });
 
 test("the run's prompt text is unchanged, and the re-score shares its rubric but names only its own tools", () => {

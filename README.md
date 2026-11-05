@@ -15,7 +15,7 @@ npm ci
 cp .env.example .env            # set LLM_API_KEY and the MYJOBBOT_DB_* settings (see Storage)
 mkdir -p data
 cp examples/config.json data/   # runtime settings: limits, JSearch budget, job lifetimes
-cp examples/resume.md data/     # replace with your resume
+cp examples/resume.md data/     # optional: or upload your resume on the Settings page
 ```
 
 Once the database is set up (see Storage), open the web UI's **Settings** page (`npm run web`) and
@@ -206,6 +206,32 @@ How it's built:
 - **To learn React and Next.js** from this code, see
   [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
   it and ends with exercises.
+
+### Resume
+
+The **Resume** section of the Settings page, under Preferences, holds the resume the model scores
+against. Upload a Markdown, text, PDF or Word (`.docx`) file of up to 5 MB; only its text is kept
+(up to 100,000 characters), in the database, and it is shown back as plain text, never rendered.
+A scanned PDF with no text, another file type, or a file too large is refused with the reason, and
+the resume you had stays. A new upload replaces the old one. Until you upload one, runs and
+Re-score use `data/resume.md`; with neither, they stop and say a resume is needed.
+
+- **Extract profile** has the model read the uploaded resume (at most 3 minutes) and record a
+  profile: a summary written as job preferences, and your skills in three groups, Engineering,
+  People and Project, each skill once. The resume reaches the model only inside the data markers,
+  and the model's answer is checked before anything is stored; a failure changes nothing. The log
+  of the model's responses keeps only token counts for an extraction.
+- **Edit the profile**: the summary is saved when you leave it, and each skill change (add, remove,
+  move to another group) is saved at once. A skill already listed is refused. After a new upload
+  the profile says "From an earlier resume" until you extract again; **Extract again** asks first
+  when you've edited it.
+- **Use summary in Preferences** copies the summary into the Preferences box for you to edit and
+  save there; it never saves your preferences by itself.
+- **What the model reads about you**, in the Scoring section, chooses what every run and Re-score
+  gives the model: **Your resume** (the default), **Your resume and profile** (the resume, then the
+  skills by group as what to look for in a posting) or **Your profile only** (the summary and the
+  skills). Each is inside the data markers. With no profile, every choice reads the resume.
+  Measure a choice with the evals' `--view` before you switch it (see [Evals](#evals)).
 
 ### Sources
 
@@ -500,6 +526,10 @@ npm start -- eval check                             # count the files and name a
   and broke and lists those that moved; with `--against observed` it compares with production's own
   scores, leaving out cases scored from the summary or before their description arrived. It never
   prints a description; `--reasons` adds the failing attempts' reasons and gaps.
+- **What the model reads**: a profile captured while a resume profile is stored keeps it too.
+  `eval run --view resume|resume_and_profile|profile` scores with that choice (default `resume`,
+  whatever the Settings page says), the run records it and its report names it. A view that reads
+  the resume profile is refused when a case was captured without one.
 
 ### Prompt variants and series
 
@@ -522,10 +552,12 @@ npm start -- eval report <strict-run> --against <baseline-run>
 - **Drift**: a variant remembers which version of the code's prompt it was exported from. If the
   code's prompt has changed since, the run still goes ahead but warns, and its report says so.
 - **A series** runs several tests over the same cases and compares them in one report. Each test
-  is the code's prompt or a variant, optionally on another model:
+  is the code's prompt or a variant, optionally with a view after a `+` and on another model
+  after an `@` (everything after the `@` is the model, colons included):
 
   ```bash
   npm start -- eval series save rubric-try --tag smoke --repeats 3 --test now=code --test strict=strict --test big=strict@llama3-70b
+  npm start -- eval series save views --tag smoke --repeats 3 --test r=code+resume --test rp=code+resume_and_profile --test p=code+profile
   npm start -- eval series run rubric-try
   npm start -- eval series report rubric-try
   ```
@@ -615,7 +647,7 @@ helm install myjobbot oci://ghcr.io/risingfish/charts/myjobbot --version X.Y.Z \
 
 The chart runs the web UI as a Deployment and each agent run as a CronJob (`agent.schedule`, in
 `timeZone`), sharing one `/data` volume (traces and logs; `config.json` and `resume.md` are copied
-onto it at every start). With the default `ReadWriteOnce` volume, run pods are placed on the web
+onto it at every start). `resume.md` is optional once a resume is uploaded on the Settings page. With the default `ReadWriteOnce` volume, run pods are placed on the web
 pod's node. The UI answers only to `web.hosts` (default: the ingress hosts plus `localhost:8080`
 for the probes and `kubectl port-forward`). `browser.enabled` and `searxng.enabled` add the
 Playwright browser and SearXNG, wired in automatically; only this release's pods may reach the

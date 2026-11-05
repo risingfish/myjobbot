@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     agentRules: false,
     distDir: process.env.NEXT_DIST_DIR ?? ".next",
     allowedDevOrigins: devOrigins(process.env.MYJOBBOT_HOSTS),
+    experimental: { serverActions: { bodySizeLimit: "6mb" } },
 };
 
 export default nextConfig;

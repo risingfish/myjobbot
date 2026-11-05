@@ -2,6 +2,7 @@ import type { ApiCallsTable, CareersAuditTable } from "./schema/careers.js";
 import type { GmailAlertStateTable, GmailConnectionTable } from "./schema/gmail.js";
 import type { CompaniesTable, JobsTable, VerdictsTable } from "./schema/jobs.js";
 import type { RescoreRunsTable, RescoreStepsTable } from "./schema/rescore.js";
+import type { ResumeProfilesTable, ResumesTable } from "./schema/resume.js";
 import type { UserSettingsTable, UserSourcesTable, UsersTable } from "./schema/users.js";
 
 export interface Database {
@@ -17,4 +18,6 @@ export interface Database {
     user_sources: UserSourcesTable;
     rescore_runs: RescoreRunsTable;
     rescore_steps: RescoreStepsTable;
+    resumes: ResumesTable;
+    resume_profiles: ResumeProfilesTable;
 }

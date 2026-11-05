@@ -63,7 +63,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
     const logs = openRunLogs(loaded);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
-        const config = await settingsForRun(loaded, stores.searchSettings, logs.trace);
+        const config = await settingsForRun(loaded, stores, logs.trace);
         return await runWithStores(config, seams, { logs, stores, key: secretKeyStatus(environment) });
     } finally {
         await stores.close();

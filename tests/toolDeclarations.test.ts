@@ -5,6 +5,12 @@ import { caseStore, caseTools } from "../src/evals/caseTools.js";
 import { parseFile } from "../src/evals/format.js";
 import { oneJobStore } from "../src/rescore/oneJobStore.js";
 import { rescoreTools } from "../src/rescore/tools.js";
+import { dataMarkers } from "../src/agent/markers.js";
+import type { ChatFn } from "../src/agent/llm.js";
+import type { Tool } from "../src/tools/tool.js";
+import { extractProfile } from "../src/resumeProfile/extract.js";
+import { textReply } from "./helpers/chat.js";
+import { memoryTrace } from "./helpers/trace.js";
 import { buildTools } from "../src/tools/registry.js";
 import { JOB } from "./helpers/careersLookup.js";
 import { evalCase } from "./helpers/evalFixtures.js";
@@ -12,7 +18,17 @@ import { testAppSettings } from "./helpers/config.js";
 import { testContext } from "./helpers/context.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
-test("exactly the tools that return outside text declare it, an eval case's own included", () => {
+async function profileTools(): Promise<Tool[]> {
+    let offered: Tool[] = [];
+    const chat: ChatFn = async (_messages, tools) => {
+        offered = tools;
+        return textReply("no");
+    };
+    await extractProfile({ text: "" }, { chat, trace: memoryTrace(), markers: dataMarkers("profile-1"), limits: testAppSettings().agent });
+    return offered;
+}
+
+test("exactly the tools that return outside text declare it, an eval case's and the profile extraction's own included", async () => {
     const ports = { search: async () => [], open: () => Promise.reject(new Error("unused")), audit: async () => {}, forget: async () => {} };
     const key = { ats: "greenhouse", jobId: "1" };
     const rescoring = rescoreTools({ store: oneJobStore(memoryStores().jobStore, key), key, config: testAppSettings(), now: () => new Date(), runId: "rescore-1" });
@@ -24,5 +40,9 @@ test("exactly the tools that return outside text declare it, an eval case's own 
     expect(evaluating.map((tool) => [tool.name, tool.outsideText])).toEqual([
         ["get_job", true],
         ["record_matches", false],
+    ]);
+    expect((await profileTools()).map((tool) => [tool.name, tool.outsideText])).toEqual([
+        ["get_resume", true],
+        ["record_profile", false],
     ]);
 });

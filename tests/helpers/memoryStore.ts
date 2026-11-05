@@ -2,6 +2,7 @@ import { splitSettings } from "../../src/config/searchSettings.js";
 import { sourceParts, type JobSource } from "../../src/db/jobSource.js";
 import { jobRowSchema, toParams } from "../../src/db/rows.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { MemoryResumeStore } from "./memoryResumeStore.js";
 import type { ApiCallLog, FoundDescription, JobKey, JobRow, JobStore, Stores, Verdict, VerdictStamp } from "../../src/db/store.js";
 import { companyKeys } from "../../src/companies/keys.js";
 import { normalizeCompany } from "../../src/jobs/company.js";
@@ -158,7 +159,7 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), close };
+    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), resume: new MemoryResumeStore(), close };
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): Stores {

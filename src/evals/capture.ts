@@ -48,9 +48,9 @@ export function buildCase(input: CaseInput): Parsed<EvalCase> {
     return parseFile("case", raw);
 }
 
-/** Gives the profile cases are captured against, named by its resume, preferences and thresholds. */
+/** Gives the profile cases are captured against, named by its resume, preferences, thresholds and, when there is one, the resume profile. */
 export function profileOf(config: AppConfig, capturedAt: string): { id: string; profile: Profile } {
-    const fields = { resume: config.resume, preferences: config.settings.preferences, matchThreshold: config.settings.match_threshold, ghostThresholdDays: config.settings.ghost_threshold_days };
+    const fields = { resume: config.resume, preferences: config.settings.preferences, matchThreshold: config.settings.match_threshold, ghostThresholdDays: config.settings.ghost_threshold_days, ...(config.profile === null ? {} : { resumeProfile: config.profile }) };
     return { id: contentId(fields), profile: { schema: 1, ...fields, capturedAt } };
 }
 

@@ -51,7 +51,7 @@ async function checkCommand({ files, port }: Context): Promise<number> {
 async function captureCommand({ environment, files, port }: Context, args: string[]): Promise<number> {
     const stores = await openStores(parseDbSettings(environment));
     try {
-        const config = await settingsForRun(loadConfig(environment), stores.searchSettings, UNTRACED);
+        const config = await settingsForRun(loadConfig(environment), stores, UNTRACED);
         return await captureCases(args, { stores, files, port, config, now: () => new Date(), print: (line) => console.log(line) });
     } finally {
         await stores.close();
@@ -77,7 +77,7 @@ function seriesCommand(context: Context, args: string[]): Promise<number> {
 async function withRunDeps({ environment, files, port }: Context, use: (deps: RunDeps) => Promise<number>): Promise<number> {
     const stores = await openStores(parseDbSettings(environment));
     try {
-        const config = await settingsForRun(loadConfig(environment), stores.searchSettings, UNTRACED);
+        const config = await settingsForRun(loadConfig(environment), stores, UNTRACED);
         const chatFor = (model: string) => (log: Trace) => createChat({ ...config.env, LLM_MODEL: model }, log);
         return await use({ files, experiments: new ExperimentFiles(port), config, chatFor, now: () => new Date(), random: Math.random, gitCommit, print: (line) => console.log(line) });
     } finally {

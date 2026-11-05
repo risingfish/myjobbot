@@ -15,7 +15,7 @@ export const TEST_SEARCH = { name: "Backend remote", query: "senior backend engi
 
 export function testAppConfig(overrides: Record<string, unknown> = {}): AppConfig {
     const env = envSchema.parse(LLM_ENV);
-    return { env, settings: testAppSettings(overrides), resume: "# Jane Doe\nSenior backend engineer, Go and TypeScript.\n", dataDir: "unused" };
+    return { env, settings: testAppSettings(overrides), resume: "# Jane Doe\nSenior backend engineer, Go and TypeScript.\n", profile: null, dataDir: "unused" };
 }
 
 export const FULL_CONFIG = {

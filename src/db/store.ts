@@ -3,6 +3,7 @@ import type { CompanyStore } from "./companyStore.js";
 import type { JobSource } from "./jobSource.js";
 import type { CareersStore } from "./careersStore.js";
 import type { RescoreLogStore } from "./rescoreLogStore.js";
+import type { ResumeStore } from "./resumeStore.js";
 import type { SearchSettingsStore } from "./searchSettingsStore.js";
 import type { SourceStore } from "./sourceStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
@@ -163,5 +164,6 @@ export interface Stores {
     companies: CompanyStore;
     searchSettings: SearchSettingsStore;
     sources: SourceStore;
+    resume: ResumeStore;
     close(): Promise<void>;
 }

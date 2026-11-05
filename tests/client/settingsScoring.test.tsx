@@ -18,10 +18,13 @@ test("the Scoring section saves the threshold once it is left, with no Save butt
     expect([save.mock.calls.length, screen.queryByRole("button", { name: /^Save/ })]).toEqual([0, null]);
     await user.tab();
     expect(await screen.findByText("Too big: expected number to be <=100")).toBeTruthy();
-    expect(save).toHaveBeenCalledWith(null, { section: "scoring", edits: { match_threshold: { kind: "value", value: 150 }, title_boosts: { kind: "default" }, description_boosts: { kind: "value", value: [["go", 5]] } } });
+    expect(save).toHaveBeenCalledWith(null, { section: "scoring", edits: { match_threshold: { kind: "value", value: 150 }, resume_view: { kind: "default" }, title_boosts: { kind: "default" }, description_boosts: { kind: "value", value: [["go", 5]] } } });
     expect((threshold as HTMLInputElement).value).toBe("150");
     expect([screen.queryAllByRole("button", { name: /^Reset/ }), screen.queryAllByText(/\(default\)/)]).toEqual([[], []]);
     await user.clear(threshold);
     await user.type(threshold, "90{Enter}");
     expect(await screen.findByText("Couldn't save — try again")).toBeTruthy();
+    save.mockResolvedValueOnce({ ok: true });
+    await user.selectOptions(screen.getByLabelText("What the model reads about you"), "Your resume and profile");
+    expect(save).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ edits: expect.objectContaining({ resume_view: { kind: "value", value: "resume_and_profile" } }) }));
 });

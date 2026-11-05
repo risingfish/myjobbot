@@ -11,12 +11,13 @@ export function reportLines(report: RunReport, comparison: RunComparison | Obser
     return [headerLine(report), totalsLine(report), "cases:", ...caseLines(report.rows, reasons), ...(unstable.length === 0 ? [] : [`unstable (mixed or range ≥ 10): ${unstable.map((row) => `${row.id} (${row.range?.min ?? "?"}-${row.range?.max ?? "?"})`).join(", ")}`]), ...(report.changedKeys.length === 0 ? [] : [`answer key changed since the run: ${report.changedKeys.join(", ")}`]), ...(comparison === null ? [] : comparisonLines(comparison))];
 }
 
-/** Names the run, its model, prompt, size, and whether it ended. */
+/** Names the run, its model, prompt, size, what the model read about the owner, and whether it ended. */
 function headerLine({ run }: RunReport): string {
     const prompts = Object.values(run.prompts);
     const prompt = prompts.length === 1 ? `prompt ${prompts[0]}` : `${prompts.length} prompts`;
     const variant = run.variant === undefined || run.variant === null ? "" : ` · variant ${run.variant}${run.promptChanged === true ? " · prompt changed since export" : ""}`;
-    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${variant}${run.endedAt === null ? " · unfinished" : ""}`;
+    const view = run.view === undefined || run.view === "resume" ? "" : ` · view ${run.view}`;
+    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${variant}${view}${run.endedAt === null ? " · unfinished" : ""}`;
 }
 
 /** Gives the pass rate, how many cases have answer keys, and the tokens and time used. */

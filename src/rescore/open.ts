@@ -41,7 +41,7 @@ export async function openRescore(environment: Environment, stores: Stores, onLi
     const loaded = loadConfig(environment);
     const logs = openRunLogs(loaded);
     const fallbacks = fallbackCounter(logs.trace);
-    const config = await settingsForRun(loaded, stores.searchSettings, fallbacks.trace);
+    const config = await settingsForRun(loaded, stores, fallbacks.trace);
     const log = new RescoreLog({ store: stores.rescoreLog, runId: logs.runId, startedAt: new Date(), trace: logs.trace, clock: () => new Date(), onLine });
     const trace = stepsFromTrace(logs.trace, log);
     const chat = createChat(config.env, logs.llm);

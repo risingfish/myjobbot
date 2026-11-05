@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseJson } from "./parse.js";
+import type { ProfileContent } from "../db/resumeStore.js";
 import { envSchema, type Env, type Settings } from "./schema.js";
 
 export type Environment = Readonly<Record<string, string | undefined>>;
@@ -8,7 +9,7 @@ export type Environment = Readonly<Record<string, string | undefined>>;
 export interface LoadedConfig {
     env: Env;
     fileRaw: unknown;
-    resume: string;
+    resume: string | null;
     dataDir: string;
 }
 
@@ -16,14 +17,22 @@ export interface AppConfig {
     env: Env;
     settings: Settings;
     resume: string;
+    profile: ProfileContent | null;
     dataDir: string;
 }
 
-/** Validates the environment and reads config.json and the resume from the data folder, leaving config.json to be checked once the stored search settings are joined to it. */
+export type Owner = Pick<AppConfig, "resume" | "profile">;
+
+/** Validates the environment and reads config.json and any resume file from the data folder, leaving config.json to be checked once the stored search settings are joined to it. */
 export function loadConfig(environment: Environment): LoadedConfig {
     const env = envSchema.parse(environment);
     const dataDir = env.MYJOBBOT_DATA_DIR;
-    return { env, fileRaw: loadFileConfig(dataDir), resume: readText(dataDir, "resume.md"), dataDir };
+    return { env, fileRaw: loadFileConfig(dataDir), resume: readResumeFile(dataDir), dataDir };
+}
+
+/** Reads the data folder's resume.md, the resume used until one is uploaded, or null when there is none. */
+export function readResumeFile(dataDir: string): string | null {
+    return existsSync(join(dataDir, "resume.md")) ? readText(dataDir, "resume.md") : null;
 }
 
 /** Reads config.json from the data folder as raw JSON, for readers such as the web UI that join it to the stored search settings themselves. */
