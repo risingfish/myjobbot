@@ -594,7 +594,9 @@ The container runs as uid 1000. If your server user has a different uid, run
 `sudo chown -R 1000:1000 data`. If the container can't resolve the LLM host (LAN-only DNS),
 add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yaml`.
 
-`tests/docker.sh` builds the image and checks the container's behaviour (needs Docker).
+`tests/docker.sh` builds the image and checks the container's behaviour (needs Docker). Its web
+check uses this checkout's test database, chosen as the integration tests choose it
+(`MYJOBBOT_TEST_DB_*`, default `myjobbot_test`).
 
 ## Deploy with Kubernetes
 

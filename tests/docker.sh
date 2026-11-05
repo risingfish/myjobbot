@@ -4,16 +4,30 @@ cd "$(dirname "$0")/.."
 
 IMAGE=myjobbot:test
 
-# The web service needs the database. Pass only the connection lines from .env, always pointed at
-# the test database, and never print them.
-db_env=$(mktemp)
-trap 'rm -f "$db_env"' EXIT
-grep -E '^MYJOBBOT_DB_(HOST|PORT|USER|PASSWORD)=' .env > "$db_env" 2>/dev/null || true
-echo "MYJOBBOT_DB_NAME=myjobbot_test" >> "$db_env"
-BAD_LLM=(-e LLM_BASE_URL=not-a-url -e LLM_MODEL=m -e LLM_API_KEY=k)
-
 ok() { echo "ok - $1"; }
 fail() { echo "not ok - $1" >&2; exit 1; }
+
+setting() {
+  local line
+  line=$(grep -m1 "^$1=" .env 2>/dev/null || true)
+  line=${line#*=}
+  printf '%s' "${line%$'\r'}"
+}
+
+# The web service needs the database. Pass only the connection settings, pointed at this checkout's
+# test database by the integration tests' own rules (tests/helpers/testDb.ts), and never print them.
+db_env=$(mktemp)
+trap 'rm -f "$db_env"' EXIT
+test_db=$(setting MYJOBBOT_TEST_DB_NAME)
+test_db=${test_db:-myjobbot_test}
+[[ "$test_db" =~ _test(_|$) ]] || fail "refusing to run against $test_db: the test database name must hold _test"
+for key in HOST PORT USER PASSWORD; do
+  value=$(setting "MYJOBBOT_TEST_DB_$key")
+  [ -n "$value" ] || value=$(setting "MYJOBBOT_DB_$key")
+  if [ -n "$value" ]; then printf 'MYJOBBOT_DB_%s=%s\n' "$key" "$value" >> "$db_env"; fi
+done
+echo "MYJOBBOT_DB_NAME=$test_db" >> "$db_env"
+BAD_LLM=(-e LLM_BASE_URL=not-a-url -e LLM_MODEL=m -e LLM_API_KEY=k)
 
 expect_exit() {
   local want=$1 pattern=$2 name=$3; shift 3
