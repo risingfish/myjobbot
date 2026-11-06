@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import type { AuthContext } from "../../src/accounts/flows/context.js";
+import type { AuthContext, MailSlot } from "../../src/accounts/flows/context.js";
+import { mailSlot } from "../../src/mail/fromEnv.js";
 import { cookieOptions, type CookieSpec } from "../../src/web/security/cookies.js";
 import { parseBaseUrl } from "../../src/web/security/baseUrl.js";
 import { openedStores } from "./database.js";
@@ -18,7 +19,15 @@ export function webSettings(): WebSettings | null {
     return base.ok ? { url: base.url, trustedProxies: base.trustedProxies, cookies: cookieOptions(base.url) } : null;
 }
 
-/** Returns what the account flows run against: the stores, the clock and a secure random source. */
+const cache = globalThis as typeof globalThis & { __myjobbotMail?: MailSlot | null };
+
+/** Returns the account mailer, built once per process from the mail settings and the public address. */
+function mail(): MailSlot | null {
+    if (cache.__myjobbotMail === undefined) cache.__myjobbotMail = mailSlot(process.env, webSettings()?.url.origin ?? null);
+    return cache.__myjobbotMail;
+}
+
+/** Returns what the account flows run against: the stores, the clock, a secure random source and the mailer. */
 export async function authContext(): Promise<AuthContext> {
-    return { stores: await openedStores(), now: () => new Date().toISOString(), random: randomBytes };
+    return { stores: await openedStores(), now: () => new Date().toISOString(), random: randomBytes, mail: mail() };
 }

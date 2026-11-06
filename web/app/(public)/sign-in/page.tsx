@@ -17,6 +17,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
                 <h2>Sign in</h2>
             </header>
             <SignInForm next={next} />
+            <footer>
+                <small>
+                    Have a code from an admin? <a href="/create-account">Create an account</a>
+                </small>
+            </footer>
         </article>
     );
 }

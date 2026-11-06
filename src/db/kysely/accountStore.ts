@@ -1,5 +1,6 @@
 import type { Kysely, Selectable } from "kysely";
-import type { Account, AccountStore, OwnerLogin, SecurityEvent } from "../accountStore.js";
+import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, SecurityEvent } from "../accountStore.js";
+import { createAccountIn, createAccountSafely } from "./accountCreation.js";
 import type { Database } from "../schema.js";
 import type { UsersTable } from "../schema/users.js";
 import { OWNER_ID } from "../searchSettingsStore.js";
@@ -39,6 +40,27 @@ export class KyselyAccountStore implements AccountStore {
     /** Says whether an account holds the admin mark. */
     async isAdmin(id: number): Promise<boolean> {
         return (await this.account(id))?.isAdmin ?? false;
+    }
+
+    /** Makes an account with an unspent creation code, spending it in the same transaction. */
+    async createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult> {
+        return createAccountSafely(() => this.db.transaction().execute((trx) => createAccountIn(trx, { account, codeDigest, now })));
+    }
+
+    /** Lists every account with an email, oldest first. */
+    async accounts(): Promise<Account[]> {
+        const rows = await this.db.selectFrom("users").selectAll().where("email", "is not", null).orderBy("id").execute();
+        return rows.map(fromRow);
+    }
+
+    /** Sets or clears an account's admin mark, refusing to clear the last one; the admin rows are locked so two removals can't leave none. */
+    async setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin"> {
+        return this.db.transaction().execute(async (trx) => {
+            const admins = await trx.selectFrom("users").select("id").where("is_admin", "=", 1).forUpdate().execute();
+            if (!admin && admins.length === 1 && admins[0]?.id === userId) return "last_admin";
+            await trx.updateTable("users").set({ is_admin: admin ? 1 : 0 }).where("id", "=", userId).execute();
+            return "ok";
+        });
     }
 
     /** Stores one security event. */

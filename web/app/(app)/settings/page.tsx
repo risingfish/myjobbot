@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { keyChanged } from "../../../../src/gmail/connection.js";
 import { gmailPanelView, type GmailPanelView } from "../../../../src/web/gmailPanel.js";
+import { AdminSection } from "../../../components/settings/AdminSection.js";
 import { GmailPanel } from "../../../components/settings/GmailPanel.js";
 import { SettingsNotices } from "../../../components/settings/SettingsNotices.js";
 import { FiltersSection } from "../../../components/settings/FiltersSection.js";
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 type SettingsState = Awaited<ReturnType<typeof getSettingsState>>;
 
-/** Renders the Settings page: what the stored search settings report, the saved sources, an editor for each section of the search settings, the resume, and the Gmail connection, even before any search settings are stored. */
+/** Renders the Settings page: what the stored search settings report, the saved sources, an editor for each section of the search settings, the resume, the Gmail connection and, for an admin, the admin section, even before any search settings are stored. */
 export default async function SettingsPage() {
     const state = await getSettingsState();
     return (
@@ -30,6 +31,7 @@ export default async function SettingsPage() {
             <ScoringSection view={state.view} />
             <FiltersSection view={state.view} />
             <GmailPanel view={await gmailView(state)} />
+            {state.admin !== null && <AdminSection accounts={state.admin.accounts} />}
         </main>
     );
 }

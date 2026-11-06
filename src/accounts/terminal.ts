@@ -4,6 +4,8 @@ import { Writable } from "node:stream";
 import type { Environment } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
+import { mailSlot } from "../mail/fromEnv.js";
+import { parseBaseUrl } from "../web/security/baseUrl.js";
 import { accountCommand, type AccountIo } from "./cli.js";
 
 /** Asks a question at the terminal without echoing what is typed. */
@@ -30,8 +32,10 @@ function terminalIo(): AccountIo {
 /** Runs the account command against the configured database, closing it afterwards. */
 export async function runAccountCommand(environment: Environment, args: string[]): Promise<number> {
     const stores = await openStores(parseDbSettings(environment));
+    const base = parseBaseUrl(environment);
+    const mail = mailSlot(environment, base.ok ? base.url.origin : null);
     try {
-        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes }, args, terminalIo());
+        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail }, args, terminalIo());
     } finally {
         await stores.close();
     }

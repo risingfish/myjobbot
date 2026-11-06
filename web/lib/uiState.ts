@@ -7,6 +7,7 @@ import { openedStores } from "./database.js";
 import { requireSession } from "./session.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { ResumeProfile } from "../../src/db/resumeStore.js";
+import type { Account } from "../../src/db/accountStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
@@ -42,6 +43,7 @@ interface SettingsState {
     sources: SourcesView;
     resume: ResumeShown;
     profile: ResumeProfile | null;
+    admin: { accounts: Account[] } | null;
 }
 
 const cache = globalThis as typeof globalThis & { __myjobbotKey?: SecretKeyStatus };
@@ -71,15 +73,16 @@ export async function getUiState(): Promise<UiState> {
     return { views: opened.jobViews, rescoreLog: opened.rescoreLog, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
 }
 
-/** Returns what the Settings page shows for one request: the search settings in effect, what they report, the resume in use, its profile and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
+/** Returns what the Settings page shows for one request: the search settings in effect, what they report, the resume in use, its profile, the Gmail stores and, for an admin, the accounts, without running the cross-setting rules, so it loads with nothing stored. */
 export async function getSettingsState(): Promise<SettingsState> {
-    await requireSession();
+    const { account } = await requireSession();
     const { stores: opened, key } = await getStores();
+    const admin = account.isAdmin ? { accounts: await opened.accounts.accounts() } : null;
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
     const [uploaded, profile] = await Promise.all([opened.resume.currentResume(OWNER_ID), opened.resume.profile(OWNER_ID)]);
     const resume = resumeShown(uploaded, readResumeFile(dataDir()));
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile };
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile, admin };
 }
 
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */

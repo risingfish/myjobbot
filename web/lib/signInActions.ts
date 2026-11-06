@@ -1,37 +1,53 @@
 "use server";
 
-import { cookies, headers } from "next/headers.js";
+import { cookies } from "next/headers.js";
 import { redirect } from "next/navigation.js";
+import { createAccount } from "../../src/accounts/flows/createAccount.js";
 import { signInWithPassword, signOut } from "../../src/accounts/flows/signIn.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
-import { tokenDigest } from "../../src/accounts/tokens.js";
-import { clientAddress } from "../../src/web/security/clientAddress.js";
-import { authContext, webSettings, type WebSettings } from "./authDeps.js";
+import { refusedField, type AccountField } from "../../src/web/accountForms.js";
+import { authContext, webSettings } from "./authDeps.js";
 import { guarded } from "./guard.js";
+import { heldDigest, requestAddress, setSessionCookies } from "./requestAuth.js";
 
 export interface SignInState {
     message: string | null;
 }
 
-/** Returns the digest of the sign-in cookie the browser holds, or null. */
-async function heldDigest(settings: WebSettings): Promise<string | null> {
-    const value = (await cookies()).get(settings.cookies.session.name)?.value;
-    return value === undefined ? null : tokenDigest(value);
+export interface CreateAccountState {
+    message: string | null;
+    field: AccountField | null;
+    email: string;
+    name: string;
+}
+
+/** Reads one text field from a submitted form. */
+function field(form: FormData, name: string): string {
+    return String(form.get(name) ?? "");
 }
 
 /** Signs in with the email and password from the sign-in form, then goes to the page asked for; every failure answers the same. */
 async function signInWithPasswordAction(_previous: SignInState, form: FormData): Promise<SignInState> {
     const settings = webSettings();
     if (settings === null) return { message: MESSAGES.signin_failed };
-    const address = clientAddress((await headers()).get("x-forwarded-for"), settings.trustedProxies);
-    const input = { email: String(form.get("email") ?? ""), password: String(form.get("password") ?? ""), address, heldDigest: await heldDigest(settings) };
+    const input = { email: field(form, "email"), password: field(form, "password"), address: await requestAddress(settings), heldDigest: await heldDigest(settings) };
     const answer = await signInWithPassword(await authContext(), input);
     if (!answer.ok) return { message: answer.message };
-    const jar = await cookies();
-    jar.set(settings.cookies.session.name, answer.cookies.session, settings.cookies.session.options);
-    jar.set(settings.cookies.csrf.name, answer.cookies.csrf, settings.cookies.csrf.options);
-    redirect(safeReturnPath(String(form.get("next") ?? "")));
+    await setSessionCookies(settings, answer.cookies);
+    redirect(safeReturnPath(field(form, "next")));
+}
+
+/** Makes an account from the public form with an admin's code, signs it in and goes to the Account page; a refusal keeps the email and name typed. */
+async function createAccountAction(_previous: CreateAccountState, form: FormData): Promise<CreateAccountState> {
+    const typed = { email: field(form, "email"), name: field(form, "name") };
+    const settings = webSettings();
+    if (settings === null) return { message: MESSAGES.code_refused, field: "code", ...typed };
+    const input = { ...typed, password: field(form, "password"), code: field(form, "code").trim(), address: await requestAddress(settings), heldDigest: await heldDigest(settings) };
+    const answer = await createAccount(await authContext(), input);
+    if (!answer.ok) return { message: answer.message, field: refusedField(answer.message), ...typed };
+    await setSessionCookies(settings, answer.cookies);
+    redirect("/account");
 }
 
 /** Ends this browser's sign-in on the server, forgets its cookies and goes to the sign-in page. */
@@ -44,4 +60,5 @@ async function signOutAction(): Promise<void> {
 }
 
 export const signInWithPasswordForm = guarded(signInWithPasswordAction, { public: true });
+export const createAccountForm = guarded(createAccountAction, { public: true });
 export const signOutNow = guarded(signOutAction, {});

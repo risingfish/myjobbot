@@ -1,4 +1,4 @@
-import type { Account, AccountStore, OwnerLogin, SecurityEvent } from "../../src/db/accountStore.js";
+import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, SecurityEvent } from "../../src/db/accountStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { upsertMethod, type AuthTables, type MemoryUser } from "./memoryAuthTables.js";
 
@@ -38,6 +38,28 @@ export class MemoryAccountStore implements AccountStore {
 
     async isAdmin(id: number): Promise<boolean> {
         return (await this.account(id))?.isAdmin ?? false;
+    }
+
+    async createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult> {
+        if (this.tables.users.some((user) => user.emailKey === account.emailKey)) return { kind: "taken" };
+        const code = this.tables.codes.find((row) => row.digest === codeDigest && row.usedBy === null && row.expiresAt > now);
+        if (code === undefined) return { kind: "refused" };
+        const id = Math.max(0, ...this.tables.users.map((user) => user.id)) + 1;
+        this.tables.users.push({ id, name: account.name, createdAt: now, email: account.email, emailKey: account.emailKey, isAdmin: false });
+        upsertMethod(this.tables, { userId: id, kind: "password", enabled: true, ready: true, passwordDigest: account.passwordDigest, updatedAt: now });
+        code.usedBy = id;
+        return { kind: "created", userId: id };
+    }
+
+    async accounts(): Promise<Account[]> {
+        return this.tables.users.filter((user) => user.email !== null).map(toAccount);
+    }
+
+    async setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin"> {
+        const admins = this.tables.users.filter((user) => user.isAdmin);
+        if (!admin && admins.length === 1 && admins[0]?.id === userId) return "last_admin";
+        for (const user of this.tables.users) if (user.id === userId) user.isAdmin = admin;
+        return "ok";
     }
 
     async recordEvent(event: SecurityEvent): Promise<void> {

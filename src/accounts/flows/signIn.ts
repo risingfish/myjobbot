@@ -13,7 +13,7 @@ export interface PasswordSignIn {
     heldDigest: string | null;
 }
 
-interface SessionCookies {
+export interface SessionCookies {
     session: string;
     csrf: string;
 }
@@ -48,7 +48,7 @@ async function passwordMatches(ctx: AuthContext, account: Account | null, passwo
 }
 
 /** Starts a new sign-in for an account, ending the one the browser held, and returns its cookie values. */
-async function startSession(ctx: AuthContext, input: { userId: number; address: string; heldDigest: string | null }): Promise<SessionCookies> {
+export async function startSession(ctx: AuthContext, input: { userId: number; address: string; heldDigest: string | null }): Promise<SessionCookies> {
     const now = ctx.now();
     if (input.heldDigest !== null) await ctx.stores.sessions.end(input.heldDigest, now);
     await ctx.stores.sessions.pruneEnded(now);

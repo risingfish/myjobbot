@@ -19,16 +19,24 @@ export interface MemoryMethod {
     updatedAt: string;
 }
 
+export interface MemoryCode {
+    digest: string;
+    createdBy: number;
+    expiresAt: string;
+    usedBy: number | null;
+}
+
 export interface AuthTables {
     users: MemoryUser[];
     methods: MemoryMethod[];
     sessions: Session[];
     attempts: Array<AttemptKey & { at: string }>;
     events: SecurityEvent[];
+    codes: MemoryCode[];
 }
 
 export function newAuthTables(): AuthTables {
-    return { users: [], methods: [], sessions: [], attempts: [], events: [] };
+    return { users: [], methods: [], sessions: [], attempts: [], events: [], codes: [] };
 }
 
 export function upsertMethod(tables: AuthTables, method: MemoryMethod): void {

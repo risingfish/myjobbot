@@ -2,33 +2,19 @@
 
 import { useActionState } from "react";
 import { signInWithPasswordForm, type SignInState } from "../../lib/signInActions.js";
+import { Field } from "./Field.js";
 
 const READY: SignInState = { message: null };
 
-/** Renders the email and password fields, both marked when a sign-in was refused. */
-function SignInFields({ refused }: { refused: boolean }) {
-    return (
-        <>
-            <label>
-                Email
-                <input name="email" type="email" autoComplete="username" required aria-invalid={refused || undefined} />
-            </label>
-            <label>
-                Password
-                <input name="password" type="password" autoComplete="current-password" required aria-invalid={refused || undefined} />
-            </label>
-        </>
-    );
-}
-
-/** Renders the sign-in form, with the one fixed answer a refused sign-in gets. */
+/** Renders the sign-in form; a refusal marks both fields and shows its one fixed message under the password. */
 export function SignInForm({ next }: { next: string }) {
     const [state, signIn, signingIn] = useActionState(signInWithPasswordForm, READY);
+    const refused = state.message !== null;
     return (
         <form action={signIn}>
             <input type="hidden" name="next" value={next} />
-            <SignInFields refused={state.message !== null} />
-            {state.message !== null && <small role="alert">{state.message}</small>}
+            <Field name="email" label="Email" type="email" autoComplete="username" required invalid={refused} />
+            <Field name="password" label="Password" type="password" autoComplete="current-password" required invalid={refused} note={state.message} />
             <button type="submit" aria-busy={signingIn} disabled={signingIn}>
                 Sign in
             </button>

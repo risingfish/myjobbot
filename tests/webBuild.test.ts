@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { expect, test } from "vitest";
 
 const AGENT_SETTINGS = /^(LLM_|JSEARCH_API_KEY$|MYJOBBOT_|NODE_ENV$)/;
-const ROUTES = ["/", "/recommended", "/applied", "/jobs", "/reasoning", "/settings", "/sign-in", "/_not-found", "/api/rescores/[id]"];
+const ROUTES = ["/", "/recommended", "/applied", "/jobs", "/reasoning", "/settings", "/account", "/sign-in", "/create-account", "/_not-found", "/api/rescores/[id]"];
 const MAY_PRERENDER = new Set(["/_not-found", "/api/rescores/[id]"]);
 
 function buildEnv(): NodeJS.ProcessEnv {

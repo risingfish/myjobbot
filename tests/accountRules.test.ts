@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { checkEmail, normalizeEmail } from "../src/accounts/emails.js";
+import { checkName } from "../src/accounts/names.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { checkPassword } from "../src/accounts/passwordRule.js";
 import { safeReturnPath } from "../src/accounts/returnPath.js";
@@ -33,4 +34,10 @@ test("a return path on the UI itself is kept", () => {
 
 test("anything that could leave the UI, carries control characters, or is over 512 characters returns to the home page", () => {
     for (const next of ["//evil.test", "/\\evil.test", "https://evil.test", "%2F%2Fevil.test", "/%2F%2Fevil.test", "/x%0d%0a", `/${"a".repeat(512)}`, "", null, undefined, "%E0%A4%A"]) expect(safeReturnPath(next)).toBe("/");
+});
+
+test("a name is 1 to 100 characters with no line breaks or control characters, trimmed", () => {
+    expect(checkName("  Ada Lovelace  ")).toEqual({ ok: true, name: "Ada Lovelace" });
+    expect(checkName("x".repeat(100))).toEqual({ ok: true, name: "x".repeat(100) });
+    for (const name of ["", "   ", "x".repeat(101), "Ada\nBcc: x", "Ada\u0000"]) expect(checkName(name)).toEqual({ ok: false, message: MESSAGES.name_invalid });
 });

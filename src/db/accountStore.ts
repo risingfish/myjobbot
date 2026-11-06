@@ -13,6 +13,15 @@ export interface OwnerLogin {
     passwordDigest: string;
 }
 
+export interface NewAccount {
+    email: string;
+    emailKey: string;
+    name: string;
+    passwordDigest: string;
+}
+
+export type CreateResult = { kind: "created"; userId: number } | { kind: "refused" } | { kind: "taken" };
+
 export interface SecurityEvent {
     userId: number;
     at: string;
@@ -27,4 +36,7 @@ export interface AccountStore {
     account(id: number): Promise<Account | null>;
     isAdmin(id: number): Promise<boolean>;
     recordEvent(event: SecurityEvent): Promise<void>;
+    createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult>;
+    accounts(): Promise<Account[]>;
+    setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
 }
