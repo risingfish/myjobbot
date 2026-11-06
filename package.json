@@ -56,9 +56,9 @@
         "check": "npm run typecheck && npm test && habit-hooks",
         "check:db": "npm run test:db",
         "format": "prettier --write .",
-        "web": "NEXT_TELEMETRY_DISABLED=1 next dev web --port ${MYJOBBOT_PORT:-8080}",
+        "web": "NODE_OPTIONS=--disable-warning=ExperimentalWarning NEXT_TELEMETRY_DISABLED=1 next dev web --port ${MYJOBBOT_PORT:-8080}",
         "web:build": "NEXT_TELEMETRY_DISABLED=1 next build web",
-        "web:start": "NEXT_TELEMETRY_DISABLED=1 next start web --port ${MYJOBBOT_PORT:-8080}",
+        "web:start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning NEXT_TELEMETRY_DISABLED=1 next start web --port ${MYJOBBOT_PORT:-8080}",
         "docker:up": "docker compose up -d --build",
         "docker:watch": "docker compose up -d --build && docker compose watch --no-up"
     }

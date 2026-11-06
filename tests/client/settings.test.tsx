@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { screen } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import SettingsPage, { metadata } from "../../web/app/settings/page.js";
+import SettingsPage, { metadata } from "../../web/app/(app)/settings/page.js";
 import { memoryStores } from "../helpers/memoryStore.js";
 
 vi.mock("../../web/lib/uiState.js", async () => {

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { runAccountCommand } from "./accounts/terminal.js";
 import { importSqlite } from "./app/importSqlite.js";
 import { runOnce } from "./app/run.js";
 import type { Environment } from "./config/load.js";
@@ -12,11 +13,11 @@ import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check|capture|answer-key|run|report>";
+const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: positional(runCommand), rescore: positional(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand };
+const COMMANDS: Record<string, Command> = { run: positional(runCommand), rescore: positional(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
 
 /** Dispatches to the command named first, handing it the rest of the arguments as given, and returns the process exit code. */
 async function main(argv: string[]): Promise<number> {

@@ -14,9 +14,9 @@ to look at.
 ```text
                        server (next dev / next start)                       browser
                        ──────────────────────────────                       ───────
-GET /jobs ─► web/proxy.ts (Host allowlist) ─► web/app/layout.tsx
+GET /jobs ─► web/proxy.ts (Host, sign-in) ─► web/app/(app)/layout.tsx
                                                ├─ <Header> ─ <Nav> ············ marks the page, <Link>s
-                                               ├─ web/app/jobs/page.tsx
+                                               ├─ web/app/(app)/jobs/page.tsx
                                                │    └─ <DataPage> reads the database
                                                │         └─ <RowsList initial=first 100 rows> ··· scrolls, hides
                                                └─ <Footer>                          │
@@ -102,11 +102,14 @@ no database handles) can cross.
 Next.js's **App Router** turns folders into addresses. There is no routing code to write.
 
 **Where:**
-- `web/app/recommended/page.tsx`, `web/app/jobs/page.tsx`, `web/app/reasoning/page.tsx` and
-  `web/app/settings/page.tsx` are the four pages. Each exports `metadata` with its title.
-- `RootLayout` in `web/app/layout.tsx` wraps every page in the header and footer, and sets the
-  title template `myjobbot · %s`.
-- `Home` in `web/app/page.tsx` calls `redirect` to send `/` to Recommended.
+- `web/app/(app)/recommended/page.tsx`, `web/app/(app)/jobs/page.tsx`,
+  `web/app/(app)/reasoning/page.tsx` and `web/app/(app)/settings/page.tsx` are the signed-in pages.
+  Each exports `metadata` with its title. `(app)` is a route group: it shares a layout without
+  adding to the address, so they are still `/recommended` and so on.
+- `RootLayout` in `web/app/layout.tsx` holds only the document and the title template
+  `myjobbot · %s`. `AppLayout` in `web/app/(app)/layout.tsx` wraps the signed-in pages in the header
+  and footer; the sign-in page sits in `web/app/(public)/`, whose layout shows only the app name.
+- `Home` in `web/app/(app)/page.tsx` calls `redirect` to send `/` to Recommended.
 - `NotFound` in `web/app/not-found.tsx` is shown for any unknown address, inside the layout.
 - `ErrorPage` in `web/app/error.tsx` is shown when a page throws, for example on a broken
   `config.json`. The layout never loads the config, so the error page always has a layout to sit
@@ -258,7 +261,7 @@ the typed text.
 
 **Goal:** the Scoring panel shows your configured `match_threshold` instead of the fixed "70".
 
-- **Files:** only `web/app/settings/page.tsx`. It already calls `getUiState()` from
+- **Files:** only `web/app/(app)/settings/page.tsx`. It already calls `getUiState()` from
   `web/lib/uiState.ts` (for the Gmail panel); read `config.match_threshold` from the same call
   and render it in the Scoring panel.
 - **Test:** `tests/client/settings.test.tsx` already mocks `web/lib/uiState.js`. Add a `config`

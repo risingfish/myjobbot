@@ -1,3 +1,6 @@
+import { accountContract } from "./helpers/accountContract.js";
+import { methodContract } from "./helpers/methodContract.js";
+import { sessionContract } from "./helpers/sessionContract.js";
 import { alertJobContract } from "./helpers/alertJobContract.js";
 import { appliedContract } from "./helpers/appliedContract.js";
 import { careersStoreContract } from "./helpers/careersStoreContract.js";
@@ -20,6 +23,9 @@ import { sourceContract } from "./helpers/sourceContract.js";
 import { storeContract } from "./helpers/storeContract.js";
 
 storeContract(async () => memoryStores());
+sessionContract(async () => memoryStores());
+accountContract(async () => memoryStores());
+methodContract(async () => memoryStores());
 gmailStoreContract(async () => memoryStores());
 alertStoreContract(async () => memoryStores());
 alertJobContract(async () => memoryStores());

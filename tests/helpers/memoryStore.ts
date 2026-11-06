@@ -7,7 +7,11 @@ import type { ApiCallLog, FoundDescription, JobKey, JobRow, JobStore, Stores, Ve
 import { companyKeys } from "../../src/companies/keys.js";
 import { normalizeCompany } from "../../src/jobs/company.js";
 import type { Job } from "../../src/jobs/job.js";
+import { MemoryAccountStore } from "./memoryAccountStore.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
+import { newAuthTables } from "./memoryAuthTables.js";
+import { MemoryMethodStore } from "./memoryMethodStore.js";
+import { MemorySessionStore } from "./memorySessionStore.js";
 import { recordMemoryCompanies, touchMemoryCompany } from "./memoryCompanies.js";
 import { MemoryCompanyStore } from "./memoryCompanyStore.js";
 import { MemoryCareersStore } from "./memoryCareersStore.js";
@@ -159,7 +163,8 @@ class MemoryApiCallLog implements ApiCallLog {
 
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
-    return { jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), resume: new MemoryResumeStore(), close };
+    const auth = newAuthTables();
+    return { sessions: new MemorySessionStore(auth), accounts: new MemoryAccountStore(auth), methods: new MemoryMethodStore(auth), jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), resume: new MemoryResumeStore(), close };
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): Stores {

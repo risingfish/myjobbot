@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DataPage } from "../../components/pages/DataPage.js";
+import { DataPage } from "../../../components/pages/DataPage.js";
 
 export const metadata: Metadata = { title: "Reasoning" };
 export const dynamic = "force-dynamic";

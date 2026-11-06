@@ -31,6 +31,10 @@ case "${1:-schedule}" in
       echo "myjobbot: set MYJOBBOT_HOSTS to the host:port names you open the UI with (for example myserver.lan:8080,192.168.1.20:8080)" >&2
       exit 1
     fi
+    if [ -z "${MYJOBBOT_BASE_URL:-}" ]; then
+      echo "myjobbot: set MYJOBBOT_BASE_URL to the UI's public address (for example https://jobs.example.com, or http://localhost:8080 locally)" >&2
+      exit 1
+    fi
     cd /app
     export NEXT_TELEMETRY_DISABLED=1
     if [ "${MYJOBBOT_WEB_MODE:-dev}" = production ]; then

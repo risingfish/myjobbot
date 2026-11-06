@@ -5,6 +5,9 @@ export interface UsersTable {
     id: Generated<number>;
     name: string;
     created_at: string;
+    email: ColumnType<string | null, string | null | undefined, string | null>;
+    email_key: ColumnType<string | null, string | null | undefined, string | null>;
+    is_admin: Generated<number>;
 }
 
 export interface UserSettingsTable {

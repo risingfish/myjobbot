@@ -9,6 +9,7 @@ import { saveSource as storeSource, sourceRequest, type SourceSaveResult } from 
 import { enableProblem } from "../../src/web/sourceRules.js";
 import { sourceDeps } from "./sourceDeps.js";
 import { getStores, sourceConfig } from "./uiState.js";
+import { guarded } from "./guard.js";
 
 export type SwitchResult = { ok: true } | { ok: false; problem: string };
 
@@ -17,7 +18,7 @@ const sourceId = z.number().int().positive();
 const NOT_A_SOURCE: SwitchResult = { ok: false, problem: "not a saved source" };
 
 /** Turns one of the owner's saved sources on or off from its switch, starting its next fetch from the beginning, and refuses turning on a search the JSearch budget can't fit. */
-export async function setSourceEnabled(id: unknown, on: unknown): Promise<SwitchResult> {
+async function setSourceEnabledAction(id: unknown, on: unknown): Promise<SwitchResult> {
     const request = z.object({ id: sourceId, on: z.boolean() }).safeParse({ id, on });
     if (!request.success) return NOT_A_SOURCE;
     const { stores } = await getStores();
@@ -29,7 +30,7 @@ export async function setSourceEnabled(id: unknown, on: unknown): Promise<Switch
 }
 
 /** Deletes one of the owner's saved sources from its Delete button; its jobs keep their label, and an account source such as Gmail alerts can't be deleted. */
-export async function deleteSource(id: unknown): Promise<{ ok: boolean }> {
+async function deleteSourceAction(id: unknown): Promise<{ ok: boolean }> {
     const request = sourceId.safeParse(id);
     if (!request.success) return { ok: false };
     const { stores } = await getStores();
@@ -41,12 +42,12 @@ export async function deleteSource(id: unknown): Promise<{ ok: boolean }> {
 }
 
 /** Finds the source type a pasted jobs page link belongs to, with its fields filled in and a name to offer, for the link box. */
-export async function recognizeSourceLink(link: unknown): Promise<RecognizedLink | null> {
+async function recognizeSourceLinkAction(link: unknown): Promise<RecognizedLink | null> {
     return typeof link === "string" ? recognizeLink(link) : null;
 }
 
 /** Saves a source from its form, checked against the owner's other sources, then tests it, for the form's Save button. */
-export async function saveSource(_previous: SourceSaveResult | null, request: unknown): Promise<SourceSaveResult> {
+async function saveSourceAction(_previous: SourceSaveResult | null, request: unknown): Promise<SourceSaveResult> {
     const parsed = sourceRequest.safeParse(request);
     if (!parsed.success) return { ok: false, problems: [{ field: null, entry: null, message: "not a source form" }] };
     try {
@@ -58,3 +59,8 @@ export async function saveSource(_previous: SourceSaveResult | null, request: un
         return { ok: false, failed: true };
     }
 }
+
+export const setSourceEnabled = guarded(setSourceEnabledAction, {});
+export const deleteSource = guarded(deleteSourceAction, {});
+export const recognizeSourceLink = guarded(recognizeSourceLinkAction, {});
+export const saveSource = guarded(saveSourceAction, {});

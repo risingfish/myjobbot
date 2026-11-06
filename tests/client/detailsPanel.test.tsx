@@ -30,6 +30,7 @@ test("clicking a title opens a panel named by the job, showing its details, with
 
 async function rescoreShown() {
     vi.stubGlobal("EventSource", FakeSource);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
     actions.startRescore.mockResolvedValue({ run: "run-1" });
     await userEvent.click(screen.getByRole("button", { name: "Re-score" }));
     const terminal = await screen.findByRole("region", { name: "Re-score log" });
@@ -53,6 +54,7 @@ test("clicking another title switches the panel to that job, dropping a re-score
 
 async function runningOpens() {
     vi.stubGlobal("EventSource", FakeSource);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
     const running = { scoredAt: "2026-11-03 10:00", total: null, base: null, bonus: null, run: "run-2", rescore: { id: "run-2", state: "running" as const, filter: null } };
     actions.loadJobDetails.mockImplementation(async (ats: string, jobId: string) => ({ ...(await listedDetails(ats, jobId)), history: [running] }));
     await openTitle("Software Engineer a");

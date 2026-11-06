@@ -30,7 +30,7 @@ export function SourceCell({ job }: { job: JobRowView }) {
 export function WhenCell({ job }: { job: JobRowView }) {
     const { date, daysOpen, ghost } = job.posted;
     return (
-        <td>
+        <td className="posted-col">
             {date}
             <br />
             <small>{daysOpen} days open</small>

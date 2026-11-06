@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { keyChanged } from "../../../src/gmail/connection.js";
-import { gmailPanelView, type GmailPanelView } from "../../../src/web/gmailPanel.js";
-import { GmailPanel } from "../../components/settings/GmailPanel.js";
-import { SettingsNotices } from "../../components/settings/SettingsNotices.js";
-import { FiltersSection } from "../../components/settings/FiltersSection.js";
-import { PreferencesDraft } from "../../components/settings/PreferencesDraft.js";
-import { PreferencesSection } from "../../components/settings/PreferencesSection.js";
-import { ResumeSection } from "../../components/settings/ResumeSection.js";
-import { ScoringSection } from "../../components/settings/ScoringSection.js";
-import { SourcesSection } from "../../components/settings/SourcesSection.js";
-import { getSettingsState } from "../../lib/uiState.js";
+import { keyChanged } from "../../../../src/gmail/connection.js";
+import { gmailPanelView, type GmailPanelView } from "../../../../src/web/gmailPanel.js";
+import { GmailPanel } from "../../../components/settings/GmailPanel.js";
+import { SettingsNotices } from "../../../components/settings/SettingsNotices.js";
+import { FiltersSection } from "../../../components/settings/FiltersSection.js";
+import { PreferencesDraft } from "../../../components/settings/PreferencesDraft.js";
+import { PreferencesSection } from "../../../components/settings/PreferencesSection.js";
+import { ResumeSection } from "../../../components/settings/ResumeSection.js";
+import { ScoringSection } from "../../../components/settings/ScoringSection.js";
+import { SourcesSection } from "../../../components/settings/SourcesSection.js";
+import { getSettingsState } from "../../../lib/uiState.js";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";

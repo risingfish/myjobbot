@@ -7,11 +7,12 @@ import { extractWithModel } from "../../src/resumeProfile/open.js";
 import { EXTRACT_FAILED } from "../../src/resumeProfile/profile.js";
 import { editFor, extractFor, uploadFor, type ProfileResult, type UploadResult } from "./resumeRows.js";
 import { getStores } from "./uiState.js";
+import { guarded } from "./guard.js";
 
 const NOT_SAVED: UploadResult = { ok: false, error: "The resume couldn't be saved" };
 
 /** Reads and stores the resume file the Settings page's Resume section uploads, answering the stored resume or why it was refused. */
-export async function uploadResume(form: FormData): Promise<UploadResult> {
+async function uploadResumeAction(form: FormData): Promise<UploadResult> {
     const file = form.get("resume");
     if (file === null || typeof file === "string") return { ok: false, error: RESUME_ERRORS.type };
     try {
@@ -25,7 +26,7 @@ export async function uploadResume(form: FormData): Promise<UploadResult> {
 }
 
 /** Has the model extract a profile from the uploaded resume, waiting for it, and stores it in place of the one before. */
-export async function extractResumeProfile(): Promise<ProfileResult> {
+async function extractResumeProfileAction(): Promise<ProfileResult> {
     try {
         const { stores } = await getStores();
         const result = await extractFor(stores, (resume) => extractWithModel(process.env, stores, resume), new Date());
@@ -38,8 +39,12 @@ export async function extractResumeProfile(): Promise<ProfileResult> {
 }
 
 /** Saves the owner's edit to the profile's summary and skills, answering the saved profile or why it was refused. */
-export async function saveResumeProfile(edit: unknown): Promise<ProfileResult> {
+async function saveResumeProfileAction(edit: unknown): Promise<ProfileResult> {
     const result = await editFor((await getStores()).stores, edit, new Date());
     if (result.ok) revalidatePath("/settings");
     return result;
 }
+
+export const uploadResume = guarded(uploadResumeAction, {});
+export const extractResumeProfile = guarded(extractResumeProfileAction, {});
+export const saveResumeProfile = guarded(saveResumeProfileAction, {});

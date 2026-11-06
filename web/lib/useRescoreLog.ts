@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState, type Dispatch, type SetStateAction } from "react";
 import type { RescoreEnd } from "../../src/db/rescoreLogStore.js";
+import { afterStreamFailure } from "../../src/web/signedOut.js";
 
 const QUIET_MS = 15_000;
 
@@ -71,10 +72,21 @@ class LiveLog {
         this.onEnd(end);
     }
 
-    /** Marks the live view lost and stops listening. */
+    /** Marks the live view lost and stops listening, then asks the stream's address once whether the browser was signed out. */
     private lose() {
         this.stop();
         this.setState((state) => ({ ...state, lost: true }));
+        void fetch(this.source.url, { method: "HEAD" })
+            .then((answer) => this.signedOut(answer.status))
+            .catch(() => this.signedOut(0));
+    }
+
+    /** Sends the page to sign in, showing no log lines, when the stream's address answers that the browser is signed out. */
+    private signedOut(status: number) {
+        const target = afterStreamFailure(status, `${window.location.pathname}${window.location.search}`);
+        if (target === null) return;
+        this.setState(EMPTY);
+        window.location.assign(target);
     }
 
     /** Stops the wait and closes the stream. */

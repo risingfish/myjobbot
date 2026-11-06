@@ -7,7 +7,7 @@ import { PAGES } from "../../lib/pages.js";
 // next/link is CommonJS: under nodenext its default import is the module, and the module's default is the component.
 const Link = NextLink.default;
 
-/** Renders the navigation bar of all web UI pages, marking the one at the current address. */
+/** Renders the navigation bar of the signed-in pages, marking the one at the current address. */
 export function Nav() {
     const path = usePathname();
     const links = PAGES.map((page) => (
@@ -15,5 +15,9 @@ export function Nav() {
             {page.label}
         </Link>
     ));
-    return <nav>{links}</nav>;
+    return (
+        <nav className="container-fluid pages" aria-label="Pages">
+            {links}
+        </nav>
+    );
 }
