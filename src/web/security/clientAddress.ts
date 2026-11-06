@@ -7,3 +7,10 @@ export function clientAddress(forwardedFor: string | null, hops: number): string
     const entry = entries[Math.max(entries.length - hops, 0)];
     return entry !== undefined && isIP(entry) !== 0 ? entry : "unknown";
 }
+
+/** Returns the client IP address shown with a sign-in: the trusted proxies' client, or with none the address the server saw; null when it isn't an address. */
+export function displayIp(forwardedFor: string | null, hops: number): string | null {
+    const entries = (forwardedFor ?? "").split(",").map((entry) => entry.trim()).filter((entry) => entry !== "");
+    const entry = hops === 0 ? entries[0] : entries[Math.max(entries.length - hops, 0)];
+    return entry !== undefined && isIP(entry) !== 0 ? entry : null;
+}

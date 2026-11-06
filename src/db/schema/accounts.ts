@@ -42,6 +42,9 @@ export interface SessionsTable {
     verified_at: string;
     ended_at: Optional<string>;
     address: string;
+    ip: Optional<string>;
+    os: Optional<string>;
+    location: Optional<string>;
 }
 
 export interface AccountCodesTable {

@@ -76,6 +76,10 @@ the last key sets `ready = 0` and clears its details.
 | `ended_at` | `varchar(32)` null | set by sign-out, rotation, "sign out everywhere else", password change/reset, admin mark change |
 | `address` | `varchar(45)` | client address key at sign-in (R6: an IP address, `direct` without a trusted proxy, or `unknown`) |
 
+| `ip` | `varchar(45)` null | step `019_session_details`: the client address shown (FR-054) |
+| `os` | `varchar(32)` null | `019`: a fixed OS name from `osFrom` |
+| `location` | `varchar(100)` null | `019`: rounded browser position, Local network, or the IP's city, region and country |
+
 Index `(user_id, ended_at)`. Ended or expired rows older than 30 days are deleted on sign-in
 (`SessionStore.pruneEnded`). `csrf_digest` is replaced by `SessionStore.rebindCsrf` when a
 signed-in browser arrives from another site without the Strict cookie (R4).

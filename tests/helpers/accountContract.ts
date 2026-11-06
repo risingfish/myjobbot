@@ -74,7 +74,24 @@ async function lastAdminKept(stores: Stores): Promise<void> {
     expect((await stores.accounts.accounts()).map((account) => account.isAdmin)).toEqual([false, true]);
 }
 
+async function renamed(stores: Stores): Promise<void> {
+    await stores.accounts.initOwner(LOGIN, NOW);
+    await stores.accounts.saveName(OWNER_ID, "Zac");
+    expect((await stores.accounts.account(OWNER_ID))?.name).toBe("Zac");
+}
+
+async function eventsListed(stores: Stores): Promise<void> {
+    await stores.accounts.initOwner(LOGIN, NOW);
+    for (let minute = 0; minute < 22; minute += 1) await stores.accounts.recordEvent({ userId: OWNER_ID, at: `2026-11-06T10:${String(minute).padStart(2, "0")}:00.000Z`, address: minute === 0 ? null : "direct", event: "signed_in", method: "password" });
+    const recent = await stores.accounts.recentEvents(OWNER_ID, 20);
+    expect(recent).toHaveLength(20);
+    expect([recent[0]?.at, recent[19]?.at]).toEqual(["2026-11-06T10:21:00.000Z", "2026-11-06T10:02:00.000Z"]);
+    expect(recent[0]).toEqual({ userId: OWNER_ID, at: "2026-11-06T10:21:00.000Z", address: "direct", event: "signed_in", method: "password" });
+}
+
 export function accountContract(makeStores: MakeStores): void {
+    test("an account's name can be changed", withStores(makeStores, renamed));
+    test("an account's last 20 security events read back newest first, with their address or none", withStores(makeStores, eventsListed));
     accountStrictCases(makeStores);
     test("an account is found by its normalised email key alone, and only its own admin mark counts", withStores(makeStores, foundByKey));
     test("an account is made with an unspent code and a free email, spending the code; a spent or unknown code is refused and a taken email leaves the code unspent", withStores(makeStores, createdOnceWithAFreshCode));

@@ -10,7 +10,7 @@ export class KyselySessionStore implements SessionStore {
     async create(session: NewSession): Promise<void> {
         await this.db
             .insertInto("sessions")
-            .values({ id_digest: session.idDigest, user_id: session.userId, csrf_digest: session.csrfDigest, created_at: session.createdAt, last_used_at: session.lastUsedAt, verified_at: session.verifiedAt, address: session.address })
+            .values({ id_digest: session.idDigest, user_id: session.userId, csrf_digest: session.csrfDigest, created_at: session.createdAt, last_used_at: session.lastUsedAt, verified_at: session.verifiedAt, address: session.address, ...session.device })
             .execute();
     }
 
@@ -63,6 +63,17 @@ export class KyselySessionStore implements SessionStore {
         await this.db.insertInto("auth_attempts").values({ kind: key.kind, scope: key.scope, key_digest: key.keyDigest, at }).execute();
     }
 
+    /** Returns an account's sign-ins that haven't ended or expired, most recently used first. */
+    async activeFor(userId: number, now: string): Promise<Session[]> {
+        const rows = await this.db.selectFrom("sessions").selectAll().where("user_id", "=", userId).where("ended_at", "is", null).where("last_used_at", ">", daysBefore(now, SESSION_DAYS)).orderBy("last_used_at", "desc").execute();
+        return rows.map(fromRow);
+    }
+
+    /** Records that a sign-in's holder just proved their identity again. */
+    async setVerified(idDigest: string, now: string): Promise<void> {
+        await this.db.updateTable("sessions").set({ verified_at: now }).where("id_digest", "=", idDigest).execute();
+    }
+
     /** Counts the attempts of one kind and key since a time. */
     async countAttempts(key: AttemptKey, since: string): Promise<number> {
         const row = await this.db
@@ -79,5 +90,5 @@ export class KyselySessionStore implements SessionStore {
 
 /** Turns a stored sign-in row into a session. */
 function fromRow(row: Selectable<SessionsTable>): Session {
-    return { idDigest: row.id_digest, userId: row.user_id, csrfDigest: row.csrf_digest, createdAt: row.created_at, lastUsedAt: row.last_used_at, verifiedAt: row.verified_at, endedAt: row.ended_at, address: row.address };
+    return { idDigest: row.id_digest, userId: row.user_id, csrfDigest: row.csrf_digest, createdAt: row.created_at, lastUsedAt: row.last_used_at, verifiedAt: row.verified_at, endedAt: row.ended_at, address: row.address, device: { ip: row.ip, os: row.os, location: row.location } };
 }

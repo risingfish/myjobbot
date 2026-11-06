@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
+import { AccountView } from "../../../components/account/AccountView.js";
 import { getAccountState } from "../../../lib/accountState.js";
 
 export const metadata: Metadata = { title: "Account" };
 
-/** Renders the Account page: the signed-in account's name and email. */
+/** Renders the Account page for the signed-in account. */
 export default async function AccountPage() {
-    const state = await getAccountState();
     return (
         <main className="container-fluid" aria-label="Account">
-            <article>
-                <header>Account</header>
-                <p>
-                    <strong>{state.name}</strong>
-                    <br />
-                    {state.email}
-                </p>
-            </article>
+            <AccountView state={await getAccountState()} />
         </main>
     );
 }

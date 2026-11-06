@@ -72,6 +72,13 @@ existing data to a user."
   returns to the page it was asked from.
 - Q: Can an admin remove their own admin mark? → A: Yes, as long as another admin remains; the
   last admin can't lose the mark, their own removal included.
+- Q: What does the Account tab show about sign-ins? (owner, 2026-11-06, during S3) → A: The tab uses
+  the Settings layout (root sections with lines between them): User Profile (a Details card),
+  Ways of signing in (four cards, two to a row), Sign-ins and Recent activity. Every sign-in
+  records its device's IP address, operating system and location; the Sign-ins section lists every
+  live sign-in with them and a Sign out button for each other device. Location comes from the
+  browser's Geolocation API when the user shares it, else from the IP through a bundled lookup
+  (geoip-lite); LAN addresses show as Local network.
 - Q: Does a password reset link sign the user in? → A: No. It sets the new password and ends every
   sign-in, this browser's included; the user then signs in with the new password. Gaining or
   losing the admin mark ends the account's other sign-ins too.
@@ -536,6 +543,17 @@ refused the second time; as an admin, change a user's email so they can reset th
   code, token or secret; the Account tab MUST show the account's last 20.
 - **FR-052**: Error pages and messages MUST never show internal details (stack traces, query text,
   library messages); failures are reported by fixed messages.
+- **FR-054**: Every sign-in MUST record its device: the client IP address (through the trusted
+  proxies only; with none, the address the server saw, shown but not trusted for limits), the
+  operating system (the browser's platform hint, else its user agent, never the raw text) and the
+  location (FR-055). The Sign-ins section MUST list every live sign-in with these and when it was
+  last used, mark the current one, and offer Sign out for each other one, ending it at once and
+  recording `device_signed_out`.
+- **FR-055**: At sign-in and account creation the browser MUST be asked for its position (the
+  Geolocation API, `Permissions-Policy: geolocation=(self)`), waiting at most 5 seconds; a shared
+  position MUST be stored only rounded to one decimal (about 10 km). Without one, the location MUST
+  come from the IP through a local lookup (no IP leaves the server); private and loopback addresses
+  MUST show as Local network.
 - **FR-053**: No job data (jobs, scores, verdicts, settings, the resume and profile, sources, the
   Gmail connection, the database's name or host) MUST be read for, or sent to, a request that
   isn't signed in:

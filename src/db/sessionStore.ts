@@ -11,6 +11,13 @@ export interface Session {
     verifiedAt: string;
     endedAt: string | null;
     address: string;
+    device: Device;
+}
+
+export interface Device {
+    ip: string | null;
+    os: string | null;
+    location: string | null;
 }
 
 export type NewSession = Omit<Session, "endedAt">;
@@ -33,6 +40,8 @@ export interface SessionStore {
     pruneEnded(now: string): Promise<void>;
     recordAttempt(key: AttemptKey, at: string): Promise<void>;
     countAttempts(key: AttemptKey, since: string): Promise<number>;
+    setVerified(idDigest: string, now: string): Promise<void>;
+    activeFor(userId: number, now: string): Promise<Session[]>;
 }
 
 /** Returns the time a number of days before another, as an ISO string. */

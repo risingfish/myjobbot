@@ -26,17 +26,18 @@ async function uniqueIndexes(db: Awaited<ReturnType<typeof testDatabase>>) {
     return rows.rows.map((row) => `${row.TABLE_NAME}.${row.INDEX_NAME}`).sort();
 }
 
-test("step 018 adds accounts to users and the sign-in tables, every one tied to its user and kept exact", async () => {
+test("steps 018 and 019 add accounts to users and the sign-in tables, every one tied to its user and kept exact, with each sign-in's device details", async () => {
     const db = await testDatabase();
     try {
         await migrateBefore(db, "018");
-        expect(await migrateToLatest(db)).toEqual(["018_accounts"]);
+        expect(await migrateToLatest(db)).toEqual(["018_accounts", "019_session_details"]);
         expect(await columnTypes(db, "users", ["email", "email_key", "is_admin"])).toEqual(USER_TYPES);
         expect(await columnTypes(db, "sign_in_methods", ["totp_last_step"])).toEqual(BIGINTS);
         expect(await columnTypes(db, "hardware_keys", ["counter", "credential_id", "name"])).toEqual(KEY_TYPES);
         expect(await tableCollations(db)).toEqual(NEW_TABLES.map((table) => `${table} utf8mb4_bin`));
         expect(await foreignKeys(db)).toEqual(FOREIGN_KEYS);
         expect(await uniqueIndexes(db)).toEqual(UNIQUE);
+        expect(await columnTypes(db, "sessions", ["ip", "os", "location"])).toEqual(["ip varchar(45) YES NULL utf8mb4_bin", "location varchar(100) YES NULL utf8mb4_bin", "os varchar(32) YES NULL utf8mb4_bin"]);
     } finally {
         await db.destroy();
     }

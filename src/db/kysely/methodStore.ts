@@ -1,6 +1,12 @@
 import type { Kysely } from "kysely";
-import type { MethodStore } from "../methodStore.js";
+import { afterChange, allMethods, keepsAWay } from "../../accounts/methods.js";
+import { METHOD_KINDS, type MethodChange, type MethodKind, type MethodRow, type MethodStore } from "../methodStore.js";
 import type { Database } from "../schema.js";
+
+/** Says whether a stored kind is one of the four ways. */
+function isKind(kind: string): kind is MethodKind {
+    return (METHOD_KINDS as readonly string[]).includes(kind);
+}
 
 export class KyselyMethodStore implements MethodStore {
     constructor(private readonly db: Kysely<Database>) {}
@@ -19,5 +25,29 @@ export class KyselyMethodStore implements MethodStore {
             .values({ user_id: userId, kind: "password", ...row })
             .onDuplicateKeyUpdate(row)
             .execute();
+    }
+
+    /** Returns an account's four ways of signing in, each enabled or not and set up or not. */
+    async methods(userId: number): Promise<MethodRow[]> {
+        return allMethods(await this.stored(this.db, userId));
+    }
+
+    /** Switches a way on or off, refusing, with the account's row locked, a change that would leave no usable way. */
+    async setEnabled(userId: number, change: MethodChange, now: string): Promise<"ok" | "last_way"> {
+        return this.db.transaction().execute(async (trx) => {
+            await trx.selectFrom("users").select("id").where("id", "=", userId).forUpdate().execute();
+            const rows = allMethods(await this.stored(trx, userId));
+            if (!keepsAWay(rows, change)) return "last_way";
+            const row = afterChange(rows, change).find((method) => method.kind === change.kind);
+            const values = { enabled: change.enabled ? 1 : 0, ready: row?.ready ? 1 : 0, updated_at: now };
+            await trx.insertInto("sign_in_methods").values({ user_id: userId, kind: change.kind, ...values }).onDuplicateKeyUpdate(values).execute();
+            return "ok";
+        });
+    }
+
+    /** Reads the stored ways of an account, through the database or a transaction. */
+    private async stored(db: Pick<Kysely<Database>, "selectFrom">, userId: number): Promise<MethodRow[]> {
+        const rows = await db.selectFrom("sign_in_methods").select(["kind", "enabled", "ready"]).where("user_id", "=", userId).execute();
+        return rows.filter((row) => isKind(row.kind)).map((row) => ({ kind: row.kind as MethodKind, enabled: row.enabled === 1, ready: row.ready === 1 }));
     }
 }

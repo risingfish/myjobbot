@@ -9,7 +9,7 @@ import { safeReturnPath } from "../../src/accounts/returnPath.js";
 import { refusedField, type AccountField } from "../../src/web/accountForms.js";
 import { authContext, webSettings } from "./authDeps.js";
 import { guarded } from "./guard.js";
-import { heldDigest, requestAddress, setSessionCookies } from "./requestAuth.js";
+import { heldDigest, requestAddress, requestDevice, setSessionCookies } from "./requestAuth.js";
 
 export interface SignInState {
     message: string | null;
@@ -31,7 +31,7 @@ function field(form: FormData, name: string): string {
 async function signInWithPasswordAction(_previous: SignInState, form: FormData): Promise<SignInState> {
     const settings = webSettings();
     if (settings === null) return { message: MESSAGES.signin_failed };
-    const input = { email: field(form, "email"), password: field(form, "password"), address: await requestAddress(settings), heldDigest: await heldDigest(settings) };
+    const input = { email: field(form, "email"), password: field(form, "password"), address: await requestAddress(settings), heldDigest: await heldDigest(settings), device: await requestDevice(settings, form) };
     const answer = await signInWithPassword(await authContext(), input);
     if (!answer.ok) return { message: answer.message };
     await setSessionCookies(settings, answer.cookies);
@@ -43,7 +43,7 @@ async function createAccountAction(_previous: CreateAccountState, form: FormData
     const typed = { email: field(form, "email"), name: field(form, "name") };
     const settings = webSettings();
     if (settings === null) return { message: MESSAGES.code_refused, field: "code", ...typed };
-    const input = { ...typed, password: field(form, "password"), code: field(form, "code").trim(), address: await requestAddress(settings), heldDigest: await heldDigest(settings) };
+    const input = { ...typed, password: field(form, "password"), code: field(form, "code").trim(), address: await requestAddress(settings), heldDigest: await heldDigest(settings), device: await requestDevice(settings, form) };
     const answer = await createAccount(await authContext(), input);
     if (!answer.ok) return { message: answer.message, field: refusedField(answer.message), ...typed };
     await setSessionCookies(settings, answer.cookies);

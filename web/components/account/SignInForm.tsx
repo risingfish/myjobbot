@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { withPosition } from "../../lib/position.js";
 import { signInWithPasswordForm, type SignInState } from "../../lib/signInActions.js";
 import { Field } from "./Field.js";
 
@@ -8,7 +9,7 @@ const READY: SignInState = { message: null };
 
 /** Renders the sign-in form; a refusal marks both fields and shows its one fixed message under the password. */
 export function SignInForm({ next }: { next: string }) {
-    const [state, signIn, signingIn] = useActionState(signInWithPasswordForm, READY);
+    const [state, signIn, signingIn] = useActionState(async (previous: SignInState, form: FormData) => signInWithPasswordForm(previous, await withPosition(form)), READY);
     const refused = state.message !== null;
     return (
         <form action={signIn}>

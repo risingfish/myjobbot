@@ -39,4 +39,6 @@ export interface AccountStore {
     createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult>;
     accounts(): Promise<Account[]>;
     setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
+    saveName(userId: number, name: string): Promise<void>;
+    recentEvents(userId: number, limit: number): Promise<SecurityEvent[]>;
 }

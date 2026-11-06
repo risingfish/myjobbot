@@ -7,8 +7,10 @@ import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
 import { accountCreated, someoneTried } from "../../mail/messages.js";
 import type { NewAccount } from "../../db/accountStore.js";
+import type { Device } from "../../db/sessionStore.js";
 import type { AuthContext } from "./context.js";
 import { mailTo } from "./mail.js";
+import { recordSecurityEvent } from "./securityEvents.js";
 import { startSession, type SignInAnswer } from "./signIn.js";
 
 export interface AccountForm {
@@ -18,6 +20,7 @@ export interface AccountForm {
     code: string;
     address: string;
     heldDigest: string | null;
+    device?: Device;
 }
 
 /** Checks the form's email, name and password, giving the account to make or the first fixed refusal. */
@@ -54,8 +57,8 @@ export async function createAccount(ctx: AuthContext, form: AccountForm): Promis
     const result = await ctx.stores.accounts.createAccount(account, tokenDigest(form.code), ctx.now());
     if (result.kind === "taken") await warnOwner(ctx, account.emailKey);
     if (result.kind !== "created") return { ok: false, message: MESSAGES.code_refused };
-    const cookies = await startSession(ctx, { userId: result.userId, address: form.address, heldDigest: form.heldDigest });
-    await ctx.stores.accounts.recordEvent({ userId: result.userId, at: ctx.now(), address: form.address, event: "signed_in", method: "password" });
+    const cookies = await startSession(ctx, { userId: result.userId, address: form.address, heldDigest: form.heldDigest, device: form.device });
+    await recordSecurityEvent(ctx, { userId: result.userId, at: ctx.now(), address: form.address, event: "signed_in", method: "password" });
     mailTo(ctx, account.email, (baseUrl) => accountCreated(account.name, baseUrl));
     return { ok: true, userId: result.userId, cookies };
 }

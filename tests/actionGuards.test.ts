@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { guarded } from "../web/lib/guard.js";
 
-const request = vi.hoisted(() => ({ referer: null as string | null, signedIn: null as null | { account: { isAdmin: boolean } } }));
+const request = vi.hoisted(() => ({ referer: null as string | null, signedIn: null as null | { account: { isAdmin: boolean }; session?: { verifiedAt: string } } }));
 
 vi.mock("../web/lib/env.js", () => ({ loadRepoEnv: () => {} }));
 vi.mock("next/headers.js", () => ({ headers: async () => new Headers(request.referer === null ? {} : { referer: request.referer }), cookies: async () => new Map() }));
@@ -66,4 +66,25 @@ test("an admin action refuses an account without the admin mark and never runs",
     expect(action).not.toHaveBeenCalled();
     request.signedIn = { account: { isAdmin: true } };
     expect(await guarded(action, { admin: true })()).toEqual({ ok: true });
+});
+
+const STEP_UP_ACTIONS = ["changePassword", "requestEmailChange", "setMethodEnabled", "signOutEverywhereElse", "makeRecoveryCodes", "startKeyRegistration", "finishKeyRegistration", "removeKey", "startAuthenticatorSetup", "confirmAuthenticator", "removeAuthenticator", "makeAccountCodeNow", "setAdminMark", "adminChangeEmail"];
+
+test("a sensitive action asks for identity again once the last proof is over 10 minutes old, before it runs, and every one the spec names does", async () => {
+    const action = vi.fn(async () => ({ ok: true as const }));
+    request.signedIn = { account: { isAdmin: true }, session: { verifiedAt: new Date(Date.now() - 11 * 60 * 1000).toISOString() } };
+    expect(await guarded(action, { stepUp: true })()).toEqual({ ok: false, message: MESSAGES.step_up, stepUp: true });
+    expect(action).not.toHaveBeenCalled();
+    const files = readdirSync("web/lib").filter((name) => name.endsWith(".ts") && readFileSync(`web/lib/${name}`, "utf8").startsWith('"use server";'));
+    const found: string[] = [];
+    for (const file of files) {
+        const module = (await import(`../web/lib/${file}`)) as Record<string, () => Promise<unknown>>;
+        for (const name of STEP_UP_ACTIONS.filter((candidate) => candidate in module)) {
+            expect([name, await module[name]?.()]).toEqual([name, { ok: false, message: MESSAGES.step_up, stepUp: true }]);
+            found.push(name);
+        }
+    }
+    expect(found).toContain("setAdminMark");
+    request.signedIn = { account: { isAdmin: true }, session: { verifiedAt: new Date().toISOString() } };
+    expect(await guarded(action, { stepUp: true })()).toEqual({ ok: true });
 });

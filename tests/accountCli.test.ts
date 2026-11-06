@@ -43,7 +43,7 @@ test("mismatched or weak passwords, a bad email, no terminal and reset of a non-
 test("reset gives an admin a new password, ends every sign-in, and records it with no network address", async () => {
     const { ctx, auth } = authContext();
     await ctx.stores.accounts.initOwner({ email: "you@example.com", emailKey: "you@example.com", passwordDigest: await digestPassword("Oldpassword1!") }, ctx.now());
-    await ctx.stores.sessions.create({ idDigest: tokenDigest("s"), userId: OWNER_ID, csrfDigest: "c", createdAt: ctx.now(), lastUsedAt: ctx.now(), verifiedAt: ctx.now(), address: "direct" });
+    await ctx.stores.sessions.create({ idDigest: tokenDigest("s"), userId: OWNER_ID, csrfDigest: "c", createdAt: ctx.now(), lastUsedAt: ctx.now(), verifiedAt: ctx.now(), address: "direct", device: { ip: null, os: null, location: null } });
     const terminal = io(["Newpassword1!", "Newpassword1!"]);
     expect(await accountCommand(ctx, ["reset", "You@Example.com"], terminal)).toBe(0);
     expect(terminal.lines).toEqual(["account You@Example.com: password reset"]);

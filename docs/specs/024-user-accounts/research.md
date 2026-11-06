@@ -356,3 +356,18 @@ dev server.
 **Test**: one integration case in `tests/integration/copyProd.test.ts` runs a copy of the script in
 a scratch directory with a fake `.env` and fake `mysql` and `mysqldump` clients on `PATH` that
 record their arguments, and checks both dumps' flags (T064).
+
+## R20. Device details and location (owner, 2026-11-06)
+
+**Decision**: every sign-in stores `ip`, `os` and `location` (migration `019_session_details`).
+The OS comes from `Sec-CH-UA-Platform` (sent by Chromium-based browsers) or the User-Agent, through
+the pure `osFrom`, giving a fixed name. Location: the browser's Geolocation API when the user
+shares it (asked on submit of sign-in and create-account, 5 s timeout; `Permissions-Policy`
+changes from `geolocation=()` to `geolocation=(self)`), rounded to one decimal; else **geoip-lite
+2.0.3** (exact pin, owner choice, bundled data, ~115 MB, kept out of the Next bundle with
+`serverExternalPackages`) from the IP, with private and loopback ranges shown as Local network.
+**Alternative kept in mind**: a MaxMind GeoLite2-City file read with the `maxmind` package
+(fresher data, needs a free licence key and a monthly download); `src/accounts/geo.ts` says so.
+The Sign-ins list names each sign-in by the first 16 hex characters of its digest, never the whole
+digest, and Sign out for a device ends only another of the signed-in account's own sign-ins.
+

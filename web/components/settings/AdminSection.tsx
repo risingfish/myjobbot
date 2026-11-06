@@ -3,16 +3,19 @@
 import { useState } from "react";
 import type { Account } from "../../../src/db/accountStore.js";
 import { makeAccountCodeNow, setAdminMark, type CodeAnswer } from "../../lib/adminActions.js";
+import { shownRefusal, StepUpProvider, useStepUp } from "../account/StepUp.js";
 import { Panel } from "../sections/Panel.js";
 import { SettingCard } from "./SettingParts.js";
 
 /** Renders the button that makes an account creation code, then the code, shown once, with its expiry and a Copy button. */
 function CodeMaker() {
+    const run = useStepUp();
     const [answer, setAnswer] = useState<CodeAnswer | null>(null);
     const [busy, setBusy] = useState(false);
     const make = async () => {
         setBusy(true);
-        setAnswer(await makeAccountCodeNow());
+        const made = await run(() => makeAccountCodeNow());
+        setAnswer(made.ok || shownRefusal(made) !== null ? made : null);
         setBusy(false);
     };
     return (
@@ -80,11 +83,9 @@ function AccountsTable({ accounts, onChange }: { accounts: Account[]; onChange: 
 
 /** Renders the list of accounts with their admin marks, and why a change was refused. */
 function AccountList({ accounts }: { accounts: Account[] }) {
+    const run = useStepUp();
     const [refusal, setRefusal] = useState<string | null>(null);
-    const change = async (account: Account) => {
-        const answer = await setAdminMark(account.id, !account.isAdmin);
-        setRefusal(answer.ok ? null : answer.message);
-    };
+    const change = async (account: Account) => setRefusal(shownRefusal(await run(() => setAdminMark(account.id, !account.isAdmin))));
     return (
         <SettingCard title="Accounts">
             <AccountsTable accounts={accounts} onChange={(target) => void change(target)} />
@@ -93,12 +94,14 @@ function AccountList({ accounts }: { accounts: Account[] }) {
     );
 }
 
-/** Renders the admin section of the Settings page, shown only to admins: account creation codes and the accounts with their admin marks. */
+/** Renders the admin section of the Settings page, shown only to admins: account creation codes and the accounts with their admin marks, each change asking to confirm it's them when due. */
 export function AdminSection({ accounts }: { accounts: Account[] }) {
     return (
-        <Panel title="Admin">
-            <CodeMaker />
-            <AccountList accounts={accounts} />
-        </Panel>
+        <StepUpProvider>
+            <Panel title="Admin">
+                <CodeMaker />
+                <AccountList accounts={accounts} />
+            </Panel>
+        </StepUpProvider>
     );
 }

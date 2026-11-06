@@ -27,7 +27,7 @@ async function setAdminMarkAction(userId: unknown, admin: unknown): Promise<Mark
     const settings = webSettings();
     if (!change.success || settings === null) return { ok: false, message: MESSAGES.not_admin };
     const { account, session } = await requireSession();
-    const actor = { account, sessionDigest: session.idDigest, address: await requestAddress(settings) };
+    const actor = { account, session, address: await requestAddress(settings) };
     const answer = await setAdmin(await authContext(), actor, change.data);
     if (!answer.ok) return answer;
     if (answer.cookies !== null) await setSessionCookies(settings, answer.cookies);
@@ -35,5 +35,5 @@ async function setAdminMarkAction(userId: unknown, admin: unknown): Promise<Mark
     return { ok: true };
 }
 
-export const makeAccountCodeNow = guarded(makeCodeAction, { admin: true });
-export const setAdminMark = guarded(setAdminMarkAction, { admin: true });
+export const makeAccountCodeNow = guarded(makeCodeAction, { admin: true, stepUp: true });
+export const setAdminMark = guarded(setAdminMarkAction, { admin: true, stepUp: true });

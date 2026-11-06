@@ -62,6 +62,19 @@ export class MemoryAccountStore implements AccountStore {
         return "ok";
     }
 
+    async saveName(userId: number, name: string): Promise<void> {
+        for (const user of this.tables.users) if (user.id === userId) user.name = name;
+    }
+
+    async recentEvents(userId: number, limit: number): Promise<SecurityEvent[]> {
+        return this.tables.events
+            .filter((event) => event.userId === userId)
+            .map((event, index) => ({ event, index }))
+            .sort((a, b) => b.event.at.localeCompare(a.event.at) || b.index - a.index)
+            .slice(0, limit)
+            .map(({ event }) => ({ ...event }));
+    }
+
     async recordEvent(event: SecurityEvent): Promise<void> {
         this.tables.events.push({ ...event });
     }

@@ -20,7 +20,7 @@ export function securityHeaders(nonce: string, options: HeaderOptions): Record<s
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": link ? "no-referrer" : "same-origin",
         "Cross-Origin-Opener-Policy": "same-origin",
-        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
     };
     if (options.https) headers["Strict-Transport-Security"] = "max-age=31536000";
     if (link) headers["Cache-Control"] = "no-store";

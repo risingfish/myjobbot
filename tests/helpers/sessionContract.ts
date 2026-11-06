@@ -8,7 +8,7 @@ const NOW = "2026-11-06T10:00:00.000Z";
 const LOGIN = { email: "owner@example.com", emailKey: "owner@example.com", passwordDigest: "argon2id$x" };
 
 function session(idDigest: string, at = NOW) {
-    return { idDigest, userId: OWNER_ID, csrfDigest: `csrf-${idDigest}`, createdAt: at, lastUsedAt: at, verifiedAt: at, address: "direct" };
+    return { idDigest, userId: OWNER_ID, csrfDigest: `csrf-${idDigest}`, createdAt: at, lastUsedAt: at, verifiedAt: at, address: "direct", device: { ip: null, os: null, location: null } };
 }
 
 function withStores(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
@@ -74,7 +74,26 @@ async function oldSessionsPruned({ sessions }: Stores): Promise<void> {
     expect(await sessions.find("live", NOW)).not.toBeNull();
 }
 
+async function verifiedAgain({ sessions }: Stores): Promise<void> {
+    await sessions.create(session("a"));
+    await sessions.setVerified("a", "2026-11-06T10:30:00.000Z");
+    expect((await sessions.find("a", NOW))?.verifiedAt).toBe("2026-11-06T10:30:00.000Z");
+}
+
+async function activeListed({ sessions }: Stores): Promise<void> {
+    await sessions.create({ ...session("old", "2026-11-01T00:00:00.000Z"), device: { ip: "203.0.113.9", os: "macOS", location: "Seattle, WA, US" } });
+    await sessions.create(session("new"));
+    await sessions.create(session("ended"));
+    await sessions.end("ended", NOW);
+    await sessions.create(session("expired", "2026-09-01T00:00:00.000Z"));
+    const active = await sessions.activeFor(OWNER_ID, NOW);
+    expect(active.map((row) => row.idDigest)).toEqual(["new", "old"]);
+    expect(active[1]?.device).toEqual({ ip: "203.0.113.9", os: "macOS", location: "Seattle, WA, US" });
+}
+
 export function sessionContract(makeStores: MakeStores): void {
+    test("an account's live sign-ins are listed most recently used first, with each one's device", withStores(makeStores, activeListed));
+    test("proving identity again moves a sign-in's verified time", withStores(makeStores, verifiedAgain));
     test("a sign-in is found until it is ended or goes 30 days unused, and using it keeps it alive", withStores(makeStores, foundUntilExpiredOrEnded));
     test("one sign-in ends alone, and ending all of an account's sign-ins can spare one", withStores(makeStores, endedOneOrAll));
     test("a sign-in can be tied to a new forgery cookie", withStores(makeStores, csrfRebound));

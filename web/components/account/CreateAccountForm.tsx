@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { withPosition } from "../../lib/position.js";
 import { MESSAGES } from "../../../src/accounts/messages.js";
 import type { AccountField } from "../../../src/web/accountForms.js";
 import { createAccountForm, type CreateAccountState } from "../../lib/signInActions.js";
@@ -15,7 +16,7 @@ function noteFor(state: CreateAccountState, field: AccountField, hint: string | 
 
 /** Renders the account creation form, each refusal under the field it is about, keeping the email and name typed. */
 export function CreateAccountForm() {
-    const [state, create, creating] = useActionState(createAccountForm, READY);
+    const [state, create, creating] = useActionState(async (previous: CreateAccountState, form: FormData) => createAccountForm(previous, await withPosition(form)), READY);
     return (
         <form action={create}>
             <Field name="email" label="Email" type="email" autoComplete="email" required defaultValue={state.email} {...noteFor(state, "email")} />

@@ -16,7 +16,7 @@ test("in development only, scripts may use eval and styles may be inline, for th
 
 test("answers refuse framing and content sniffing, keep referrers on the UI, and over HTTPS only demand HTTPS", () => {
     const https = securityHeaders("n1", { https: true, dev: false, path: "/jobs" });
-    expect(https).toMatchObject({ "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin", "Cross-Origin-Opener-Policy": "same-origin", "Permissions-Policy": "camera=(), microphone=(), geolocation=()", "Strict-Transport-Security": "max-age=31536000" });
+    expect(https).toMatchObject({ "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin", "Cross-Origin-Opener-Policy": "same-origin", "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)", "Strict-Transport-Security": "max-age=31536000" });
     expect(securityHeaders("n1", { https: false, dev: false, path: "/jobs" })).not.toHaveProperty("Strict-Transport-Security");
 });
 

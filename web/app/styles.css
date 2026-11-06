@@ -44,6 +44,10 @@ input[aria-invalid="true"]:not([type="checkbox"], [type="radio"]) {
     }
 }
 
+.step-up footer button {
+    min-width: 10em;
+}
+
 .site-header {
     --pico-nav-element-spacing-vertical: 0.25rem;
     padding-block: calc(var(--pico-spacing) * 0.25);

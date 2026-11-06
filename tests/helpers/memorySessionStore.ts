@@ -43,6 +43,15 @@ export class MemorySessionStore implements SessionStore {
         this.tables.attempts.push({ ...key, at });
     }
 
+    async activeFor(userId: number, now: string): Promise<Session[]> {
+        const cutoff = daysBefore(now, SESSION_DAYS);
+        return this.tables.sessions.filter((session) => session.userId === userId && session.endedAt === null && session.lastUsedAt > cutoff).sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt)).map((session) => ({ ...session }));
+    }
+
+    async setVerified(idDigest: string, now: string): Promise<void> {
+        for (const session of this.tables.sessions) if (session.idDigest === idDigest) session.verifiedAt = now;
+    }
+
     async countAttempts(key: AttemptKey, since: string): Promise<number> {
         return this.tables.attempts.filter((attempt) => attempt.kind === key.kind && attempt.scope === key.scope && attempt.keyDigest === key.keyDigest && attempt.at >= since).length;
     }

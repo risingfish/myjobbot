@@ -1,5 +1,6 @@
 import { checkEmail } from "./emails.js";
 import type { AuthContext } from "./flows/context.js";
+import { recordSecurityEvent } from "./flows/securityEvents.js";
 import { digestPassword } from "./passwordDigest.js";
 import { checkPassword } from "./passwordRule.js";
 
@@ -46,7 +47,7 @@ async function reset(ctx: AuthContext, login: Login, io: AccountIo): Promise<num
     const now = ctx.now();
     await ctx.stores.methods.setPassword(account.id, login.passwordDigest, now);
     await ctx.stores.sessions.endAllFor(account.id, now);
-    await ctx.stores.accounts.recordEvent({ userId: account.id, at: now, address: null, event: "password_reset", method: "password" });
+    await recordSecurityEvent(ctx, { userId: account.id, at: now, address: null, event: "password_reset", method: "password" });
     return printed(io, `account ${login.email}: password reset`, 0);
 }
 
