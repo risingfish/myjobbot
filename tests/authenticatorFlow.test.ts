@@ -58,7 +58,7 @@ test("without a usable secret key setup isn't offered, and a secret the key can 
 test("removing the app clears it and is recorded, but never when it is the last usable way", async () => {
     const { ctx, actor, auth } = await withAppSetUp();
     expect(await removeAuthenticator(ctx, actor)).toEqual({ ok: true });
-    expect(await ctx.stores.methods.authenticator(OWNER_ID)).toEqual({ sealedSecret: null, enabled: false, ready: false });
+    expect(await ctx.stores.authenticators.authenticator(OWNER_ID)).toEqual({ sealedSecret: null, enabled: false, ready: false });
     expect(auth.events.at(-1)?.event).toBe("app_removed");
     const again = await withAppSetUp();
     await setMethodEnabled(again.ctx, again.actor, { kind: "password", enabled: false });

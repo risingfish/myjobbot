@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers.js";
-import type { SessionCookies } from "../../src/accounts/flows/signIn.js";
+import type { SessionCookies } from "../../src/accounts/flows/sessions.js";
 import { tokenDigest } from "../../src/accounts/tokens.js";
 import { locationLabel, osFrom, roundedPosition } from "../../src/accounts/device.js";
 import { lookUpPlace } from "../../src/accounts/geo.js";

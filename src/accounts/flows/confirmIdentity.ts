@@ -2,7 +2,8 @@ import { MESSAGES } from "../messages.js";
 import { appCodeMatches } from "./authenticator.js";
 import type { Actor, AuthContext } from "./context.js";
 import { keyMatches } from "./keys.js";
-import { actorTry, passwordMatches, recordFailure, signInLocked } from "./passwordCheck.js";
+import { actorTry, recordFailure, signInLocked } from "./attempts.js";
+import { passwordMatches } from "./passwordCheck.js";
 import { recoveryCodeMatches } from "./recoveryCodes.js";
 
 export type IdentityProof = { method: "password"; password: string } | { method: "authenticator"; code: string } | { method: "recovery_code"; code: string } | { method: "hardware_key"; response: unknown };

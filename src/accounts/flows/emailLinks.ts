@@ -4,9 +4,9 @@ import { confirmItsYou, confirmNewEmail, passwordReset, signInLink, testMail, ty
 import { checkEmail, normalizeEmail } from "../emails.js";
 import { attemptKey, limitFor, windowStart } from "../limits.js";
 import { MESSAGES } from "../messages.js";
-import { usable } from "../methods.js";
 import { safeReturnPath } from "../returnPath.js";
 import { newToken, tokenDigest } from "../tokens.js";
+import { wayUsable } from "../ways/usable.js";
 import type { Actor, AuthContext } from "./context.js";
 import { spendEmailChange, spendReset, spendSignIn, spendStepUp, type LinkSpend, type SpendAnswer } from "./linkSpends.js";
 import { mailTo } from "./mail.js";
@@ -45,8 +45,7 @@ async function emailKeyedRequest(ctx: AuthContext, rawEmail: string, send: (acco
 /** Mails a sign-in link to an account with email links on. */
 export function requestSignInLink(ctx: AuthContext, input: { email: string; address: string }): Promise<Answer> {
     return emailKeyedRequest(ctx, input.email, async (account) => {
-        const way = (await ctx.stores.methods.methods(account.id)).find((row) => row.kind === "email_link");
-        if (way !== undefined && usable(way, { mailOn: true })) await mailLink(ctx, account, { token: { purpose: "signin" }, build: signInLink });
+        if (await wayUsable(ctx, account.id, "email_link")) await mailLink(ctx, account, { token: { purpose: "signin" }, build: signInLink });
     });
 }
 

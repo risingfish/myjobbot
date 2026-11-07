@@ -2,14 +2,14 @@ import type { Device } from "../../db/sessionStore.js";
 import { emailChanged } from "../../mail/messages.js";
 import { checkEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
-import { usable } from "../methods.js";
 import { digestPassword } from "../passwordDigest.js";
 import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
+import { wayUsable } from "../ways/usable.js";
 import type { AuthContext } from "./context.js";
 import { mailTo } from "./mail.js";
 import { recordSecurityEvent } from "./securityEvents.js";
-import { startSession, type SessionCookies } from "./signIn.js";
+import { startSession, type SessionCookies } from "./sessions.js";
 
 export interface LinkSpend {
     token: string;
@@ -32,8 +32,7 @@ function record(ctx: AuthContext, input: { userId: number; address: string; even
 /** Signs in with a sign-in link, once, and only while the account still has email links usable. */
 export async function spendSignIn(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
     const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "signin" }, ctx.now());
-    const way = spent === null ? undefined : (await ctx.stores.methods.methods(spent.userId)).find((row) => row.kind === "email_link");
-    if (spent === null || way === undefined || !usable(way, { mailOn: ctx.mail !== null })) return EXPIRED;
+    if (spent === null || !(await wayUsable(ctx, spent.userId, "email_link"))) return EXPIRED;
     const cookies = await startSession(ctx, { userId: spent.userId, address: spend.address, heldDigest: spend.heldDigest, device: spend.device });
     await record(ctx, { userId: spent.userId, address: spend.address, event: "signed_in", method: "email_link" });
     return { ok: true, kind: "signin", cookies };

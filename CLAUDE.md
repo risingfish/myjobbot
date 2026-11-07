@@ -43,11 +43,12 @@ Enforcement in this repo:
   over changes.
 - `eslint.config.mjs` replaces habit-hooks' shipped eslint config (copied 2026-10-14 from 1.5.0)
   only to raise the function limit from 12 to 20 lines, since Prettier (`npm run format`) lays out
-  JSX and object literals one item per line. Diff it against the shipped
+  JSX and object literals one item per line, and the parameter limit from 3 to 4 (owner decision,
+  2026-11-07). Diff it against the shipped
   `habit_hooks_typescript/eslint.config.mjs` when upgrading habit-hooks.
 
 Key limits from the project's eslint config: functions ≤ 20 lines,
-≤ 3 parameters, complexity ≤ 10, nesting ≤ 4, files ≤ 200 lines, `===` only,
+≤ 4 parameters, complexity ≤ 10, nesting ≤ 4, files ≤ 200 lines, `===` only,
 no `var`, `const` where possible, no inferrable type annotations, no unused code
 (knip: unused files, exports, dependencies).
 

@@ -11,7 +11,8 @@ import type { Device } from "../../db/sessionStore.js";
 import type { AuthContext } from "./context.js";
 import { mailTo } from "./mail.js";
 import { recordSecurityEvent } from "./securityEvents.js";
-import { startSession, type SignInAnswer } from "./signIn.js";
+import { startSession } from "./sessions.js";
+import type { SignInAnswer } from "./signIn.js";
 
 export interface AccountForm {
     email: string;

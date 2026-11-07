@@ -1,9 +1,8 @@
 import type { Kysely, Selectable } from "kysely";
-import { allMethods, keepsAWay } from "../../accounts/methods.js";
 import { challengeExpiry, type ChallengePurpose, type KeyStore, type NewKey, type StoredKey } from "../keyStore.js";
-import type { MethodRow } from "../methodStore.js";
 import type { Database } from "../schema.js";
 import type { HardwareKeysTable } from "../schema/accounts.js";
+import { changeKeepingAWay } from "./wayLock.js";
 
 /** Says whether a failed insert broke a unique index, and which one. */
 function duplicateOf(error: unknown): "name_taken" | "credential_taken" | null {
@@ -55,14 +54,13 @@ export class KyselyKeyStore implements KeyStore {
 
     /** Deletes one of an account's keys, turning the way's setup off with the last one, never when that would leave no usable way. */
     async removeKey(userId: number, removal: { id: number; mailOn: boolean }, now: string): Promise<"ok" | "last_way"> {
-        return this.db.transaction().execute(async (trx) => {
-            await trx.selectFrom("users").select("id").where("id", "=", userId).forUpdate().execute();
-            const left = (await trx.selectFrom("hardware_keys").select("id").where("user_id", "=", userId).execute()).filter((row) => row.id !== removal.id);
-            const methods = (await trx.selectFrom("sign_in_methods").select(["kind", "enabled", "ready"]).where("user_id", "=", userId).execute()).map((row) => ({ kind: row.kind, enabled: row.enabled === 1, ready: row.ready === 1 }) as MethodRow);
-            if (left.length === 0 && !keepsAWay(allMethods(methods), { kind: "hardware_key", enabled: false, mailOn: removal.mailOn })) return "last_way";
-            await trx.deleteFrom("hardware_keys").where("user_id", "=", userId).where("id", "=", removal.id).execute();
-            if (left.length === 0) await trx.updateTable("sign_in_methods").set({ ready: 0, updated_at: now }).where("user_id", "=", userId).where("kind", "=", "hardware_key").execute();
-            return "ok";
+        const keysLeft = async (trx: Pick<Kysely<Database>, "selectFrom">, except: number) => (await trx.selectFrom("hardware_keys").select("id").where("user_id", "=", userId).where("id", "!=", except).execute()).length;
+        return changeKeepingAWay(this.db, userId, {
+            change: async (trx) => ((await keysLeft(trx, removal.id)) === 0 ? { kind: "hardware_key", enabled: false, mailOn: removal.mailOn } : null),
+            apply: async (trx) => {
+                await trx.deleteFrom("hardware_keys").where("user_id", "=", userId).where("id", "=", removal.id).execute();
+                if ((await keysLeft(trx, removal.id)) === 0) await trx.updateTable("sign_in_methods").set({ ready: 0, updated_at: now }).where("user_id", "=", userId).where("kind", "=", "hardware_key").execute();
+            },
         });
     }
 

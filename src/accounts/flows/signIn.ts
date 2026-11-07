@@ -2,10 +2,11 @@ import { normalizeEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
 import type { Account } from "../../db/accountStore.js";
 import type { Device } from "../../db/sessionStore.js";
-import { newToken, tokenDigest } from "../tokens.js";
 import type { AuthContext } from "./context.js";
-import { passwordMatches, recordFailure, signInLocked } from "./passwordCheck.js";
+import { recordFailure, signInLocked } from "./attempts.js";
+import { passwordMatches } from "./passwordCheck.js";
 import { recordSecurityEvent } from "./securityEvents.js";
+import { startSession, type SessionCookies } from "./sessions.js";
 
 export interface PasswordSignIn {
     email: string;
@@ -15,26 +16,9 @@ export interface PasswordSignIn {
     device?: Device;
 }
 
-const UNKNOWN_DEVICE: Device = { ip: null, os: null, location: null };
-
-export interface SessionCookies {
-    session: string;
-    csrf: string;
-}
-
 export type SignInAnswer = { ok: true; userId: number; cookies: SessionCookies } | { ok: false; message: string };
 
 const REFUSED: SignInAnswer = { ok: false, message: MESSAGES.signin_failed };
-
-/** Starts a new sign-in for an account, ending the one the browser held, and returns its cookie values. */
-export async function startSession(ctx: AuthContext, input: { userId: number; address: string; heldDigest: string | null; device?: Device }): Promise<SessionCookies> {
-    const now = ctx.now();
-    if (input.heldDigest !== null) await ctx.stores.sessions.end(input.heldDigest, now);
-    await ctx.stores.sessions.pruneEnded(now);
-    const cookies = { session: newToken(ctx.random), csrf: newToken(ctx.random) };
-    await ctx.stores.sessions.create({ idDigest: tokenDigest(cookies.session), userId: input.userId, csrfDigest: tokenDigest(cookies.csrf), createdAt: now, lastUsedAt: now, verifiedAt: now, address: input.address, device: input.device ?? UNKNOWN_DEVICE });
-    return cookies;
-}
 
 export type SignInRequest = Omit<PasswordSignIn, "password">;
 

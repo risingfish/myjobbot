@@ -7,7 +7,7 @@ import { tokenDigest } from "../tokens.js";
 import type { Actor, AuthContext, Refused } from "./context.js";
 import { currentPasswordMatches } from "./passwordCheck.js";
 import { recordSecurityEvent } from "./securityEvents.js";
-import { startSession, type SessionCookies } from "./signIn.js";
+import { startSession, type SessionCookies } from "./sessions.js";
 
 /** Records a security event for the actor's account, at their address. */
 function record(ctx: AuthContext, actor: Actor, event: { event: Parameters<typeof recordSecurityEvent>[1]["event"]; method: string | null }): Promise<void> {

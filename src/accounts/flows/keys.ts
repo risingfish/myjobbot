@@ -3,9 +3,9 @@ import type { Account } from "../../db/accountStore.js";
 import type { ChallengePurpose, StoredKey } from "../../db/keyStore.js";
 import { registrationOptions, signInOptions, verifiedCredential, verifiedSignIn } from "../keys.js";
 import { MESSAGES } from "../messages.js";
-import { usable } from "../methods.js";
 import { checkKeyName } from "../names.js";
 import { tokenDigest } from "../tokens.js";
+import { wayUsable } from "../ways/usable.js";
 import type { Actor, AuthContext, Refused } from "./context.js";
 import { recordWayAdded } from "./recoveryCodes.js";
 import { recordSecurityEvent } from "./securityEvents.js";
@@ -60,9 +60,7 @@ export async function startKeySignIn(ctx: AuthContext): Promise<{ ok: true; opti
 
 /** Finds the stored key a browser answered with, when it belongs to the account and the account's hardware keys are usable. */
 async function accountKey(ctx: AuthContext, account: Account | null, response: unknown): Promise<StoredKey | null> {
-    if (account === null) return null;
-    const way = (await ctx.stores.methods.methods(account.id)).find((row) => row.kind === "hardware_key");
-    if (way === undefined || !usable(way, { mailOn: ctx.mail !== null })) return null;
+    if (account === null || !(await wayUsable(ctx, account.id, "hardware_key"))) return null;
     const id = (response as { id?: unknown } | null)?.id;
     const stored = typeof id === "string" ? await ctx.stores.keys.keyByCredential(id) : null;
     return stored?.userId === account.id ? stored : null;

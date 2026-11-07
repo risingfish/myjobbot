@@ -1,7 +1,5 @@
-import { allMethods, keepsAWay } from "../../src/accounts/methods.js";
 import { challengeExpiry, type ChallengePurpose, type KeyStore, type NewKey, type StoredKey } from "../../src/db/keyStore.js";
-import type { MethodKind } from "../../src/db/methodStore.js";
-import { upsertMethod, type AuthTables } from "./memoryAuthTables.js";
+import { changeKeepingAWay, upsertMethod, type AuthTables } from "./memoryAuthTables.js";
 
 export class MemoryKeyStore implements KeyStore {
     private readonly stored: StoredKey[] = [];
@@ -35,13 +33,15 @@ export class MemoryKeyStore implements KeyStore {
     }
 
     async removeKey(userId: number, removal: { id: number; mailOn: boolean }, now: string): Promise<"ok" | "last_way"> {
-        const left = this.stored.filter((row) => row.userId === userId && row.id !== removal.id);
-        const methods = this.tables.methods.filter((row) => row.userId === userId).map((row) => ({ kind: row.kind as MethodKind, enabled: row.enabled, ready: row.ready }));
-        if (left.length === 0 && !keepsAWay(allMethods(methods), { kind: "hardware_key", enabled: false, mailOn: removal.mailOn })) return "last_way";
-        const index = this.stored.findIndex((row) => row.userId === userId && row.id === removal.id);
-        if (index !== -1) this.stored.splice(index, 1);
-        if (left.length === 0) for (const row of this.tables.methods) if (row.userId === userId && row.kind === "hardware_key") Object.assign(row, { ready: false, updatedAt: now });
-        return "ok";
+        const lastKey = this.stored.every((row) => row.userId !== userId || row.id === removal.id);
+        return changeKeepingAWay(this.tables, userId, {
+            change: () => (lastKey ? { kind: "hardware_key", enabled: false, mailOn: removal.mailOn } : null),
+            apply: () => {
+                const index = this.stored.findIndex((row) => row.userId === userId && row.id === removal.id);
+                if (index !== -1) this.stored.splice(index, 1);
+                if (lastKey) for (const row of this.tables.methods) if (row.userId === userId && row.kind === "hardware_key") Object.assign(row, { ready: false, updatedAt: now });
+            },
+        });
     }
 
     async makeChallenge(digest: string, challenge: { purpose: ChallengePurpose; userId: number | null }, now: string): Promise<void> {

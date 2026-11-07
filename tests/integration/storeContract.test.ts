@@ -4,6 +4,7 @@ import { storesOver } from "../../src/db/kysely/stores.js";
 import type { Database } from "../../src/db/schema.js";
 import { makeJob } from "../../src/jobs/job.js";
 import { accountStrictCases } from "../helpers/accountContract.js";
+import { authenticatorStrictCases } from "../helpers/authenticatorContract.js";
 import { keyStrictCases } from "../helpers/keyContract.js";
 import { methodStrictCases } from "../helpers/methodContract.js";
 import { tokenStrictCases } from "../helpers/tokenContract.js";
@@ -44,6 +45,7 @@ async function emptyStores() {
 storeContract(emptyStores);
 accountStrictCases(emptyStores);
 methodStrictCases(emptyStores);
+authenticatorStrictCases(emptyStores);
 tokenStrictCases(emptyStores);
 keyStrictCases(emptyStores);
 gmailStoreContract(emptyStores);
