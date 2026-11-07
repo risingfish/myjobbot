@@ -536,7 +536,8 @@ production uses.
 On GitHub, the `Tests` workflow runs `npm test` (unit and UI tests) on every pull request and push
 to `main`. Its `unit-tests` check is required by the `main: tests must pass` ruleset, which has no
 bypass, so a pull request can't merge until it passes. The integration tests stay local: GitHub's
-runners can't reach the MariaDB server.
+runners can't reach the MariaDB server. The `Image` and `Chart` workflows don't run on pull requests, only
+on pushes to `main` and `v*` tags, so an image or chart problem shows up after the merge.
 
 The real-browser rendering test runs only when `MYJOBBOT_TEST_BROWSER_URL` names a Playwright
 1.64.1 server that can reach the test's own `127.0.0.1` server, so not the compose `browser`
