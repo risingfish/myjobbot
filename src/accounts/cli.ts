@@ -1,8 +1,7 @@
 import { checkEmail } from "./emails.js";
 import type { AuthContext } from "./flows/context.js";
 import { recordSecurityEvent } from "./flows/securityEvents.js";
-import { digestPassword } from "./passwordDigest.js";
-import { checkPassword } from "./passwordRule.js";
+import { newPasswordDigest } from "./ways/password.js";
 
 export interface AccountIo {
     isTty: boolean;
@@ -29,9 +28,9 @@ async function readLogin(io: AccountIo, rawEmail: string): Promise<Login | strin
     if (!io.isTty) return "account: needs a terminal for the password";
     const password = await io.askHidden("Password: ");
     if ((await io.askHidden("Password again: ")) !== password) return "password: the two entries differ";
-    const problem = checkPassword(password);
-    if (problem !== null) return `password: ${problem}`;
-    return { email: email.email, emailKey: email.emailKey, passwordDigest: await digestPassword(password) };
+    const digest = await newPasswordDigest(password);
+    if (!digest.ok) return `password: ${digest.message}`;
+    return { email: email.email, emailKey: email.emailKey, passwordDigest: digest.digest };
 }
 
 /** Gives user 1 an email, the admin mark and a password, refusing once user 1 has an email. */

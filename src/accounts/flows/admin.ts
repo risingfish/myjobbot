@@ -7,7 +7,7 @@ import { newToken, tokenDigest } from "../tokens.js";
 import type { Actor, AuthContext, Refused } from "./context.js";
 import { mailTo } from "./mail.js";
 import { recordSecurityEvent } from "./securityEvents.js";
-import { startSession, type SessionCookies } from "./signIn.js";
+import { startSession, type SessionCookies } from "./sessions.js";
 
 const NOT_ADMIN: Refused = { ok: false, message: MESSAGES.not_admin };
 

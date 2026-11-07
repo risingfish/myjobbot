@@ -1,4 +1,5 @@
 import { accountContract } from "./helpers/accountContract.js";
+import { authenticatorContract } from "./helpers/authenticatorContract.js";
 import { keyContract } from "./helpers/keyContract.js";
 import { methodContract } from "./helpers/methodContract.js";
 import { sessionContract } from "./helpers/sessionContract.js";
@@ -28,6 +29,7 @@ storeContract(async () => memoryStores());
 sessionContract(async () => memoryStores());
 accountContract(async () => memoryStores());
 methodContract(async () => memoryStores());
+authenticatorContract(async () => memoryStores());
 tokenContract(async () => memoryStores());
 keyContract(async () => memoryStores());
 gmailStoreContract(async () => memoryStores());

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { adminChangeEmail } from "../src/accounts/flows/admin.js";
 import { requestPasswordReset, spendEmailLink } from "../src/accounts/flows/emailLinks.js";
-import { signInWithPassword } from "../src/accounts/flows/signIn.js";
+import { signInWithPassword } from "./helpers/signInWays.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
 import { linkFrom } from "./helpers/linkFrom.js";

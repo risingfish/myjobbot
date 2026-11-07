@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
-import { requestEmailChange, requestSignInLink, sendTestEmail, spendEmailLink } from "../src/accounts/flows/emailLinks.js";
+import { requestEmailChange, sendTestEmail, spendEmailLink } from "../src/accounts/flows/emailLinks.js";
+import { requestSignInLink } from "../src/accounts/ways/emailLink.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";

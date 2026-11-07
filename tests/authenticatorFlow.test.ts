@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
-import { confirmAuthenticator, removeAuthenticator, signInWithAuthenticator, startAuthenticatorSetup } from "../src/accounts/flows/authenticator.js";
+import { confirmAuthenticator, removeAuthenticator, startAuthenticatorSetup } from "../src/accounts/ways/authenticator.js";
+import { signInWithAuthenticator } from "./helpers/signInWays.js";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
@@ -58,7 +59,7 @@ test("without a usable secret key setup isn't offered, and a secret the key can 
 test("removing the app clears it and is recorded, but never when it is the last usable way", async () => {
     const { ctx, actor, auth } = await withAppSetUp();
     expect(await removeAuthenticator(ctx, actor)).toEqual({ ok: true });
-    expect(await ctx.stores.methods.authenticator(OWNER_ID)).toEqual({ sealedSecret: null, enabled: false, ready: false });
+    expect(await ctx.stores.authenticators.authenticator(OWNER_ID)).toEqual({ sealedSecret: null, enabled: false, ready: false });
     expect(auth.events.at(-1)?.event).toBe("app_removed");
     const again = await withAppSetUp();
     await setMethodEnabled(again.ctx, again.actor, { kind: "password", enabled: false });

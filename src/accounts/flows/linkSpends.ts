@@ -1,51 +1,25 @@
-import type { Device } from "../../db/sessionStore.js";
 import { emailChanged } from "../../mail/messages.js";
 import { checkEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
-import { usable } from "../methods.js";
-import { digestPassword } from "../passwordDigest.js";
-import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
+import { newPasswordDigest } from "../ways/password.js";
 import type { AuthContext } from "./context.js";
 import { mailTo } from "./mail.js";
 import { recordSecurityEvent } from "./securityEvents.js";
-import { startSession, type SessionCookies } from "./signIn.js";
-
-export interface LinkSpend {
-    token: string;
-    password?: string;
-    sessionDigest: string | null;
-    address: string;
-    heldDigest: string | null;
-    device?: Device;
-}
-
-export type SpendAnswer = { ok: true; kind: "signin"; cookies: SessionCookies } | { ok: true; kind: "reset" } | { ok: true; kind: "email_change" } | { ok: true; kind: "step_up"; next: string } | { ok: false; message: string };
-
-const EXPIRED: SpendAnswer = { ok: false, message: MESSAGES.link_expired };
+import { EXPIRED, type LinkSpend, type SpendAnswer } from "./mailLinks.js";
 
 /** Records a security event an opened link caused. */
-function record(ctx: AuthContext, input: { userId: number; address: string; event: "signed_in" | "password_reset" | "email_changed"; method: string | null }): Promise<void> {
+function record(ctx: AuthContext, input: { userId: number; address: string; event: "password_reset" | "email_changed"; method: string | null }): Promise<void> {
     return recordSecurityEvent(ctx, { userId: input.userId, at: ctx.now(), address: input.address, event: input.event, method: input.method });
-}
-
-/** Signs in with a sign-in link, once, and only while the account still has email links usable. */
-export async function spendSignIn(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
-    const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "signin" }, ctx.now());
-    const way = spent === null ? undefined : (await ctx.stores.methods.methods(spent.userId)).find((row) => row.kind === "email_link");
-    if (spent === null || way === undefined || !usable(way, { mailOn: ctx.mail !== null })) return EXPIRED;
-    const cookies = await startSession(ctx, { userId: spent.userId, address: spend.address, heldDigest: spend.heldDigest, device: spend.device });
-    await record(ctx, { userId: spent.userId, address: spend.address, event: "signed_in", method: "email_link" });
-    return { ok: true, kind: "signin", cookies };
 }
 
 /** Sets a new password with a reset link, checking it first so a weak one leaves the link working, and ends every sign-in; it signs no one in. */
 export async function spendReset(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
-    const problem = checkPassword(spend.password ?? "");
-    if (problem !== null) return { ok: false, message: problem };
+    const next = await newPasswordDigest(spend.password ?? "");
+    if (!next.ok) return next;
     const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "reset" }, ctx.now());
     if (spent === null) return EXPIRED;
-    await ctx.stores.methods.setPassword(spent.userId, await digestPassword(spend.password ?? ""), ctx.now());
+    await ctx.stores.methods.setPassword(spent.userId, next.digest, ctx.now());
     await ctx.stores.sessions.endAllFor(spent.userId, ctx.now());
     await record(ctx, { userId: spent.userId, address: spend.address, event: "password_reset", method: "password" });
     return { ok: true, kind: "reset" };

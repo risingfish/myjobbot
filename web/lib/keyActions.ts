@@ -3,46 +3,45 @@
 import { revalidatePath } from "next/cache.js";
 import { redirect } from "next/navigation.js";
 import { z } from "zod";
-import * as keys from "../../src/accounts/flows/keys.js";
+import { signInByWay } from "../../src/accounts/flows/signIn.js";
+import * as keys from "../../src/accounts/ways/hardwareKey.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
-import { actorNow } from "./actor.js";
+import { parsedWith, signedInAction } from "./accountAction.js";
 import { authContext, webSettings } from "./authDeps.js";
 import { guarded } from "./guard.js";
 import { heldDigest, requestAddress, requestDevice, setSessionCookies } from "./requestAuth.js";
 
-type Refused = { ok: false; message: string };
-
-const SIGNED_OUT: Refused = { ok: false, message: MESSAGES.signed_out };
 const name = z.string().max(200);
 
 /** Starts adding a hardware key under a name, giving the browser its registration options. */
-async function startKeyRegistrationAction(keyName: unknown) {
-    const parsed = name.safeParse(keyName);
-    const now = await actorNow();
-    if (!parsed.success || now === null) return SIGNED_OUT;
-    return keys.startKeyRegistration(await authContext(), now.actor, parsed.data);
-}
+const startKeyRegistrationAction = signedInAction(
+    (keyName: unknown) => parsedWith(name, keyName),
+    ({ ctx, actor }, keyName) => keys.startKeyRegistration(ctx, actor, keyName),
+);
 
 /** Adds the key the browser registered, giving the first recovery codes to show once. */
-async function finishKeyRegistrationAction(keyName: unknown, response: unknown) {
-    const parsed = name.safeParse(keyName);
-    const now = await actorNow();
-    if (!parsed.success || now === null) return SIGNED_OUT;
-    const answer = await keys.finishKeyRegistration(await authContext(), now.actor, { name: parsed.data, response });
-    if (answer.ok) revalidatePath("/account");
-    return answer;
-}
+const finishKeyRegistrationAction = signedInAction(
+    (keyName: unknown, response: unknown) => {
+        const parsed = parsedWith(name, keyName);
+        return parsed === null ? null : { name: parsed, response };
+    },
+    async ({ ctx, actor }, key) => {
+        const answer = await keys.finishKeyRegistration(ctx, actor, key);
+        if (answer.ok) revalidatePath("/account");
+        return answer;
+    },
+);
 
 /** Deletes one of the account's hardware keys. */
-async function removeKeyAction(id: unknown) {
-    const parsed = z.number().int().positive().safeParse(id);
-    const now = await actorNow();
-    if (!parsed.success || now === null) return SIGNED_OUT;
-    const answer = await keys.removeKey(await authContext(), now.actor, parsed.data);
-    revalidatePath("/account");
-    return answer;
-}
+const removeKeyAction = signedInAction(
+    (id: unknown) => parsedWith(z.number().int().positive(), id),
+    async ({ ctx, actor }, id) => {
+        const answer = await keys.removeKey(ctx, actor, id);
+        revalidatePath("/account");
+        return answer;
+    },
+);
 
 /** Gives the browser options to answer with any key, for signing in or confirming it's you. */
 async function startKeySignInAction() {
@@ -55,7 +54,7 @@ async function finishKeySignInAction(form: FormData): Promise<{ message: string 
     if (settings === null) return { message: MESSAGES.signin_failed };
     const response = JSON.parse(String(form.get("response") ?? "null")) as unknown;
     const request = { email: String(form.get("email") ?? ""), address: await requestAddress(settings), heldDigest: await heldDigest(settings), device: await requestDevice(settings, form) };
-    const answer = await keys.finishKeySignIn(await authContext(), { ...request, response });
+    const answer = await signInByWay(await authContext(), request, { kind: "hardware_key", fields: { response } });
     if (!answer.ok) return { message: answer.message };
     await setSessionCookies(settings, answer.cookies);
     redirect(safeReturnPath(String(form.get("next") ?? "")));

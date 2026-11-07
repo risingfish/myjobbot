@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
-import { confirmAuthenticator, removeAuthenticator, startAuthenticatorSetup } from "../src/accounts/flows/authenticator.js";
+import { confirmAuthenticator, removeAuthenticator, startAuthenticatorSetup } from "../src/accounts/ways/authenticator.js";
 import { confirmIdentity } from "../src/accounts/flows/confirmIdentity.js";
-import { makeRecoveryCodes, signInWithRecoveryCode } from "../src/accounts/flows/recoveryCodes.js";
+import { makeRecoveryCodes } from "../src/accounts/ways/recoveryCode.js";
+import { signInWithRecoveryCode } from "./helpers/signInWays.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { appCode } from "./helpers/appCode.js";

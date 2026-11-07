@@ -1,5 +1,6 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import { finishKeyRegistration, finishKeySignIn, removeKey, startKeyRegistration, startKeySignIn } from "../src/accounts/flows/keys.js";
+import { finishKeyRegistration, removeKey, startKeyRegistration, startKeySignIn } from "../src/accounts/ways/hardwareKey.js";
+import { finishKeySignIn } from "./helpers/signInWays.js";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";

@@ -3,13 +3,13 @@ import type { Account } from "../../db/accountStore.js";
 import type { ChallengePurpose, StoredKey } from "../../db/keyStore.js";
 import { registrationOptions, signInOptions, verifiedCredential, verifiedSignIn } from "../keys.js";
 import { MESSAGES } from "../messages.js";
-import { usable } from "../methods.js";
 import { checkKeyName } from "../names.js";
 import { tokenDigest } from "../tokens.js";
-import type { Actor, AuthContext, Refused } from "./context.js";
-import { recordWayAdded } from "./recoveryCodes.js";
-import { recordSecurityEvent } from "./securityEvents.js";
-import { signInWith, type SignInAnswer, type SignInRequest } from "./signIn.js";
+import { wayUsable } from "./usable.js";
+import type { Actor, AuthContext, Refused } from "../flows/context.js";
+import { recordWayAdded } from "./recoveryCode.js";
+import { recordSecurityEvent } from "../flows/securityEvents.js";
+import type { ProofWay } from "./registry.js";
 
 const UNAVAILABLE: Refused = { ok: false, message: MESSAGES.key_unavailable };
 
@@ -60,16 +60,14 @@ export async function startKeySignIn(ctx: AuthContext): Promise<{ ok: true; opti
 
 /** Finds the stored key a browser answered with, when it belongs to the account and the account's hardware keys are usable. */
 async function accountKey(ctx: AuthContext, account: Account | null, response: unknown): Promise<StoredKey | null> {
-    if (account === null) return null;
-    const way = (await ctx.stores.methods.methods(account.id)).find((row) => row.kind === "hardware_key");
-    if (way === undefined || !usable(way, { mailOn: ctx.mail !== null })) return null;
+    if (account === null || !(await wayUsable(ctx, account.id, "hardware_key"))) return null;
     const id = (response as { id?: unknown } | null)?.id;
     const stored = typeof id === "string" ? await ctx.stores.keys.keyByCredential(id) : null;
     return stored?.userId === account.id ? stored : null;
 }
 
 /** Says whether a browser's key answer is a right one from one of the account's keys, and keeps its counter; a counter that doesn't move on is refused and recorded. */
-export async function keyMatches(ctx: AuthContext, account: Account | null, response: unknown): Promise<boolean> {
+async function keyMatches(ctx: AuthContext, account: Account | null, response: unknown): Promise<boolean> {
     const stored = await accountKey(ctx, account, response);
     if (stored === null || ctx.relyingParty === null) return false;
     const counter = await verifiedSignIn(response as AuthenticationResponseJSON, { rp: ctx.relyingParty, key: stored, challenge: spendsChallenge(ctx, "signin", null) });
@@ -82,7 +80,8 @@ export async function keyMatches(ctx: AuthContext, account: Account | null, resp
     return true;
 }
 
-/** Signs in with an email and a key answer, under the shared limits; the key must belong to that email's account. */
-export function finishKeySignIn(ctx: AuthContext, input: SignInRequest & { response: unknown }): Promise<SignInAnswer> {
-    return signInWith(ctx, input, { method: "hardware_key", matches: (account) => keyMatches(ctx, account, input.response) });
-}
+export const hardwareKeyWay: ProofWay = {
+    kind: "hardware_key",
+    readProof: (fields) => (fields.response === undefined ? null : { response: fields.response }),
+    matches: (ctx, account, proof) => keyMatches(ctx, account, proof.response),
+};

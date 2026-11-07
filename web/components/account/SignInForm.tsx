@@ -6,9 +6,16 @@ import { signInWithKey } from "../../lib/keyBrowser.js";
 import { withPosition } from "../../lib/position.js";
 import { requestPasswordResetForm, requestSignInLinkForm, signInForm, type SignInState } from "../../lib/signInActions.js";
 import { Field } from "./Field.js";
-import { WayChoice, type Way } from "./WayChoice.js";
+import { CHOICE_KINDS, choiceOf, type ChoiceKind } from "../../../src/accounts/ways/catalog.js";
+import { WayChoice } from "./WayChoice.js";
 
 const READY: SignInState = { message: null };
+
+/** Says whether the submitted form chose a way that answers with a key rather than a typed field. */
+function byKey(form: FormData): boolean {
+    const way = CHOICE_KINDS.find((kind) => kind === form.get("way"));
+    return way !== undefined && choiceOf(way).field.kind === "key";
+}
 
 /** Renders the buttons that mail a sign-in link or a password reset for the email typed, and what the last request answered. */
 function LinkButtons({ note, requestLink, requestReset }: { note: string | null; requestLink: (form: FormData) => void; requestReset: (form: FormData) => void }) {
@@ -29,8 +36,8 @@ function LinkButtons({ note, requestLink, requestReset }: { note: string | null;
 
 /** Renders the sign-in form: the email and the chosen way's field; a refusal marks both and shows its one fixed message under the second. */
 export function SignInForm({ next }: { next: string }) {
-    const [state, signIn, signingIn] = useActionState(async (previous: SignInState, form: FormData) => (form.get("way") === "hardware_key" ? signInWithKey(await withPosition(form)) : signInForm(previous, await withPosition(form))), READY);
-    const [way, setWay] = useState<Way>("password");
+    const [state, signIn, signingIn] = useActionState(async (previous: SignInState, form: FormData) => (byKey(form) ? signInWithKey(await withPosition(form)) : signInForm(previous, await withPosition(form))), READY);
+    const [way, setWay] = useState<ChoiceKind>("password");
     const [linkState, requestLink] = useActionState(requestSignInLinkForm, READY);
     const [resetState, requestReset] = useActionState(requestPasswordResetForm, READY);
     const linkNote = linkState.message ?? resetState.message;
