@@ -300,6 +300,7 @@ quickstart §7.
 | S7 | +0 | +1 | +0 |
 | Planned after (S7) | +137 | +9 | +11 |
 | Actual after S7 (2026-11-07) | 1099 (+138) | 84 (+9) | 78 (+11) |
+| After review (2026-11-07) | 1100 (+139) | 84 (+9) | 78 (+11) |
 
 New tests: 129 / 9 / 8 (88.4% / 6.2% / 5.5% of 146). Against 023's baseline of
 922 / 70 / 64 (87.31% / 6.63% / 6.06%), every share moves toward 95 / 4 / 1: the suite becomes

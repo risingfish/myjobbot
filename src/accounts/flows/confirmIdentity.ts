@@ -1,9 +1,8 @@
-import { normalizeEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
 import { appCodeMatches } from "./authenticator.js";
 import type { Actor, AuthContext } from "./context.js";
 import { keyMatches } from "./keys.js";
-import { passwordMatches, recordFailure, signInLocked } from "./passwordCheck.js";
+import { actorTry, passwordMatches, recordFailure, signInLocked } from "./passwordCheck.js";
 import { recoveryCodeMatches } from "./recoveryCodes.js";
 
 export type IdentityProof = { method: "password"; password: string } | { method: "authenticator"; code: string } | { method: "recovery_code"; code: string } | { method: "hardware_key"; response: unknown };
@@ -20,7 +19,7 @@ function proofMatches(ctx: AuthContext, actor: Actor, proof: IdentityProof): Pro
 
 /** Renews a sign-in's proof of identity when its holder proves it again by any usable way; a failure counts toward the sign-in limits. */
 export async function confirmIdentity(ctx: AuthContext, actor: Actor, proof: IdentityProof): Promise<Confirmed> {
-    const attempt = { emailKey: normalizeEmail(actor.account.email ?? ""), address: actor.address, account: actor.account, method: proof.method };
+    const attempt = actorTry(actor, proof.method);
     const locked = await signInLocked(ctx, attempt);
     if (locked || !(await proofMatches(ctx, actor, proof))) {
         await recordFailure(ctx, attempt);

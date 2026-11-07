@@ -28,6 +28,14 @@ test("changing the password needs the current one and a new one meeting the rule
     expect(mailer.sent.map((mail) => mail.subject)).toEqual(["myjobbot: security notice"]);
 });
 
+test("wrong current passwords count toward the sign-in lock, so a held session can't guess the password", async () => {
+    const { ctx, actor, auth } = await signedInOwner();
+    for (let tries = 0; tries < 5; tries += 1) await changePassword(ctx, actor, { current: "wrong", next: "Newpassword1!" });
+    expect(await changePassword(ctx, actor, { current: PASSWORD, next: "Newpassword1!" })).toEqual({ ok: false, message: MESSAGES.current_password });
+    expect(auth.events.map((event) => event.event)).toContain("locked");
+    expect((await signInWithPassword(ctx, { email: "owner@example.com", password: PASSWORD, address: "direct", heldDigest: null })).ok).toBe(false);
+});
+
 test("signing out everywhere else ends the other sign-ins, keeps this one, and is recorded", async () => {
     const { ctx, actor, auth } = await signedInOwner();
     await signOutEverywhereElse(ctx, actor);

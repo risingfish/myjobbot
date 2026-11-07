@@ -48,8 +48,10 @@ async function lastKeyRemoved({ keys, methods }: Stores): Promise<void> {
     await methods.setEnabled(OWNER_ID, { kind: "password", enabled: false, mailOn: true }, NOW);
     expect(await keys.removeKey(OWNER_ID, { id: blue?.id ?? 0, mailOn: true }, NOW)).toBe("last_way");
     await methods.setEnabled(OWNER_ID, { kind: "password", enabled: true, mailOn: true }, NOW);
+    await methods.setEnabled(OWNER_ID, { kind: "hardware_key", enabled: false, mailOn: true }, NOW);
     expect(await keys.removeKey(OWNER_ID, { id: blue?.id ?? 0, mailOn: true }, NOW)).toBe("ok");
-    expect([await keys.keys(OWNER_ID), (await methods.methods(OWNER_ID))[2]?.ready]).toEqual([[], false]);
+    const key = (await methods.methods(OWNER_ID))[2];
+    expect([await keys.keys(OWNER_ID), key?.ready, key?.enabled]).toEqual([[], false, false]);
 }
 
 async function challengesOnceWithinFiveMinutes({ keys }: Stores): Promise<void> {

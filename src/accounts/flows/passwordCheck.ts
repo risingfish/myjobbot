@@ -1,7 +1,8 @@
 import type { Account } from "../../db/accountStore.js";
 import { attemptKey, limitFor, windowStart, type Limit } from "../limits.js";
 import { standInDigest, verifyPassword } from "../passwordDigest.js";
-import type { AuthContext } from "./context.js";
+import { normalizeEmail } from "../emails.js";
+import type { Actor, AuthContext } from "./context.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 
 export interface PasswordTry {
@@ -39,4 +40,17 @@ export async function passwordMatches(ctx: AuthContext, account: Account | null,
     const digest = account === null ? null : await ctx.stores.methods.passwordDigest(account.id);
     const matched = await verifyPassword(password, digest ?? (await standInDigest()));
     return matched && digest !== null;
+}
+
+/** Describes a signed-in account's own try at proving itself again, for the sign-in limits. */
+export function actorTry(actor: Actor, method: string): PasswordTry {
+    return { emailKey: normalizeEmail(actor.account.email ?? ""), address: actor.address, account: actor.account, method };
+}
+
+/** Checks a signed-in account's current password under the sign-in limits, so a held session can't be used to guess it. */
+export async function currentPasswordMatches(ctx: AuthContext, actor: Actor, password: string): Promise<boolean> {
+    const attempt = actorTry(actor, "password");
+    if (!(await signInLocked(ctx, attempt)) && (await passwordMatches(ctx, actor.account, password))) return true;
+    await recordFailure(ctx, attempt);
+    return false;
 }

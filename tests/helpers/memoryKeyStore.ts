@@ -40,7 +40,7 @@ export class MemoryKeyStore implements KeyStore {
         if (left.length === 0 && !keepsAWay(allMethods(methods), { kind: "hardware_key", enabled: false, mailOn: removal.mailOn })) return "last_way";
         const index = this.stored.findIndex((row) => row.userId === userId && row.id === removal.id);
         if (index !== -1) this.stored.splice(index, 1);
-        if (left.length === 0) upsertMethod(this.tables, { userId, kind: "hardware_key", enabled: true, ready: false, passwordDigest: null, updatedAt: now });
+        if (left.length === 0) for (const row of this.tables.methods) if (row.userId === userId && row.kind === "hardware_key") Object.assign(row, { ready: false, updatedAt: now });
         return "ok";
     }
 

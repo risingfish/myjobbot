@@ -5,7 +5,7 @@ import { digestPassword } from "../passwordDigest.js";
 import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
 import type { Actor, AuthContext, Refused } from "./context.js";
-import { passwordMatches } from "./passwordCheck.js";
+import { currentPasswordMatches } from "./passwordCheck.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { startSession, type SessionCookies } from "./signIn.js";
 
@@ -24,7 +24,7 @@ export async function saveName(ctx: AuthContext, actor: Actor, raw: string): Pro
 
 /** Changes the password given the current one, ending every other sign-in and giving this browser a new one. */
 export async function changePassword(ctx: AuthContext, actor: Actor, input: { current: string; next: string }): Promise<{ ok: true; cookies: SessionCookies } | Refused> {
-    if (!(await passwordMatches(ctx, actor.account, input.current))) return { ok: false, message: MESSAGES.current_password };
+    if (!(await currentPasswordMatches(ctx, actor, input.current))) return { ok: false, message: MESSAGES.current_password };
     const problem = checkPassword(input.next);
     if (problem !== null) return { ok: false, message: problem };
     await ctx.stores.methods.setPassword(actor.account.id, await digestPassword(input.next), ctx.now());
