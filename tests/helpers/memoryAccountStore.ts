@@ -75,6 +75,12 @@ export class MemoryAccountStore implements AccountStore {
             .map(({ event }) => ({ ...event }));
     }
 
+    async changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken"> {
+        if (this.tables.users.some((user) => user.emailKey === emailKey && user.id !== userId)) return "taken";
+        for (const user of this.tables.users) if (user.id === userId) Object.assign(user, { email, emailKey });
+        return "ok";
+    }
+
     async recordEvent(event: SecurityEvent): Promise<void> {
         this.tables.events.push({ ...event });
     }

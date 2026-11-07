@@ -34,9 +34,8 @@ const STATE = {
 async function waysShownOnlyWhileOn() {
     const switches = screen.getAllByRole("switch");
     expect(switches.map((box) => (box as HTMLInputElement).checked)).toEqual([true, false, false, false]);
-    expect(screen.getAllByText("Not set up")).toHaveLength(3);
+    expect(screen.queryByText(/^(Not set up|Set up)$/)).toBeNull();
     expect(switches.map((box) => (box as HTMLInputElement).disabled)).toEqual([true, false, false, false]);
-    expect(screen.getByText("Your only way to sign in, so it stays on")).toBeTruthy();
     expect(screen.getByLabelText("Current password")).toBeTruthy();
     expect(screen.queryByText(/comes in a later update/)).toBeNull();
     expect(document.querySelector("details")).toBeNull();

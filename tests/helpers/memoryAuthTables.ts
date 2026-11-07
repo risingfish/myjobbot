@@ -26,6 +26,17 @@ export interface MemoryCode {
     usedBy: number | null;
 }
 
+export interface MemoryEmailToken {
+    digest: string;
+    userId: number;
+    purpose: string;
+    newEmail: string | null;
+    sessionDigest: string | null;
+    returnPath: string | null;
+    expiresAt: string;
+    usedAt: string | null;
+}
+
 export interface AuthTables {
     users: MemoryUser[];
     methods: MemoryMethod[];
@@ -33,10 +44,11 @@ export interface AuthTables {
     attempts: Array<AttemptKey & { at: string }>;
     events: SecurityEvent[];
     codes: MemoryCode[];
+    emailTokens: MemoryEmailToken[];
 }
 
 export function newAuthTables(): AuthTables {
-    return { users: [], methods: [], sessions: [], attempts: [], events: [], codes: [] };
+    return { users: [], methods: [], sessions: [], attempts: [], events: [], codes: [], emailTokens: [] };
 }
 
 export function upsertMethod(tables: AuthTables, method: MemoryMethod): void {

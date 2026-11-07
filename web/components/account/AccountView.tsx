@@ -6,6 +6,7 @@ import { saveName, setMethodEnabled } from "../../lib/accountActions.js";
 import type { AccountState, EventView, WayView } from "../../lib/accountState.js";
 import { Panel } from "../sections/Panel.js";
 import { SettingCard } from "../settings/SettingParts.js";
+import { EmailChange } from "./EmailChange.js";
 import { SignInsPanel } from "./SignInsPanel.js";
 import { shownRefusal, StepUpProvider, useStepUp } from "./StepUp.js";
 import { WayCard } from "./WayCard.js";
@@ -32,9 +33,7 @@ function ProfilePanel({ name, email }: { name: string; email: string }) {
         <Panel title="User Profile">
             <SettingCard title="Details">
                 <NameForm name={name} />
-                <p>
-                    Email: <strong>{email}</strong>
-                </p>
+                <EmailChange email={email} />
             </SettingCard>
         </Panel>
     );

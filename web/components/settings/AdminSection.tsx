@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Account } from "../../../src/db/accountStore.js";
-import { makeAccountCodeNow, setAdminMark, type CodeAnswer } from "../../lib/adminActions.js";
+import { adminChangeEmail, makeAccountCodeNow, setAdminMark, type CodeAnswer } from "../../lib/adminActions.js";
 import { shownRefusal, StepUpProvider, useStepUp } from "../account/StepUp.js";
 import { Panel } from "../sections/Panel.js";
 import { SettingCard } from "./SettingParts.js";
@@ -44,24 +44,46 @@ function CodeShown({ answer }: { answer: CodeAnswer }) {
     );
 }
 
-/** Renders one account's row with the button that grants or removes its admin mark. */
-function AccountRow({ account, onChange }: { account: Account; onChange: (account: Account) => void }) {
+interface RowActions {
+    onMark: (account: Account) => void;
+    onEmail: (account: Account, email: string) => void;
+}
+
+/** Renders the form that changes an account's email at once, for an owner who lost their address. */
+function EmailCell({ account, actions }: { account: Account; actions: RowActions }) {
+    return (
+        <form action={(form) => actions.onEmail(account, String(form.get("email") ?? ""))}>
+            <fieldset role="group">
+                <input name="email" type="email" aria-label={`New email for ${account.name}`} placeholder="New email" required />
+                <button type="submit" className="outline">
+                    Change email
+                </button>
+            </fieldset>
+        </form>
+    );
+}
+
+/** Renders one account's row with the button that grants or removes its admin mark and the form that changes its email. */
+function AccountRow({ account, actions }: { account: Account; actions: RowActions }) {
     return (
         <tr>
             <td>{account.name}</td>
             <td>{account.email}</td>
             <td>{account.isAdmin ? "Admin" : ""}</td>
             <td>
-                <button type="button" className="outline" onClick={() => onChange(account)}>
+                <button type="button" className="outline" onClick={() => actions.onMark(account)}>
                     {account.isAdmin ? "Remove admin" : "Make admin"}
                 </button>
+            </td>
+            <td>
+                <EmailCell account={account} actions={actions} />
             </td>
         </tr>
     );
 }
 
 /** Renders the table of accounts, each row with its admin control. */
-function AccountsTable({ accounts, onChange }: { accounts: Account[]; onChange: (account: Account) => void }) {
+function AccountsTable({ accounts, actions }: { accounts: Account[]; actions: RowActions }) {
     return (
         <table className="striped">
             <thead>
@@ -70,11 +92,12 @@ function AccountsTable({ accounts, onChange }: { accounts: Account[]; onChange: 
                     <th>Email</th>
                     <th>Admin</th>
                     <th />
+                    <th />
                 </tr>
             </thead>
             <tbody>
                 {accounts.map((account) => (
-                    <AccountRow key={account.id} account={account} onChange={onChange} />
+                    <AccountRow key={account.id} account={account} actions={actions} />
                 ))}
             </tbody>
         </table>
@@ -85,10 +108,13 @@ function AccountsTable({ accounts, onChange }: { accounts: Account[]; onChange: 
 function AccountList({ accounts }: { accounts: Account[] }) {
     const run = useStepUp();
     const [refusal, setRefusal] = useState<string | null>(null);
-    const change = async (account: Account) => setRefusal(shownRefusal(await run(() => setAdminMark(account.id, !account.isAdmin))));
+    const actions: RowActions = {
+        onMark: (account) => void run(() => setAdminMark(account.id, !account.isAdmin)).then((answer) => setRefusal(shownRefusal(answer))),
+        onEmail: (account, email) => void run(() => adminChangeEmail(account.id, email)).then((answer) => setRefusal(shownRefusal(answer))),
+    };
     return (
         <SettingCard title="Accounts">
-            <AccountsTable accounts={accounts} onChange={(target) => void change(target)} />
+            <AccountsTable accounts={accounts} actions={actions} />
             {refusal !== null && <p role="alert">{refusal}</p>}
         </SettingCard>
     );

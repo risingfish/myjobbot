@@ -41,4 +41,5 @@ export interface AccountStore {
     setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
     saveName(userId: number, name: string): Promise<void>;
     recentEvents(userId: number, limit: number): Promise<SecurityEvent[]>;
+    changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken">;
 }

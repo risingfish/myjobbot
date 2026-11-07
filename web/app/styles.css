@@ -44,6 +44,10 @@ input[aria-invalid="true"]:not([type="checkbox"], [type="radio"]) {
     }
 }
 
+[role="group"] button {
+    white-space: nowrap;
+}
+
 .step-up footer button {
     min-width: 10em;
 }

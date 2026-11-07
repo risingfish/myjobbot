@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache.js";
 import { z } from "zod";
-import { makeAccountCode, setAdmin } from "../../src/accounts/flows/admin.js";
+import { adminChangeEmail as changeEmail, makeAccountCode, setAdmin } from "../../src/accounts/flows/admin.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { authContext, webSettings } from "./authDeps.js";
 import { guarded } from "./guard.js";
@@ -35,5 +35,17 @@ async function setAdminMarkAction(userId: unknown, admin: unknown): Promise<Mark
     return { ok: true };
 }
 
+/** Changes another account's email at once for the signed-in admin. */
+async function adminChangeEmailAction(userId: unknown, email: unknown): Promise<MarkAnswer> {
+    const change = z.object({ userId: z.number().int().positive(), email: z.string().max(1000) }).safeParse({ userId, email });
+    const settings = webSettings();
+    if (!change.success || settings === null) return { ok: false, message: MESSAGES.email_invalid };
+    const { account, session } = await requireSession();
+    const answer = await changeEmail(await authContext(), { account, session, address: await requestAddress(settings) }, change.data);
+    if (answer.ok) revalidatePath("/settings");
+    return answer;
+}
+
 export const makeAccountCodeNow = guarded(makeCodeAction, { admin: true, stepUp: true });
 export const setAdminMark = guarded(setAdminMarkAction, { admin: true, stepUp: true });
+export const adminChangeEmail = guarded(adminChangeEmailAction, { admin: true, stepUp: true });

@@ -5,6 +5,7 @@ import { z } from "zod";
 import * as changes from "../../src/accounts/flows/accountChanges.js";
 import type { Actor } from "../../src/accounts/flows/context.js";
 import { confirmIdentity as confirm } from "../../src/accounts/flows/confirmIdentity.js";
+import * as links from "../../src/accounts/flows/emailLinks.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { METHOD_KINDS, type MethodKind } from "../../src/db/methodStore.js";
 import { authContext, webSettings, type WebSettings } from "./authDeps.js";
@@ -12,7 +13,7 @@ import { guarded } from "./guard.js";
 import { requestAddress, setSessionCookies } from "./requestAuth.js";
 import { requireSession } from "./session.js";
 
-export type AccountAnswer = { ok: true; setup?: MethodKind } | { ok: false; message: string; stepUp?: true };
+export type AccountAnswer = { ok: true; setup?: MethodKind; message?: string } | { ok: false; message: string; stepUp?: true };
 
 const SIGNED_OUT: AccountAnswer = { ok: false, message: MESSAGES.signed_out };
 const text = z.string().max(1000);
@@ -77,6 +78,28 @@ async function signOutDeviceAction(ref: unknown): Promise<AccountAnswer> {
     return answer;
 }
 
+/** Mails the test email to the signed-in account. */
+async function sendTestEmailAction(): Promise<AccountAnswer> {
+    const now = await actorNow();
+    return now === null ? SIGNED_OUT : links.sendTestEmail(await authContext(), now.actor);
+}
+
+/** Mails a link confirming a new email to that address; nothing changes until it is opened. */
+async function requestEmailChangeAction(email: unknown): Promise<AccountAnswer> {
+    const parsed = text.safeParse(email);
+    const now = await actorNow();
+    if (!parsed.success || now === null) return SIGNED_OUT;
+    return links.requestEmailChange(await authContext(), now.actor, parsed.data);
+}
+
+/** Mails a confirm-it's-you link for this browser, returning afterwards to the page it was asked from. */
+async function requestStepUpLinkAction(returnPath: unknown): Promise<AccountAnswer> {
+    const parsed = text.safeParse(returnPath);
+    const now = await actorNow();
+    if (!parsed.success || now === null) return SIGNED_OUT;
+    return links.requestStepUpLink(await authContext(), now.actor, parsed.data);
+}
+
 /** Proves the signed-in account's identity again with its password, so sensitive changes go through for the next 10 minutes. */
 async function confirmIdentityAction(password: unknown): Promise<AccountAnswer> {
     const parsed = text.safeParse(password);
@@ -91,3 +114,6 @@ export const setMethodEnabled = guarded(setMethodEnabledAction, { stepUp: true }
 export const signOutEverywhereElse = guarded(signOutEverywhereElseAction, { stepUp: true });
 export const signOutDevice = guarded(signOutDeviceAction, {});
 export const confirmIdentity = guarded(confirmIdentityAction, {});
+export const sendTestEmail = guarded(sendTestEmailAction, {});
+export const requestEmailChange = guarded(requestEmailChangeAction, { stepUp: true });
+export const requestStepUpLink = guarded(requestStepUpLinkAction, {});

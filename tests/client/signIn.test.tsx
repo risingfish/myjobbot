@@ -6,7 +6,7 @@ import { MESSAGES } from "../../src/accounts/messages.js";
 import PublicLayout from "../../web/app/(public)/layout.js";
 import { SignInForm } from "../../web/components/account/SignInForm.js";
 
-vi.mock("../../web/lib/signInActions.js", () => ({ signInWithPasswordForm: vi.fn(async () => ({ message: MESSAGES.signin_failed })) }));
+vi.mock("../../web/lib/signInActions.js", () => ({ signInWithPasswordForm: vi.fn(async () => ({ message: MESSAGES.signin_failed })), requestSignInLinkForm: vi.fn(), requestPasswordResetForm: vi.fn() }));
 
 test("the sign-in page asks for an email and password, answers a refusal with one fixed message, and shows nothing about the app or server", async () => {
     const { container } = render(

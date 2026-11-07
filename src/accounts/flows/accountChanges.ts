@@ -44,6 +44,7 @@ export async function signOutEverywhereElse(ctx: AuthContext, actor: Actor): Pro
 
 /** Switches a way of signing in on or off, never leaving none usable; switching on a way not set up asks for its setup. */
 export async function setMethodEnabled(ctx: AuthContext, actor: Actor, change: { kind: MethodKind; enabled: boolean }): Promise<{ ok: true; setup?: MethodKind } | Refused> {
+    if (change.kind === "email_link" && change.enabled && ctx.mail === null) return { ok: false, message: MESSAGES.mail_off };
     const result = await ctx.stores.methods.setEnabled(actor.account.id, { ...change, mailOn: ctx.mail !== null }, ctx.now());
     if (result === "last_way") return { ok: false, message: MESSAGES.last_way };
     await record(ctx, actor, { event: change.enabled ? "method_enabled" : "method_disabled", method: change.kind });

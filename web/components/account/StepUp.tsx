@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
-import { confirmIdentity } from "../../lib/accountActions.js";
+import { confirmIdentity, requestStepUpLink } from "../../lib/accountActions.js";
 import { Field } from "./Field.js";
 
 interface Answer {
@@ -40,6 +40,20 @@ function StepUpForm({ message, onConfirm }: { message: string | null; onConfirm:
     );
 }
 
+/** Renders the button that mails a confirmation link for this browser instead, returning to this page, and what it answered. */
+function EmailMeLink() {
+    const [note, setNote] = useState<string | null>(null);
+    const send = async () => setNote((await requestStepUpLink(`${window.location.pathname}${window.location.search}`)).message ?? null);
+    return (
+        <p>
+            <button type="button" className="secondary outline" onClick={() => void send()}>
+                Email me a confirmation link
+            </button>
+            {note !== null && <small role="status"> {note}</small>}
+        </p>
+    );
+}
+
 /** Returns the dialog's refusal and its two answers: confirm, then make the change again, or cancel and leave it unmade. */
 function useStepUpAnswers(pending: Pending, onDone: () => void) {
     const [message, setMessage] = useState<string | null>(null);
@@ -65,6 +79,7 @@ function StepUpDialog({ pending, onDone }: { pending: Pending; onDone: () => voi
                 <h3 id="step-up-title">Confirm it&apos;s you</h3>
                 <p>{MESSAGES.step_up}</p>
                 <StepUpForm message={message} onConfirm={confirmNow} />
+                <EmailMeLink />
                 <footer>
                     <button form="step-up-form">Confirm</button>
                     <button type="button" className="secondary" onClick={cancel}>

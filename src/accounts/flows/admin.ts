@@ -1,8 +1,11 @@
 import type { Account } from "../../db/accountStore.js";
 import { CODE_DAYS, daysAfter } from "../../db/tokenStore.js";
+import { emailChanged } from "../../mail/messages.js";
+import { checkEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
 import { newToken, tokenDigest } from "../tokens.js";
 import type { Actor, AuthContext } from "./context.js";
+import { mailTo } from "./mail.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { startSession, type SessionCookies } from "./signIn.js";
 
@@ -37,4 +40,16 @@ export async function setAdmin(ctx: AuthContext, actor: Actor, change: { userId:
     if ((await ctx.stores.accounts.setAdmin(change.userId, change.admin)) === "last_admin") return { ok: false, message: MESSAGES.last_admin };
     await recordSecurityEvent(ctx, { userId: change.userId, at: ctx.now(), address: actor.address, event: change.admin ? "admin_granted" : "admin_removed", method: null });
     return { ok: true, cookies: await endSessionsAfter(ctx, actor, change.userId) };
+}
+
+/** Changes another account's email at once for an admin, for an owner who lost their address, telling the old address and keeping its sign-ins. */
+export async function adminChangeEmail(ctx: AuthContext, actor: Actor, change: { userId: number; email: string }): Promise<{ ok: true } | Refused> {
+    if (!actor.account.isAdmin) return NOT_ADMIN;
+    const email = checkEmail(change.email);
+    const target = await ctx.stores.accounts.account(change.userId);
+    if (!email.ok || target === null) return { ok: false, message: MESSAGES.email_invalid };
+    if ((await ctx.stores.accounts.changeEmail(target.id, email.email, email.emailKey)) === "taken") return { ok: false, message: MESSAGES.email_taken };
+    if (target.email) mailTo(ctx, target.email, () => emailChanged(target.name));
+    await recordSecurityEvent(ctx, { userId: target.id, at: ctx.now(), address: actor.address, event: "admin_email_change", method: null });
+    return { ok: true };
 }

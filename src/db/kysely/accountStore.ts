@@ -75,6 +75,19 @@ export class KyselyAccountStore implements AccountStore {
         return rows.map((row) => ({ userId: row.user_id, at: row.at, address: row.address, event: row.event as SecurityEventName, method: row.method }));
     }
 
+    /** Changes an account's email and its key, refusing a key another account holds. */
+    async changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken"> {
+        const holder = await this.db.selectFrom("users").select("id").where("email_key", "=", emailKey).where("id", "<>", userId).executeTakeFirst();
+        if (holder !== undefined) return "taken";
+        try {
+            await this.db.updateTable("users").set({ email, email_key: emailKey }).where("id", "=", userId).execute();
+            return "ok";
+        } catch (error) {
+            if ((error as { code?: unknown } | null)?.code === "ER_DUP_ENTRY") return "taken";
+            throw error;
+        }
+    }
+
     /** Stores one security event. */
     async recordEvent(event: SecurityEvent): Promise<void> {
         await this.db.insertInto("security_events").values({ user_id: event.userId, at: event.at, address: event.address, event: event.event, method: event.method }).execute();
