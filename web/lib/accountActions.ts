@@ -6,7 +6,9 @@ import * as changes from "../../src/accounts/flows/accountChanges.js";
 import { confirmIdentity as confirm } from "../../src/accounts/flows/confirmIdentity.js";
 import * as links from "../../src/accounts/flows/emailLinks.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
-import { METHOD_KINDS, type MethodKind } from "../../src/db/methodStore.js";
+import { CARD_KINDS } from "../../src/accounts/ways/catalog.js";
+import { changePassword as changePasswordFor } from "../../src/accounts/ways/password.js";
+import type { MethodKind } from "../../src/db/methodStore.js";
 import { actorNow } from "./actor.js";
 import { authContext } from "./authDeps.js";
 import { guarded } from "./guard.js";
@@ -16,7 +18,7 @@ export type AccountAnswer = { ok: true; setup?: MethodKind; message?: string } |
 
 const SIGNED_OUT: AccountAnswer = { ok: false, message: MESSAGES.signed_out };
 const text = z.string().max(1000);
-const methodChange = z.object({ kind: z.enum(METHOD_KINDS), enabled: z.boolean() });
+const methodChange = z.object({ kind: z.enum(CARD_KINDS), enabled: z.boolean() });
 
 /** Saves the signed-in account's new name, shown again in the header. */
 async function saveNameAction(name: unknown): Promise<AccountAnswer> {
@@ -33,7 +35,7 @@ async function changePasswordAction(current: unknown, next: unknown): Promise<Ac
     const parsed = z.object({ current: text, next: text }).safeParse({ current, next });
     const now = await actorNow();
     if (!parsed.success || now === null) return SIGNED_OUT;
-    const answer = await changes.changePassword(await authContext(), now.actor, parsed.data);
+    const answer = await changePasswordFor(await authContext(), now.actor, parsed.data);
     if (!answer.ok) return answer;
     await setSessionCookies(now.settings, answer.cookies);
     revalidatePath("/account");

@@ -2,15 +2,15 @@ import { normalizeEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
 import type { Account } from "../../db/accountStore.js";
 import type { Device } from "../../db/sessionStore.js";
+import type { ChoiceKind } from "../ways/catalog.js";
+import { PROOF_WAYS, type ProofFields } from "../ways/registry.js";
 import type { AuthContext } from "./context.js";
 import { recordFailure, signInLocked } from "./attempts.js";
-import { passwordMatches } from "./passwordCheck.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { startSession, type SessionCookies } from "./sessions.js";
 
-export interface PasswordSignIn {
+export interface SignInRequest {
     email: string;
-    password: string;
     address: string;
     heldDigest: string | null;
     device?: Device;
@@ -20,15 +20,13 @@ export type SignInAnswer = { ok: true; userId: number; cookies: SessionCookies }
 
 const REFUSED: SignInAnswer = { ok: false, message: MESSAGES.signin_failed };
 
-export type SignInRequest = Omit<PasswordSignIn, "password">;
-
-export interface SignInWay {
+interface SignInWay {
     method: string;
     matches: (account: Account | null) => Promise<boolean>;
 }
 
 /** Signs in by one way for an email, under the shared limits, answering every failure with one fixed refusal and recording it against that way. */
-export async function signInWith(ctx: AuthContext, input: SignInRequest, way: SignInWay): Promise<SignInAnswer> {
+async function signInWith(ctx: AuthContext, input: SignInRequest, way: SignInWay): Promise<SignInAnswer> {
     const emailKey = normalizeEmail(input.email);
     const account = await ctx.stores.accounts.byEmailKey(emailKey);
     const attempt = { emailKey, address: input.address, account, method: way.method };
@@ -43,9 +41,11 @@ export async function signInWith(ctx: AuthContext, input: SignInRequest, way: Si
     return { ok: true, userId: account.id, cookies };
 }
 
-/** Signs in with an email and password; an unknown email is checked against the stand-in digest so every answer takes as long. */
-export function signInWithPassword(ctx: AuthContext, input: PasswordSignIn): Promise<SignInAnswer> {
-    return signInWith(ctx, input, { method: "password", matches: (account) => passwordMatches(ctx, account, input.password) });
+/** Signs in with an email by the way chosen, reading that way's proof from the fields given; a missing proof is refused like a wrong one. */
+export function signInByWay(ctx: AuthContext, input: SignInRequest, chosen: { kind: ChoiceKind; fields: ProofFields }): Promise<SignInAnswer> {
+    const way = PROOF_WAYS[chosen.kind];
+    const proof = way.readProof(chosen.fields);
+    return signInWith(ctx, input, { method: way.kind, matches: async (account) => proof !== null && way.matches(ctx, account, proof, input.address) });
 }
 
 /** Ends one sign-in on the server. */

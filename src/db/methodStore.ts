@@ -1,6 +1,6 @@
-export const METHOD_KINDS = ["password", "email_link", "hardware_key", "authenticator"] as const;
+import type { CardKind } from "../accounts/ways/catalog.js";
 
-export type MethodKind = (typeof METHOD_KINDS)[number];
+export type MethodKind = CardKind;
 
 export interface MethodRow {
     kind: MethodKind;

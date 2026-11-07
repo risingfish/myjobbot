@@ -5,11 +5,11 @@ import { registrationOptions, signInOptions, verifiedCredential, verifiedSignIn 
 import { MESSAGES } from "../messages.js";
 import { checkKeyName } from "../names.js";
 import { tokenDigest } from "../tokens.js";
-import { wayUsable } from "../ways/usable.js";
-import type { Actor, AuthContext, Refused } from "./context.js";
-import { recordWayAdded } from "./recoveryCodes.js";
-import { recordSecurityEvent } from "./securityEvents.js";
-import { signInWith, type SignInAnswer, type SignInRequest } from "./signIn.js";
+import { wayUsable } from "./usable.js";
+import type { Actor, AuthContext, Refused } from "../flows/context.js";
+import { recordWayAdded } from "./recoveryCode.js";
+import { recordSecurityEvent } from "../flows/securityEvents.js";
+import type { ProofWay } from "./registry.js";
 
 const UNAVAILABLE: Refused = { ok: false, message: MESSAGES.key_unavailable };
 
@@ -67,7 +67,7 @@ async function accountKey(ctx: AuthContext, account: Account | null, response: u
 }
 
 /** Says whether a browser's key answer is a right one from one of the account's keys, and keeps its counter; a counter that doesn't move on is refused and recorded. */
-export async function keyMatches(ctx: AuthContext, account: Account | null, response: unknown): Promise<boolean> {
+async function keyMatches(ctx: AuthContext, account: Account | null, response: unknown): Promise<boolean> {
     const stored = await accountKey(ctx, account, response);
     if (stored === null || ctx.relyingParty === null) return false;
     const counter = await verifiedSignIn(response as AuthenticationResponseJSON, { rp: ctx.relyingParty, key: stored, challenge: spendsChallenge(ctx, "signin", null) });
@@ -80,7 +80,8 @@ export async function keyMatches(ctx: AuthContext, account: Account | null, resp
     return true;
 }
 
-/** Signs in with an email and a key answer, under the shared limits; the key must belong to that email's account. */
-export function finishKeySignIn(ctx: AuthContext, input: SignInRequest & { response: unknown }): Promise<SignInAnswer> {
-    return signInWith(ctx, input, { method: "hardware_key", matches: (account) => keyMatches(ctx, account, input.response) });
-}
+export const hardwareKeyWay: ProofWay = {
+    kind: "hardware_key",
+    readProof: (fields) => (fields.response === undefined ? null : { response: fields.response }),
+    matches: (ctx, account, proof) => keyMatches(ctx, account, proof.response),
+};

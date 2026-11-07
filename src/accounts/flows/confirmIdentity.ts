@@ -1,21 +1,18 @@
 import { MESSAGES } from "../messages.js";
-import { appCodeMatches } from "./authenticator.js";
-import type { Actor, AuthContext } from "./context.js";
-import { keyMatches } from "./keys.js";
+import type { ChoiceKind } from "../ways/catalog.js";
+import { PROOF_WAYS, type ProofFields } from "../ways/registry.js";
 import { actorTry, recordFailure, signInLocked } from "./attempts.js";
-import { passwordMatches } from "./passwordCheck.js";
-import { recoveryCodeMatches } from "./recoveryCodes.js";
+import type { Actor, AuthContext } from "./context.js";
 
-export type IdentityProof = { method: "password"; password: string } | { method: "authenticator"; code: string } | { method: "recovery_code"; code: string } | { method: "hardware_key"; response: unknown };
+export type IdentityProof = { method: ChoiceKind } & ProofFields;
 
 export type Confirmed = { ok: true } | { ok: false; message: string };
 
-/** Says whether a proof of identity is right for the actor's account, by the way it uses. */
-function proofMatches(ctx: AuthContext, actor: Actor, proof: IdentityProof): Promise<boolean> {
-    if (proof.method === "password") return passwordMatches(ctx, actor.account, proof.password);
-    if (proof.method === "authenticator") return appCodeMatches(ctx, actor.account.id, { code: proof.code });
-    if (proof.method === "hardware_key") return keyMatches(ctx, actor.account, proof.response);
-    return recoveryCodeMatches(ctx, actor.account, { code: proof.code, address: actor.address });
+/** Says whether a proof of identity is right for the actor's account, by the way it names. */
+async function proofMatches(ctx: AuthContext, actor: Actor, proof: IdentityProof): Promise<boolean> {
+    const way = PROOF_WAYS[proof.method];
+    const read = way.readProof(proof);
+    return read !== null && way.matches(ctx, actor.account, read, actor.address);
 }
 
 /** Renews a sign-in's proof of identity when its holder proves it again by any usable way; a failure counts toward the sign-in limits. */

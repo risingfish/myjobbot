@@ -1,11 +1,12 @@
 import type { Kysely, Transaction } from "kysely";
 import { allMethods, keepsAWay } from "../../accounts/methods.js";
-import { METHOD_KINDS, type MethodChange, type MethodKind, type MethodRow } from "../methodStore.js";
+import { CARD_KINDS } from "../../accounts/ways/catalog.js";
+import type { MethodChange, MethodKind, MethodRow } from "../methodStore.js";
 import type { Database } from "../schema.js";
 
 /** Says whether a stored kind is one of the four ways. */
 function isKind(kind: string): kind is MethodKind {
-    return (METHOD_KINDS as readonly string[]).includes(kind);
+    return (CARD_KINDS as readonly string[]).includes(kind);
 }
 
 /** Reads the stored ways of an account, through the database or a transaction. */

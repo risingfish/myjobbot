@@ -2,9 +2,8 @@ import { checkEmail } from "../emails.js";
 import { attemptKey, limitFor, windowStart } from "../limits.js";
 import { MESSAGES } from "../messages.js";
 import { checkName } from "../names.js";
-import { digestPassword } from "../passwordDigest.js";
-import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
+import { newPasswordDigest } from "../ways/password.js";
 import { accountCreated, someoneTried } from "../../mail/messages.js";
 import type { NewAccount } from "../../db/accountStore.js";
 import type { Device } from "../../db/sessionStore.js";
@@ -30,9 +29,9 @@ async function checkedForm(form: AccountForm): Promise<NewAccount | string> {
     if (!email.ok) return email.message;
     const name = checkName(form.name);
     if (!name.ok) return name.message;
-    const problem = checkPassword(form.password);
-    if (problem !== null) return problem;
-    return { email: email.email, emailKey: email.emailKey, name: name.name, passwordDigest: await digestPassword(form.password) };
+    const password = await newPasswordDigest(form.password);
+    if (!password.ok) return password.message;
+    return { email: email.email, emailKey: email.emailKey, name: name.name, passwordDigest: password.digest };
 }
 
 /** Counts this attempt against the address's hourly code limit, saying whether the limit was already reached. */

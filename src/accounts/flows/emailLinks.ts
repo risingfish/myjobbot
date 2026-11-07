@@ -1,53 +1,13 @@
-import type { Account } from "../../db/accountStore.js";
-import type { LinkPurpose, NewEmailToken } from "../../db/tokenStore.js";
-import { confirmItsYou, confirmNewEmail, passwordReset, signInLink, testMail, type MailContent } from "../../mail/messages.js";
+import type { LinkPurpose } from "../../db/tokenStore.js";
+import { confirmItsYou, confirmNewEmail, passwordReset, testMail } from "../../mail/messages.js";
 import { checkEmail, normalizeEmail } from "../emails.js";
-import { attemptKey, limitFor, windowStart } from "../limits.js";
 import { MESSAGES } from "../messages.js";
 import { safeReturnPath } from "../returnPath.js";
-import { newToken, tokenDigest } from "../tokens.js";
-import { wayUsable } from "../ways/usable.js";
+import { spendSignIn } from "../ways/emailLink.js";
 import type { Actor, AuthContext } from "./context.js";
-import { spendEmailChange, spendReset, spendSignIn, spendStepUp, type LinkSpend, type SpendAnswer } from "./linkSpends.js";
+import { spendEmailChange, spendReset, spendStepUp } from "./linkSpends.js";
 import { mailTo } from "./mail.js";
-
-type Answer = { ok: true; message?: string } | { ok: false; message: string };
-
-const MAIL_OFF: Answer = { ok: false, message: MESSAGES.mail_off };
-
-/** Counts a mail request against the email's limit, saying whether this one may still send. */
-async function mayMail(ctx: AuthContext, emailKey: string): Promise<boolean> {
-    const limit = limitFor("mailEmail");
-    const key = attemptKey(limit, emailKey);
-    const allowed = (await ctx.stores.sessions.countAttempts(key, windowStart(limit, ctx.now()))) < limit.max;
-    await ctx.stores.sessions.recordAttempt(key, ctx.now());
-    return allowed;
-}
-
-/** Makes a one-time link for an account and mails it, built from the app's address, to the given address or the account's own. */
-async function mailLink(ctx: AuthContext, account: Account, link: { token: Omit<NewEmailToken, "digest">; to?: string; build: (name: string, url: string) => MailContent }): Promise<void> {
-    const value = newToken(ctx.random);
-    await ctx.stores.tokens.makeEmailToken(account.id, { ...link.token, digest: tokenDigest(value) }, ctx.now());
-    const to = link.to ?? account.email;
-    if (to) mailTo(ctx, to, (baseUrl) => link.build(account.name, `${baseUrl}/link#p=${link.token.purpose}&t=${value}`));
-}
-
-/** Answers a link request keyed by a typed email: mail off or a bad email is said plainly; otherwise every email gets the same answer, and the link goes out only to an account, within the mail limit. */
-async function emailKeyedRequest(ctx: AuthContext, rawEmail: string, send: (account: Account) => Promise<void>): Promise<Answer> {
-    if (ctx.mail === null) return MAIL_OFF;
-    const email = checkEmail(rawEmail);
-    if (!email.ok) return email;
-    const account = (await mayMail(ctx, email.emailKey)) ? await ctx.stores.accounts.byEmailKey(email.emailKey) : null;
-    if (account !== null) await send(account);
-    return { ok: true, message: MESSAGES.link_sent };
-}
-
-/** Mails a sign-in link to an account with email links on. */
-export function requestSignInLink(ctx: AuthContext, input: { email: string; address: string }): Promise<Answer> {
-    return emailKeyedRequest(ctx, input.email, async (account) => {
-        if (await wayUsable(ctx, account.id, "email_link")) await mailLink(ctx, account, { token: { purpose: "signin" }, build: signInLink });
-    });
-}
+import { emailKeyedRequest, MAIL_OFF, mailLink, mayMail, type Answer, type LinkSpend, type SpendAnswer } from "./mailLinks.js";
 
 /** Mails a password reset link to an account. */
 export function requestPasswordReset(ctx: AuthContext, input: { email: string; address: string }): Promise<Answer> {

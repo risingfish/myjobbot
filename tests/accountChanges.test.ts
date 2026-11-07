@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
-import { changePassword, saveName, signOutDevice, signOutEverywhereElse } from "../src/accounts/flows/accountChanges.js";
+import { saveName, signOutDevice, signOutEverywhereElse } from "../src/accounts/flows/accountChanges.js";
+import { changePassword } from "../src/accounts/ways/password.js";
 import { recordSecurityEvent } from "../src/accounts/flows/securityEvents.js";
-import { signInWithPassword } from "../src/accounts/flows/signIn.js";
+import { signInWithPassword } from "./helpers/signInWays.js";
 import { noticeFor } from "../src/accounts/events.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";

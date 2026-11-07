@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache.js";
 import { redirect } from "next/navigation.js";
 import { z } from "zod";
-import * as keys from "../../src/accounts/flows/keys.js";
+import { signInByWay } from "../../src/accounts/flows/signIn.js";
+import * as keys from "../../src/accounts/ways/hardwareKey.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
 import { actorNow } from "./actor.js";
@@ -55,7 +56,7 @@ async function finishKeySignInAction(form: FormData): Promise<{ message: string 
     if (settings === null) return { message: MESSAGES.signin_failed };
     const response = JSON.parse(String(form.get("response") ?? "null")) as unknown;
     const request = { email: String(form.get("email") ?? ""), address: await requestAddress(settings), heldDigest: await heldDigest(settings), device: await requestDevice(settings, form) };
-    const answer = await keys.finishKeySignIn(await authContext(), { ...request, response });
+    const answer = await signInByWay(await authContext(), request, { kind: "hardware_key", fields: { response } });
     if (!answer.ok) return { message: answer.message };
     await setSessionCookies(settings, answer.cookies);
     redirect(safeReturnPath(String(form.get("next") ?? "")));

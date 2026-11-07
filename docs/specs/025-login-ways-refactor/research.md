@@ -75,7 +75,7 @@ is as merged in #114 (024).
 | `flows/recoveryCodes.ts` | `ways/recoveryCode.ts` (`recordWayAdded` with it) |
 | `requestSignInLink` in `emailLinks.ts`, `spendSignIn` in `linkSpends.ts` | `ways/emailLink.ts` |
 | `mayMail`, `mailLink`, `emailKeyedRequest` in `emailLinks.ts` | `flows/mailLinks.ts` (new) |
-| the rule-and-digest step in `accountChanges.ts`, `createAccount.ts`, `linkSpends.ts`, `cli.ts` | `ways/password.ts`: `newPasswordDigest(raw)` (rule check, then digest, or the rule's message) and `setNewPassword(ctx, userId, raw)` (that plus `setPassword`) |
+| the rule-and-digest step in `accountChanges.ts`, `createAccount.ts`, `linkSpends.ts`, `cli.ts` | `ways/password.ts`: `newPasswordDigest(raw)` (rule check, then digest, or the rule's message) |
 | `startSession`, `SessionCookies` in `flows/signIn.ts` | `flows/sessions.ts` |
 
 `emailLinks.ts` and `linkSpends.ts` keep the mail-link plumbing (test email, email change, step-up
@@ -90,9 +90,9 @@ could hold `undefined` for sign-in links.
 tests would be test-only code that knip reports. Their tests call `signInByWay` with the same inputs
 and expectations, which FR-003 allows.
 
-`createAccount.ts` and `cli.ts` (`account init`) need a digest for an account not yet stored, so
-they use `newPasswordDigest`. `changePassword`, the reset spend and `account reset` use
-`setNewPassword`.
+Every caller (`createAccount.ts`, `cli.ts`, `changePassword` and the reset spend) uses
+`newPasswordDigest`. Each checks the rule before acting (the reset before spending its link), so a
+combined `setNewPassword` would have changed the order and was dropped (2026-11-07).
 
 `passwordRule.ts`, `passwordDigest.ts`, `totp.ts` and `keys.ts` (the SimpleWebAuthn wrappers)
 stay as the pure helpers the way modules use.

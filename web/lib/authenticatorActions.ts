@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache.js";
 import { z } from "zod";
-import * as app from "../../src/accounts/flows/authenticator.js";
-import { makeRecoveryCodes as makeCodes } from "../../src/accounts/flows/recoveryCodes.js";
+import * as app from "../../src/accounts/ways/authenticator.js";
+import { makeRecoveryCodes as makeCodes } from "../../src/accounts/ways/recoveryCode.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { actorNow } from "./actor.js";
 import { authContext } from "./authDeps.js";

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
-import { confirmAuthenticator, removeAuthenticator, signInWithAuthenticator, startAuthenticatorSetup } from "../src/accounts/flows/authenticator.js";
+import { confirmAuthenticator, removeAuthenticator, startAuthenticatorSetup } from "../src/accounts/ways/authenticator.js";
+import { signInWithAuthenticator } from "./helpers/signInWays.js";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";

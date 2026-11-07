@@ -3,13 +3,12 @@
 import { cookies } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 import { createAccount } from "../../src/accounts/flows/createAccount.js";
-import { requestPasswordReset, requestSignInLink, spendEmailLink } from "../../src/accounts/flows/emailLinks.js";
-import { signInWithAuthenticator } from "../../src/accounts/flows/authenticator.js";
-import { signInWithRecoveryCode } from "../../src/accounts/flows/recoveryCodes.js";
-import { signInWithPassword, signOut, type SignInAnswer, type SignInRequest } from "../../src/accounts/flows/signIn.js";
-import type { AuthContext } from "../../src/accounts/flows/context.js";
+import { requestPasswordReset, spendEmailLink } from "../../src/accounts/flows/emailLinks.js";
+import { signInByWay, signOut } from "../../src/accounts/flows/signIn.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
+import { CHOICE_KINDS, wayEntry, type ChoiceKind } from "../../src/accounts/ways/catalog.js";
+import { requestSignInLink } from "../../src/accounts/ways/emailLink.js";
 import { refusedField, type AccountField } from "../../src/web/accountForms.js";
 import { parseLinkFragment } from "../../src/web/linkFragment.js";
 import { authContext, webSettings } from "./authDeps.js";
@@ -32,12 +31,10 @@ function field(form: FormData, name: string): string {
     return String(form.get(name) ?? "");
 }
 
-/** Signs in by the way the form chose: its password, a code from the app, or a recovery code. */
-function signInByWay(ctx: AuthContext, form: FormData, request: SignInRequest): Promise<SignInAnswer> {
-    const way = field(form, "way");
-    if (way === "authenticator") return signInWithAuthenticator(ctx, { ...request, code: field(form, "code") });
-    if (way === "recovery_code") return signInWithRecoveryCode(ctx, { ...request, code: field(form, "code") });
-    return signInWithPassword(ctx, { ...request, password: field(form, "password") });
+/** Reads the way the form chose, among those typed into a field; anything else is taken as the password. */
+function typedWay(form: FormData): ChoiceKind {
+    const way = CHOICE_KINDS.find((kind) => kind === field(form, "way"));
+    return way !== undefined && wayEntry(way).choice?.field.kind === "text" ? way : "password";
 }
 
 /** Signs in with the email and the way chosen on the sign-in form, then goes to the page asked for; every failure answers the same. */
@@ -45,7 +42,7 @@ async function signInAction(_previous: SignInState, form: FormData): Promise<Sig
     const settings = webSettings();
     if (settings === null) return { message: MESSAGES.signin_failed };
     const request = { email: field(form, "email"), address: await requestAddress(settings), heldDigest: await heldDigest(settings), device: await requestDevice(settings, form) };
-    const answer = await signInByWay(await authContext(), form, request);
+    const answer = await signInByWay(await authContext(), request, { kind: typedWay(form), fields: { password: field(form, "password"), code: field(form, "code") } });
     if (!answer.ok) return { message: answer.message };
     await setSessionCookies(settings, answer.cookies);
     redirect(safeReturnPath(field(form, "next")));

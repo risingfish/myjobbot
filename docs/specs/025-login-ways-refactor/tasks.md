@@ -125,13 +125,13 @@ repeated rule written once.
 
 ### Tests (S2)
 
-- [ ] T013 Create `.specify/sitting-in-progress` naming S2.
-- [ ] T014 [P] [US3] Write a unit test (1) in `tests/waysCatalog.test.ts` that pins the catalog to 024's UI (data-model.md tables), reading only exports that have production callers in S2 (`CARD_KINDS`, `CHOICE_KINDS` and `wayEntry(kind)` for each of them; `WAYS` is never exported, since knip's production pass would report it as test-only), exactly:
+- [X] T013 Create `.specify/sitting-in-progress` naming S2.
+- [X] T014 [P] [US3] Write a unit test (1) in `tests/waysCatalog.test.ts` that pins the catalog to 024's UI (data-model.md tables), reading only exports that have production callers in S2 (`CARD_KINDS`, `CHOICE_KINDS` and `wayEntry(kind)` for each of them; `WAYS` is never exported, since knip's production pass would report it as test-only), exactly:
   - `CARD_KINDS` is `["password", "email_link", "hardware_key", "authenticator"]`, with names "Password", "Email me a link", "Hardware keys", "Authenticator app"
   - `CHOICE_KINDS` is `["password", "authenticator", "recovery_code", "hardware_key"]`, with names "Password", "Authenticator app", "Recovery code", "Hardware key"
   - fields: the password field is named `password`, labelled "Password", `current-password`; the authenticator and recovery-code fields are named `code`, labelled "Code from your app" and "Recovery code", `one-time-code`; the hardware key's field is `{ kind: "key" }`
   - flags: `needsMail` and `readyWhenOn` are true for `email_link` and false for every other way
-- [ ] T015 [P] [US3] Write a unit test (1) in `tests/waysRegistry.test.ts`: for every kind in `CHOICE_KINDS`, `PROOF_WAYS[kind].kind === kind`, and `readProof` reads the way's own field.
+- [X] T015 [P] [US3] Write a unit test (1) in `tests/waysRegistry.test.ts`: for every kind in `CHOICE_KINDS`, `PROOF_WAYS[kind].kind === kind`, and `readProof` reads the way's own field.
   - password → `{ password }`
   - authenticator and recovery code → `{ code }`
   - hardware key → `{ response }`
@@ -139,7 +139,7 @@ repeated rule written once.
 
 ### Implementation (S2)
 
-- [ ] T016 [US3] Create `src/accounts/ways/catalog.ts` (client-safe, imports nothing from `src/db`, `src/mail`, `src/gmail` or Node; data-model.md "WayEntry"):
+- [X] T016 [US3] Create `src/accounts/ways/catalog.ts` (client-safe, imports nothing from `src/db`, `src/mail`, `src/gmail` or Node; data-model.md "WayEntry"):
   - exported: `CARD_KINDS`/`CardKind`, `CHOICE_KINDS`/`ChoiceKind`, `wayEntry(kind)`
   - kept in the file, not exported: `WayEntry` (with `needsMail` and `readyWhenOn`), `ProofField`, `WAYS`
   - not `cardName`/`choiceOf` yet: their callers are S3's components (T031). Adding them here, or exporting `WayEntry`, `ProofField` or `WAYS`, would leave knip findings at S2's boundary
@@ -150,32 +150,32 @@ repeated rule written once.
   - `src/db/kysely/wayLock.ts` (`isKind`), `web/lib/accountActions.ts` (`z.enum(CARD_KINDS)`), `web/lib/accountState.ts` and `web/components/account/AccountView.tsx`
 
   T014 passes, and `tests/accountMethods.test.ts` passes unchanged.
-- [ ] T017 [P] [US2] Create `src/accounts/ways/password.ts`, the `ProofWay` for `password` built on `passwordMatches`, and `currentPasswordMatches` (both moved from `flows/passwordCheck.ts`, which is then deleted; imports run `ways/password.ts` → `flows/attempts.ts`, never back), plus:
+- [X] T017 [P] [US2] Create `src/accounts/ways/password.ts`, the `ProofWay` for `password` built on `passwordMatches`, and `currentPasswordMatches` (both moved from `flows/passwordCheck.ts`, which is then deleted; imports run `ways/password.ts` → `flows/attempts.ts`, never back), plus:
   - `changePassword`, moved from `flows/accountChanges.ts`
   - `newPasswordDigest(raw)`: `checkPassword` then `digestPassword`, giving `{ ok: true; digest }` or `{ ok: false; message }` with the rule's own message
-  - `setNewPassword(ctx, userId, raw)`: `newPasswordDigest` plus `ctx.stores.methods.setPassword`
-  - callers: `changePassword` and `linkSpends.ts` `spendReset` use `setNewPassword`; `createAccount.ts` (the new account's digest) and `src/accounts/cli.ts` (`account init` and `account reset`, which keep their hidden prompts and messages) use `newPasswordDigest`
+  - (no `setNewPassword`: every caller checks the rule before acting, the reset before spending its link, so `newPasswordDigest` is the one shared step; done 2026-11-07)
+  - callers: `changePassword`, `linkSpends.ts` `spendReset`, `createAccount.ts` and `src/accounts/cli.ts` (`account init` and `account reset`, which keep their hidden prompts and messages) use `newPasswordDigest`
   - afterwards no file but `ways/password.ts` imports `checkPassword` and `digestPassword` together
-- [ ] T018 [US2] Move `src/accounts/flows/authenticator.ts` to `src/accounts/ways/authenticator.ts`, adding its `ProofWay` (`readProof` → `{ code }`, `matches` → `appCodeMatches`), and delete the old file.
-- [ ] T019 [P] [US2] Move `src/accounts/flows/keys.ts` to `src/accounts/ways/hardwareKey.ts`, adding its `ProofWay` (`readProof` → `{ response }`, `matches` → `keyMatches`), and delete the old file.
-- [ ] T020 [P] [US2] Move `src/accounts/flows/recoveryCodes.ts` to `src/accounts/ways/recoveryCode.ts`, adding its `ProofWay` (`readProof` → `{ code }`, `matches` → `recoveryCodeMatches` with the address), and delete the old file.
-- [ ] T021 [US2] Break the email-link import cycle before moving anything (research R4):
+- [X] T018 [US2] Move `src/accounts/flows/authenticator.ts` to `src/accounts/ways/authenticator.ts`, adding its `ProofWay` (`readProof` → `{ code }`, `matches` → `appCodeMatches`), and delete the old file.
+- [X] T019 [P] [US2] Move `src/accounts/flows/keys.ts` to `src/accounts/ways/hardwareKey.ts`, adding its `ProofWay` (`readProof` → `{ response }`, `matches` → `keyMatches`), and delete the old file.
+- [X] T020 [P] [US2] Move `src/accounts/flows/recoveryCodes.ts` to `src/accounts/ways/recoveryCode.ts`, adding its `ProofWay` (`readProof` → `{ code }`, `matches` → `recoveryCodeMatches` with the address), and delete the old file.
+- [X] T021 [US2] Break the email-link import cycle before moving anything (research R4):
   - move `mayMail`, `mailLink`, `emailKeyedRequest` and `MAIL_OFF` from `flows/emailLinks.ts` into a new `src/accounts/flows/mailLinks.ts`
   - move whatever `spendSignIn` shares with the other spends (`EXPIRED`, `LinkSpend`, `SpendAnswer`) from `flows/linkSpends.ts` into it as well
   - then create `src/accounts/ways/emailLink.ts` holding `requestSignInLink` (from `emailLinks.ts`) and `spendSignIn` (from `linkSpends.ts`), importing only `mailLinks.ts`, `sessions.ts` and `usable.ts`
   - `emailLinks.ts`'s `SPENDS` table imports `spendSignIn` from `ways/emailLink.ts`; nothing under `src/accounts/ways/` imports `emailLinks.ts` or `linkSpends.ts`
   - the web's `requestSignInLink` import moves to `ways/emailLink.ts`
-- [ ] T022 [US3] Create `src/accounts/ways/registry.ts`: `ProofWay` and `PROOF_WAYS: Record<ChoiceKind, ProofWay>` over the four proof ways (R3). T015 passes.
-- [ ] T023 [US3] Route the callers through the registry:
+- [X] T022 [US3] Create `src/accounts/ways/registry.ts`: `ProofWay` and `PROOF_WAYS: Record<ChoiceKind, ProofWay>` over the four proof ways (R3). T015 passes.
+- [X] T023 [US3] Route the callers through the registry:
   - `confirmIdentity.ts`: `IdentityProof` keeps its flat shape (`{ method: ChoiceKind } & ProofFields`, data-model.md), so `tests/stepUp.test.ts`, `tests/recoveryCodesFlow.test.ts` and the step-up action in `web/lib/accountActions.ts` are unchanged in S2. `proofMatches` becomes `PROOF_WAYS[method].readProof(proof)`, a `null` proof refused like a wrong one, then `.matches`
   - `signIn.ts` gains `signInByWay(ctx, request, { kind, fields })`, which reads the proof with `readProof` (a `null` proof is refused like a wrong one) and calls `signInWith`
   - `web/lib/signInActions.ts` `signInByWay` and `web/lib/keyActions.ts` (`finishKeySignIn`) call it, with the way read from the form against `CHOICE_KINDS` (an unknown way falls back to `password`, as now)
   - remove `signInWithPassword`, `signInWithAuthenticator`, `signInWithRecoveryCode` and `finishKeySignIn`; keeping them for tests alone would be test-only code. Their tests call `signInByWay` with the same inputs and expectations (FR-003 as amended)
-- [ ] T024 [US2] Update every importer of the moved modules:
+- [X] T024 [US2] Update every importer of the moved modules:
   - `web/lib/{accountActions,authenticatorActions,keyActions,signInActions,requestAuth}.ts`
   - `src/accounts/flows/{accountChanges,admin,createAccount,emailLinks,linkSpends}.ts`
   - the tests: `accountChanges`, `authenticatorFlow`, `keysFlow`, `recoveryCodesFlow`, `recoveryFlow`, `signInFlow` and any other the typecheck names
-- [ ] T025 Run `npm run check` and `npm run check:db` until green, update the ledger, delete the marker. PR 2 when the owner asks.
+- [X] T025 Run `npm run check` and `npm run check:db` until green, update the ledger, delete the marker. PR 2 when the owner asks.
 
 **Checkpoint**: Each way has one home, and sign-in and step-up look ways up.
 
@@ -279,6 +279,7 @@ isn't wanted.
 | S1 planned | +2 (T002, T003) | +0 (cases move files) | +0 |
 | Actual after S1 (2026-11-07) | 1102 (+2) | 84 (+0) | 78 (+0) |
 | S2 planned | +2 (T014, T015) | +0 | +0 |
+| Actual after S2 (2026-11-07) | 1106 (+4: the catalog test split in three, by habit-hooks' function limit) | 84 (+0) | 78 (+0) |
 | S3 planned | +1 (T027) | +1 (T028, a source scan) | +0 |
 | Planned after | +5 | +1 | +0 |
 | Actual | | | |
