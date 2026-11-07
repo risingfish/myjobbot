@@ -207,6 +207,63 @@ How it's built:
   [docs/react-walkthrough.md](docs/react-walkthrough.md). It maps each idea to the files that use
   it and ends with exercises.
 
+### Accounts and signing in
+
+Every page needs a sign-in, except `/sign-in`, `/create-account` and `/link`. A signed-out request
+gets only a redirect to the sign-in page (or `401 Signed out` for data), never any job data, and
+signed-in pages are never stored by the browser. Until data is tied to users, every account sees
+and changes the same jobs, settings, resume, sources and Gmail connection; only Settings' Admin
+section is for admins.
+
+**First admin.** Run once, typing the password at the prompt (10 to 128 characters with a lowercase
+letter, an uppercase letter, a digit and a symbol):
+
+```bash
+npm start -- account init you@example.com    # user 1 gets this email, the admin mark and the password
+npm start -- account reset you@example.com   # an admin who lost every way in gets a new password
+```
+
+**Settings to set** in `.env` (see `.env.example`):
+
+- `MYJOBBOT_BASE_URL`: the UI's public address, one of `MYJOBBOT_HOSTS`, and `https://` unless it
+  is localhost. Browsers keep sign-in cookies and hardware keys only on HTTPS or localhost, so open
+  a local UI at `http://localhost:8080`; a LAN name over plain HTTP can't be signed into.
+- `MYJOBBOT_TRUSTED_PROXIES`: how many proxies in front add to `X-Forwarded-For` (the ingress: 1).
+  With 0, every client shares one per-address sign-in limit (20 failures in 15 minutes).
+- Account mail, all five or none: `MYJOBBOT_SMTP_HOST`, `_PORT` (465 for TLS from the start, else
+  STARTTLS is required), `_USER`, `_PASSWORD`, and `MYJOBBOT_MAIL_FROM`, whose address must be one
+  the login may send as. Without them, "Email me a link" and "Forgot password" say mail isn't set
+  up, and notices aren't sent.
+- `MYJOBBOT_SECRET_KEY` also seals authenticator app secrets; without it the app can't be set up.
+
+**New accounts.** An admin makes an account creation code on Settings → Admin (shown once, works
+once, for 7 days) and gives it to someone, who uses it on `/create-account`. Admins grant or remove
+the admin mark there (never the last one) and can change an account's email for an owner who lost
+theirs.
+
+**Ways of signing in**, each switched on and set up on the Account tab; any one usable way signs in:
+
+| Way | Notes |
+|---|---|
+| Password | changed with the current one; every other sign-in ends |
+| Email me a link | a one-time link, 15 minutes; "Send test email" checks mail |
+| Authenticator app | any TOTP app (scan the QR code); each code works once |
+| Hardware key | FIDO2 keys that store a passkey (YubiKey 5 and the like), by name |
+
+The first app or key gives ten one-time recovery codes, shown once. "Forgot password" mails a reset
+link (30 minutes) that ends every sign-in. Five failures for an email in 15 minutes lock it for 15
+minutes. Sensitive changes ask "Confirm it's you" when the last proof is over 10 minutes old (by any
+way, or a link by email). The Account tab also lists every live sign-in with its device's OS, IP
+address and location (the browser's, rounded to about 10 km, when shared; else from the IP), with
+Sign out for each, and the last 20 security events, each also mailed as a notice where it matters.
+
+**Security in brief.** Changes are accepted only from the UI's own origin and carry a
+`SameSite=Strict` forgery cookie tied to the sign-in; every server action checks the sign-in
+itself; pages carry a nonce content policy, refuse framing and send no referrer from `/link`.
+Passwords are Argon2id digests, one-time values are stored only as digests and spent in the
+statement that checks them, and authenticator secrets are sealed. Answers never say whether an
+email has an account, and error pages show a fixed message (the detail stays in the server log).
+
 ### Resume
 
 The **Resume** section of the Settings page, under Preferences, holds the resume the model scores
@@ -460,7 +517,10 @@ scripts/copy-prod.sh myjobbot_dev       # or myjobbot_dev_alt; asks you to type 
 
 It replaces every table in the target with a consistent snapshot of `myjobbot`
 (`mysqldump --single-transaction`, streamed, no file left behind), including the record of which
-migrations have run, so a branch's newer steps run on the next start. Only `myjobbot_dev` and
+migrations have run, so a branch's newer steps run on the next start. It copies the accounts and
+their ways of signing in, but no rows of `sessions`, `email_tokens`, `auth_challenges`,
+`auth_attempts` or `account_codes`: those tables arrive empty, so nobody is signed in to the copy
+and no link or code from production works there. Only `myjobbot_dev` and
 `myjobbot_dev_alt` are accepted as targets. Production is read with a read-only login,
 `MYJOBBOT_COPY_DB_USER` / `MYJOBBOT_COPY_DB_PASSWORD` in `.env`, created once on the server:
 
@@ -655,6 +715,14 @@ for the probes and `kubectl port-forward`). `browser.enabled` and `searxng.enabl
 Playwright browser and SearXNG, wired in automatically; only this release's pods may reach the
 browser. Start a run now with `kubectl create job --from=cronjob/myjobbot-agent myjobbot-now`.
 `values.yaml` documents every option.
+
+The chart sets `MYJOBBOT_BASE_URL` from `web.baseUrl`, or from the first ingress host (`https` with
+ingress TLS), and `MYJOBBOT_TRUSTED_PROXIES` to 1 with the ingress. Put the mail settings in the
+Secret. Then make the first admin once:
+
+```bash
+kubectl exec -it deploy/myjobbot-web -- npm start -- account init you@example.com
+```
 
 ---
 

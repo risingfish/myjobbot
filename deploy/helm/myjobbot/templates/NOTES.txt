@@ -12,6 +12,11 @@ Reach it with:
   then open http://localhost:{{ .Values.web.port }}/
 {{- end }}
 
+Sign-in: every page needs an account. The public address is {{ include "myjobbot.baseUrl" . }}.
+Make the first admin once, typing the password at the prompt:
+  kubectl exec -it deploy/{{ include "myjobbot.fullname" . }}-web -- npm start -- account init you@example.com
+If the only admin is ever locked out: ... -- npm start -- account reset you@example.com
+
 The agent runs on "{{ .Values.agent.schedule }}" ({{ .Values.timeZone }}). Start one run now with:
   kubectl create job --from=cronjob/{{ include "myjobbot.fullname" . }}-agent {{ include "myjobbot.fullname" . }}-agent-manual
 {{- if not (or .Values.config.existingConfigMap .Values.resume.existingSecret) }}

@@ -59,6 +59,24 @@ app.kubernetes.io/component: {{ .component }}
 {{- $hosts | uniq | join "," }}
 {{- end }}
 
+{{- define "myjobbot.baseUrl" -}}
+{{- if .Values.web.baseUrl }}
+{{- .Values.web.baseUrl }}
+{{- else if and .Values.ingress.enabled .Values.ingress.hosts }}
+{{- printf "http%s://%s" (ternary "s" "" (not (empty .Values.ingress.tls))) (first .Values.ingress.hosts) }}
+{{- else }}
+{{- printf "http://localhost:%v" .Values.web.port }}
+{{- end }}
+{{- end }}
+
+{{- define "myjobbot.trustedProxies" -}}
+{{- if ne (toString .Values.web.trustedProxies) "" }}
+{{- .Values.web.trustedProxies }}
+{{- else }}
+{{- ternary 1 0 .Values.ingress.enabled }}
+{{- end }}
+{{- end }}
+
 {{- define "myjobbot.browserUrl" -}}
 {{- if .Values.browser.enabled }}
 {{- printf "ws://%s-browser:3000/" (include "myjobbot.fullname" .) }}
