@@ -3,15 +3,17 @@
 import type { MethodKind } from "../../../src/db/methodStore.js";
 import type { WayView } from "../../lib/accountState.js";
 import { SettingCard } from "../settings/SettingParts.js";
+import { AuthenticatorControls } from "./AuthenticatorControls.js";
 import { EmailLinkControls } from "./EmailLinkControls.js";
 import { PasswordControls } from "./PasswordControls.js";
 
 const WAY_NAMES: Record<MethodKind, string> = { password: "Password", email_link: "Email me a link", hardware_key: "Hardware keys", authenticator: "Authenticator app" };
 
-/** Renders one way's controls: the password form, the test email, or a note until that way's setup is built. */
-function WayControls({ kind }: { kind: MethodKind }) {
+/** Renders one way's controls: the password form, the test email, the authenticator setup, or a note until that way's setup is built. */
+function WayControls({ kind, ready }: { kind: MethodKind; ready: boolean }) {
     if (kind === "password") return <PasswordControls />;
     if (kind === "email_link") return <EmailLinkControls />;
+    if (kind === "authenticator") return <AuthenticatorControls ready={ready} />;
     return <p>Setting up {WAY_NAMES[kind].toLowerCase()} comes in a later update.</p>;
 }
 
@@ -23,7 +25,7 @@ export function WayCard({ way, only, onSwitch }: { way: WayView; only: boolean; 
                 <input type="checkbox" role="switch" name={way.kind} aria-label={WAY_NAMES[way.kind]} checked={way.enabled} disabled={only} onChange={(event) => onSwitch(way.kind, event.target.checked)} />
                 Turned on
             </label>
-            {way.enabled && <WayControls kind={way.kind} />}
+            {way.enabled && <WayControls kind={way.kind} ready={way.ready} />}
         </SettingCard>
     );
 }

@@ -35,6 +35,9 @@ export interface TokenStore {
     makeEmailToken(userId: number, token: NewEmailToken, now: string): Promise<void>;
     spendEmailToken(spend: TokenSpend, now: string): Promise<SpentToken | null>;
     emailTokenFor(digest: string, now: string): Promise<TokenLookup | null>;
+    replaceRecoveryCodes(userId: number, digests: string[], now: string): Promise<void>;
+    spendRecoveryCode(userId: number, digest: string, now: string): Promise<boolean>;
+    recoveryCodesLeft(userId: number): Promise<number>;
 }
 
 /** Returns the time a number of days after another, as an ISO string. */

@@ -1,0 +1,30 @@
+import type { Account } from "../../db/accountStore.js";
+import { makeRecoveryCodes as newCodes, recoveryDigest } from "../tokens.js";
+import type { Actor, AuthContext } from "./context.js";
+import { recordSecurityEvent } from "./securityEvents.js";
+import { signInWith, type SignInAnswer, type SignInRequest } from "./signIn.js";
+
+/** Replaces an account's recovery codes with a new set, kept only as digests, and gives the codes to show once. */
+export async function issueRecoveryCodes(ctx: AuthContext, userId: number, address: string): Promise<string[]> {
+    const codes = newCodes(ctx.random);
+    await ctx.stores.tokens.replaceRecoveryCodes(userId, codes.map(recoveryDigest), ctx.now());
+    await recordSecurityEvent(ctx, { userId, at: ctx.now(), address, event: "recovery_codes_made", method: null });
+    return codes;
+}
+
+/** Spends one of an account's recovery codes, recording it, and says whether it was one. */
+export async function recoveryCodeMatches(ctx: AuthContext, account: Account, input: { code: string; address: string }): Promise<boolean> {
+    if (!(await ctx.stores.tokens.spendRecoveryCode(account.id, recoveryDigest(input.code), ctx.now()))) return false;
+    await recordSecurityEvent(ctx, { userId: account.id, at: ctx.now(), address: input.address, event: "recovery_code_used", method: "recovery_code" });
+    return true;
+}
+
+/** Makes a new set of recovery codes for the signed-in account, replacing the old set. */
+export async function makeRecoveryCodes(ctx: AuthContext, actor: Actor): Promise<{ ok: true; codes: string[] }> {
+    return { ok: true, codes: await issueRecoveryCodes(ctx, actor.account.id, actor.address) };
+}
+
+/** Signs in with an email and one unused recovery code, under the shared limits. */
+export function signInWithRecoveryCode(ctx: AuthContext, input: SignInRequest & { code: string }): Promise<SignInAnswer> {
+    return signInWith(ctx, input, { method: "recovery_code", matches: async (account) => account !== null && recoveryCodeMatches(ctx, account, input) });
+}

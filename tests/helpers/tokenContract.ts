@@ -73,7 +73,17 @@ async function emailChangedUnlessTaken({ accounts, tokens }: Stores): Promise<vo
     expect(await accounts.changeEmail(OWNER_ID, "ADA@example.com", "ada@example.com")).toBe("taken");
 }
 
+async function recoveryCodesReplacedAndSpent({ tokens }: Stores): Promise<void> {
+    await tokens.replaceRecoveryCodes(OWNER_ID, ["a", "b", "c"], NOW);
+    expect(await tokens.recoveryCodesLeft(OWNER_ID)).toBe(3);
+    expect([await tokens.spendRecoveryCode(OWNER_ID, "a", NOW), await tokens.spendRecoveryCode(OWNER_ID, "a", NOW), await tokens.spendRecoveryCode(99, "b", NOW)]).toEqual([true, false, false]);
+    expect(await tokens.recoveryCodesLeft(OWNER_ID)).toBe(2);
+    await tokens.replaceRecoveryCodes(OWNER_ID, ["d", "e"], NOW);
+    expect([await tokens.spendRecoveryCode(OWNER_ID, "b", NOW), await tokens.recoveryCodesLeft(OWNER_ID)]).toEqual([false, 2]);
+}
+
 export function tokenContract(makeStores: MakeStores): void {
+    test("a new set of recovery codes replaces the old, each code works once for its own account, and the unused are counted", withOwner(makeStores, recoveryCodesReplacedAndSpent));
     tokenStrictCases(makeStores);
     test("an account creation code works until 7 days after it was made, and not after", withOwner(makeStores, codeExpires));
     test("an emailed link works once, for its own purpose only, within 15 minutes, 30 minutes or 24 hours by purpose", withOwner(makeStores, linksLastByPurpose));

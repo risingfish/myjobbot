@@ -33,6 +33,7 @@ export interface AccountState {
     ways: WayView[];
     signIns: SignInView[];
     events: EventView[];
+    recoveryCodesLeft: number;
 }
 
 /** Turns one live sign-in into what the Sign-ins list shows, named by the start of its digest, never the digest itself. */
@@ -45,8 +46,8 @@ function signInView(session: Session, currentDigest: string): SignInView {
 export async function getAccountState(): Promise<AccountState> {
     const { account, session } = await requireSession();
     const ctx = await authContext();
-    const [rows, live, events] = await Promise.all([ctx.stores.methods.methods(account.id), ctx.stores.sessions.activeFor(account.id, ctx.now()), ctx.stores.accounts.recentEvents(account.id, 20)]);
+    const [rows, live, events, left] = await Promise.all([ctx.stores.methods.methods(account.id), ctx.stores.sessions.activeFor(account.id, ctx.now()), ctx.stores.accounts.recentEvents(account.id, 20), ctx.stores.tokens.recoveryCodesLeft(account.id)]);
     const ways = rows.map((row) => ({ ...row, usable: usable(row, { mailOn: ctx.mail !== null }) }));
     const signIns = live.map((row) => signInView(row, session.idDigest));
-    return { name: account.name, email: account.email ?? "", ways, signIns, events: events.map((event) => ({ at: event.at, label: eventLabel(event.event), method: event.method })) };
+    return { name: account.name, email: account.email ?? "", ways, signIns, recoveryCodesLeft: left, events: events.map((event) => ({ at: event.at, label: eventLabel(event.event), method: event.method })) };
 }

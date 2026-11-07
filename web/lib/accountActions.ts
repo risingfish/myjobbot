@@ -3,29 +3,20 @@
 import { revalidatePath } from "next/cache.js";
 import { z } from "zod";
 import * as changes from "../../src/accounts/flows/accountChanges.js";
-import type { Actor } from "../../src/accounts/flows/context.js";
 import { confirmIdentity as confirm } from "../../src/accounts/flows/confirmIdentity.js";
 import * as links from "../../src/accounts/flows/emailLinks.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { METHOD_KINDS, type MethodKind } from "../../src/db/methodStore.js";
-import { authContext, webSettings, type WebSettings } from "./authDeps.js";
+import { actorNow } from "./actor.js";
+import { authContext } from "./authDeps.js";
 import { guarded } from "./guard.js";
-import { requestAddress, setSessionCookies } from "./requestAuth.js";
-import { requireSession } from "./session.js";
+import { setSessionCookies } from "./requestAuth.js";
 
 export type AccountAnswer = { ok: true; setup?: MethodKind; message?: string } | { ok: false; message: string; stepUp?: true };
 
 const SIGNED_OUT: AccountAnswer = { ok: false, message: MESSAGES.signed_out };
 const text = z.string().max(1000);
 const methodChange = z.object({ kind: z.enum(METHOD_KINDS), enabled: z.boolean() });
-
-/** Returns the signed-in account as the account flows act for it, with this request's settings. */
-async function actorNow(): Promise<{ actor: Actor; settings: WebSettings } | null> {
-    const settings = webSettings();
-    if (settings === null) return null;
-    const { account, session } = await requireSession();
-    return { actor: { account, session, address: await requestAddress(settings) }, settings };
-}
 
 /** Saves the signed-in account's new name, shown again in the header. */
 async function saveNameAction(name: unknown): Promise<AccountAnswer> {
@@ -100,12 +91,14 @@ async function requestStepUpLinkAction(returnPath: unknown): Promise<AccountAnsw
     return links.requestStepUpLink(await authContext(), now.actor, parsed.data);
 }
 
-/** Proves the signed-in account's identity again with its password, so sensitive changes go through for the next 10 minutes. */
-async function confirmIdentityAction(password: unknown): Promise<AccountAnswer> {
-    const parsed = text.safeParse(password);
+const proof = z.discriminatedUnion("method", [z.object({ method: z.literal("password"), password: text }), z.object({ method: z.literal("authenticator"), code: text }), z.object({ method: z.literal("recovery_code"), code: text })]);
+
+/** Proves the signed-in account's identity again by its password, an app code or a recovery code, so sensitive changes go through for the next 10 minutes. */
+async function confirmIdentityAction(method: unknown, value: unknown): Promise<AccountAnswer> {
+    const parsed = proof.safeParse(method === "password" ? { method, password: value } : { method, code: value });
     const now = await actorNow();
     if (!parsed.success || now === null) return SIGNED_OUT;
-    return confirm(await authContext(), now.actor, { method: "password", password: parsed.data });
+    return confirm(await authContext(), now.actor, parsed.data);
 }
 
 export const saveName = guarded(saveNameAction, {});

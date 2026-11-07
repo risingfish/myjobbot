@@ -30,6 +30,26 @@ export class KyselyTokenStore implements TokenStore {
         return { userId: row.user_id, newEmail: row.new_email, returnPath: row.return_path };
     }
 
+    /** Replaces an account's recovery codes with a new set of digests, in one transaction. */
+    async replaceRecoveryCodes(userId: number, digests: string[], now: string): Promise<void> {
+        await this.db.transaction().execute(async (trx) => {
+            await trx.deleteFrom("recovery_codes").where("user_id", "=", userId).execute();
+            if (digests.length > 0) await trx.insertInto("recovery_codes").values(digests.map((digest) => ({ user_id: userId, digest, created_at: now }))).execute();
+        });
+    }
+
+    /** Spends one of an account's unused recovery codes in the statement that checks it. */
+    async spendRecoveryCode(userId: number, digest: string, now: string): Promise<boolean> {
+        const result = await this.db.updateTable("recovery_codes").set({ used_at: now }).where("user_id", "=", userId).where("digest", "=", digest).where("used_at", "is", null).executeTakeFirst();
+        return result.numUpdatedRows === 1n;
+    }
+
+    /** Counts an account's unused recovery codes. */
+    async recoveryCodesLeft(userId: number): Promise<number> {
+        const row = await this.db.selectFrom("recovery_codes").select((eb) => eb.fn.countAll<number>().as("count")).where("user_id", "=", userId).where("used_at", "is", null).executeTakeFirstOrThrow();
+        return Number(row.count);
+    }
+
     /** Looks a link up without spending it: its purpose, the sign-in it is bound to, and whether it still works. */
     async emailTokenFor(digest: string, now: string): Promise<TokenLookup | null> {
         const row = await this.db.selectFrom("email_tokens").select(["purpose", "session_digest", "used_at", "expires_at"]).where("digest", "=", digest).executeTakeFirst();

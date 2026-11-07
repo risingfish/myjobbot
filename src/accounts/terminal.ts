@@ -4,6 +4,7 @@ import { Writable } from "node:stream";
 import type { Environment } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
+import { secretKeyStatus } from "../gmail/secretKey.js";
 import { mailSlot } from "../mail/fromEnv.js";
 import { parseBaseUrl } from "../web/security/baseUrl.js";
 import { accountCommand, type AccountIo } from "./cli.js";
@@ -34,8 +35,9 @@ export async function runAccountCommand(environment: Environment, args: string[]
     const stores = await openStores(parseDbSettings(environment));
     const base = parseBaseUrl(environment);
     const mail = mailSlot(environment, base.ok ? base.url.origin : null);
+    const key = secretKeyStatus(environment);
     try {
-        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail }, args, terminalIo());
+        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail, secretKey: key.status === "ok" ? key.key : null }, args, terminalIo());
     } finally {
         await stores.close();
     }

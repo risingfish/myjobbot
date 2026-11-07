@@ -17,6 +17,8 @@ export const MESSAGES = {
     email_change_sent: "If that address can be used, a confirmation link is on its way to it.",
     step_up_sent: "A confirmation link is on its way to your email.",
     step_up_other_browser: "Open this link in the browser where you asked for it.",
+    secret_key_missing: "Authenticator apps aren't available on this server.",
+    code_wrong: "That code didn't work. Check the app and try again.",
     limited: "Too many tries. Wait a few minutes and try again.",
     signed_out: "You're signed out. Sign in again.",
     not_admin: "Only an admin can do that.",

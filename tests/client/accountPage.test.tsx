@@ -14,6 +14,7 @@ const actions = vi.hoisted(() => ({
     confirmIdentity: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("../../web/lib/accountActions.js", () => actions);
+vi.mock("../../web/lib/authenticatorActions.js", () => ({ startAuthenticatorSetup: vi.fn(), confirmAuthenticator: vi.fn(), removeAuthenticator: vi.fn(), makeRecoveryCodes: vi.fn() }));
 
 const STATE = {
     name: "Zac",
@@ -29,6 +30,7 @@ const STATE = {
         { ref: "bbbbbbbbbbbbbbbb", current: false, os: "iOS", ip: "203.0.113.9", location: "Seattle, WA, US", lastUsedAt: "2026-11-05T09:00:00.000Z" },
     ],
     events: [{ at: "2026-11-06T10:00:00.000Z", label: "Signed in", method: "password" }],
+    recoveryCodesLeft: 7,
 };
 
 async function waysShownOnlyWhileOn() {
@@ -55,9 +57,10 @@ async function signInsListed() {
 
 test("the Account tab shows User Profile, the four ways with each one's controls only while it is on, the only usable way locked on, each sign-in with its device and a Sign out, and recent events", async () => {
     render(<AccountView state={STATE} />);
-    expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual(["User Profile", "Ways of signing in", "Sign-ins", "Recent activity"]);
+    expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual(["User Profile", "Ways of signing in", "Recovery codes", "Sign-ins", "Recent activity"]);
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Zac");
     expect(screen.getByText("zac@forthebrew.com")).toBeTruthy();
+    expect(screen.getByText(/7 of 10 recovery codes left/)).toBeTruthy();
     await waysShownOnlyWhileOn();
     await signInsListed();
     expect(within(screen.getByRole("table", { name: "Recent activity" })).getByText("Signed in")).toBeTruthy();

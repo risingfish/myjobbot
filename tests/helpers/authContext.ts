@@ -11,7 +11,7 @@ export function authContext(start = "2026-11-06T10:00:00.000Z") {
     const tables = newAuthTables();
     let at = Date.parse(start);
     const mailer = new MemoryMailer();
-    const ctx: AuthContext = { mail: { mailer, baseUrl: "http://localhost:8080" }, stores: { sessions: new MemorySessionStore(tables), accounts: new MemoryAccountStore(tables), methods: new MemoryMethodStore(tables), tokens: new MemoryTokenStore(tables) }, now: () => new Date(at).toISOString(), random: randomBytes };
+    const ctx: AuthContext = { mail: { mailer, baseUrl: "http://localhost:8080" }, secretKey: randomBytes(32), stores: { sessions: new MemorySessionStore(tables), accounts: new MemoryAccountStore(tables), methods: new MemoryMethodStore(tables), tokens: new MemoryTokenStore(tables) }, now: () => new Date(at).toISOString(), random: randomBytes };
     const clock = { advance: (ms: number) => void (at += ms) };
     return { ctx, clock, mailer, auth: { tables, events: tables.events } };
 }

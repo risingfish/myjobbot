@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
 import { confirmIdentity, requestStepUpLink } from "../../lib/accountActions.js";
-import { Field } from "./Field.js";
+import { WayChoice, type Way } from "./WayChoice.js";
 
 interface Answer {
     ok: boolean;
@@ -31,11 +31,12 @@ export function useStepUp(): Run {
     return useContext(StepUpContext);
 }
 
-/** Renders the dialog's form: the password, with why it was refused under it; its buttons sit in the dialog's footer. */
+/** Renders the dialog's form: the way to confirm it's you and its field, with why it was refused under it; its buttons sit in the dialog's footer. */
 function StepUpForm({ message, onConfirm }: { message: string | null; onConfirm: (form: FormData) => Promise<void> }) {
+    const [way, setWay] = useState<Way>("password");
     return (
         <form id="step-up-form" action={onConfirm}>
-            <Field name="step-up-password" label="Password" type="password" autoComplete="current-password" required invalid={message !== null} note={message} />
+            <WayChoice way={way} onWay={setWay} refusal={message} legend="Confirm with" />
         </form>
     );
 }
@@ -58,7 +59,8 @@ function EmailMeLink() {
 function useStepUpAnswers(pending: Pending, onDone: () => void) {
     const [message, setMessage] = useState<string | null>(null);
     const confirmNow = async (form: FormData) => {
-        const answer = await confirmIdentity(String(form.get("step-up-password") ?? ""));
+        const way = String(form.get("way") ?? "password");
+        const answer = await confirmIdentity(way, String(form.get(way === "password" ? "password" : "code") ?? ""));
         if (!answer.ok) return setMessage(answer.message);
         pending.resolve(await pending.call());
         onDone();

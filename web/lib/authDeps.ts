@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { AuthContext, MailSlot } from "../../src/accounts/flows/context.js";
+import { secretKeyStatus } from "../../src/gmail/secretKey.js";
 import { mailSlot } from "../../src/mail/fromEnv.js";
 import { cookieOptions, type CookieSpec } from "../../src/web/security/cookies.js";
 import { parseBaseUrl } from "../../src/web/security/baseUrl.js";
@@ -27,7 +28,9 @@ function mail(): MailSlot | null {
     return cache.__myjobbotMail;
 }
 
-/** Returns what the account flows run against: the stores, the clock, a secure random source and the mailer. */
+/** Returns what the account flows run against: the stores, the clock, a secure random source, the mailer and the key that seals authenticator secrets. */
 export async function authContext(): Promise<AuthContext> {
-    return { stores: await openedStores(), now: () => new Date().toISOString(), random: randomBytes, mail: mail() };
+    const stores = await openedStores();
+    const key = secretKeyStatus(process.env);
+    return { stores, now: () => new Date().toISOString(), random: randomBytes, mail: mail(), secretKey: key.status === "ok" ? key.key : null };
 }

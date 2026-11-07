@@ -5,7 +5,7 @@ import { expect, test, vi } from "vitest";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { shownRefusal, StepUpProvider, useStepUp } from "../../web/components/account/StepUp.js";
 
-const actions = vi.hoisted(() => ({ confirmIdentity: vi.fn(async () => ({ ok: true as const })) }));
+const actions = vi.hoisted(() => ({ confirmIdentity: vi.fn(async () => ({ ok: true as const })), requestStepUpLink: vi.fn() }));
 vi.mock("../../web/lib/accountActions.js", () => actions);
 
 const change = vi.fn().mockResolvedValueOnce({ ok: false, message: "Confirm it's you to continue.", stepUp: true }).mockResolvedValueOnce({ ok: true });
@@ -28,10 +28,10 @@ test("a step-up answer opens the Confirm it's you dialog, and once confirmed the
     await userEvent.click(screen.getByRole("button", { name: "Change" }));
     const dialog = await screen.findByRole("dialog", { name: "Confirm it's you" });
     expect(dialog.textContent).toContain(MESSAGES.step_up);
-    await userEvent.type(screen.getByLabelText("Password"), "Abcdefgh1!");
+    await userEvent.type(screen.getByLabelText("Password", { selector: "input[type=password]" }), "Abcdefgh1!");
     await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
     await vi.waitFor(() => expect(change).toHaveBeenCalledTimes(2));
-    expect(actions.confirmIdentity).toHaveBeenCalledWith("Abcdefgh1!");
+    expect(actions.confirmIdentity).toHaveBeenCalledWith("password", "Abcdefgh1!");
     expect(screen.queryByRole("dialog")).toBeNull();
 });
 

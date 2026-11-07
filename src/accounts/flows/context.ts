@@ -14,6 +14,7 @@ export interface AuthContext {
     now: () => string;
     random: RandomBytes;
     mail: MailSlot | null;
+    secretKey: Buffer | null;
 }
 
 export interface Actor {

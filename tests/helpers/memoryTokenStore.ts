@@ -20,6 +20,21 @@ export class MemoryTokenStore implements TokenStore {
         return { userId: row.userId, newEmail: row.newEmail, returnPath: row.returnPath };
     }
 
+    async replaceRecoveryCodes(userId: number, digests: string[]): Promise<void> {
+        this.tables.recoveryCodes = [...this.tables.recoveryCodes.filter((code) => code.userId !== userId), ...digests.map((digest) => ({ userId, digest, usedAt: null }))];
+    }
+
+    async spendRecoveryCode(userId: number, digest: string, now: string): Promise<boolean> {
+        const row = this.tables.recoveryCodes.find((code) => code.userId === userId && code.digest === digest && code.usedAt === null);
+        if (row === undefined) return false;
+        row.usedAt = now;
+        return true;
+    }
+
+    async recoveryCodesLeft(userId: number): Promise<number> {
+        return this.tables.recoveryCodes.filter((code) => code.userId === userId && code.usedAt === null).length;
+    }
+
     async emailTokenFor(digest: string, now: string): Promise<TokenLookup | null> {
         const row = this.tables.emailTokens.find((token) => token.digest === digest);
         return row === undefined ? null : { purpose: row.purpose, sessionDigest: row.sessionDigest, live: row.usedAt === null && row.expiresAt > now };
