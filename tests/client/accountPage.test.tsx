@@ -14,6 +14,7 @@ const actions = vi.hoisted(() => ({
     confirmIdentity: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("../../web/lib/accountActions.js", () => actions);
+vi.mock("../../web/lib/keyActions.js", () => ({ startKeyRegistration: vi.fn(), finishKeyRegistration: vi.fn(), removeKey: vi.fn(), startKeySignIn: vi.fn(), finishKeySignIn: vi.fn() }));
 vi.mock("../../web/lib/authenticatorActions.js", () => ({ startAuthenticatorSetup: vi.fn(), confirmAuthenticator: vi.fn(), removeAuthenticator: vi.fn(), makeRecoveryCodes: vi.fn() }));
 
 const STATE = {
@@ -31,6 +32,7 @@ const STATE = {
     ],
     events: [{ at: "2026-11-06T10:00:00.000Z", label: "Signed in", method: "password" }],
     recoveryCodesLeft: 7,
+    keys: [],
 };
 
 async function waysShownOnlyWhileOn() {

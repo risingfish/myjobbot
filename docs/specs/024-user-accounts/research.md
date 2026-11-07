@@ -371,3 +371,18 @@ changes from `geolocation=()` to `geolocation=(self)`), rounded to one decimal; 
 The Sign-ins list names each sign-in by the first 16 hex characters of its digest, never the whole
 digest, and Sign out for a device ends only another of the signed-in account's own sign-ins.
 
+## R21. Hardware keys are discoverable credentials (2026-11-07, S6)
+
+**Decision**: keys are registered with `residentKey: "required"`, so each key itself remembers
+it belongs to this site, and sign-in options name no credential (`allowCredentials` empty). The
+email typed must still match the key's account (FR-023's shared sign-in path).
+
+**Rationale**: listing an account's credentials in the sign-in options would tell anyone who types
+an email whether that account has keys, against FR-023. With discoverable keys the options are the
+same for every email.
+
+**Consequence**: a key that can't store a discoverable credential (some older U2F-only keys) can't
+be added; YubiKey 5, current platform authenticators and the browser's virtual authenticator can.
+Challenges are spent inside SimpleWebAuthn's `expectedChallenge` callback, so each is checked and
+spent in one statement.
+

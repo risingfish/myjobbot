@@ -2,12 +2,13 @@
 
 import { Field } from "./Field.js";
 
-export type Way = "password" | "authenticator" | "recovery_code";
+export type Way = "password" | "authenticator" | "recovery_code" | "hardware_key";
 
 const WAYS: Array<[Way, string]> = [
     ["password", "Password"],
     ["authenticator", "Authenticator app"],
     ["recovery_code", "Recovery code"],
+    ["hardware_key", "Hardware key"],
 ];
 
 /** Renders the choice of how to prove it's you, as a row of radios, and the field that way needs. */
@@ -24,7 +25,7 @@ export function WayChoice({ way, onWay, refusal, legend = "Sign in with" }: { wa
                     </label>
                 ))}
             </fieldset>
-            <Field key={field.name} {...field} required invalid={refusal !== null} note={refusal} />
+            {way === "hardware_key" ? <p role={refusal === null ? undefined : "alert"}>{refusal ?? "Touch your key when your browser asks."}</p> : <Field key={field.name} {...field} required invalid={refusal !== null} note={refusal} />}
         </>
     );
 }

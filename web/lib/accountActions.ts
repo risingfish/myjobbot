@@ -91,11 +91,11 @@ async function requestStepUpLinkAction(returnPath: unknown): Promise<AccountAnsw
     return links.requestStepUpLink(await authContext(), now.actor, parsed.data);
 }
 
-const proof = z.discriminatedUnion("method", [z.object({ method: z.literal("password"), password: text }), z.object({ method: z.literal("authenticator"), code: text }), z.object({ method: z.literal("recovery_code"), code: text })]);
+const proof = z.discriminatedUnion("method", [z.object({ method: z.literal("password"), password: text }), z.object({ method: z.literal("authenticator"), code: text }), z.object({ method: z.literal("recovery_code"), code: text }), z.object({ method: z.literal("hardware_key"), response: z.unknown() })]);
 
-/** Proves the signed-in account's identity again by its password, an app code or a recovery code, so sensitive changes go through for the next 10 minutes. */
+/** Proves the signed-in account's identity again by its password, an app code, a recovery code or a key, so sensitive changes go through for the next 10 minutes. */
 async function confirmIdentityAction(method: unknown, value: unknown): Promise<AccountAnswer> {
-    const parsed = proof.safeParse(method === "password" ? { method, password: value } : { method, code: value });
+    const parsed = proof.safeParse(method === "password" ? { method, password: value } : method === "hardware_key" ? { method, response: value } : { method, code: value });
     const now = await actorNow();
     if (!parsed.success || now === null) return SIGNED_OUT;
     return confirm(await authContext(), now.actor, parsed.data);

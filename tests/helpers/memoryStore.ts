@@ -10,6 +10,7 @@ import type { Job } from "../../src/jobs/job.js";
 import { MemoryAccountStore } from "./memoryAccountStore.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
 import { newAuthTables } from "./memoryAuthTables.js";
+import { MemoryKeyStore } from "./memoryKeyStore.js";
 import { MemoryMethodStore } from "./memoryMethodStore.js";
 import { MemorySessionStore } from "./memorySessionStore.js";
 import { MemoryTokenStore } from "./memoryTokenStore.js";
@@ -165,7 +166,7 @@ class MemoryApiCallLog implements ApiCallLog {
 export function memoryStores(tables: Tables = newTables()): Stores {
     const close = async (): Promise<void> => {};
     const auth = newAuthTables();
-    return { sessions: new MemorySessionStore(auth), accounts: new MemoryAccountStore(auth), methods: new MemoryMethodStore(auth), tokens: new MemoryTokenStore(auth), jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), resume: new MemoryResumeStore(), close };
+    return { sessions: new MemorySessionStore(auth), accounts: new MemoryAccountStore(auth), methods: new MemoryMethodStore(auth), tokens: new MemoryTokenStore(auth), keys: new MemoryKeyStore(auth), jobStore: new MemoryJobStore(tables), jobViews: new MemoryJobViews(tables), apiCalls: new MemoryApiCallLog(tables), gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore(), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), searchSettings: new MemorySearchSettingsStore(), sources: new MemorySourceStore(tables), rescoreLog: new MemoryRescoreLog(tables), resume: new MemoryResumeStore(), close };
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): Stores {

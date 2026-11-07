@@ -21,7 +21,7 @@ beforeEach(() => {
     request.signedIn = null;
 });
 
-const PUBLIC_ACTIONS = new Set(["signInForm", "createAccountForm", "requestSignInLinkForm", "requestPasswordResetForm", "spendEmailLinkNow"]);
+const PUBLIC_ACTIONS = new Set(["signInForm", "createAccountForm", "requestSignInLinkForm", "requestPasswordResetForm", "spendEmailLinkNow", "startKeySignIn", "finishKeySignIn"]);
 
 async function redirectsSignedOut(action: unknown): Promise<boolean> {
     if (typeof action !== "function") return false;

@@ -4,12 +4,10 @@ import { checkName } from "../names.js";
 import { digestPassword } from "../passwordDigest.js";
 import { checkPassword } from "../passwordRule.js";
 import { tokenDigest } from "../tokens.js";
-import type { Actor, AuthContext } from "./context.js";
+import type { Actor, AuthContext, Refused } from "./context.js";
 import { passwordMatches } from "./passwordCheck.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { startSession, type SessionCookies } from "./signIn.js";
-
-type Refused = { ok: false; message: string };
 
 /** Records a security event for the actor's account, at their address. */
 function record(ctx: AuthContext, actor: Actor, event: { event: Parameters<typeof recordSecurityEvent>[1]["event"]; method: string | null }): Promise<void> {

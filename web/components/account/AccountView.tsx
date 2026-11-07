@@ -41,7 +41,7 @@ function ProfilePanel({ name, email }: { name: string; email: string }) {
 }
 
 /** Renders the Ways of signing in section: the four ways as cards, two to a row, with why a switch was refused. */
-function WaysPanel({ ways }: { ways: WayView[] }) {
+function WaysPanel({ ways, keys }: { ways: WayView[]; keys: Array<{ id: number; name: string }> }) {
     const run = useStepUp();
     const [refusal, setRefusal] = useState<string | null>(null);
     const switchWay = async (kind: MethodKind, enabled: boolean) => {
@@ -49,7 +49,7 @@ function WaysPanel({ ways }: { ways: WayView[] }) {
         setRefusal(shownRefusal(answer));
     };
     const usableCount = ways.filter((way) => way.usable).length;
-    const card = (way: WayView) => <WayCard key={way.kind} way={way} only={way.usable && usableCount === 1} onSwitch={(kind, enabled) => void switchWay(kind, enabled)} />;
+    const card = (way: WayView) => <WayCard key={way.kind} way={way} only={way.usable && usableCount === 1} keys={keys} onSwitch={(kind, enabled) => void switchWay(kind, enabled)} />;
     return (
         <Panel title="Ways of signing in">
             {refusal !== null && <p role="alert">{refusal}</p>}
@@ -84,7 +84,7 @@ export function AccountView({ state }: { state: AccountState }) {
     return (
         <StepUpProvider>
             <ProfilePanel name={state.name} email={state.email} />
-            <WaysPanel ways={state.ways} />
+            <WaysPanel ways={state.ways} keys={state.keys} />
             <RecoveryCodesPanel left={state.recoveryCodesLeft} />
             <SignInsPanel signIns={state.signIns} />
             <ActivityPanel events={state.events} />

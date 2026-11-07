@@ -6,6 +6,7 @@ import { MESSAGES } from "../../src/accounts/messages.js";
 import { shownRefusal, StepUpProvider, useStepUp } from "../../web/components/account/StepUp.js";
 
 const actions = vi.hoisted(() => ({ confirmIdentity: vi.fn(async () => ({ ok: true as const })), requestStepUpLink: vi.fn() }));
+vi.mock("../../web/lib/keyActions.js", () => ({ startKeySignIn: vi.fn(), finishKeySignIn: vi.fn(), startKeyRegistration: vi.fn(), finishKeyRegistration: vi.fn(), removeKey: vi.fn() }));
 vi.mock("../../web/lib/accountActions.js", () => actions);
 
 const change = vi.fn().mockResolvedValueOnce({ ok: false, message: "Confirm it's you to continue.", stepUp: true }).mockResolvedValueOnce({ ok: true });

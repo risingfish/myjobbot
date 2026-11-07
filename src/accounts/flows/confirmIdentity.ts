@@ -2,10 +2,11 @@ import { normalizeEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
 import { appCodeMatches } from "./authenticator.js";
 import type { Actor, AuthContext } from "./context.js";
+import { keyMatches } from "./keys.js";
 import { passwordMatches, recordFailure, signInLocked } from "./passwordCheck.js";
 import { recoveryCodeMatches } from "./recoveryCodes.js";
 
-export type IdentityProof = { method: "password"; password: string } | { method: "authenticator"; code: string } | { method: "recovery_code"; code: string };
+export type IdentityProof = { method: "password"; password: string } | { method: "authenticator"; code: string } | { method: "recovery_code"; code: string } | { method: "hardware_key"; response: unknown };
 
 export type Confirmed = { ok: true } | { ok: false; message: string };
 
@@ -13,6 +14,7 @@ export type Confirmed = { ok: true } | { ok: false; message: string };
 function proofMatches(ctx: AuthContext, actor: Actor, proof: IdentityProof): Promise<boolean> {
     if (proof.method === "password") return passwordMatches(ctx, actor.account, proof.password);
     if (proof.method === "authenticator") return appCodeMatches(ctx, actor.account.id, { code: proof.code });
+    if (proof.method === "hardware_key") return keyMatches(ctx, actor.account, proof.response);
     return recoveryCodeMatches(ctx, actor.account, { code: proof.code, address: actor.address });
 }
 

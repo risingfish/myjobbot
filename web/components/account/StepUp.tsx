@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
 import { confirmIdentity, requestStepUpLink } from "../../lib/accountActions.js";
+import { keyAnswer } from "../../lib/keyBrowser.js";
 import { WayChoice, type Way } from "./WayChoice.js";
 
 interface Answer {
@@ -60,7 +61,8 @@ function useStepUpAnswers(pending: Pending, onDone: () => void) {
     const [message, setMessage] = useState<string | null>(null);
     const confirmNow = async (form: FormData) => {
         const way = String(form.get("way") ?? "password");
-        const answer = await confirmIdentity(way, String(form.get(way === "password" ? "password" : "code") ?? ""));
+        const value = way === "hardware_key" ? await keyAnswer() : String(form.get(way === "password" ? "password" : "code") ?? "");
+        const answer = await confirmIdentity(way, value);
         if (!answer.ok) return setMessage(answer.message);
         pending.resolve(await pending.call());
         onDone();

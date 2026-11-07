@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
+import { signInWithKey } from "../../lib/keyBrowser.js";
 import { withPosition } from "../../lib/position.js";
 import { requestPasswordResetForm, requestSignInLinkForm, signInForm, type SignInState } from "../../lib/signInActions.js";
 import { Field } from "./Field.js";
@@ -28,7 +29,7 @@ function LinkButtons({ note, requestLink, requestReset }: { note: string | null;
 
 /** Renders the sign-in form: the email and the chosen way's field; a refusal marks both and shows its one fixed message under the second. */
 export function SignInForm({ next }: { next: string }) {
-    const [state, signIn, signingIn] = useActionState(async (previous: SignInState, form: FormData) => signInForm(previous, await withPosition(form)), READY);
+    const [state, signIn, signingIn] = useActionState(async (previous: SignInState, form: FormData) => (form.get("way") === "hardware_key" ? signInWithKey(await withPosition(form)) : signInForm(previous, await withPosition(form))), READY);
     const [way, setWay] = useState<Way>("password");
     const [linkState, requestLink] = useActionState(requestSignInLinkForm, READY);
     const [resetState, requestReset] = useActionState(requestPasswordResetForm, READY);

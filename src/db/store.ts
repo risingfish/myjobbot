@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { AccountStore } from "./accountStore.js";
 import type { CompanyStore } from "./companyStore.js";
+import type { KeyStore } from "./keyStore.js";
 import type { MethodStore } from "./methodStore.js";
 import type { SessionStore } from "./sessionStore.js";
 import type { TokenStore } from "./tokenStore.js";
@@ -173,5 +174,6 @@ export interface Stores {
     accounts: AccountStore;
     methods: MethodStore;
     tokens: TokenStore;
+    keys: KeyStore;
     close(): Promise<void>;
 }

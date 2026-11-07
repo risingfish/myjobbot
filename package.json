@@ -30,6 +30,8 @@
     },
     "dependencies": {
         "@picocss/pico": "2.1.1",
+        "@simplewebauthn/browser": "14.0.0",
+        "@simplewebauthn/server": "14.0.3",
         "@types/node": "26.6.4",
         "@types/react": "19.3.0",
         "geoip-lite": "2.0.3",

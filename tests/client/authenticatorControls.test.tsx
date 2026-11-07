@@ -12,6 +12,7 @@ const actions = vi.hoisted(() => ({
     removeAuthenticator: vi.fn(),
     makeRecoveryCodes: vi.fn(),
 }));
+vi.mock("../../web/lib/keyActions.js", () => ({ startKeySignIn: vi.fn(), finishKeySignIn: vi.fn(), startKeyRegistration: vi.fn(), finishKeyRegistration: vi.fn(), removeKey: vi.fn() }));
 vi.mock("../../web/lib/authenticatorActions.js", () => actions);
 vi.mock("../../web/lib/accountActions.js", () => ({ confirmIdentity: vi.fn(), requestStepUpLink: vi.fn() }));
 

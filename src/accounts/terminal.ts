@@ -37,7 +37,7 @@ export async function runAccountCommand(environment: Environment, args: string[]
     const mail = mailSlot(environment, base.ok ? base.url.origin : null);
     const key = secretKeyStatus(environment);
     try {
-        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail, secretKey: key.status === "ok" ? key.key : null }, args, terminalIo());
+        return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail, secretKey: key.status === "ok" ? key.key : null, relyingParty: base.ok ? { id: base.url.hostname, origin: base.url.origin } : null }, args, terminalIo());
     } finally {
         await stores.close();
     }

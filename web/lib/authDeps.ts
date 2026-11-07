@@ -28,9 +28,11 @@ function mail(): MailSlot | null {
     return cache.__myjobbotMail;
 }
 
-/** Returns what the account flows run against: the stores, the clock, a secure random source, the mailer and the key that seals authenticator secrets. */
+/** Returns what the account flows run against: the stores, the clock, a secure random source, the mailer, the key that seals authenticator secrets and this site as hardware keys know it. */
 export async function authContext(): Promise<AuthContext> {
     const stores = await openedStores();
     const key = secretKeyStatus(process.env);
-    return { stores, now: () => new Date().toISOString(), random: randomBytes, mail: mail(), secretKey: key.status === "ok" ? key.key : null };
+    const url = webSettings()?.url;
+    const relyingParty = url === undefined ? null : { id: url.hostname, origin: url.origin };
+    return { stores, now: () => new Date().toISOString(), random: randomBytes, mail: mail(), secretKey: key.status === "ok" ? key.key : null, relyingParty };
 }

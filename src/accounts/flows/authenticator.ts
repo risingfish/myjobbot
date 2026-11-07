@@ -2,12 +2,10 @@ import QRCode from "qrcode";
 import { openOrNull, seal } from "../../gmail/seal.js";
 import { MESSAGES } from "../messages.js";
 import { checkCode, newAuthenticator } from "../totp.js";
-import type { Actor, AuthContext } from "./context.js";
-import { issueRecoveryCodes } from "./recoveryCodes.js";
+import type { Actor, AuthContext, Refused } from "./context.js";
+import { recordWayAdded } from "./recoveryCodes.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { signInWith, type SignInAnswer, type SignInRequest } from "./signIn.js";
-
-type Refused = { ok: false; message: string };
 
 /** Says whether a code from the account's app is right for now and newer than the last one used, accepting its step; a setup not yet confirmed counts only when asked. */
 export async function appCodeMatches(ctx: AuthContext, userId: number, check: { code: string; duringSetup?: boolean }): Promise<boolean> {
@@ -31,9 +29,7 @@ export async function confirmAuthenticator(ctx: AuthContext, actor: Actor, code:
     const app = await ctx.stores.methods.authenticator(actor.account.id);
     if (app.sealedSecret === null || !(await appCodeMatches(ctx, actor.account.id, { code, duringSetup: true }))) return { ok: false, message: MESSAGES.code_wrong };
     await ctx.stores.methods.saveAuthenticator(actor.account.id, { sealedSecret: app.sealedSecret, ready: true }, ctx.now());
-    await recordSecurityEvent(ctx, { userId: actor.account.id, at: ctx.now(), address: actor.address, event: "app_added", method: "authenticator" });
-    const first = (await ctx.stores.tokens.recoveryCodesLeft(actor.account.id)) === 0;
-    return { ok: true, recoveryCodes: first ? await issueRecoveryCodes(ctx, actor.account.id, actor.address) : null };
+    return { ok: true, recoveryCodes: await recordWayAdded(ctx, actor, { event: "app_added", method: "authenticator" }) };
 }
 
 /** Removes the account's authenticator app, never when it is the last usable way. */

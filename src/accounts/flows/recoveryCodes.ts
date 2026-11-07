@@ -1,11 +1,12 @@
 import type { Account } from "../../db/accountStore.js";
 import { makeRecoveryCodes as newCodes, recoveryDigest } from "../tokens.js";
+import type { SecurityEventName } from "../events.js";
 import type { Actor, AuthContext } from "./context.js";
 import { recordSecurityEvent } from "./securityEvents.js";
 import { signInWith, type SignInAnswer, type SignInRequest } from "./signIn.js";
 
 /** Replaces an account's recovery codes with a new set, kept only as digests, and gives the codes to show once. */
-export async function issueRecoveryCodes(ctx: AuthContext, userId: number, address: string): Promise<string[]> {
+async function issueRecoveryCodes(ctx: AuthContext, userId: number, address: string): Promise<string[]> {
     const codes = newCodes(ctx.random);
     await ctx.stores.tokens.replaceRecoveryCodes(userId, codes.map(recoveryDigest), ctx.now());
     await recordSecurityEvent(ctx, { userId, at: ctx.now(), address, event: "recovery_codes_made", method: null });
@@ -27,4 +28,11 @@ export async function makeRecoveryCodes(ctx: AuthContext, actor: Actor): Promise
 /** Signs in with an email and one unused recovery code, under the shared limits. */
 export function signInWithRecoveryCode(ctx: AuthContext, input: SignInRequest & { code: string }): Promise<SignInAnswer> {
     return signInWith(ctx, input, { method: "recovery_code", matches: async (account) => account !== null && recoveryCodeMatches(ctx, account, input) });
+}
+
+/** Records a second way of signing in being added, and gives ten recovery codes when the account has none yet, to show once. */
+export async function recordWayAdded(ctx: AuthContext, actor: Actor, added: { event: SecurityEventName; method: string }): Promise<string[] | null> {
+    await recordSecurityEvent(ctx, { userId: actor.account.id, at: ctx.now(), address: actor.address, event: added.event, method: added.method });
+    const first = (await ctx.stores.tokens.recoveryCodesLeft(actor.account.id)) === 0;
+    return first ? issueRecoveryCodes(ctx, actor.account.id, actor.address) : null;
 }

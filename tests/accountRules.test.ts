@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { checkEmail, normalizeEmail } from "../src/accounts/emails.js";
-import { checkName } from "../src/accounts/names.js";
+import { checkKeyName, checkName } from "../src/accounts/names.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { checkPassword } from "../src/accounts/passwordRule.js";
 import { safeReturnPath } from "../src/accounts/returnPath.js";
@@ -40,4 +40,9 @@ test("a name is 1 to 100 characters with no line breaks or control characters, t
     expect(checkName("  Ada Lovelace  ")).toEqual({ ok: true, name: "Ada Lovelace" });
     expect(checkName("x".repeat(100))).toEqual({ ok: true, name: "x".repeat(100) });
     for (const name of ["", "   ", "x".repeat(101), "Ada\nBcc: x", "Ada\u0000"]) expect(checkName(name)).toEqual({ ok: false, message: MESSAGES.name_invalid });
+});
+
+test("a key name is 1 to 50 characters with no line breaks or control characters, trimmed", () => {
+    expect(checkKeyName(" Blue key ")).toEqual({ ok: true, name: "Blue key" });
+    for (const name of ["", "x".repeat(51), "Blue\nkey"]) expect(checkKeyName(name)).toEqual({ ok: false, message: MESSAGES.key_name_invalid });
 });

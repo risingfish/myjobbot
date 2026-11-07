@@ -9,16 +9,27 @@ export interface MailSlot {
     baseUrl: string;
 }
 
+export interface RelyingParty {
+    id: string;
+    origin: string;
+}
+
 export interface AuthContext {
-    stores: Pick<Stores, "sessions" | "accounts" | "methods" | "tokens">;
+    stores: Pick<Stores, "sessions" | "accounts" | "methods" | "tokens" | "keys">;
     now: () => string;
     random: RandomBytes;
     mail: MailSlot | null;
     secretKey: Buffer | null;
+    relyingParty: RelyingParty | null;
 }
 
 export interface Actor {
     account: Account;
     session: Session;
     address: string;
+}
+
+export interface Refused {
+    ok: false;
+    message: string;
 }

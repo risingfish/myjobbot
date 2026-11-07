@@ -10,3 +10,10 @@ export function checkName(raw: string): CheckedName {
     const length = Array.from(name).length;
     return length >= 1 && length <= 100 && !CONTROL.test(name) ? { ok: true, name } : { ok: false, message: MESSAGES.name_invalid };
 }
+
+/** Checks a hardware key's name: 1 to 50 characters once trimmed, with no line breaks or control characters. */
+export function checkKeyName(raw: string): CheckedName {
+    const name = raw.trim();
+    const length = Array.from(name).length;
+    return length >= 1 && length <= 50 && !CONTROL.test(name) ? { ok: true, name } : { ok: false, message: MESSAGES.key_name_invalid };
+}
