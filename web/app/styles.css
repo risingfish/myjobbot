@@ -9,25 +9,71 @@
         --applied: #6fd08f;
     }
 }
-nav {
+nav.pages {
     justify-content: flex-start;
     gap: 16px;
     margin-bottom: 12px;
     flex-wrap: wrap;
 }
-nav a {
+nav.pages a {
     color: var(--pico-muted-color);
     text-decoration: none;
     padding-bottom: 2px;
 }
-nav a.current {
+nav.pages a.current {
     color: var(--pico-color);
     border-bottom: 2px solid var(--pico-primary);
 }
 
 header .main-title {
-    display: inline;
+    margin: 0;
 }
+
+[aria-invalid="true"] + small {
+    font-size: 1em;
+}
+
+/* Pico's own invalid icon, in its own colours for each theme, drawn bolder and a little larger. */
+input[aria-invalid="true"]:not([type="checkbox"], [type="radio"]) {
+    --pico-icon-invalid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgb(200.25, 79.25, 72.25)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E");
+    background-size: 1.25rem auto;
+}
+@media (prefers-color-scheme: dark) {
+    input[aria-invalid="true"] {
+        --pico-icon-invalid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgb(149.5, 74, 80)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E");
+    }
+}
+
+[role="group"] button {
+    white-space: nowrap;
+}
+
+.step-up footer button {
+    min-width: 10em;
+}
+
+.site-header {
+    --pico-nav-element-spacing-vertical: 0.25rem;
+    padding-block: calc(var(--pico-spacing) * 0.25);
+    background-color: var(--pico-card-sectioning-background-color);
+    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+    margin-bottom: var(--pico-spacing);
+}
+
+.site-header nav {
+    align-items: center;
+}
+
+.site-header .sign-out {
+    margin: 0;
+}
+
+.site-header .sign-out button {
+    --pico-form-element-spacing-vertical: 0.375rem;
+    --pico-form-element-spacing-horizontal: 0.75rem;
+    margin-bottom: 0;
+}
+
 
 .panel {
     overflow-x: auto;
@@ -111,6 +157,9 @@ form.applied-form button {
 }
 .score-col {
     width: 1%;
+    white-space: nowrap;
+}
+.posted-col {
     white-space: nowrap;
 }
 .score-col .score {

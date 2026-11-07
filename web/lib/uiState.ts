@@ -1,13 +1,13 @@
-import { existsSync } from "node:fs";
 import { loadFileConfig, readResumeFile } from "../../src/config/load.js";
 import { resolveSettings, settingsNotices, type SettingsNotice } from "../../src/config/resolve.js";
 import type { Settings } from "../../src/config/schema.js";
 import { splitSettings } from "../../src/config/searchSettings.js";
-import { openStores } from "../../src/db/connect.js";
-import { parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { openedStores } from "./database.js";
+import { requireSession } from "./session.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { ResumeProfile } from "../../src/db/resumeStore.js";
+import type { Account } from "../../src/db/accountStore.js";
 import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
@@ -43,38 +43,14 @@ interface SettingsState {
     sources: SourcesView;
     resume: ResumeShown;
     profile: ResumeProfile | null;
+    admin: { accounts: Account[] } | null;
 }
 
-const cache = globalThis as typeof globalThis & { __myjobbotStores?: Promise<Stores>; __myjobbotKey?: SecretKeyStatus };
+const cache = globalThis as typeof globalThis & { __myjobbotKey?: SecretKeyStatus };
 
 /** Returns the data folder the web UI reads its config from, from MYJOBBOT_DATA_DIR. */
 function dataDir(): string {
     return process.env.MYJOBBOT_DATA_DIR ?? "data";
-}
-
-/** Reads the database settings, loading the repository's .env first when there is one (Next.js only reads web/.env). */
-function dbSettings(): DbSettings {
-    if (existsSync(".env")) process.loadEnvFile(".env");
-    return parseDbSettings(process.env);
-}
-
-/** Returns the label the footer shows for the database, without connecting. */
-export function dbLabel(): string {
-    try {
-        const settings = dbSettings();
-        return `${settings.database} @ ${settings.host}`;
-    } catch {
-        return "database not configured";
-    }
-}
-
-/** Returns the stores, opening them once per server process (and again after a failure) so dev reloads reuse them. */
-function stores(): Promise<Stores> {
-    cache.__myjobbotStores ??= openStores(dbSettings(), { tries: 1 }).catch((error: unknown) => {
-        cache.__myjobbotStores = undefined;
-        throw error;
-    });
-    return cache.__myjobbotStores;
 }
 
 /** Returns the key that seals Gmail secrets, read once per process after the stores have loaded the root .env. */
@@ -85,25 +61,28 @@ function secretKey(): SecretKeyStatus {
 
 /** Returns the open stores and the sealing key without resolving any settings, for what must work before search settings are stored. */
 export async function getStores(): Promise<OpenStores> {
-    return { stores: await stores(), key: secretKey() };
+    return { stores: await openedStores(), key: secretKey() };
 }
 
 /** Returns the database views, the re-score log, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
 export async function getUiState(): Promise<UiState> {
+    await requireSession();
     const { stores: opened, key } = await getStores();
     const { settings, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings);
     const names = sourceNames(await opened.sources.list(OWNER_ID));
     return { views: opened.jobViews, rescoreLog: opened.rescoreLog, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
 }
 
-/** Returns what the Settings page shows for one request: the search settings in effect, what they report, the resume in use, its profile and the Gmail stores, without running the cross-setting rules, so it loads with nothing stored. */
+/** Returns what the Settings page shows for one request: the search settings in effect, what they report, the resume in use, its profile, the Gmail stores and, for an admin, the accounts, without running the cross-setting rules, so it loads with nothing stored. */
 export async function getSettingsState(): Promise<SettingsState> {
+    const { account } = await requireSession();
     const { stores: opened, key } = await getStores();
+    const admin = account.isAdmin ? { accounts: await opened.accounts.accounts() } : null;
     const stored = await opened.searchSettings.load(OWNER_ID);
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
     const [uploaded, profile] = await Promise.all([opened.resume.currentResume(OWNER_ID), opened.resume.profile(OWNER_ID)]);
     const resume = resumeShown(uploaded, readResumeFile(dataDir()));
-    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile };
+    return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile, admin };
 }
 
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */

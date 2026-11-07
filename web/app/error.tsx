@@ -1,10 +1,12 @@
 "use client";
 
-/** Shows why a page failed to load, inside the usual header and footer. */
-export default function ErrorPage({ error }: { error: Error }) {
+import { MESSAGES } from "../../src/accounts/messages.js";
+
+/** Shows that a page failed to load with a fixed message; the detail stays in the server log. */
+export default function ErrorPage() {
     return (
         <main className="container-fluid" aria-label="Error">
-            <p className="error">{error.message}</p>
+            <p className="error">{MESSAGES.page_failed}</p>
         </main>
     );
 }

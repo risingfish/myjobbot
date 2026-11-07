@@ -23,7 +23,7 @@ test("step 016 copies the title boosts into description boosts once, leaving the
     try {
         await migrateBefore(db, "016");
         await seedSettings(db);
-        expect(await migrateToLatest(db)).toEqual(["016_description_boosts", "017_resume"]);
+        expect(await migrateToLatest(db)).toEqual(["016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
         const rows = await db.selectFrom("user_settings").select(["settings", "updated_at"]).orderBy("user_id").execute();
         expect(rows).toEqual([
             { settings: { ...DOCUMENTS[0], description_boosts: { go: 5, react: 8 } }, updated_at: AT },

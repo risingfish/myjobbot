@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { RescoreLogStore } from "../../../../../src/db/rescoreLogStore.js";
 import { PING, sseText, streamEvents, type StreamEvent } from "../../../../../src/web/rescoreStream.js";
-import { getStores } from "../../../../lib/uiState.js";
+import { openedStores } from "../../../../lib/database.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const POLL_MS = 400;
@@ -26,10 +26,15 @@ interface Tick {
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
     const { id } = await params;
     if (!UUID.test(id)) return new Response(null, { status: 404 });
-    const store = (await getStores()).stores.rescoreLog;
+    const store = (await openedStores()).rescoreLog;
     if ((await store.run(id)) === null) return new Response(null, { status: 404 });
     const after = Number.parseInt(request.headers.get("last-event-id") ?? "0", 10);
     return new Response(followed(store, id, { signal: request.signal, after: Number.isNaN(after) ? 0 : after }), { headers: HEADERS });
+}
+
+/** Answers a check that the stream's address is reachable while signed in, without opening the stores or following anything. */
+export function HEAD(): Response {
+    return new Response(null, { status: 204 });
 }
 
 /** Builds the response body that follows one run until it ends or the browser goes away. */

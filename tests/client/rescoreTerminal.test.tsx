@@ -9,6 +9,7 @@ beforeEach(() => {
     vi.useFakeTimers();
     FakeSource.opened = [];
     vi.stubGlobal("EventSource", FakeSource);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
     vi.spyOn(Element.prototype, "scrollTo").mockReturnValue(Promise.resolve() as unknown as undefined);
 });
 

@@ -24,3 +24,9 @@ test("a tampered or unrecognised value is refused", () => {
     expect(openOrNull("v2.a.b.c", "app_password", KEY)).toBeNull();
     expect(openOrNull("plain text", "app_password", KEY)).toBeNull();
 });
+
+test("an authenticator secret sealed for its field opens only as that field, not as a Gmail app password", () => {
+    const sealed = seal("JBSWY3DPEHPK3PXP", "totp_secret", KEY);
+    expect(openOrNull(sealed, "totp_secret", KEY)).toBe("JBSWY3DPEHPK3PXP");
+    expect(openOrNull(sealed, "app_password", KEY)).toBeNull();
+});

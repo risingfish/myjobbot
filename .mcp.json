@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "brave": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.84", "--cdp-endpoint", "http://127.0.0.1:9222"]
+    }
+  }
+}

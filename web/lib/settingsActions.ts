@@ -6,12 +6,13 @@ import { describeError } from "../../src/errors.js";
 import { saveRequest, type SaveRequest } from "../../src/web/settingsForm.js";
 import { saveSection, type SaveResult } from "../../src/web/settingsSave.js";
 import { getStores, runtimeSettings } from "./uiState.js";
+import { guarded } from "./guard.js";
 
 const NOT_A_SECTION: SaveResult = { ok: false, problems: [{ field: null, entry: null, message: "not a settings section" }] };
 const FAILED: SaveResult = { ok: false, failed: true };
 
 /** Saves one section of the Settings page's search settings, checked together with the rest, for that section's Save button. */
-export async function saveSettingsSection(_previous: SaveResult | null, request: unknown): Promise<SaveResult> {
+async function saveSettingsSectionAction(_previous: SaveResult | null, request: unknown): Promise<SaveResult> {
     const parsed = saveRequest.safeParse(request);
     if (!parsed.success) return NOT_A_SECTION;
     try {
@@ -31,3 +32,5 @@ async function storeSection(request: SaveRequest): Promise<SaveResult> {
     revalidatePath("/settings");
     return { ok: true };
 }
+
+export const saveSettingsSection = guarded(saveSettingsSectionAction, {});

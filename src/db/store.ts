@@ -1,5 +1,10 @@
 import type { z } from "zod";
+import type { AccountStore } from "./accountStore.js";
 import type { CompanyStore } from "./companyStore.js";
+import type { KeyStore } from "./keyStore.js";
+import type { MethodStore } from "./methodStore.js";
+import type { SessionStore } from "./sessionStore.js";
+import type { TokenStore } from "./tokenStore.js";
 import type { JobSource } from "./jobSource.js";
 import type { CareersStore } from "./careersStore.js";
 import type { RescoreLogStore } from "./rescoreLogStore.js";
@@ -165,5 +170,10 @@ export interface Stores {
     searchSettings: SearchSettingsStore;
     sources: SourceStore;
     resume: ResumeStore;
+    sessions: SessionStore;
+    accounts: AccountStore;
+    methods: MethodStore;
+    tokens: TokenStore;
+    keys: KeyStore;
     close(): Promise<void>;
 }

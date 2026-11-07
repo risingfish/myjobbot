@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-export type SealedField = "app_password";
+export type SealedField = "app_password" | "totp_secret";
 
 const VERSION = "v1";
 const CIPHER = "aes-256-gcm";

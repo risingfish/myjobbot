@@ -248,6 +248,31 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `--view` (series `<label>=<variant|code>[+view][@model]`), never the stored setting. The resume
   and profile are shown as text only and never logged.
 
+- Accounts (feature 024) live in `src/accounts/` (rules and flows, no Next.js) and five stores:
+  `AccountStore` (users with `email`, `email_key`, `is_admin`, and `security_events`),
+  `MethodStore` (`sign_in_methods`), `TokenStore` (creation codes, emailed links, recovery codes),
+  `KeyStore` (hardware keys and challenges), `SessionStore` (sessions and attempts). Their contracts
+  run every case on the memory stores and only the strict (transaction, race, constraint) cases on
+  MariaDB. `web/proxy.ts` gates every request through `src/web/security/` (host, origin,
+  a `SameSite=Strict` forgery cookie tied to the session, the session, `private, no-store`, a
+  nonce CSP and the security headers); a signed-out request gets only a redirect or a fixed 401,
+  never job data, and every page loader calls `requireSession()` first. Every server action is
+  wrapped by `guarded` (`web/lib/guard.ts`: public, admin, step-up), which decides actions even on
+  public paths; `tests/actionGuards.test.ts` checks them all. Signed-in pages are in
+  `web/app/(app)/`, public ones in `web/app/(public)/` (no nav, no database label). Refusals are
+  fixed `MESSAGES` (`src/accounts/messages.ts`) and never say whether an email has an account;
+  every sign-in way goes through `signInWith` (shared limits, refusal and recording); every
+  security event through `recordSecurityEvent`, which queues its notice. One-time values (codes,
+  links, recovery codes, key challenges, TOTP steps) are stored as digests and spent in the
+  statement that checks them; passwords are Argon2id (`node:crypto`); authenticator secrets are
+  sealed with `MYJOBBOT_SECRET_KEY` (`seal.ts` field `totp_secret`). Mail goes through
+  `src/mail/` (nodemailer, queued, failures logged by fixed reason). Emailed links carry their
+  token in the URL fragment, read once by `/link`. Device details (IP, OS, location: browser
+  position rounded, else geoip-lite, kept out of the Next bundle) are stored per session. Never
+  log a password, code, token, secret or typed email. New pages use Pico first (research R18); a
+  primary button inside a `.panel` is a form's submit button with no `type`, since
+  `.panel button[type="button"]` is styled small.
+
 ## Commands
 
 - `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
@@ -257,8 +282,11 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
 - `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] [--view v] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (README "Evals"); `run` and `series run` call the real model
 - `scripts/copy-prod.sh myjobbot_dev|myjobbot_dev_alt [--yes]`: replaces every table in a dev database
-  with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (README, Develop);
-  refuses any other target
+  with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (README, Develop),
+  copying no rows of `sessions`, `email_tokens`, `auth_challenges`, `auth_attempts` or
+  `account_codes`; refuses any other target
+- `npm start -- account init|reset <email>`: make user 1 the first admin, or give an admin a new
+  password, typed at a hidden prompt
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

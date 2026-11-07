@@ -7,6 +7,10 @@ cd "$(dirname "$0")/.."
 
 SOURCE=myjobbot
 
+# Sign-ins, emailed links, key challenges, attempt counts and creation codes stay in production:
+# a copy holds the accounts and their ways of signing in, not anything live (research R19).
+SKIPPED=(sessions email_tokens auth_challenges auth_attempts account_codes)
+
 usage() {
   echo "usage: scripts/copy-prod.sh myjobbot_dev|myjobbot_dev_alt [--yes]" >&2
   exit 2
@@ -67,7 +71,17 @@ if [ -n "$tables" ]; then
   mysql --defaults-extra-file="$write_cnf" "$target" -e "SET FOREIGN_KEY_CHECKS = 0; $drops"
 fi
 
-mysqldump --defaults-extra-file="$read_cnf" "${dump_flags[@]}" "$SOURCE" | mysql --defaults-extra-file="$write_cnf" --default-character-set=utf8mb4 "$target"
+# Only those of the skipped tables production has, so a copy from before they existed still works.
+skipped_list=$(printf "'%s'," "${SKIPPED[@]}")
+present=$(mysql --defaults-extra-file="$read_cnf" -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$SOURCE' AND table_name IN (${skipped_list%,})")
+ignores=()
+for table in $present; do ignores+=("--ignore-table=$SOURCE.$table"); done
+
+mysqldump --defaults-extra-file="$read_cnf" "${dump_flags[@]}" "${ignores[@]}" "$SOURCE" | mysql --defaults-extra-file="$write_cnf" --default-character-set=utf8mb4 "$target"
+if [ -n "$present" ]; then
+  # shellcheck disable=SC2086
+  mysqldump --defaults-extra-file="$read_cnf" "${dump_flags[@]}" --no-data "$SOURCE" $present | mysql --defaults-extra-file="$write_cnf" --default-character-set=utf8mb4 "$target"
+fi
 
 summary=$(mysql --defaults-extra-file="$write_cnf" -N -B "$target" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE(); SELECT COUNT(*) FROM jobs; SELECT MAX(name) FROM kysely_migration" | tr '\n' ' ')
 read -r table_count job_count last_step <<< "$summary"

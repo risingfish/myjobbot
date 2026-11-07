@@ -45,6 +45,10 @@ spec:
               value: {{ .Values.web.port | quote }}
             - name: MYJOBBOT_HOSTS
               value: {{ include "myjobbot.hosts" . | quote }}
+            - name: MYJOBBOT_BASE_URL
+              value: {{ include "myjobbot.baseUrl" . | quote }}
+            - name: MYJOBBOT_TRUSTED_PROXIES
+              value: {{ include "myjobbot.trustedProxies" . | quote }}
           envFrom:
             {{- include "myjobbot.envFrom" . | nindent 12 }}
           ports:
