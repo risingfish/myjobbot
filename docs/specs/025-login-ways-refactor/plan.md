@@ -105,7 +105,7 @@ src/accounts/
 │   ├── catalog.ts             # CARD_KINDS, CHOICE_KINDS, wayEntry; S3 adds cardName, choiceOf (client-safe; WAYS private)
 │   ├── registry.ts            # ChoiceKind → ProofWay
 │   ├── usable.ts              # wayUsable(ctx, userId, kind)
-│   ├── password.ts            # proof way, changePassword, newPasswordDigest, setNewPassword
+│   ├── password.ts            # proof way, changePassword, newPasswordDigest
 │   ├── emailLink.ts           # requestSignInLink, spendSignIn
 │   ├── authenticator.ts       # from flows/authenticator.ts
 │   ├── hardwareKey.ts         # from flows/keys.ts

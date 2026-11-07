@@ -15,8 +15,8 @@ the spec asks for. 024's [quickstart](../024-user-accounts/quickstart.md) is the
 
 1. `tests/wayBranches.test.ts` passes: no way kind is compared as a literal outside
    `src/accounts/ways/`, the way controls in `web/components/account/` and the stores.
-2. `grep -rn "METHOD_KINDS\|WAY_NAMES\|const WAYS" src web` finds only
-   `src/accounts/ways/catalog.ts` (its private `const WAYS`), the one list.
+2. `grep -rn "METHOD_KINDS\|WAY_NAMES\|const WAYS" src web` finds nothing: the ways are listed
+   only in `src/accounts/ways/catalog.ts` (`CARD_KINDS`, `CHOICE_KINDS` and their names and fields).
 3. `grep -rn "forUpdate" src/db/kysely/methodStore.ts src/db/kysely/keyStore.ts src/db/kysely/authenticatorStore.ts`
    finds nothing. The lock lives in `wayLock.ts` alone.
 4. `grep -rn "const SIGNED_OUT" web` finds one, in `web/lib/accountAction.ts`.

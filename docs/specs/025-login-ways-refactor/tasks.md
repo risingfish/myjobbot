@@ -195,11 +195,11 @@ repeated rule written once.
 
 ### Tests (S3)
 
-- [ ] T026 Create `.specify/sitting-in-progress` naming S3, with the stack running only if the owner wants to watch (every turn then ends clean).
-- [ ] T027 [P] [US4] Write a unit test (1) in `tests/accountAction.test.ts` for `signedInAction(parse, run)` from `web/lib/accountAction.ts`, mocking `./actor.js` and `./authDeps.js` the way `tests/actionGuards.test.ts` mocks web modules:
+- [X] T026 Create `.specify/sitting-in-progress` naming S3, with the stack running only if the owner wants to watch (every turn then ends clean).
+- [X] T027 [P] [US4] Write a unit test (1) in `tests/accountAction.test.ts` for `signedInAction(parse, run)` from `web/lib/accountAction.ts`, mocking `./actor.js` and `./authDeps.js` the way `tests/actionGuards.test.ts` mocks web modules:
   - `SIGNED_OUT` when `parse` gives `null`, and when `actorNow()` gives `null`, without calling `run`
   - otherwise `run` gets the parsed input and the actor, and its answer is returned
-- [ ] T028 [P] [US3] Write an integration test (1; it reads files, research R9, though it runs in `npm run check` like `actionGuards.test.ts`) in `tests/wayBranches.test.ts`:
+- [X] T028 [P] [US3] Write an integration test (1; it reads files, research R9, though it runs in `npm run check` like `actionGuards.test.ts`) in `tests/wayBranches.test.ts`:
   - read every `.ts`/`.tsx` under `src/` and `web/` (skipping `.next*`) as text
   - fail on any `=== "password"`, `=== "email_link"`, `=== "authenticator"`, `=== "hardware_key"` or `=== "recovery_code"` (and `!==`) outside `src/accounts/ways/`, `src/db/`, and `web/components/account/{PasswordControls,EmailLinkControls,AuthenticatorControls,KeyControls,RecoveryCodes}.tsx`
   - name each offending file and line
@@ -207,16 +207,16 @@ repeated rule written once.
 
 ### Implementation (S3)
 
-- [ ] T029 [US4] Create `web/lib/accountAction.ts`, a plain module with no `"use server"`:
+- [X] T029 [US4] Create `web/lib/accountAction.ts`, a plain module with no `"use server"`:
   - `SIGNED_OUT`
   - `signedInAction<I, R>(parse: (...args: unknown[]) => I | null, run: (signedIn: { ctx: AuthContext; actor: Actor; settings: WebSettings }, input: I) => Promise<R>)`, returning the async action
 
   `Refused` is imported from `src/accounts/flows/context.ts`. T027 passes.
-- [ ] T030 [US4] Rewrite the 16 signed-in actions in `web/lib/accountActions.ts` (9), `web/lib/authenticatorActions.ts` (4) and `web/lib/keyActions.ts` (3) as `guarded(signedInAction(...), options)`:
+- [X] T030 [US4] Rewrite the 16 signed-in actions in `web/lib/accountActions.ts` (9), `web/lib/authenticatorActions.ts` (4) and `web/lib/keyActions.ts` (3) as `guarded(signedInAction(...), options)`:
   - same options, answers, `revalidatePath` calls and cookie setting
   - delete each file's own `SIGNED_OUT` and `Refused`
   - `tests/actionGuards.test.ts` must pass unchanged
-- [ ] T031 [US3] Add `cardName(kind)` and `choiceOf(kind)` to `src/accounts/ways/catalog.ts`, and export the `ProofField` type (used by `WayChoice` and `StepUp`), each with its callers below; then drive the UI from the catalog:
+- [X] T031 [US3] Add `cardName(kind)` and `choiceOf(kind)` to `src/accounts/ways/catalog.ts`, and export the `ProofField` type (used by `WayChoice` and `StepUp`), each with its callers below; then drive the UI from the catalog:
   - `WayCard.tsx`: the title from `cardName(kind)`; controls from a `Record<CardKind, (props) => JSX>` lookup in place of the if-chain
   - `WayChoice.tsx`: the radios from `CHOICE_KINDS`/`choiceOf`, the field from the entry's `field`, the key note when `field.kind === "key"`, and `Way` replaced by `ChoiceKind`
   - `StepUp.tsx` `useStepUpAnswers`: the value read by the chosen way's field (`field.kind === "key"` → `keyAnswer()`, else the field's `name`)
@@ -224,8 +224,8 @@ repeated rule written once.
   - `confirmIdentityAction` in `accountActions.ts` reads the proof with `PROOF_WAYS[kind].readProof`, replacing the zod union
 
   The existing UI tests (`tests/client/accountPage.test.tsx`, the sign-in and step-up component tests) must pass unchanged. T028 passes.
-- [ ] T032 [P] Update CLAUDE.md's "Accounts (feature 024)" entry: ways live in `src/accounts/ways/` (catalog for the UI, registry for proofs); `AuthenticatorStore` is a sixth store; the keep-a-way lock is `wayLock.ts`; account actions open with `signedInAction`; `tests/wayBranches.test.ts` keeps per-way branches inside the way modules.
-- [ ] T033 Run `npm run check` and `npm run check:db` until green, update the ledger, delete the marker. PR 3 when the owner asks.
+- [X] T032 [P] Update CLAUDE.md's "Accounts (feature 024)" entry: ways live in `src/accounts/ways/` (catalog for the UI, registry for proofs); `AuthenticatorStore` is a sixth store; the keep-a-way lock is `wayLock.ts`; account actions open with `signedInAction`; `tests/wayBranches.test.ts` keeps per-way branches inside the way modules.
+- [X] T033 Run `npm run check` and `npm run check:db` until green, update the ledger, delete the marker. PR 3 when the owner asks.
 
 **Checkpoint**: A sixth way would need its module, a catalog entry, a registry entry and its controls only (SC-005).
 
@@ -281,5 +281,6 @@ isn't wanted.
 | S2 planned | +2 (T014, T015) | +0 | +0 |
 | Actual after S2 (2026-11-07) | 1106 (+4: the catalog test split in three, by habit-hooks' function limit) | 84 (+0) | 78 (+0) |
 | S3 planned | +1 (T027) | +1 (T028, a source scan) | +0 |
+| Actual after S3 (2026-11-07) | 1107 (+1) | 84 (+0) + 1 source scan run in `npm run check` | 78 (+0) |
 | Planned after | +5 | +1 | +0 |
-| Actual | | | |
+| Actual, feature total | 1107 (+7) | 85 (+1, the source scan) | 78 (+0) |

@@ -249,10 +249,21 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `--view` (series `<label>=<variant|code>[+view][@model]`), never the stored setting. The resume
   and profile are shown as text only and never logged.
 
-- Accounts (feature 024) live in `src/accounts/` (rules and flows, no Next.js) and five stores:
+- Accounts (feature 024) live in `src/accounts/` (rules and flows, no Next.js) and six stores:
   `AccountStore` (users with `email`, `email_key`, `is_admin`, and `security_events`),
-  `MethodStore` (`sign_in_methods`), `TokenStore` (creation codes, emailed links, recovery codes),
-  `KeyStore` (hardware keys and challenges), `SessionStore` (sessions and attempts). Their contracts
+  `MethodStore` (each way's switch and set-up state in `sign_in_methods`, and the password),
+  `AuthenticatorStore` (the authenticator's secret and last step, same table), `TokenStore`
+  (creation codes, emailed links, recovery codes), `KeyStore` (hardware keys and challenges),
+  `SessionStore` (sessions and attempts). Each way of signing in has one module in
+  `src/accounts/ways/` (feature 025: `password`, `emailLink`, `authenticator`, `hardwareKey`,
+  `recoveryCode`); `catalog.ts` is the one list of ways (card and choice order, names, fields,
+  mail rules) and is safe for client components; `registry.ts` (`PROOF_WAYS`) maps each way you
+  can choose to how it reads and checks a proof, used by `signInByWay` and `confirmIdentity`.
+  Nothing outside the way modules, their controls and the stores compares a way's kind by name
+  (`tests/wayBranches.test.ts`). A change that could leave no usable way goes through
+  `changeKeepingAWay` (`src/db/kysely/wayLock.ts`, locked), whether a way is usable through
+  `wayUsable`, a new password through `newPasswordDigest`, and every signed-in server action
+  opens with `signedInAction` (`web/lib/accountAction.ts`). Their contracts
   run every case on the memory stores and only the strict (transaction, race, constraint) cases on
   MariaDB. `web/proxy.ts` gates every request through `src/web/security/` (host, origin,
   a `SameSite=Strict` forgery cookie tied to the session, the session, `private, no-store`, a

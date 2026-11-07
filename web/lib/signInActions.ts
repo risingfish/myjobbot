@@ -7,7 +7,7 @@ import { requestPasswordReset, spendEmailLink } from "../../src/accounts/flows/e
 import { signInByWay, signOut } from "../../src/accounts/flows/signIn.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
-import { CHOICE_KINDS, wayEntry, type ChoiceKind } from "../../src/accounts/ways/catalog.js";
+import { CHOICE_KINDS, choiceOf, type ChoiceKind } from "../../src/accounts/ways/catalog.js";
 import { requestSignInLink } from "../../src/accounts/ways/emailLink.js";
 import { refusedField, type AccountField } from "../../src/web/accountForms.js";
 import { parseLinkFragment } from "../../src/web/linkFragment.js";
@@ -34,7 +34,7 @@ function field(form: FormData, name: string): string {
 /** Reads the way the form chose, among those typed into a field; anything else is taken as the password. */
 function typedWay(form: FormData): ChoiceKind {
     const way = CHOICE_KINDS.find((kind) => kind === field(form, "way"));
-    return way !== undefined && wayEntry(way).choice?.field.kind === "text" ? way : "password";
+    return way !== undefined && choiceOf(way).field.kind === "text" ? way : "password";
 }
 
 /** Signs in with the email and the way chosen on the sign-in form, then goes to the page asked for; every failure answers the same. */
