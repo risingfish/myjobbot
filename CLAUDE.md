@@ -292,9 +292,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `.env`'s `MYJOBBOT_DB_*` and `MYJOBBOT_TEST_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
 - `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
 - `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
-- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] [--view v] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (README "Evals"); `run` and `series run` call the real model
+- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] [--view v] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (`docs/cli.md`, Evals); `run` and `series run` call the real model
 - `scripts/copy-prod.sh myjobbot_dev|myjobbot_dev_alt [--yes]`: replaces every table in a dev database
-  with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (README, Develop),
+  with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (`docs/developing.md`),
   copying no rows of `sessions`, `email_tokens`, `auth_challenges`, `auth_attempts` or
   `account_codes`; refuses any other target
 - `npm start -- account init|reset <email>`: make user 1 the first admin, or give an admin a new

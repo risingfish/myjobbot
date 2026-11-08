@@ -1,0 +1,82 @@
+services:
+    myjobbot:
+        build: .
+        image: myjobbot-full:latest
+        restart: unless-stopped
+        env_file: .env
+        environment: &app-environment
+            MYJOBBOT_DATA_DIR: /data
+            MYJOBBOT_LOG_DIR: /data/log
+            MYJOBBOT_DB_HOST: mariadb
+            MYJOBBOT_DB_PORT: "3306"
+            MYJOBBOT_SEARXNG_URL: http://searxng:8080
+            MYJOBBOT_BROWSER_URL: ws://browser:3000/
+        volumes:
+            - ./data:/data
+        networks: [default, browser]
+        depends_on:
+            mariadb:
+                condition: service_healthy
+
+    web:
+        build: .
+        image: myjobbot-full:latest
+        restart: unless-stopped
+        command: ["serve"]
+        env_file: .env
+        environment:
+            <<: *app-environment
+            MYJOBBOT_WEB_MODE: production
+        ports:
+            - "${MYJOBBOT_PORT:-8080}:${MYJOBBOT_PORT:-8080}"
+        volumes:
+            - ./data:/data
+        networks: [default, browser]
+        depends_on:
+            mariadb:
+                condition: service_healthy
+
+    mariadb:
+        image: mariadb:11.8.9
+        restart: unless-stopped
+        command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
+        environment:
+            MARIADB_DATABASE: ${MYJOBBOT_DB_NAME:?set MYJOBBOT_DB_NAME in .env}
+            MARIADB_USER: ${MYJOBBOT_DB_USER:?set MYJOBBOT_DB_USER in .env}
+            MARIADB_PASSWORD: ${MYJOBBOT_DB_PASSWORD:?set MYJOBBOT_DB_PASSWORD in .env}
+            MARIADB_RANDOM_ROOT_PASSWORD: "1"
+        volumes:
+            - mariadb-data:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 5s
+            timeout: 5s
+            retries: 20
+            start_period: 30s
+
+    searxng:
+        image: searxng/searxng:2026.10.15-b00212a83
+        restart: unless-stopped
+        environment:
+            SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+        volumes:
+            - ./docker/searxng/settings.yml:/etc/searxng/settings.yml:ro
+
+    browser:
+        image: mcr.microsoft.com/playwright:v1.64.1-noble
+        restart: unless-stopped
+        init: true
+        user: pwuser
+        working_dir: /home/pwuser
+        shm_size: 1gb
+        command: ["npx", "-y", "playwright@1.64.1", "run-server", "--port", "3000", "--host", "0.0.0.0"]
+        networks: [browser]
+
+networks:
+    browser:
+        ipam:
+            config:
+                - subnet: 172.31.250.0/24
+
+volumes:
+    mariadb-data: {}
