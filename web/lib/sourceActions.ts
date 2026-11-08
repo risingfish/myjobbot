@@ -5,7 +5,7 @@ import { z } from "zod";
 import { describeError } from "../../src/errors.js";
 import { moduleFor, recognizeLink, type RecognizedLink } from "../../src/sources/registry.js";
 import { saveSource as storeSource, sourceRequest, type SourceSaveResult } from "../../src/web/saveSource.js";
-import { enableProblem } from "../../src/web/sourceRules.js";
+import { enableProblem, scheduledElsewhere } from "../../src/web/sourceRules.js";
 import { sourceDeps } from "./sourceDeps.js";
 import { getStores, sourceConfig } from "./uiState.js";
 import { guarded } from "./guard.js";
@@ -21,7 +21,7 @@ async function setSourceEnabledAction(id: unknown, on: unknown): Promise<SwitchR
     const request = z.object({ id: sourceId, on: z.boolean() }).safeParse({ id, on });
     if (!request.success) return NOT_A_SOURCE;
     const { stores } = await getStores();
-    const problem = request.data.on ? enableProblem(await stores.sources.list(), request.data.id, sourceConfig().jsearch) : null;
+    const problem = request.data.on ? enableProblem(await stores.sources.list(), request.data.id, sourceConfig().jsearch, scheduledElsewhere(await stores.sourcePlans.sourcesOnForAll(), stores.userId)) : null;
     if (problem !== null) return { ok: false, problem };
     await stores.sources.setEnabled(request.data.id, request.data.on, new Date().toISOString());
     revalidatePath("/settings");

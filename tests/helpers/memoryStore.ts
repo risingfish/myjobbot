@@ -23,6 +23,7 @@ import { savedSources, type SourceLists } from "./savedSources.js";
 import { asc, MemoryJobViews, newTables, type Tables } from "./memoryJobViews.js";
 import { MemoryJobStore } from "./memoryJobStore.js";
 import { MemoryPostingStore } from "./memoryPostingStore.js";
+import { MemorySourcePlans } from "./memorySourcePlans.js";
 
 class MemoryApiCallLog implements ApiCallLog {
     constructor(private readonly tables: Tables) {}
@@ -51,13 +52,13 @@ export function withOwner(stores: Stores): TestStores {
     return { ...stores, ...stores.forUser(OWNER_ID), forUser: stores.forUser, close: stores.close };
 }
 
-function sharedMemoryStores(tables: Tables): SharedStores {
+function sharedMemoryStores(tables: Tables, sources: MemorySourceStore): SharedStores {
     const auth = newAuthTables();
-    return { sessions: new MemorySessionStore(auth), accounts: new MemoryAccountStore(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), tokens: new MemoryTokenStore(auth), keys: new MemoryKeyStore(auth), apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables) };
+    return { sessions: new MemorySessionStore(auth), accounts: new MemoryAccountStore(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), tokens: new MemoryTokenStore(auth), keys: new MemoryKeyStore(auth), apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources) };
 }
 
 export function memoryStores(tables: Tables = newTables(), perCall: PerCallStores = { sources: new MemorySourceStore(tables), searchSettings: new MemorySearchSettingsStore(), resume: new MemoryResumeStore() }): TestStores {
-    const shared = sharedMemoryStores(tables);
+    const shared = sharedMemoryStores(tables, perCall.sources);
     const mailboxes = new Map<number, { gmail: MemoryGmailStore; alerts: MemoryAlertStore }>();
     const mailbox = (userId: number) => {
         const found = mailboxes.get(userId) ?? { gmail: new MemoryGmailStore(), alerts: new MemoryAlertStore() };

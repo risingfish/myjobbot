@@ -19,7 +19,7 @@ function setup(http: SourceHttp) {
     const tables = newTables();
     const store = new MemorySourceStore(tables);
     const apiCalls = memoryStores(tables).apiCalls;
-    const deps = { store: userSourceStore(store, OWNER_ID), facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true } }, test: { access: { http, jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
+    const deps = { store: userSourceStore(store, OWNER_ID), facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true }, elsewhere: 0 }, test: { access: { http, jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
     return { store, apiCalls, deps };
 }
 

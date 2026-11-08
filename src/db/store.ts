@@ -5,6 +5,7 @@ import type { CompanyStore } from "./companyStore.js";
 import type { KeyStore } from "./keyStore.js";
 import type { MethodStore } from "./methodStore.js";
 import type { PostingStore } from "./postingStore.js";
+import type { SourcePlans } from "./sourcePlans.js";
 import type { SessionStore } from "./sessionStore.js";
 import type { TokenStore } from "./tokenStore.js";
 import type { UserStores } from "./userStores.js";
@@ -157,6 +158,7 @@ export interface SharedStores {
     careers: CareersStore;
     companies: CompanyStore;
     postings: PostingStore;
+    sourcePlans: SourcePlans;
     sessions: SessionStore;
     accounts: AccountStore;
     methods: MethodStore;

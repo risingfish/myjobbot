@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { REFRESH_GRACE_HOURS } from "../config/schema.js";
+import type { PlannedSource } from "../db/sourcePlans.js";
 import type { NewSource, SavedSource } from "../db/sourceStore.js";
 import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
 import type { SourceModule } from "../sources/module.js";
@@ -17,6 +18,7 @@ export interface SaveFacts {
     saved: SavedSource[];
     limits: SearchLimits;
     met: Met;
+    elsewhere: number;
 }
 
 export type SourcePlan = { problems: Problem[] } | { source: NewSource | SavedSource };
@@ -33,10 +35,10 @@ const NOT_SAVABLE = "not a source you can save here";
 const OVER_BUDGET = "too many searches for jsearch.monthly_request_cap at this jsearch.refresh_hours";
 
 /** Says why a saved source can't be turned on, or null when it can: a scheduled search that would take JSearch past its monthly budget is refused. */
-export function enableProblem(saved: SavedSource[], id: number, limits: SearchLimits): string | null {
+export function enableProblem(saved: SavedSource[], id: number, limits: SearchLimits, elsewhere: number): string | null {
     const source = saved.find((candidate) => candidate.id === id);
     if (source === undefined || source.enabled || !isScheduled(source.module)) return null;
-    return fitsBudget(scheduledOn(saved), limits) ? null : OVER_BUDGET;
+    return fitsBudget(scheduledOn(saved) + elsewhere, limits) ? null : OVER_BUDGET;
 }
 
 /** Decides what saving a source's form stores, a new source or the saved one with its new fields, or why the save is refused, before anything is stored. */
@@ -49,7 +51,7 @@ export function saveSourcePlan(draft: SourceDraft, facts: SaveFacts): SourcePlan
     const params = module.params.safeParse(fieldParams(module.fields, draft.values));
     if (!params.success) return { problems: [...nameProblems(name, others), ...fieldProblems(params.error)] };
     const source = { module: module.id, name, params: params.data, target: module.target(params.data), enabled: existing?.enabled ?? true };
-    const problems = [...nameProblems(name, others), ...sourceProblems(source, others, facts.limits)];
+    const problems = [...nameProblems(name, others), ...sourceProblems(source, others, facts)];
     return problems.length > 0 ? { problems } : { source: existing === null ? source : { ...existing, ...source } };
 }
 
@@ -87,11 +89,21 @@ function fieldProblems(error: z.ZodError): Problem[] {
 }
 
 /** Finds the problems a source makes with the others: one already saved for the same board or search, or a search the JSearch budget can't fit. */
-function sourceProblems(source: NewSource, others: SavedSource[], limits: SearchLimits): Problem[] {
+function sourceProblems(source: NewSource, others: SavedSource[], facts: Pick<SaveFacts, "limits" | "elsewhere">): Problem[] {
     const same = others.find((other) => other.target === source.target);
     const repeat = same === undefined ? [] : [{ field: null, entry: null, message: `this board is already saved as ${same.name}` }];
-    const overBudget = source.enabled && isScheduled(source.module) && !fitsBudget(scheduledOn(others), limits);
+    const overBudget = source.enabled && isScheduled(source.module) && !fitsBudget(scheduledOn(others) + facts.elsewhere, facts.limits);
     return overBudget ? [...repeat, { field: null, entry: null, message: OVER_BUDGET }] : repeat;
+}
+
+/** Counts the scheduled sources other users have on, which share the one JSearch budget with this user's. */
+export function scheduledElsewhere(all: PlannedSource[], userId: number): number {
+    return all.filter((source) => source.userId !== userId && isScheduled(source.module)).length;
+}
+
+/** Counts every user's scheduled searches that are on, the searches the month's JSearch budget is shared by. */
+export function scheduledSearches(all: PlannedSource[]): number {
+    return all.filter((source) => isScheduled(source.module)).length;
 }
 
 /** Reports whether a module is fetched on JSearch's schedule, spending the monthly budget. */

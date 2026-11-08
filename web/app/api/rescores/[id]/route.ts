@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { RescoreLogStore } from "../../../../../src/db/rescoreLogStore.js";
 import { PING, sseText, streamEvents, type StreamEvent } from "../../../../../src/web/rescoreStream.js";
-import { OWNER_ID } from "../../../../../src/db/searchSettingsStore.js";
+import { currentSession } from "../../../../lib/currentSession.js";
 import { openedStores } from "../../../../lib/database.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,7 +27,9 @@ interface Tick {
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
     const { id } = await params;
     if (!UUID.test(id)) return new Response(null, { status: 404 });
-    const store = (await openedStores()).forUser(OWNER_ID).rescoreLog;
+    const signedIn = await currentSession();
+    if (signedIn === null) return new Response(null, { status: 404 });
+    const store = (await openedStores()).forUser(signedIn.account.id).rescoreLog;
     if ((await store.run(id)) === null) return new Response(null, { status: 404 });
     const after = Number.parseInt(request.headers.get("last-event-id") ?? "0", 10);
     return new Response(followed(store, id, { signal: request.signal, after: Number.isNaN(after) ? 0 : after }), { headers: HEADERS });

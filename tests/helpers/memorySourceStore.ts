@@ -7,6 +7,10 @@ interface Row extends SavedSource {
 
 export class MemorySourceStore implements SourceStore {
     private readonly rows: Row[] = [];
+
+    onForAll(): Array<{ userId: number; module: string }> {
+        return this.rows.filter((row) => row.enabled).map((row) => ({ userId: row.userId, module: row.module }));
+    }
     private nextId = 1;
 
     constructor(private readonly tables: Tables) {}

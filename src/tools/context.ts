@@ -5,6 +5,7 @@ import type { DataMarkers } from "../agent/markers.js";
 import type { CareersAccess } from "../careers/deps.js";
 import type { Settings } from "../config/schema.js";
 import type { PostingStore } from "../db/postingStore.js";
+import type { SourcePlans } from "../db/sourcePlans.js";
 import type { SavedSource, UserSourceStore } from "../db/sourceStore.js";
 import type { AlertStore, ApiCallLog, GmailStore, JobStore } from "../db/store.js";
 import type { ImapFactory } from "../gmail/imap.js";
@@ -34,6 +35,7 @@ export interface ToolContext {
     runId: string;
     store: JobStore;
     postings: PostingStore;
+    sourcePlans: SourcePlans;
     apiCalls: ApiCallLog;
     http: JsonGetter;
     sources: SourceHttp;

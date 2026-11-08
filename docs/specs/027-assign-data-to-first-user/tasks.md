@@ -267,8 +267,8 @@ caller on user 1.
 
 ### Tests (S2)
 
-- [ ] T014 Create `.specify/sitting-in-progress` naming S2.
-- [ ] T015 [P] [US2] Write unit tests (7) in `tests/webIsolation.test.ts`, mocking the session as `tests/actionGuards.test.ts` does, with memory stores holding two users:
+- [X] T014 Create `.specify/sitting-in-progress` naming S2.
+- [X] T015 [P] [US2] Write unit tests (7) in `tests/webIsolation.test.ts`, mocking the session as `tests/actionGuards.test.ts` does, with memory stores holding two users:
   - `getUiState()` as user 2 shows none of user 1's jobs, and default settings
   - user 2's Settings shows no resume, even with `data/resume.md` present
   - the hide, applied and re-score actions as user 2 on user 1's job answer as for a missing job
@@ -278,30 +278,48 @@ caller on user 1.
 
   Mock `web/lib/session.js` with `requireSession` (and `currentSession`) returning user 2's account, or reuse `tests/helpers/signedIn.ts`; `actionGuards.test.ts`'s mock only gives `currentSession`.
   - an admin who isn't user 1 sees none of user 1's data
-- [ ] T016 [P] [US2] Write a unit test (1), `tests/ownerIdScan.test.ts`: no `.ts`/`.tsx` under `web/` or `src/app/` (skipping `.next*`) names `OWNER_ID`.
-- [ ] T017 [P] [US2] Write unit tests (3) for the budget checks across users:
+- [X] T016 [P] [US2] Write a unit test (1), `tests/ownerIdScan.test.ts`: no `.ts`/`.tsx` under `web/` or `src/app/` (skipping `.next*`) names `OWNER_ID`.
+- [X] T017 [P] [US2] Write unit tests (3) for the budget checks across users:
   - `enableProblem` (`src/web/sourceRules.ts`) checks a JSearch source's planned calls against every user's scheduled sources that are on
   - `saveSourcePlan` refuses a new JSearch source, saved on, that doesn't fit beside every user's
   - `lookupDeps` (`src/sources/alertAccess.ts`) reserves alert-lookup budget for every user's scheduled searches
 
 ### Implementation (S2)
 
-- [ ] T018 [US2] Create `web/lib/myStores.ts` holding only `myStores()`. It uses `session.ts` (who is signed in) and `database.ts` (the open stores), and adds nothing to either (R5, R14). It calls `requireSession()`, then `(await openedStores()).forUser(account.id)`. `getStores()`, `getUiState()` and `getSettingsState()` in `web/lib/uiState.ts` replace their `forUser(OWNER_ID)` with it.
-- [ ] T019 [US2] Every action that opens stores swaps S1's `forUser(OWNER_ID)` for `myStores()`, directly or through `getStores()`: `web/lib/actions.ts`, `settingsActions.ts`, `sourceActions.ts`, `resumeActions.ts`, `resumeRows.ts`, `gmailActions.ts` and `gmailDeps.ts`.
+- [X] T018 [US2] Create `web/lib/myStores.ts` holding only `myStores()`. It uses `session.ts` (who is signed in) and `database.ts` (the open stores), and adds nothing to either (R5, R14). It calls `requireSession()`, then `(await openedStores()).forUser(account.id)`. `getStores()`, `getUiState()` and `getSettingsState()` in `web/lib/uiState.ts` replace their `forUser(OWNER_ID)` with it.
+- [X] T019 [US2] Every action that opens stores swaps S1's `forUser(OWNER_ID)` for `myStores()`, directly or through `getStores()`: `web/lib/actions.ts`, `settingsActions.ts`, `sourceActions.ts`, `resumeActions.ts`, `resumeRows.ts`, `gmailActions.ts` and `gmailDeps.ts`.
   - Actions keep their `guarded` wrapper, answers, types and `revalidatePath`. They do not move onto `signedInAction`.
   - `tests/actionGuards.test.ts` passes unchanged.
-- [ ] T020 [US2] `web/app/api/rescores/[id]/route.ts` swaps `forUser(OWNER_ID)` for `myStores()`. Another user's run id gets the missing-run answer.
-- [ ] T021 [US2] The resume file is the owner's (R11b). Create `ownsResumeFile(userId)` in `src/config/resumeFile.ts`, a pure function and the one place the rule lives. `resumeShown` (`src/web/resumeView.ts`) and `resumeInUse` (`src/app/runSettings.ts`) take the user id and use `data/resume.md` only when it says so. Neither file names `OWNER_ID`.
-- [ ] T022 [US2] Plan the budget across users (R8):
+- [X] T020 [US2] `web/app/api/rescores/[id]/route.ts` swaps `forUser(OWNER_ID)` for `myStores()`. Another user's run id gets the missing-run answer.
+- [X] T021 [US2] The resume file is the owner's (R11b). Create `ownsResumeFile(userId)` in `src/config/resumeFile.ts`, a pure function and the one place the rule lives. `resumeShown` (`src/web/resumeView.ts`) and `resumeInUse` (`src/app/runSettings.ts`) take the user id and use `data/resume.md` only when it says so. Neither file names `OWNER_ID`.
+- [X] T022 [US2] Plan the budget across users (R8):
   - `enableProblem` and `saveSourcePlan` take `stores.sourcePlans.scheduledOnForAll()`, every user's, in place of the user's own list for the budget check. Same-board repeats are still checked against the user's own sources only.
   - `sourceActions.ts` and `src/web/saveSource.ts` pass it in.
   - `lookupDeps` (`src/sources/alertAccess.ts`) counts every user's scheduled searches through `context.sourcePlans.scheduledOnForAll()`.
 
   T017 passes.
-- [ ] T023 [US4] Gmail on Settings (`src/gmail/connection.ts` through `web/lib/gmailDeps.ts` and `gmailActions.ts`): connecting stores the connection under the signed-in user and adds their own "Gmail alerts" source. Disconnecting removes only theirs.
-- [ ] T024 [US2] Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker. T015–T017 pass.
+- [X] T023 [US4] Gmail on Settings (`src/gmail/connection.ts` through `web/lib/gmailDeps.ts` and `gmailActions.ts`): connecting stores the connection under the signed-in user and adds their own "Gmail alerts" source. Disconnecting removes only theirs.
+- [X] T024 [US2] Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker. T015–T017 pass.
 
 **Checkpoint**: Two accounts are fully separate in the UI.
+
+**S2 as done (2026-11-08)**, where it differed from the tasks above:
+- `myStores()` is `web/lib/myStores.ts` (R14). The session lookup moved out of `session.ts` into
+  `web/lib/currentSession.ts`, which doesn't import `next/navigation`. A route handler can't load
+  that module (the build fails), so the re-score stream route uses `currentSession()` and answers
+  404 when no one is signed in, as for a run that isn't theirs. `session.ts` keeps
+  `requireSession`, built on it.
+- Every action already reached its stores through `getStores()`, which now returns `myStores()`,
+  so T019 and T023 needed no changes of their own.
+- `SourcePlans` has one method, `sourcesOnForAll()`: every user's sources that are on, by module.
+  The rules count the scheduled ones with `scheduledElsewhere` and `scheduledSearches`
+  (`src/web/sourceRules.ts`). `enableProblem` takes the other users' count as a fourth argument,
+  and `SaveFacts` has `elsewhere`.
+- The resume rule is `ownsResumeFile` in `src/config/resumeFile.ts`, applied where the file is
+  read (`getSettingsState`, `resumeInUse`). `resumeShown` still shows whatever it is given.
+- The isolation tests switch and delete the owner's source as user 2 and check that the answer
+  equals the one for a missing id, which is FR-008's rule. The test of starting a re-score uses the
+  stream route and `loadJobDetails`; `startRescore` would load the real config and model client.
 
 ---
 
@@ -360,7 +378,7 @@ caller on user 1.
   - the eval run's resume and profile read
 
   T033 passes.
-- [ ] T035 [P] Update README:
+- [ ] T035 [P] Update the docs, split by 026 into a short README and pages under `docs/` (`how-it-works.md`, `cli.md`, `database.md`, `developing.md`, `deploying.md`, `sources.md`), each fact on the page it belongs to:
   - accounts are now separate users
   - runs go through every user, with one trace each
   - `--user` on `run`, `rescore` and the evals
@@ -418,6 +436,7 @@ is what makes other users useful.
 | S1 planned | +11 (T003 ×10, T004) | +4 (T002, T003 strict ×3) | +0 |
 | Actual after S1 (2026-11-08) | 1120 (+12: the two contracts' 11 memory cases, `forUser`) | 89 (+5: 2 migration, 3 strict) | 78 (+0) |
 | S2 planned | +11 (T015 ×7, T016, T017 ×3) | +0 | +0 |
+| Actual after S2 (2026-11-08) | 1131 (+11) | 89 (+0) | 78 (+0) |
 | S3 planned | +7 (T026 ×4, T027 ×3) | +0 | +0 |
 | S4 planned | +3 (T033) | +0 | +0 |
 | Planned after | +32 | +4 | +0 |

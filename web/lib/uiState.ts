@@ -1,9 +1,9 @@
 import { loadFileConfig, readResumeFile } from "../../src/config/load.js";
 import { resolveSettings, settingsNotices, type SettingsNotice } from "../../src/config/resolve.js";
+import { ownsResumeFile } from "../../src/config/resumeFile.js";
 import type { Settings } from "../../src/config/schema.js";
 import { splitSettings } from "../../src/config/searchSettings.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import { openedStores } from "./database.js";
+import { myStores } from "./myStores.js";
 import { requireSession } from "./session.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { ResumeProfile } from "../../src/db/resumeStore.js";
@@ -60,9 +60,9 @@ function secretKey(): SecretKeyStatus {
     return cache.__myjobbotKey;
 }
 
-/** Returns the open stores and the sealing key without resolving any settings, for what must work before search settings are stored. */
+/** Returns the signed-in user's stores and the sealing key without resolving any settings, for what must work before search settings are stored. */
 export async function getStores(): Promise<OpenStores> {
-    return { stores: (await openedStores()).forUser(OWNER_ID), key: secretKey() };
+    return { stores: await myStores(), key: secretKey() };
 }
 
 /** Returns the database views, the re-score log, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
@@ -82,7 +82,7 @@ export async function getSettingsState(): Promise<SettingsState> {
     const stored = await opened.searchSettings.load();
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
     const [uploaded, profile] = await Promise.all([opened.resume.currentResume(), opened.resume.profile()]);
-    const resume = resumeShown(uploaded, readResumeFile(dataDir()));
+    const resume = resumeShown(uploaded, ownsResumeFile(opened.userId) ? readResumeFile(dataDir()) : null);
     return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile, admin };
 }
 

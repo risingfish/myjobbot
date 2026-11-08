@@ -17,7 +17,7 @@ function loaded(fileRaw: unknown, resume: string | null = "# Jane Doe"): LoadedC
 }
 
 function stores(searchSettings = new MemorySearchSettingsStore(), resume = new MemoryResumeStore()) {
-    return { searchSettings: userSearchSettingsStore(searchSettings, OWNER_ID), resume: userResumeStore(resume, OWNER_ID) };
+    return { userId: OWNER_ID, searchSettings: userSearchSettingsStore(searchSettings, OWNER_ID), resume: userResumeStore(resume, OWNER_ID) };
 }
 
 test("a run with nothing stored uses the defaults, and never imports the file's search settings", async () => {

@@ -21,12 +21,13 @@ import { KyselySearchSettingsStore } from "./searchSettingsStore.js";
 import { KyselyKeyStore } from "./keyStore.js";
 import { KyselyMethodStore } from "./methodStore.js";
 import { KyselySessionStore } from "./sessionStore.js";
+import { KyselySourcePlans } from "./sourcePlans.js";
 import { KyselySourceStore } from "./sourceStore.js";
 import { KyselyTokenStore } from "./tokenStore.js";
 
 /** Returns the stores everyone shares over a connected database. */
 function sharedStores(db: Kysely<Database>): SharedStores {
-    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sessions: new KyselySessionStore(db), accounts: new KyselyAccountStore(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), tokens: new KyselyTokenStore(db), keys: new KyselyKeyStore(db) };
+    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sourcePlans: new KyselySourcePlans(db), sessions: new KyselySessionStore(db), accounts: new KyselyAccountStore(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), tokens: new KyselyTokenStore(db), keys: new KyselyKeyStore(db) };
 }
 
 /** Returns one user's stores over a connected database, each bound to that user, with the shared stores alongside. */
