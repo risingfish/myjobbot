@@ -1,8 +1,9 @@
 import { expect, test } from "vitest";
+import { userResumeStore } from "../src/db/resumeStore.js";
+import { OWNER_ID, userSearchSettingsStore } from "../src/db/searchSettingsStore.js";
 import { settingsForRun } from "../src/app/runSettings.js";
 import type { LoadedConfig } from "../src/config/load.js";
 import { envSchema } from "../src/config/schema.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { LLM_ENV } from "./helpers/config.js";
 import { ONE_COMPANY } from "./helpers/dataDir.js";
 import { MemoryResumeStore } from "./helpers/memoryResumeStore.js";
@@ -16,7 +17,7 @@ function loaded(fileRaw: unknown, resume: string | null = "# Jane Doe"): LoadedC
 }
 
 function stores(searchSettings = new MemorySearchSettingsStore(), resume = new MemoryResumeStore()) {
-    return { searchSettings, resume };
+    return { userId: OWNER_ID, searchSettings: userSearchSettingsStore(searchSettings, OWNER_ID), resume: userResumeStore(resume, OWNER_ID) };
 }
 
 test("a run with nothing stored uses the defaults, and never imports the file's search settings", async () => {

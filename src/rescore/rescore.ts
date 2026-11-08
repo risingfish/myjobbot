@@ -3,6 +3,7 @@ import type { DataMarkers } from "../agent/markers.js";
 import type { Trace } from "../agent/trace.js";
 import { soughtJob } from "../careers/deps.js";
 import type { SoughtJob } from "../careers/session.js";
+import type { PostingStore } from "../db/postingStore.js";
 import type { AppConfig } from "../config/load.js";
 import type { RescoreEnd } from "../db/rescoreLogStore.js";
 import type { JobKey, JobRow, JobStore, JobViews } from "../db/store.js";
@@ -15,6 +16,7 @@ import { scoreOne } from "./session.js";
 export interface RescoreDeps {
     config: AppConfig;
     store: JobStore;
+    postings: PostingStore;
     views: JobViews;
     chat: ChatFn;
     trace: Trace;

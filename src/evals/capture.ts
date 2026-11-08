@@ -28,6 +28,7 @@ export interface CaseInput {
     descriptionFoundAt: string | null;
     profile: string;
     tags: string[];
+    userId: number;
 }
 
 /** Works out a job's age on the day of its score, counted in whole days from when it was first seen as a run counts it, and its age at capture. */
@@ -44,7 +45,7 @@ export function buildCase(input: CaseInput): Parsed<EvalCase> {
     const job = { ...input.payload, days_open: dates.dates.daysOpenAsScored, possible_ghost: dates.possibleGhost };
     const changed = verdict !== null && descriptionFoundAt !== null && Date.parse(descriptionFoundAt) > Date.parse(verdict.scored_at);
     const observed = verdict === null ? null : observedOf(verdict, input.read);
-    const raw = { schema: 1, id: caseId(source.ats, source.jobId), profile: input.profile, source, title: input.title, company: input.company, job, dates: dates.dates, observed, descriptionChangedSinceScored: changed, tags: input.tags };
+    const raw = { schema: 1, id: caseId(source.ats, source.jobId), profile: input.profile, source, title: input.title, company: input.company, job, dates: dates.dates, observed, descriptionChangedSinceScored: changed, tags: input.tags, userId: input.userId };
     return parseFile("case", raw);
 }
 

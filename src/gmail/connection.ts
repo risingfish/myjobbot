@@ -1,6 +1,5 @@
 import type { AlertStore, GmailConnectionRow, GmailStore } from "../db/store.js";
-import { OWNER_ID } from "../db/searchSettingsStore.js";
-import type { SourceStore } from "../db/sourceStore.js";
+import type { UserSourceStore } from "../db/sourceStore.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
 import { imapApi, type ImapFactory } from "./imap.js";
 import { GmailError } from "./imapErrors.js";
@@ -9,7 +8,7 @@ import { openOrNull, seal } from "./seal.js";
 export interface GmailDeps {
     gmail: GmailStore;
     alerts: AlertStore;
-    sources: SourceStore;
+    sources: UserSourceStore;
     key: Buffer;
     imap?: ImapFactory;
 }
@@ -40,7 +39,7 @@ export async function connect(deps: GmailDeps, input: GmailLoginInput, now: Date
         return { ok: false, error: error.message };
     }
     await deps.gmail.connected({ email, sealedPassword: seal(password, "app_password", deps.key) }, now.toISOString());
-    await deps.sources.ensureAccountSource(OWNER_ID, { module: "gmail_alerts", name: ALERTS_SOURCE }, now.toISOString());
+    await deps.sources.ensureAccountSource({ module: "gmail_alerts", name: ALERTS_SOURCE }, now.toISOString());
     return { ok: true, error: null };
 }
 

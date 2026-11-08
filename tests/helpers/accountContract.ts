@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
 const LOGIN = { email: "Owner@Example.com", emailKey: "owner@example.com", passwordDigest: "argon2id$x" };
 
-function withStores(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
+function withStores(makeStores: MakeStores, check: (stores: TestStores) => Promise<void>) {
     return async () => {
         const stores = await makeStores();
         try {
@@ -17,14 +17,15 @@ function withStores(makeStores: MakeStores, check: (stores: Stores) => Promise<v
     };
 }
 
-async function ownerInitOnce({ accounts, methods }: Stores): Promise<void> {
+async function ownerInitOnce({ accounts, methods }: TestStores): Promise<void> {
     expect(await accounts.initOwner(LOGIN, NOW)).toBe(true);
     expect(await accounts.initOwner({ ...LOGIN, email: "other@example.com", emailKey: "other@example.com" }, NOW)).toBe(false);
     expect(await accounts.account(OWNER_ID)).toEqual({ id: OWNER_ID, name: "owner", email: "Owner@Example.com", isAdmin: true });
     expect(await methods.passwordDigest(OWNER_ID)).toBe("argon2id$x");
+    expect(await accounts.userIds()).toEqual([OWNER_ID]);
 }
 
-async function foundByKey({ accounts }: Stores): Promise<void> {
+async function foundByKey({ accounts }: TestStores): Promise<void> {
     await accounts.initOwner(LOGIN, NOW);
     expect((await accounts.byEmailKey("owner@example.com"))?.id).toBe(OWNER_ID);
     expect(await accounts.byEmailKey("Owner@Example.com")).toBeNull();
@@ -35,12 +36,12 @@ async function foundByKey({ accounts }: Stores): Promise<void> {
 const LATER = "2026-11-06T11:00:00.000Z";
 const ADA = { email: "Ada@Example.com", emailKey: "ada@example.com", name: "Ada Lovelace", passwordDigest: "argon2id$ada" };
 
-async function codedOwner(stores: Stores, ...codes: string[]): Promise<void> {
+async function codedOwner(stores: TestStores, ...codes: string[]): Promise<void> {
     await stores.accounts.initOwner(LOGIN, NOW);
     for (const code of codes) await stores.tokens.makeCode(code, OWNER_ID, NOW);
 }
 
-async function createdOnceWithAFreshCode(stores: Stores): Promise<void> {
+async function createdOnceWithAFreshCode(stores: TestStores): Promise<void> {
     await codedOwner(stores, "code-1", "code-2");
     const created = await stores.accounts.createAccount(ADA, "code-1", LATER);
     if (created.kind !== "created") throw new Error(`not created: ${created.kind}`);
@@ -52,14 +53,14 @@ async function createdOnceWithAFreshCode(stores: Stores): Promise<void> {
     expect((await stores.accounts.createAccount({ ...ADA, email: "d@example.com", emailKey: "d@example.com" }, "code-2", LATER)).kind).toBe("created");
 }
 
-async function oneCodeOneAccount(stores: Stores): Promise<void> {
+async function oneCodeOneAccount(stores: TestStores): Promise<void> {
     await codedOwner(stores, "shared");
     const results = await Promise.all(["x", "y"].map((who) => stores.accounts.createAccount({ ...ADA, email: `${who}@example.com`, emailKey: `${who}@example.com` }, "shared", LATER)));
     expect(results.map((result) => result.kind).sort()).toEqual(["created", "refused"]);
     expect((await stores.accounts.accounts()).map((account) => account.email).sort()).toHaveLength(2);
 }
 
-async function lastAdminKept(stores: Stores): Promise<void> {
+async function lastAdminKept(stores: TestStores): Promise<void> {
     await codedOwner(stores, "code-1");
     const created = await stores.accounts.createAccount(ADA, "code-1", LATER);
     if (created.kind !== "created") throw new Error("not created");
@@ -74,13 +75,13 @@ async function lastAdminKept(stores: Stores): Promise<void> {
     expect((await stores.accounts.accounts()).map((account) => account.isAdmin)).toEqual([false, true]);
 }
 
-async function renamed(stores: Stores): Promise<void> {
+async function renamed(stores: TestStores): Promise<void> {
     await stores.accounts.initOwner(LOGIN, NOW);
     await stores.accounts.saveName(OWNER_ID, "Zac");
     expect((await stores.accounts.account(OWNER_ID))?.name).toBe("Zac");
 }
 
-async function eventsListed(stores: Stores): Promise<void> {
+async function eventsListed(stores: TestStores): Promise<void> {
     await stores.accounts.initOwner(LOGIN, NOW);
     for (let minute = 0; minute < 22; minute += 1) await stores.accounts.recordEvent({ userId: OWNER_ID, at: `2026-11-06T10:${String(minute).padStart(2, "0")}:00.000Z`, address: minute === 0 ? null : "direct", event: "signed_in", method: "password" });
     const recent = await stores.accounts.recentEvents(OWNER_ID, 20);
@@ -99,6 +100,6 @@ export function accountContract(makeStores: MakeStores): void {
 }
 
 export function accountStrictCases(makeStores: MakeStores): void {
-    test("the owner gets an email, the admin mark and a usable password once, and never again", withStores(makeStores, ownerInitOnce));
+    test("the owner gets an email, the admin mark and a usable password once, and never again, and is the one user listed", withStores(makeStores, ownerInitOnce));
     test("two accounts made at once with one code: one is made and the other refused", withStores(makeStores, oneCodeOneAccount));
 }

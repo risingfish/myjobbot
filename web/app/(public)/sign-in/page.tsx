@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation.js";
 import { safeReturnPath } from "../../../../src/accounts/returnPath.js";
 import { SignInForm } from "../../../components/account/SignInForm.js";
-import { currentSession } from "../../../lib/session.js";
+import { currentSession } from "../../../lib/currentSession.js";
 
 export const metadata: Metadata = { title: "Sign in" };
 

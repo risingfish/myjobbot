@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { Stores } from "../../src/db/store.js";
+import type { TestStores } from "./memoryStore.js";
 import { makeJob } from "../../src/jobs/job.js";
 import type { MakeStores } from "./storeContract.js";
 
@@ -7,7 +7,7 @@ const SEEN = "2026-10-01T00:00:00.000Z";
 const APPLIED_ON = "2026-10-02T00:00:00.000Z";
 const KEY = { ats: "greenhouse", jobId: "kept" };
 
-async function scoredAndMarked(make: MakeStores): Promise<Stores> {
+async function scoredAndMarked(make: MakeStores): Promise<TestStores> {
     const stores = await make();
     await stores.jobStore.upsertAll([makeJob({ ats: "greenhouse", jobId: "kept", company: "Acme", title: "Backend Engineer", url: "https://example.com/kept" }, {})], SEEN, "Acme");
     await stores.jobStore.recordVerdict({ job_id: "kept", score: 80, base: 45, bonus: 35, reasons: ["fit"], gaps: ["gap"] }, { scoredAt: SEEN, runId: "run-1" });

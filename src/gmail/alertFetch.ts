@@ -1,12 +1,13 @@
 import type { Trace } from "../agent/trace.js";
 import type { JobSource } from "../db/jobSource.js";
+import type { PostingStore } from "../db/postingStore.js";
 import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore, JobKey, JobStore } from "../db/store.js";
 import type { Job } from "../jobs/job.js";
 import type { MatchStats } from "./alertJobs/lookup.js";
-import { parseAlert, type AlertEmail, type ParsedAlert } from "./alertJobs/parse.js";
+import { parseAlert, type AlertEmail, type AlertJob, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
-import { alertJobRecord, sortAlertJobs } from "./alertStore.js";
+import { alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
 import { imapApi, type ImapFactory } from "./imap.js";
 import type { AlertMail } from "./imapAlerts.js";
 import { GmailError } from "./imapErrors.js";
@@ -16,6 +17,7 @@ export interface AlertDeps {
     gmail: GmailStore;
     alerts: Pick<AlertStore, "state">;
     known: Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
+    postings: Pick<PostingStore, "known">;
     key: SecretKeyStatus;
     imap?: ImapFactory;
     senders: string[];
@@ -79,12 +81,19 @@ export async function readAlerts(deps: AlertDeps): Promise<AlertRead> {
         read.flatMap((entry) => entry.alert.jobs),
         deps.source,
     );
-    const looked = await lookUpDescriptions(deps.lookup, { read, fresh: sorted.fresh, now: deps.now });
+    const looked = await lookUpDescriptions(deps.lookup, { read, fresh: await undescribed(deps.postings, sorted.fresh), now: deps.now });
     const jobs = sorted.fresh.map((job) => alertJobRecord(job, looked.matches.get(job.linkedinId)));
     const counts = { stored: jobs.length, seenAgain: sorted.seenAgain.length, searches: looked.searches, lookedUp: looked.lookedUp, withDescription: jobs.filter((job) => job.description !== null).length };
     const summary = summarize(read, counts);
     const state = { uidValidity: mail.uidValidity, lastUid: lastUid(mail, marker), emails: summary.emails, jobs: summary.jobs_found, notUnderstood: summary.not_understood };
     return { jobs, seenAgain: sorted.seenAgain, mail: state, summary, lookups: looked.stats, notUnderstood: notUnderstoodMail(read) };
+}
+
+/** Leaves out the new alert jobs whose posting another user already has with a description, so it is never looked up twice; storing it keeps that description. */
+async function undescribed(postings: Pick<PostingStore, "known">, fresh: AlertJob[]): Promise<AlertJob[]> {
+    const known = await postings.known(fresh.map((job) => ({ ats: "linkedin", jobId: alertJobId(job.linkedinId) })));
+    const described = new Set(known.filter((posting) => posting.described).map((posting) => posting.jobId));
+    return fresh.filter((job) => !described.has(alertJobId(job.linkedinId)));
 }
 
 /** Records an alert read once its jobs are stored: moves the known jobs' last-seen time, saves where reading stopped, and traces what it found. */

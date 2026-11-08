@@ -1,27 +1,27 @@
 import { expect, test } from "vitest";
 import { resolveSettings, settingsNotices } from "../src/config/resolve.js";
 import { splitSettings } from "../src/config/searchSettings.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID, userSearchSettingsStore, type UserSearchSettingsStore } from "../src/db/searchSettingsStore.js";
 import { FULL_CONFIG } from "./helpers/config.js";
 import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
 
 const SEARCH_KEYS = ["preferences", "match_threshold", "title_filter", "title_boosts", "exclude_companies", "jsearch.exclude_publishers"];
 const STORED = { exclude_companies: ["acme"] };
 
-function storedWith(settings: Record<string, unknown>): MemorySearchSettingsStore {
+function storedWith(settings: Record<string, unknown>): UserSearchSettingsStore {
     const store = new MemorySearchSettingsStore();
     store.put(OWNER_ID, settings);
-    return store;
+    return userSearchSettingsStore(store, OWNER_ID);
 }
 
 test("with nothing stored and no search settings in the file, every search setting takes its default and there are no notices", async () => {
-    const resolved = await resolveSettings({ http: { timeout_s: 20 } }, new MemorySearchSettingsStore());
+    const resolved = await resolveSettings({ http: { timeout_s: 20 } }, userSearchSettingsStore(new MemorySearchSettingsStore(), OWNER_ID));
     expect([resolved.settings.match_threshold, resolved.settings.http.timeout_s, resolved.notices]).toEqual([70, 20, []]);
 });
 
 test("with nothing stored, the file's search settings are never imported or used", async () => {
     const store = new MemorySearchSettingsStore();
-    expect((await resolveSettings(FULL_CONFIG, store)).settings.match_threshold).toBe(70);
+    expect((await resolveSettings(FULL_CONFIG, userSearchSettingsStore(store, OWNER_ID))).settings.match_threshold).toBe(70);
     expect(await store.load(OWNER_ID)).toBeNull();
 });
 

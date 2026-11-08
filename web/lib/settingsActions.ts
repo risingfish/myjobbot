@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { describeError } from "../../src/errors.js";
 import { saveRequest, type SaveRequest } from "../../src/web/settingsForm.js";
 import { saveSection, type SaveResult } from "../../src/web/settingsSave.js";
@@ -26,9 +25,9 @@ async function saveSettingsSectionAction(_previous: SaveResult | null, request: 
 /** Checks one section's save against the stored settings and config.json, then stores it whole or returns why not. */
 async function storeSection(request: SaveRequest): Promise<SaveResult> {
     const { stores } = await getStores();
-    const result = saveSection(await stores.searchSettings.load(OWNER_ID), runtimeSettings(), request);
+    const result = saveSection(await stores.searchSettings.load(), runtimeSettings(), request);
     if ("problems" in result) return { ok: false, problems: result.problems };
-    await stores.searchSettings.save(OWNER_ID, result.toStore, new Date().toISOString());
+    await stores.searchSettings.save(result.toStore, new Date().toISOString());
     revalidatePath("/settings");
     return { ok: true };
 }

@@ -4,14 +4,13 @@ import type { AuthenticatorStore } from "./authenticatorStore.js";
 import type { CompanyStore } from "./companyStore.js";
 import type { KeyStore } from "./keyStore.js";
 import type { MethodStore } from "./methodStore.js";
+import type { PostingStore } from "./postingStore.js";
+import type { SourcePlans } from "./sourcePlans.js";
 import type { SessionStore } from "./sessionStore.js";
 import type { TokenStore } from "./tokenStore.js";
+import type { UserStores } from "./userStores.js";
 import type { JobSource } from "./jobSource.js";
 import type { CareersStore } from "./careersStore.js";
-import type { RescoreLogStore } from "./rescoreLogStore.js";
-import type { ResumeStore } from "./resumeStore.js";
-import type { SearchSettingsStore } from "./searchSettingsStore.js";
-import type { SourceStore } from "./sourceStore.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 import type { jobDetailSchema, jobRowSchema, jobViewSchema, verdictViewSchema } from "./rows.js";
 
@@ -63,14 +62,9 @@ export interface JobStore {
     unscoredForSource(source: JobSource): Promise<JobRow[]>;
     boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]>;
     recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean>;
-    earliestSeen(company: string, normalizedTitle: string): Promise<string>;
-    pruneLastSeenBefore(cutoff: string): Promise<number>;
     findJob(jobId: string): Promise<JobRow | null>;
     companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]>;
     markSeen(keys: JobKey[], seen: string): Promise<void>;
-    linkUnlinkedJobs(): Promise<number>;
-    setDescription(key: JobKey, found: FoundDescription): Promise<void>;
-    flagInjection(jobId: string, at: string): Promise<void>;
 }
 
 export interface FoundDescription {
@@ -159,23 +153,21 @@ export interface CompanyPage {
     url: string;
 }
 
-export interface Stores {
-    jobStore: JobStore;
-    rescoreLog: RescoreLogStore;
-    jobViews: JobViews;
+export interface SharedStores {
     apiCalls: ApiCallLog;
-    gmail: GmailStore;
-    alerts: AlertStore;
     careers: CareersStore;
     companies: CompanyStore;
-    searchSettings: SearchSettingsStore;
-    sources: SourceStore;
-    resume: ResumeStore;
+    postings: PostingStore;
+    sourcePlans: SourcePlans;
     sessions: SessionStore;
     accounts: AccountStore;
     methods: MethodStore;
     authenticators: AuthenticatorStore;
     tokens: TokenStore;
     keys: KeyStore;
+}
+
+export interface Stores extends SharedStores {
+    forUser(userId: number): UserStores;
     close(): Promise<void>;
 }

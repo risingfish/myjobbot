@@ -9,7 +9,7 @@ Where jobs come from: the source modules, saving and testing a source, JSearch a
 A **source** is somewhere jobs come from. Each kind of source is a **module** shipped with the app
 (`src/sources/modules/`); what you save on the Settings page is a **saved source**: a module, a
 name, the module's fields, and whether it is on. Saved sources are rows in `user_sources`, and
-every job remembers the one it came from (`jobs.source_id`).
+every job remembers the one it came from (`user_jobs.source_id`).
 
 | Module | Kind | Fields | Fetched |
 |---|---|---|---|
@@ -122,8 +122,7 @@ saves the pair only if that works. After that:
 
 The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`. An app
 password gives full access to the mailbox (Google has no read-only kind), and myjobbot only ever
-reads it. Every signed-in account shares the one Gmail connection (until data is tied to users), so
-any of them can connect or disconnect. The stored app password can't be read back through the UI.
+reads it. Each user connects their own Gmail, and a run reads only that user's alerts. The stored app password can't be read back through the UI.
 
 ## Descriptions
 

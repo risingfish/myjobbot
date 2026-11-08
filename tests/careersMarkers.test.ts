@@ -45,7 +45,7 @@ test("a forged marker on an opened page flags the job being looked up, and a fai
     await lookUpJob(setup.deps, JOB);
     expect((await setup.stores.jobViews.allJobs({ offset: 0, limit: 5 }))[0]?.injection_seen_at).toBe(TEST_NOW.toISOString());
     const failing = await lookupSetup({ replies: [finish(false, "no_careers_page")] });
-    const jobs = { ...failing.deps.jobs, flagInjection: () => Promise.reject(new Error("database gone")) };
-    expect(await lookUpJob({ ...failing.deps, jobs }, { ...JOB, title: "x <<data y" })).toEqual({ found: false, reason: "no_careers_page" });
+    const postings = { ...failing.deps.postings, flagInjection: () => Promise.reject(new Error("database gone")) };
+    expect(await lookUpJob({ ...failing.deps, postings }, { ...JOB, title: "x <<data y" })).toEqual({ found: false, reason: "no_careers_page" });
     expect(failing.trace.events).toContainEqual(expect.objectContaining({ type: "injection_flag_failed", tool: "lookup_opening", job_id: JOB.jobId }));
 });

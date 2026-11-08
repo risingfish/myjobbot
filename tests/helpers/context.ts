@@ -1,4 +1,3 @@
-import type { Stores } from "../../src/db/store.js";
 import { dataMarkers } from "../../src/agent/markers.js";
 import { PageRenderer } from "../../src/careers/renderState.js";
 import type { JsonGetter } from "../../src/http/client.js";
@@ -7,9 +6,8 @@ import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testAppSettings } from "./config.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { publicDns } from "./fakeDns.js";
-import { MemorySourceStore } from "./memorySourceStore.js";
 import { savedSources, STRIPE_BOARD } from "./savedSources.js";
-import { memoryStores } from "./memoryStore.js";
+import { memoryStores, type TestStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";
 
 export const TEST_NOW = new Date("2026-10-03T12:00:00.000Z");
@@ -18,7 +16,7 @@ export const TEST_RUN_ID = "3f2b8c1e-9a7d-4e21-b0c3-5d6e7f8a9b0c";
 
 const NO_HTTP: JsonGetter = { getJson: () => Promise.reject(new Error("unexpected HTTP request in test")) };
 
-export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores = memoryStores()): ToolContext {
+export function testContext(overrides: Partial<ToolContext> = {}, stores: TestStores = memoryStores()): ToolContext {
     return {
         config: testAppSettings(),
         run: newRunState(),
@@ -39,21 +37,21 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: Stores
     };
 }
 
-function seededSources(stores: Stores) {
+function seededSources(stores: TestStores) {
     const list = savedSources({ companies: [STRIPE_BOARD] });
-    if (stores.sources instanceof MemorySourceStore) stores.sources.seed(OWNER_ID, list);
+    stores.memory?.sources.seed(OWNER_ID, list);
     return { store: stores.sources, list };
 }
 
-function storeFields(stores: Stores) {
-    return { store: stores.jobStore, apiCalls: stores.apiCalls, companies: stores.companies };
+function storeFields(stores: TestStores) {
+    return { store: stores.jobStore, postings: stores.postings, sourcePlans: stores.sourcePlans, apiCalls: stores.apiCalls, companies: stores.companies };
 }
 
 function testSources(http: JsonGetter) {
     return sourceHttp({ http: { getJson: (url, headers) => http.getJson(url, headers), postJson: () => Promise.reject(new Error("unexpected POST in test")) }, lookup: publicDns() });
 }
 
-function offRenderer(stores: Stores): PageRenderer {
+function offRenderer(stores: TestStores): PageRenderer {
     return new PageRenderer({ connect: null, settings: testAppSettings().careers_lookup, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW });
 }
 

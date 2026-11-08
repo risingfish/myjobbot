@@ -1,7 +1,6 @@
 import { sql } from "kysely";
 import { expect, test } from "vitest";
-import { migrateToLatest } from "../../src/db/migrate.js";
-import { columnTypes, migrateBefore, storedJob } from "../helpers/migrationSteps.js";
+import { before020, columnTypes, migrateBefore, migrateUpTo, storedJob } from "../helpers/migrationSteps.js";
 import { testDatabase } from "../helpers/testDb.js";
 
 const COMPANY_COLUMNS = ["id", "company_key", "name", "website_url", "careers_url", "careers_source", "created_date", "last_found_date", "searched_at", "website_reason", "website_rejected", "careers_reason", "careers_rejected"];
@@ -27,7 +26,7 @@ test("step 009 adds an empty companies table and a company link on every job, un
     try {
         await migrateBefore(db, "009");
         await db.insertInto("jobs").values([storedJob("one", null), storedJob("two", null)]).execute();
-        expect(await migrateToLatest(db)).toEqual(["009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
+        expect(await migrateUpTo(db, "020")).toEqual(["009_companies", "010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
         expect([await db.selectFrom("companies").selectAll().execute(), await db.selectFrom("jobs").select("company_id").execute()]).toEqual([[], [{ company_id: null }, { company_id: null }]]);
         expect(await columnTypes(db, "companies", COMPANY_COLUMNS)).toEqual(COMPANY_TYPES);
         expect(await columnTypes(db, "jobs", ["company_id"])).toEqual(["company_id int(11) YES NULL "]);
@@ -53,7 +52,7 @@ test("step 010 moves remembered careers pages onto company records, creating any
         await migrateBefore(db, "010");
         await db.insertInto("companies").values([company("acme", null), company("gamma", "https://jobs.lever.co/gamma")]).execute();
         await db.withTables<PagesAtStep009>().insertInto("careers_pages").values([rememberedPage("acme", "Acme Inc", "https://acme.example/careers"), rememberedPage("beta labs", "Beta Labs", "https://beta.example/jobs"), rememberedPage("gamma", "Gamma", "https://gamma.example/careers")]).execute();
-        expect(await migrateToLatest(db)).toEqual(["010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
+        expect(await migrateUpTo(db, "020")).toEqual(["010_fold_careers_pages", "011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
         const pages = await db.selectFrom("companies").select(["company_key", "name", "careers_url", "careers_source", "created_date", "last_found_date"]).orderBy("company_key").execute();
         expect(pages).toEqual([
             { company_key: "acme", name: "Acme", careers_url: "https://acme.example/careers", careers_source: "lookup", created_date: "2026-08-01T00:00:00.000Z", last_found_date: "2026-10-01T00:00:00.000Z" },
@@ -74,7 +73,7 @@ test("step 011 adds empty users and user settings tables", async () => {
     const db = await testDatabase();
     try {
         await migrateBefore(db, "011");
-        expect(await migrateToLatest(db)).toEqual(["011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
+        expect(await migrateUpTo(db, "020")).toEqual(["011_user_settings", "012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"]);
         expect([await db.selectFrom("users").selectAll().execute(), await db.selectFrom("user_settings").selectAll().execute()]).toEqual([[], []]);
         expect(await columnTypes(db, "users", ["id", "name", "created_at"])).toEqual(USER_TYPES);
         expect(await columnTypes(db, "user_settings", ["user_id", "settings", "updated_at"])).toEqual(USER_SETTINGS_TYPES);
@@ -111,7 +110,7 @@ async function expectMovedSources(db: Awaited<ReturnType<typeof testDatabase>>) 
     ]);
     expect((await db.selectFrom("user_settings").select("settings").executeTakeFirstOrThrow()).settings).toEqual({ match_threshold: 60 });
     const ids = sources.map((source) => source.id);
-    const links = await db.selectFrom("jobs").select(["job_id", "source_id"]).orderBy("job_id").execute();
+    const links = await before020(db).selectFrom("jobs").select(["job_id", "source_id"]).orderBy("job_id").execute();
     expect(links).toEqual([
         { job_id: "g1", source_id: ids[3] },
         { job_id: "l1", source_id: ids[1] },
@@ -126,7 +125,7 @@ test("steps 012 and 013 do nothing on a fresh install", async () => {
     const db = await testDatabase();
     try {
         await migrateBefore(db, "012");
-        expect([await migrateToLatest(db), await db.selectFrom("user_sources").selectAll().execute()]).toEqual([["012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"], []]);
+        expect([await migrateUpTo(db, "020"), await db.selectFrom("user_sources").selectAll().execute()]).toEqual([["012_user_sources", "013_move_sources", "014_rescore_runs", "015_lookup_indexes", "016_description_boosts", "017_resume", "018_accounts", "019_session_details"], []]);
     } finally {
         await db.destroy();
     }
@@ -137,7 +136,7 @@ test("steps 012 and 013 move each user's boards and searches into saved sources 
     try {
         await migrateBefore(db, "012");
         await seedOwner(db);
-        await migrateToLatest(db);
+        await migrateUpTo(db, "020");
         expect([await columnTypes(db, "user_sources", SOURCE_COLUMNS), await columnTypes(db, "jobs", ["source_id"])]).toEqual([SOURCE_TYPES, ["source_id int(11) YES NULL "]]);
         await expectMovedSources(db);
     } finally {

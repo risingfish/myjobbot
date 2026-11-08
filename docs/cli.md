@@ -11,10 +11,24 @@ for the full stack). In Kubernetes: `kubectl exec -it deploy/myjobbot-web -- npm
 ## run
 
 ```bash
-npm start -- run
+npm start -- run                            # every user, one after another
+npm start -- run --user you@example.com     # one user only
 ```
 
-One agent run: fetch every source that is on, then score. Its id, trace and logs are described in
+One agent run for each user, in id order: fetch every source that user has on, then score with
+their own settings and resume. A user with no source on, or no resume, is skipped. It prints one
+line per user, then that user's summary:
+
+```text
+user 1: run 6f0c… finished after 14 steps: done
+Scored 12 jobs; 3 recommended.
+user 2: skipped (no resume)
+```
+
+A user whose run fails prints `user <id>: failed` and the run goes on to the next user; the exit
+code is then 1. `run --user` for a user who is skipped also exits 1. The email is matched as at
+sign-in; an unknown one prints `--user: no account with that email`, a malformed one
+`--user: not a valid address`. Each user's part has its own id, trace and logs, described in
 [Traces and logs](how-it-works.md#traces-and-logs). In Docker, `docker compose run --rm myjobbot run`
 starts one now, besides the scheduled ones.
 
@@ -24,7 +38,11 @@ To score one job again at once, from its current description and your current re
 
 ```bash
 npm start -- rescore <ats> <job_id>     # e.g. rescore greenhouse 4012345
+npm start -- rescore <ats> <job_id> --user you@example.com
 ```
+
+Without `--user` it re-scores user 1's view of the job. A job the user doesn't have prints
+`rescore <ats> <job_id>: failed`, as a missing job does.
 
 It prints the command, then each step as it happens with the seconds since the start, then
 `scored`, `filtered (hidden by …)` or `failed` (exit code 1):
@@ -74,6 +92,10 @@ npm start -- eval run --tag smoke --repeats 3       # score the cases with the m
 npm start -- eval report 20261104-030111-167a --against 20261104-030029-80d2
 npm start -- eval check                             # count the files and name any that are bad
 ```
+
+`eval capture`, `eval run` and `eval series run` act for user 1, or for the user `--user <email>`
+names: capture reads that user's scores and records their `userId` in the case, and a run replays
+with that user's resume and profile.
 
 - **A case** is one stored job frozen as the scoring model reads it, with its age as of its latest
   score (counted as a run counts it), that score, whether that score's model read the full

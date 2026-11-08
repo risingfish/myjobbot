@@ -4,7 +4,7 @@ import { MESSAGES } from "../../src/accounts/messages.js";
 import { needsStepUp } from "../../src/accounts/stepUp.js";
 import { signInFromReferer } from "../../src/web/signedOut.js";
 import { webSettings } from "./authDeps.js";
-import { currentSession } from "./session.js";
+import { currentSession } from "./currentSession.js";
 
 export interface GuardOptions {
     public?: boolean;

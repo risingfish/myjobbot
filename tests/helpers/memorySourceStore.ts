@@ -7,6 +7,10 @@ interface Row extends SavedSource {
 
 export class MemorySourceStore implements SourceStore {
     private readonly rows: Row[] = [];
+
+    onForAll(): Array<{ userId: number; module: string }> {
+        return this.rows.filter((row) => row.enabled).map((row) => ({ userId: row.userId, module: row.module }));
+    }
     private nextId = 1;
 
     constructor(private readonly tables: Tables) {}
@@ -40,7 +44,7 @@ export class MemorySourceStore implements SourceStore {
         const index = this.rows.findIndex((row) => row.userId === key.userId && row.id === key.id);
         if (index < 0) return;
         this.rows.splice(index, 1);
-        for (const job of this.tables.jobs) if (job.source_id === key.id) job.source_id = null;
+        for (const view of this.tables.userJobs) if (view.user_id === key.userId && view.source_id === key.id) view.source_id = null;
     }
 
     async recordFetch(key: SourceKey, outcome: SourceOutcome, cursor: unknown): Promise<void> {
@@ -58,7 +62,7 @@ export class MemorySourceStore implements SourceStore {
 
     private rename(row: Row, fields: Partial<SavedSource>): void {
         Object.assign(row, fields);
-        for (const job of this.tables.jobs) if (job.source_id === row.id) job.source = row.name;
+        for (const view of this.tables.userJobs) if (view.user_id === row.userId && view.source_id === row.id) view.source = row.name;
     }
 
     private update(key: SourceKey, change: Partial<SavedSource>): void {

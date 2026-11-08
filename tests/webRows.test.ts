@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./helpers/memoryStore.js";
 import type { BeginResult, RescoreEnd } from "../src/db/rescoreLogStore.js";
-import type { JobStore, JobViews, Stores } from "../src/db/store.js";
+import type { JobStore, JobViews } from "../src/db/store.js";
 import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, startRescoreFor } from "../web/lib/rows.js";
@@ -67,12 +68,12 @@ test("a malformed hide request is refused and changes nothing", async () => {
 
 test("a job whose text tried to escape the data markers is marked on its row", async () => {
     const stores = await seededStores([{ id: "a" }, { id: "b" }]);
-    await stores.jobStore.flagInjection("a", "2026-10-02T00:00:00.000Z");
+    await stores.postings.flagInjection("a", "2026-10-02T00:00:00.000Z");
     const data = await loadRows(stores.jobViews, settings, { name: "jobs", offset: 0 });
     expect(Object.fromEntries(jobRows(data).map((row) => [row.jobId, row.injection]))).toEqual({ a: true, b: false });
 });
 
-function detailStores(stores: Stores) {
+function detailStores(stores: TestStores) {
     return { views: stores.jobViews, rescoreLog: stores.rescoreLog };
 }
 

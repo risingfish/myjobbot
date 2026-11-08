@@ -33,7 +33,7 @@ test("a removal tied to a job flags that job only, and one tied to no job flags 
 
 test("a store that fails while flagging is traced, and the run carries on", async () => {
     const { context, trace } = await contextWithJobs();
-    const failing = { ...context, store: { ...context.store, flagInjection: () => Promise.reject(new Error("database gone")) } };
+    const failing = { ...context, postings: { ...context.postings, flagInjection: () => Promise.reject(new Error("database gone")) } };
     await expect(reportLookalike(failing, { tool: "next_jobs", jobId: "a" })).resolves.toBeUndefined();
     expect(trace.events.at(-1)).toEqual({ type: "injection_flag_failed", tool: "next_jobs", job_id: "a", error: "database gone" });
 });

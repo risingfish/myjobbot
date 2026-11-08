@@ -1,15 +1,18 @@
 import { openSince, type BeginResult, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../../src/db/rescoreLogStore.js";
 import type { JobKey } from "../../src/db/store.js";
-import type { Tables } from "./memoryJobViews.js";
+import { viewOf, type Tables } from "./memoryJobViews.js";
 
 export class MemoryRescoreLog implements RescoreLogStore {
-    constructor(private readonly tables: Tables) {}
+    constructor(
+        private readonly tables: Tables,
+        private readonly userId: number,
+    ) {}
 
     async begin(key: JobKey, id: string, at: string): Promise<BeginResult> {
-        if (!this.tables.jobs.some((job) => job.ats === key.ats && job.job_id === key.jobId)) return { missing: true };
+        if (viewOf(this.tables, this.userId, key) === undefined) return { missing: true };
         const open = this.of(key).find((run) => run.endedAt === null && run.startedAt > openSince(at));
         if (open !== undefined) return { running: open.id };
-        this.tables.rescoreRuns.push({ id, ats: key.ats, jobId: key.jobId, startedAt: at, endedAt: null, outcome: null, filter: null, score: null });
+        this.tables.rescoreRuns.push({ id, userId: this.userId, ats: key.ats, jobId: key.jobId, startedAt: at, endedAt: null, outcome: null, filter: null, score: null });
         return { started: id };
     }
 
@@ -28,17 +31,19 @@ export class MemoryRescoreLog implements RescoreLogStore {
     }
 
     async run(id: string): Promise<RescoreRun | null> {
-        const run = this.tables.rescoreRuns.find((each) => each.id === id);
-        return run === undefined ? null : { ...run };
+        const run = this.tables.rescoreRuns.find((each) => each.id === id && each.userId === this.userId);
+        if (run === undefined) return null;
+        const { userId: _userId, ...shown } = run;
+        return shown;
     }
 
     async runsFor(key: JobKey): Promise<RescoreRun[]> {
         return this.of(key)
             .sort((a, b) => (b.startedAt > a.startedAt ? 1 : b.startedAt < a.startedAt ? -1 : b.id.localeCompare(a.id)))
-            .map((run) => ({ ...run }));
+            .map(({ userId: _userId, ...run }) => run);
     }
 
-    private of(key: JobKey): RescoreRun[] {
-        return this.tables.rescoreRuns.filter((run) => run.ats === key.ats && run.jobId === key.jobId);
+    private of(key: JobKey): Array<RescoreRun & { userId: number }> {
+        return this.tables.rescoreRuns.filter((run) => run.userId === this.userId && run.ats === key.ats && run.jobId === key.jobId);
     }
 }

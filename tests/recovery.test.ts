@@ -1,30 +1,29 @@
 import { expect, test } from "vitest";
-import { runOnce } from "../src/app/run.js";
-import type { Stores } from "../src/db/store.js";
+import { runOneUser } from "./helpers/runOneUser.js";
 import type { JsonGetter, JsonPoster } from "../src/http/client.js";
 import { publicDns } from "./helpers/fakeDns.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { chatThenCrash, scriptedChat, toolCallReply } from "./helpers/chat.js";
 import { makeDataDir, ONE_COMPANY, TEST_ENV } from "./helpers/dataDir.js";
 import { fakeBoard } from "./helpers/http.js";
-import { storesWithSettings } from "./helpers/memoryStore.js";
+import { storesWithSettings, type TestStores } from "./helpers/memoryStore.js";
 import { latestToolEvent } from "./helpers/traceFiles.js";
 
 function envFor(dataDir: string) {
     return { ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir };
 }
 
-const stores: Stores = storesWithSettings(ONE_COMPANY);
+const stores: TestStores = storesWithSettings(ONE_COMPANY);
 
 function runAndCrash(dataDir: string, http: JsonGetter & JsonPoster) {
     const crash = chatThenCrash([toolCallReply("next_jobs", { source: "Stripe" })], new Error("LLM down"));
-    return runOnce(envFor(dataDir), { chat: crash, http, lookup: publicDns(), openStores: async () => stores });
+    return runOneUser(envFor(dataDir), { chat: crash, http, lookup: publicDns(), openStores: async () => stores }, 1);
 }
 
 function runToCompletion(dataDir: string, http: JsonGetter & JsonPoster) {
     const score = toolCallReply("record_matches", { verdicts: [{ job_id: "1000", base: 30, bonus: 25 }] });
     const replies = [toolCallReply("next_jobs", { source: "Stripe" }), score, toolCallReply("finish", { summary: "done" })];
-    return runOnce(envFor(dataDir), { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => stores });
+    return runOneUser(envFor(dataDir), { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => stores }, 1);
 }
 
 test("a job left unscored by a crashed run is re-offered on the next run", async () => {

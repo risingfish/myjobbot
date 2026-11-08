@@ -10,16 +10,19 @@ const outcome = z.enum(["scored", "filtered", "failed"]).nullable();
 const filter = z.enum(["company", "title", "body"]).nullable();
 
 export class KyselyRescoreLogStore implements RescoreLogStore {
-    constructor(private readonly db: Kysely<Database>) {}
+    constructor(
+        private readonly db: Kysely<Database>,
+        private readonly userId: number,
+    ) {}
 
-    /** Starts a re-score of a job unless one is open, locking the job's row so two presses can't both start one. */
+    /** Starts this user's re-score of a job unless they have one open, locking their view of the job so two presses can't both start one. */
     async begin(key: JobKey, id: string, at: string): Promise<BeginResult> {
         return this.db.transaction().execute(async (trx) => {
-            const job = await trx.selectFrom("jobs").select("job_id").where("ats", "=", key.ats).where("job_id", "=", key.jobId).forUpdate().executeTakeFirst();
+            const job = await trx.selectFrom("user_jobs").select("job_id").where("user_id", "=", this.userId).where("ats", "=", key.ats).where("job_id", "=", key.jobId).forUpdate().executeTakeFirst();
             if (job === undefined) return { missing: true };
-            const open = await openRun(trx, key, at);
+            const open = await openRun(trx, { ...key, userId: this.userId }, at);
             if (open !== undefined) return { running: open.id };
-            await trx.insertInto("rescore_runs").values({ id, ats: key.ats, job_id: key.jobId, started_at: at }).execute();
+            await trx.insertInto("rescore_runs").values({ id, user_id: this.userId, ats: key.ats, job_id: key.jobId, started_at: at }).execute();
             return { started: id };
         });
     }
@@ -43,22 +46,22 @@ export class KyselyRescoreLogStore implements RescoreLogStore {
         return rows.map((row) => ({ seq: row.seq, elapsedMs: row.elapsed_ms, kind: row.kind, fields: JSON.parse(row.fields) as unknown }));
     }
 
-    /** Reads one re-score run, or null when there is none with that id. */
+    /** Reads one of this user's re-score runs, or null when they have none with that id. */
     async run(id: string): Promise<RescoreRun | null> {
-        const row = await this.db.selectFrom("rescore_runs").selectAll().where("id", "=", id).executeTakeFirst();
+        const row = await this.db.selectFrom("rescore_runs").selectAll().where("id", "=", id).where("user_id", "=", this.userId).executeTakeFirst();
         return row === undefined ? null : rescoreRun(row);
     }
 
-    /** Lists a job's re-score runs, newest first. */
+    /** Lists this user's re-score runs of a job, newest first. */
     async runsFor(key: JobKey): Promise<RescoreRun[]> {
-        const rows = await this.db.selectFrom("rescore_runs").selectAll().where("ats", "=", key.ats).where("job_id", "=", key.jobId).orderBy("started_at", "desc").orderBy("id", "desc").execute();
+        const rows = await this.db.selectFrom("rescore_runs").selectAll().where("user_id", "=", this.userId).where("ats", "=", key.ats).where("job_id", "=", key.jobId).orderBy("started_at", "desc").orderBy("id", "desc").execute();
         return rows.map(rescoreRun);
     }
 }
 
-/** Finds a job's re-score run that is still open and recent enough to block a new one. */
-function openRun(trx: Transaction<Database>, key: JobKey, at: string) {
-    return trx.selectFrom("rescore_runs").select("id").where("ats", "=", key.ats).where("job_id", "=", key.jobId).where("ended_at", "is", null).where("started_at", ">", openSince(at)).executeTakeFirst();
+/** Finds a user's re-score run of a job that is still open and recent enough to block a new one. */
+function openRun(trx: Transaction<Database>, key: JobKey & { userId: number }, at: string) {
+    return trx.selectFrom("rescore_runs").select("id").where("user_id", "=", key.userId).where("ats", "=", key.ats).where("job_id", "=", key.jobId).where("ended_at", "is", null).where("started_at", ">", openSince(at)).executeTakeFirst();
 }
 
 /** Turns a stored run row into the run the app reads. */

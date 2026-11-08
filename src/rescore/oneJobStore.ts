@@ -1,6 +1,6 @@
 import type { JobKey, JobStore } from "../db/store.js";
 
-export type OneJobStore = Pick<JobStore, "findJob" | "recordVerdict" | "earliestSeen" | "flagInjection"> & { recorded(): boolean };
+export type OneJobStore = Pick<JobStore, "findJob" | "recordVerdict"> & { recorded(): boolean };
 
 /** Narrows the job store to one job, so a re-score's model can read and score only that job, and reports once its verdict is saved, with its score. */
 export function oneJobStore(store: JobStore, key: JobKey, onSaved?: (score: number) => void): OneJobStore {
@@ -17,8 +17,6 @@ export function oneJobStore(store: JobStore, key: JobKey, onSaved?: (score: numb
             if (known) onSaved?.(verdict.score);
             return known;
         },
-        earliestSeen: (company, normalizedTitle) => store.earliestSeen(company, normalizedTitle),
-        flagInjection: (jobId, at) => store.flagInjection(jobId, at),
         recorded: () => recorded,
     };
 }

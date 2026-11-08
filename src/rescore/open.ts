@@ -10,7 +10,8 @@ import { loadConfig, type AppConfig, type Environment } from "../config/load.js"
 import type { Settings } from "../config/schema.js";
 import type { Trace } from "../agent/trace.js";
 import type { BeginResult } from "../db/rescoreLogStore.js";
-import type { JobKey, Stores } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { UserStores } from "../db/userStores.js";
 import type { SoughtJob } from "../careers/session.js";
 import { RescoreLog } from "./log.js";
 import type { RescoreDeps } from "./rescore.js";
@@ -28,7 +29,7 @@ type OnLine = (line: string, elapsedMs: number) => void;
 
 interface LookupIo {
     logs: RunLogs;
-    stores: Stores;
+    stores: UserStores;
     chat: ChatFn;
     renderer: PageRenderer;
     markers: DataMarkers;
@@ -37,7 +38,7 @@ interface LookupIo {
 }
 
 /** Opens what one re-score needs, as a run does: its settings, logs, model client, careers lookup and step log, with a way to record the run and a close for its page renderer. */
-export async function openRescore(environment: Environment, stores: Stores, onLine?: OnLine): Promise<OpenedRescore> {
+export async function openRescore(environment: Environment, stores: UserStores, onLine?: OnLine): Promise<OpenedRescore> {
     const loaded = loadConfig(environment);
     const logs = openRunLogs(loaded);
     const fallbacks = fallbackCounter(logs.trace);
@@ -49,7 +50,7 @@ export async function openRescore(environment: Environment, stores: Stores, onLi
     const markers = dataMarkers(logs.runId);
     const parts = careersParts(config, { logs, stores, chat, renderer, markers, log, trace });
     const lookUp = (job: SoughtJob) => lookUpCareers(careersDeps(parts), [job]);
-    const deps: RescoreDeps = { config, store: stores.jobStore, views: stores.jobViews, chat, trace, runId: logs.runId, now: () => new Date(), markers, lookUp, log, fallbacks: fallbacks.count() };
+    const deps: RescoreDeps = { config, store: stores.jobStore, postings: stores.postings, views: stores.jobViews, chat, trace, runId: logs.runId, now: () => new Date(), markers, lookUp, log, fallbacks: fallbacks.count() };
     const begin = (key: JobKey) => stores.rescoreLog.begin(key, logs.runId, log.startedAt.toISOString());
     return { deps, begin, close: () => renderer.close() };
 }
@@ -70,7 +71,7 @@ function fallbackCounter(trace: Trace): { trace: Trace; count: () => number } {
 function careersParts(config: AppConfig, { logs, stores, chat, renderer, markers, log, trace }: LookupIo): CareersParts {
     const { client, boards, lookup } = runClients(config, {});
     const careers = { store: loggedCareers(stores.careers, log), searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup, pages: client, boards, renderer };
-    return { careers, settings: cappedLookup(config.settings.careers_lookup), chat, trace, jobs: stores.jobStore, runId: logs.runId, now: () => new Date(), http: client, markers };
+    return { careers, settings: cappedLookup(config.settings.careers_lookup), chat, trace, postings: stores.postings, runId: logs.runId, now: () => new Date(), http: client, markers };
 }
 
 /** Caps the careers lookup's per-job and total minutes for a re-score. */

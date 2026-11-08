@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
+import type { TestStores } from "./memoryStore.js";
 import { makeJob, type Job } from "../../src/jobs/job.js";
 
-export type MakeStores = () => Promise<Stores>;
+export type MakeStores = () => Promise<TestStores>;
 
 const DAY_ONE = "2026-10-01T00:00:00.000Z";
 const DAY_TWO = "2026-10-02T00:00:00.000Z";
@@ -58,7 +57,7 @@ async function case02(make: MakeStores): Promise<void> {
     await jobStore.recordVerdict(score("b", 70), { scoredAt: DAY_TWO, runId: "r" });
     expect((await jobStore.unscoredForSource("Stripe")).map((row) => row.job_id)).toEqual(["a"]);
     expect(await jobStore.unscoredForSource("Other")).toEqual([]);
-    const saved = await sources.save(OWNER_ID, { module: "greenhouse", name: "Stripe", params: { slug: "stripe" }, target: "greenhouse:stripe", enabled: true }, DAY_TWO);
+    const saved = await sources.save({ module: "greenhouse", name: "Stripe", params: { slug: "stripe" }, target: "greenhouse:stripe", enabled: true }, DAY_TWO);
     const stripe = { id: saved.id, name: "Stripe" };
     await jobStore.upsertAll([sample({ id: "c", company: "Acme" })], DAY_TWO, stripe);
     expect([(await jobStore.unscoredForSource(stripe)).map((row) => row.job_id), (await jobStore.unscoredSince(stripe, DAY_TWO)).map((row) => row.job_id)]).toEqual([["c"], ["c"]]);
@@ -86,18 +85,18 @@ async function case04(make: MakeStores): Promise<void> {
 }
 
 async function case05(make: MakeStores): Promise<void> {
-    const { jobStore } = await make();
+    const { jobStore, postings } = await make();
     await jobStore.upsertAll([sample({ id: "old" })], "2026-06-01T00:00:00.000Z", "Stripe");
     await jobStore.upsertAll([sample({ id: "new", title: "Backend Engineer!", postedAt: "2026-09-01T00:00:00.000Z" })], DAY_TWO, "Stripe");
-    expect(await jobStore.earliestSeen("Stripe", "backend engineer")).toBe("2026-06-01T00:00:00.000Z");
+    expect(await postings.earliestSeen("Stripe", "backend engineer")).toBe("2026-06-01T00:00:00.000Z");
 }
 
 async function case06(make: MakeStores): Promise<void> {
-    const { jobStore, jobViews } = await make();
+    const { jobStore, jobViews, postings } = await make();
     await jobStore.upsertAll([sample({ id: "1" })], DAY_ONE, "Stripe");
     await jobStore.upsertAll([sample({ id: "2" })], DAY_TWO, "Stripe");
     await jobStore.recordVerdict(score("1", 50), { scoredAt: DAY_ONE, runId: "r" });
-    expect(await jobStore.pruneLastSeenBefore(DAY_TWO)).toBe(1);
+    expect(await postings.prune(DAY_TWO)).toBe(1);
     expect([await jobViews.countAllJobs(), await jobViews.countVerdicts()]).toEqual([1, 0]);
 }
 

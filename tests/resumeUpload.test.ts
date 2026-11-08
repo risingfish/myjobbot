@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
 import { sha16 } from "../src/contentId.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { editFor, extractFor, uploadFor } from "../web/lib/resumeRows.js";
 import { memoryStores } from "./helpers/memoryStore.js";
 
@@ -16,7 +15,7 @@ test("a Markdown or text resume is read as UTF-8 and stored as the owner's resum
     const markdown = await uploadFor(stores, file("resume.md", "# Zoë Müller\n\nTypeScript 🚀\n"), NOW);
     expect(markdown).toEqual({ ok: true, resume: { text: "# Zoë Müller\n\nTypeScript 🚀", fileName: "resume.md", fileType: "md", uploadedAt: NOW.toISOString(), contentId: sha16("# Zoë Müller\n\nTypeScript 🚀") } });
     await uploadFor(stores, file("cv.txt", "Plain <b>text</b>"), NOW);
-    expect((await stores.resume.currentResume(OWNER_ID))?.text).toBe("Plain <b>text</b>");
+    expect((await stores.resume.currentResume())?.text).toBe("Plain <b>text</b>");
 });
 
 test("a refused file answers its fixed message and leaves the stored resume alone", async () => {
@@ -25,7 +24,7 @@ test("a refused file answers its fixed message and leaves the stored resume alon
     expect(await uploadFor(stores, file("photo.png", "x"), NOW)).toEqual({ ok: false, error: "That file type isn't supported (use .md, .txt, .pdf or .docx)" });
     expect(await uploadFor(stores, file("empty.txt", "  \n"), NOW)).toEqual({ ok: false, error: "No text could be read from that file" });
     expect(await uploadFor(stores, { ...file("big.md", "a"), size: 5 * 1024 * 1024 + 1 }, NOW)).toEqual({ ok: false, error: "That file is over 5 MB" });
-    expect((await stores.resume.currentResume(OWNER_ID))?.text).toBe("# Ada");
+    expect((await stores.resume.currentResume())?.text).toBe("# Ada");
 });
 
 const SKILLS = [
@@ -40,7 +39,7 @@ test("extracting with no uploaded resume is refused before the model is asked", 
         asked = true;
         return { ok: true as const, profile: { summary: "s", skills: SKILLS } };
     };
-    expect([await extractFor(stores, extract, NOW), asked, await stores.resume.profile(OWNER_ID)]).toEqual([{ ok: false, error: "Upload a resume first" }, false, null]);
+    expect([await extractFor(stores, extract, NOW), asked, await stores.resume.profile()]).toEqual([{ ok: false, error: "Upload a resume first" }, false, null]);
 });
 
 test("an edit is checked and saved marked edited, removing every skill allowed, and an extraction ties the profile to its resume", async () => {
@@ -53,7 +52,7 @@ test("an edit is checked and saved marked edited, removing every skill allowed, 
     expect(await editFor(stores, { summary: "Remote senior roles", skills: moved }, later)).toMatchObject({ ok: true, profile: { summary: "Remote senior roles", skills: moved, editedAt: later.toISOString() } });
     expect(await editFor(stores, { summary: "", skills: [] }, later)).toMatchObject({ ok: true, profile: { skills: [] } });
     expect((await editFor(stores, { summary: "s", skills: [{ name: "x".repeat(81), group: "people" }] }, later)).ok).toBe(false);
-    expect((await stores.resume.profile(OWNER_ID))?.skills).toEqual([]);
+    expect((await stores.resume.profile())?.skills).toEqual([]);
 });
 
 test("adding a skill already listed, whatever its case, is refused", async () => {

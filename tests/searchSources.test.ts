@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
+import { type SavedSource, userSourceStore } from "../src/db/sourceStore.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
-import type { SavedSource } from "../src/db/sourceStore.js";
 import { newRunState, type ToolContext } from "../src/tools/context.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { TEST_SEARCH, testAppSettings } from "./helpers/config.js";
@@ -32,7 +32,7 @@ function searchContext(overrides: Partial<ToolContext> = {}, { last = null, boar
         savedSources({ companies: board ? [STRIPE_BOARD] : [], searches: [TEST_SEARCH] }).map((source) => (source.module === "jsearch" ? { ...source, last } : source)),
     );
     const context = testContext({ config: testAppSettings(), http, ...overrides }, memoryStores(tables));
-    context.saved = { store, list: [] };
+    context.saved = { store: userSourceStore(store, OWNER_ID), list: [] };
     const jsearchRequests = () => http.requests.filter((sent) => new URL(sent.url).host === JSEARCH_HOST);
     return { context, jsearchRequests };
 }

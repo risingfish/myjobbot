@@ -54,6 +54,12 @@ export class KyselyAccountStore implements AccountStore {
         return rows.map(fromRow);
     }
 
+    /** Lists every user's id in order, those without an email included, so a run can go through them all. */
+    async userIds(): Promise<number[]> {
+        const rows = await this.db.selectFrom("users").select("id").orderBy("id").execute();
+        return rows.map((row) => row.id);
+    }
+
     /** Sets or clears an account's admin mark, refusing to clear the last one; the admin rows are locked so two removals can't leave none. */
     async setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin"> {
         return this.db.transaction().execute(async (trx) => {

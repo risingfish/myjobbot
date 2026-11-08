@@ -20,3 +20,13 @@ export async function migrateBefore(db: Kysely<Database>, step: string): Promise
     for (const table of [...TABLES, ...LEGACY_TABLES, "kysely_migration", "kysely_migration_lock"]) await sql`DROP TABLE IF EXISTS ${sql.table(table)}`.execute(db);
     await migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < step)) });
 }
+
+export function migrateUpTo(db: Kysely<Database>, step: string): Promise<string[]> {
+    return migrateToLatest(db, { migrations: Object.fromEntries(Object.entries(MIGRATIONS).filter(([name]) => name < step)) });
+}
+
+type JobsBefore020 = { jobs: { ats: string; job_id: string; source_id: number | null; applied: number; applied_on: string | null } };
+
+export function before020(db: Kysely<Database>) {
+    return (db as unknown as Kysely<unknown>).withTables<JobsBefore020>();
+}

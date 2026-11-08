@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import { fetchSources } from "../../src/sources/fetchPhase.js";
 import type { ToolContext } from "../../src/tools/context.js";
 import { buildTools } from "../../src/tools/registry.js";
@@ -21,7 +20,7 @@ const fetchedRuns = new WeakSet<object>();
 export async function fetchRun(context: ToolContext): Promise<void> {
     if (fetchedRuns.has(context.run)) return;
     fetchedRuns.add(context.run);
-    const stored = await context.saved.store.list(OWNER_ID);
+    const stored = await context.saved.store.list();
     if (stored.length > 0) context.saved.list = stored;
     await fetchSources(context);
 }

@@ -53,3 +53,14 @@ export function compareCounts(expected: Record<string, number>, actual: Record<s
         .filter(([table, count]) => actual[table] !== count)
         .map(([table, count]) => `${table}: expected ${count}, found ${actual[table] ?? 0}`);
 }
+
+const VIEW_COLUMNS = ["source", "source_id", "first_seen", "last_seen", "scored_at", "score", "base_score", "bonus_score", "reasons", "gaps", "hidden", "applied", "applied_on"];
+
+const MOVED = new Set(VIEW_COLUMNS.filter((column) => !["source", "first_seen", "last_seen"].includes(column)));
+
+/** Splits an old job row into the shared posting and one user's view of it, as the database keeps them since step 020. */
+export function splitJob(job: Record<string, unknown>, userId: number): { posting: Record<string, unknown>; view: Record<string, unknown> } {
+    const posting = Object.fromEntries(Object.entries(job).filter(([column]) => !MOVED.has(column)));
+    const kept = VIEW_COLUMNS.filter((column) => column in job).map((column) => [column, job[column]]);
+    return { posting, view: { user_id: userId, ats: job.ats, job_id: job.job_id, ...Object.fromEntries(kept) } };
+}

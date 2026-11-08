@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Settings } from "../config/schema.js";
+import type { PostingStore } from "../db/postingStore.js";
 import type { JobKey } from "../db/store.js";
 import { jobDetails } from "../tools/getJobDetails.js";
 import { recordMatchesTool } from "../tools/recordMatches.js";
@@ -8,6 +9,7 @@ import type { OneJobStore } from "./oneJobStore.js";
 
 export interface RescoreToolContext {
     store: OneJobStore;
+    postings: Pick<PostingStore, "earliestSeen">;
     key: JobKey;
     config: Settings;
     now: () => Date;

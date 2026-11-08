@@ -7,7 +7,7 @@ import type { Tally } from "./failure.js";
 
 const NO_DESCRIPTION = "(none provided)";
 
-export interface CaseStore extends Pick<JobStore, "findJob" | "recordVerdict" | "flagInjection"> {
+export interface CaseStore extends Pick<JobStore, "findJob" | "recordVerdict"> {
     recorded(): Verdict | null;
 }
 
@@ -22,7 +22,6 @@ export function caseStore(evalCase: EvalCase): CaseStore {
             saved = verdict;
             return true;
         },
-        flagInjection: async () => {},
         recorded: () => saved,
     };
 }

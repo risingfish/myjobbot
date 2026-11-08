@@ -1,5 +1,4 @@
 import type { SavedSource } from "../db/sourceStore.js";
-import { OWNER_ID } from "../db/searchSettingsStore.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { fetchSources } from "../sources/fetchPhase.js";
 import { moduleFor } from "../sources/registry.js";
@@ -7,7 +6,7 @@ import type { ToolContext } from "../tools/context.js";
 
 /** Prepares the run before the agent starts: links any job not yet linked to its company's record, gives each company source's company its board as careers page, then fetches every source that is on. */
 export async function beforeAgent(context: ToolContext): Promise<void> {
-    const linked = await context.store.linkUnlinkedJobs();
+    const linked = await context.postings.linkUnlinkedJobs();
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
     const at = context.now().toISOString();
     for (const source of context.saved.list) await linkBoardPage(context, source, at);
@@ -21,5 +20,5 @@ async function linkBoardPage(context: ToolContext, source: SavedSource, at: stri
     if (module?.company === undefined || params?.success !== true) return;
     const hint = module.company(params.data, source.name);
     const companyId = await context.companies.setBoardPage({ key: normalizeCompany(hint.name), name: hint.name, url: hint.careersPage }, at);
-    if (source.companyId !== companyId) await context.saved.store.linkCompany({ userId: OWNER_ID, id: source.id }, companyId);
+    if (source.companyId !== companyId) await context.saved.store.linkCompany(source.id, companyId);
 }

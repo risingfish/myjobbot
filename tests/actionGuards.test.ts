@@ -12,7 +12,7 @@ vi.mock("next/navigation.js", () => ({
         throw new Error(`redirect ${to}`);
     },
 }));
-vi.mock("../web/lib/session.js", () => ({ currentSession: async () => request.signedIn }));
+vi.mock("../web/lib/currentSession.js", () => ({ currentSession: async () => request.signedIn }));
 
 beforeEach(() => {
     vi.stubEnv("MYJOBBOT_BASE_URL", "http://localhost:8080");

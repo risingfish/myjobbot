@@ -27,22 +27,32 @@ export interface JobsTable {
     preferred_skills: Text;
     first_seen: string;
     last_seen: string;
+    emailed_at: Text;
+    company_id: Count;
+}
+
+export interface UserJobsTable {
+    user_id: number;
+    ats: string;
+    job_id: string;
+    source_id: Count;
+    source: string;
+    first_seen: string;
+    last_seen: string;
     scored_at: Text;
     score: Count;
     base_score: Count;
     bonus_score: Count;
     reasons: Text;
     gaps: Text;
-    emailed_at: Text;
     hidden: Generated<number>;
     applied: Generated<number>;
     applied_on: Text;
-    company_id: Count;
-    source_id: Count;
 }
 
 export interface VerdictsTable {
     id: Generated<number>;
+    user_id: number;
     ats: string;
     job_id: string;
     run_id: Text;

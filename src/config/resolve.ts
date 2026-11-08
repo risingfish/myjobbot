@@ -1,4 +1,4 @@
-import { OWNER_ID, type RawSearchSettings, type SearchSettingsStore } from "../db/searchSettingsStore.js";
+import type { RawSearchSettings, UserSearchSettingsStore } from "../db/searchSettingsStore.js";
 import { settingsSchema, type Settings } from "./schema.js";
 import { mergeSettings, retiredKeys, sanitizeSearchSettings, settingNames, splitSettings, type FallbackNotice, type SplitSettings } from "./searchSettings.js";
 
@@ -10,11 +10,16 @@ interface ResolvedSettings {
 }
 
 /** Resolves the settings a run or a page uses: the stored search settings, each bad one fallen back, joined with config.json's runtime settings and checked as a whole; search settings left in config.json are never used. */
-export async function resolveSettings(fileRaw: unknown, store: SearchSettingsStore): Promise<ResolvedSettings> {
+export async function resolveSettings(fileRaw: unknown, store: UserSearchSettingsStore): Promise<ResolvedSettings> {
     const split = splitSettings(fileRaw);
-    const stored = await store.load(OWNER_ID);
+    const stored = await store.load();
     const { settings: search } = sanitizeSearchSettings(stored ?? {});
     return { settings: settingsSchema.parse(mergeSettings(split.runtime, search)), notices: settingsNotices(split, stored) };
+}
+
+/** Resolves config.json's runtime settings alone, with no user's search settings, for work done once for every user, such as pruning. */
+export function runtimeSettings(fileRaw: unknown): Settings {
+    return settingsSchema.parse(mergeSettings(splitSettings(fileRaw).runtime, {}));
 }
 
 /** Lists what the search settings report: each stored value that fell back, the search settings config.json still holds, which are never used, and the boards and searches left behind by the move to saved sources. */

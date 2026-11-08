@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { Stores } from "../../src/db/store.js";
+import type { TestStores } from "./memoryStore.js";
 import { makeJob } from "../../src/jobs/job.js";
 import type { MakeStores } from "./storeContract.js";
 
@@ -12,14 +12,14 @@ const KEPT = { ats: "greenhouse", jobId: "kept" };
 const OTHER = { ats: "greenhouse", jobId: "other" };
 const run = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
 
-async function seeded(make: MakeStores): Promise<Stores> {
+async function seeded(make: MakeStores): Promise<TestStores> {
     const stores = await make();
     const jobs = ["kept", "other"].map((jobId) => makeJob({ ats: "greenhouse", jobId, company: "Acme", title: "Backend Engineer", url: `https://example.com/${jobId}` }, {}));
     await stores.jobStore.upsertAll(jobs, SEEN, "Acme");
     return stores;
 }
 
-async function oneOpenRun({ rescoreLog }: Stores) {
+async function oneOpenRun({ rescoreLog }: TestStores) {
     expect(await rescoreLog.begin(KEPT, run(1), AT)).toEqual({ started: run(1) });
     expect(await rescoreLog.begin(KEPT, run(2), AT)).toEqual({ running: run(1) });
     expect(await rescoreLog.begin({ ats: "greenhouse", jobId: "missing" }, run(3), AT)).toEqual({ missing: true });
@@ -53,7 +53,7 @@ async function keepsSteps(make: MakeStores) {
     ]);
     expect((await stores.rescoreLog.stepsAfter(run(1), 1)).map((step) => step.seq)).toEqual([2]);
     await stores.jobViews.setApplied({ ...OTHER, applied: true, at: AT });
-    await stores.jobStore.pruneLastSeenBefore(CUTOFF);
+    await stores.postings.prune(CUTOFF);
     expect([await stores.rescoreLog.runsFor(KEPT), await stores.rescoreLog.stepsAfter(run(1), 0), (await stores.rescoreLog.runsFor(OTHER)).length]).toEqual([[], [], 1]);
 }
 

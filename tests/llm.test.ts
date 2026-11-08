@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { expect, onTestFinished, test } from "vitest";
 import { createChat } from "../src/agent/llm.js";
 import type { TraceEvent } from "../src/agent/trace.js";
-import { runOnce } from "../src/app/run.js";
+import { runOneUser } from "./helpers/runOneUser.js";
 import { envSchema } from "../src/config/schema.js";
 import { publicDns } from "./helpers/fakeDns.js";
 import { greenhouseBoard } from "./helpers/boards.js";
@@ -36,10 +36,10 @@ test("createChat returns the model's message and logs the raw response", async (
     expect(events[0]).toMatchObject({ type: "llm_response", response: CANNED_COMPLETION });
 });
 
-test("runOnce writes each raw LLM response to the log directory", async () => {
+test("runOneUser writes each raw LLM response to the log directory", async () => {
     const logDir = mkdtempSync(join(tmpdir(), "myjobbot-log-"));
     const env = { ...(await fakeLlm()).env, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY), MYJOBBOT_LOG_DIR: logDir };
-    expect(await runOnce(env, { http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) })).toMatchObject({ status: "finished", steps: 1 });
+    expect(await runOneUser(env, { http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) }, 1)).toMatchObject({ status: "finished", steps: 1 });
     const files = readdirSync(logDir).filter((file) => file.endsWith(".llm.jsonl"));
     expect(files).toHaveLength(1);
     const lines = readFileSync(join(logDir, files[0] ?? ""), "utf8")

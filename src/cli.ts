@@ -2,22 +2,34 @@ import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { runAccountCommand } from "./accounts/terminal.js";
 import { importSqlite } from "./app/importSqlite.js";
-import { runOnce } from "./app/run.js";
+import type { RunSeams } from "./app/run.js";
+import { runAll } from "./app/runAll.js";
+import { runExitCode, runLine, type UserRun } from "./app/runLines.js";
 import type { Environment } from "./config/load.js";
 import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
+import { OWNER_ID } from "./db/searchSettingsStore.js";
 import type { JobKey, Stores } from "./db/store.js";
+import type { UserStores } from "./db/userStores.js";
+import { storesFor, userOption, type Refused } from "./cliUser.js";
 import { describeError } from "./errors.js";
 import { evalCommand } from "./evals/command.js";
 import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
+const USAGE = "usage: myjobbot run [--user <email>] | rescore <ats> <job_id> [--user <email>] | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: positional(runCommand), rescore: positional(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
+interface Chosen {
+    seams: RunSeams;
+    only: number | undefined;
+}
+
+type UserCommand = (environment: Environment, args: string[], email: string | undefined) => Promise<number>;
+
+const COMMANDS: Record<string, Command> = { run: forUser(runCommand), rescore: forUser(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
 
 /** Dispatches to the command named first, handing it the rest of the arguments as given, and returns the process exit code. */
 async function main(argv: string[]): Promise<number> {
@@ -33,27 +45,64 @@ function positional(command: Command): Command {
     return (environment, args) => command(environment, parseArgs({ args, allowPositionals: true }).positionals);
 }
 
-/** Runs one agent session, prints its outcome, and maps the result to an exit code. */
-async function runCommand(environment: Environment): Promise<number> {
-    const report = await runOnce(environment);
-    console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
-    if (report.summary) console.log(report.summary);
-    return report.status === "finished" ? 0 : 1;
+/** Wraps a command that acts for a user, taking `--user` out and refusing any other flag as before. */
+function forUser(command: UserCommand): Command {
+    return (environment, args) => {
+        const { email, rest } = userOption(args);
+        return command(environment, parseArgs({ args: rest, allowPositionals: true }).positionals, email);
+    };
 }
 
-/** Re-scores one job at once from the command line, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */
-async function rescoreCommand(environment: Environment, [ats, jobId]: string[]): Promise<number> {
+/** Runs every user's agent session, or only the one `--user` names, prints each user's outcome, and maps the results to an exit code. */
+async function runCommand(environment: Environment, _args: string[], email: string | undefined): Promise<number> {
+    const chosen: Chosen | Refused = email === undefined ? { seams: {}, only: undefined } : await chosenUser(environment, email);
+    if ("refused" in chosen) return refused(chosen);
+    const runs = await runAll(environment, chosen.seams, chosen.only);
+    for (const run of runs) printRun(run);
+    return runExitCode(runs, chosen.only);
+}
+
+/** Opens the stores to find the user `--user` names, handing them on to the run, or closes them and gives the refusal or the error. */
+async function chosenUser(environment: Environment, email: string): Promise<Chosen | Refused> {
+    const stores = await openStores(parseDbSettings(environment));
+    const mine = await storesFor(stores, email).catch(async (error: unknown) => closedThenThrown(stores, error));
+    if ("refused" in mine) await stores.close();
+    return "refused" in mine ? mine : { seams: { openStores: async () => stores }, only: mine.userId };
+}
+
+/** Closes the stores, then fails with the error that stopped their use. */
+async function closedThenThrown(stores: Stores, error: unknown): Promise<never> {
+    await stores.close();
+    throw error;
+}
+
+/** Prints why the `--user` email was refused, giving exit code 1. */
+function refused(refusal: Refused): number {
+    console.error(refusal.refused);
+    return 1;
+}
+
+/** Prints one user's line, then their summary when they ran, or why they failed on standard error. */
+function printRun(run: UserRun): void {
+    console.log(runLine(run));
+    if ("report" in run && run.report.summary) console.log(run.report.summary);
+    if ("failed" in run) console.error(`myjobbot: ${run.failed}`);
+}
+
+/** Re-scores one job at once from the command line, for user 1 or the one `--user` names, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */
+async function rescoreCommand(environment: Environment, [ats, jobId]: string[], email: string | undefined): Promise<number> {
     if (!ats || !jobId) return usage();
     const stores = await openStores(parseDbSettings(environment));
     try {
-        return await rescoreWith(environment, stores, { ats, jobId });
+        const mine = await storesFor(stores, email);
+        return "refused" in mine ? refused(mine) : await rescoreWith(environment, mine, { ats, jobId });
     } finally {
         await stores.close();
     }
 }
 
 /** Opens a re-score against open stores and records its run, printing each step as it happens, or that one is already running; closes its page renderer afterward. */
-async function rescoreWith(environment: Environment, stores: Stores, key: JobKey): Promise<number> {
+async function rescoreWith(environment: Environment, stores: UserStores, key: JobKey): Promise<number> {
     const opened = await openRescore(environment, stores, (line, elapsedMs) => console.log(consoleLine(line, elapsedMs)));
     try {
         const begun = await opened.begin(key);
@@ -76,7 +125,7 @@ function printed(line: string, code: number): number {
 /** Copies an old SQLite database into the configured MariaDB database once, printing the row counts. */
 async function importCommand(environment: Environment, [path]: string[]): Promise<number> {
     if (!path) return usage();
-    const report = await importSqlite(path, parseDbSettings(environment));
+    const report = await importSqlite(path, parseDbSettings(environment), OWNER_ID);
     console.log(`imported jobs ${report.jobs}, verdicts ${report.verdicts}, api_calls ${report.api_calls}, hidden ${report.hidden}`);
     return 0;
 }

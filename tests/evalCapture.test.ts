@@ -30,7 +30,7 @@ async function captureSetup() {
 
 function input(overrides: Record<string, unknown> = {}) {
     const dates = asScoredDates({ earliestSeen: before(19 * DAY + 6 * 3_600_000), capturedAt: CAPTURED, scoredAt: before(7 * DAY), ghostThresholdDays: 15 });
-    return { source: { ats: "greenhouse", jobId: "4012345" }, title: "Senior Engineer", company: "Acme", payload: PAYLOAD, dates, verdict: verdict(), read: "details" as const, descriptionFoundAt: null, profile: "p1", tags: ["remote"], ...overrides };
+    return { source: { ats: "greenhouse", jobId: "4012345" }, title: "Senior Engineer", company: "Acme", payload: PAYLOAD, dates, verdict: verdict(), read: "details" as const, descriptionFoundAt: null, profile: "p1", tags: ["remote"], userId: 1, ...overrides };
 }
 
 test("a job's age as scored is counted in whole days from when it was first seen to its score, as a run counts it", () => {

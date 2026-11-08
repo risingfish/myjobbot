@@ -90,7 +90,7 @@ The container runs as uid 1000. If your server user has a different uid, run
 add `extra_hosts: ["llm.home.arpa:192.168.1.50"]` to the service in `compose.yaml`.
 
 The container start checks for `data/config.json` and `data/resume.md` and stops without either,
-even once a resume is uploaded on the Settings page; any Markdown file will do as `resume.md` then.
+even once a resume is uploaded on the Settings page; any Markdown file will do as `resume.md` then. The file is user 1's resume only; every other user uploads their own.
 Running from a checkout instead, see [Docker development mode](developing.md#docker-development-mode).
 
 ## Account settings
@@ -214,3 +214,15 @@ Secret. Then make the first admin once:
 ```bash
 kubectl exec -it deploy/myjobbot-web -- npm start -- account init you@example.com
 ```
+
+## Upgrading to per-user data
+
+The release that gives each account its own data (feature 027) moves every job's score, marks and
+source into a per-user table, gives them, the scoring history, re-score runs and the Gmail
+connection to user 1, and only then drops the old columns. Back up the database before deploying
+it. The steps run once on the first start; if one fails partway, restore the backup and start
+again rather than re-running on the half-moved database.
+
+[Upgrading to accounts and per-user data](upgrade-to-accounts.md) is the runbook: the checks
+before, the backup, the deploy, creating the first user with `account init`, the counts that show
+every job moved, and the rollback.
