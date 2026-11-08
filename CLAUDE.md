@@ -54,6 +54,13 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 
 ## Conventions
 
+- Follow the SOLID principles at all times (constitution Principle VI, owner decision 2026-11-08):
+  one responsibility per module, class and function, never unrelated jobs grouped in one file or
+  interface; new variants added through a registry or interface, not per-variant branches; every
+  implementation of an interface honours its shared contract; callers depend on narrow interfaces,
+  and containers hold stores, not operations; decisions take their dependencies, so they can be
+  unit-tested. SOLID is checked in every review: specs, plans, task lists, analyses (each
+  `/speckit-*` step) and every code review, where a breach is a finding like any other.
 - Every function and method in `src/` and `web/` gets a succinct one-line `/** … */` doc comment
   stating its purpose: what it is for, not how it works, as a full sentence. Write it with
   the function and update it when the purpose changes. Tests stay uncommented.

@@ -84,6 +84,28 @@ Spec-kit feature directories MUST live in `docs/specs/NNN-name/`, never `./specs
 
 Rationale: one documentation root for the project.
 
+### VI. SOLID design, always
+
+All code MUST follow the SOLID principles at all times (owner decision, 2026-11-08):
+- **Single responsibility**: a module, class or function has one job. Unrelated jobs are not
+  grouped in one file or one interface, even when they touch the same data.
+- **Open/closed**: a new variant (a way of signing in, a job source, a store) is added beside the
+  existing ones, through a registry or interface, not by editing per-variant branches.
+- **Liskov substitution**: every implementation of an interface (Kysely and memory stores, source
+  modules, ways of signing in) honours the same contract; the shared contract tests prove it.
+- **Interface segregation**: callers depend on the narrow interface they use (`Pick<…>`, a bound
+  store), not on a container with unrelated members; a container holds stores, not operations.
+- **Dependency inversion**: decisions depend on interfaces and are handed their dependencies (stores,
+  clocks, HTTP, mail), so they can be unit-tested with in-memory implementations.
+
+SOLID is part of every review: every spec, plan and task list (`/speckit-specify`, `/speckit-plan`,
+`/speckit-tasks`, `/speckit-analyze`), and every code review of a change. A plan's Constitution
+Check names how its design meets each principle, and an analysis reports a breach as it would any
+other principle.
+
+Rationale: code organised by responsibility can be read, tested and changed one part at a time;
+grouping unrelated jobs makes every later change touch code it has nothing to do with.
+
 ## Quality Gates
 
 - `.claude/hooks/habit-hooks-file.sh` (PostToolUse) checks every `.ts`/`.tsx` file Claude writes.
@@ -105,7 +127,7 @@ Rationale: one documentation root for the project.
 ## Development Workflow
 
 - Features go through spec-kit: specify, clarify, plan, tasks, analyze, implement. Every plan
-  has a Constitution Check against Principles I–V.
+  has a Constitution Check against Principles I–VI.
 - **Sittings.** A task list groups its tasks into numbered sittings. A sitting:
   - may span several turns
   - is worked in the main checkout, on the feature branch, with the Docker stack stopped
@@ -157,4 +179,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.6.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-07
+**Version**: 2.7.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-08

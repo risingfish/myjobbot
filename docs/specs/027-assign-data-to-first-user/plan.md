@@ -56,7 +56,7 @@ added to `verdicts` and `rescore_runs`. Gmail's two tables are re-keyed by user.
 
 ## Constitution Check
 
-Checked against constitution **2.6.0**.
+Checked against constitution **2.7.0**.
 
 | Principle | Status |
 |---|---|
@@ -65,6 +65,7 @@ Checked against constitution **2.6.0**.
 | III. Purpose comments | ✅ |
 | IV. Libraries their way | ✅ The migration uses Kysely's schema builder and `insertInto().expression(selectFrom…)` for the copy, with `sql` only for `tinyint`. No new dependency. |
 | V. docs/specs | ✅ |
+| VI. SOLID | ✅ Single responsibility: one job per module (research R14); the posting, the user's view, retention, run selection, run wording and each migration change are separate. Open/closed: per-user scoping is added by binding stores, not by branching callers on a user. Liskov: Kysely and memory stores pass the same contracts (`userJobContract` and the rest). Interface segregation: `Stores` is a container only; callers take `UserStores` or a bound store, and cross-user operations sit on their owning store. Dependency inversion: `usersToRun`, `runLines`, `ownsResumeFile` and the budget checks are pure and take their inputs. |
 
 **Stack**: stopped for all four sittings. S1 adds a migration, S3 changes the run, and S2 and S4
 change server code and stores, so none of them is UI-only work.
