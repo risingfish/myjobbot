@@ -136,9 +136,6 @@ Still to come: a step-by-step trace of how each job was categorized, an email di
 ratings.
 
 ## License
-
-Copyright (C) 2026 Zachary Feuerborn
-
 myjobbot is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License, version 3 only (`GPL-3.0-only`), as published by the Free Software
 Foundation. It is distributed WITHOUT ANY WARRANTY. See [LICENSE](LICENSE) for the full text.
