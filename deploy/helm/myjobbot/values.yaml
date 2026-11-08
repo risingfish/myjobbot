@@ -64,8 +64,11 @@ web:
     # the hosts above, and https:// unless it is localhost. Empty: https://<first ingress host> with
     # ingress TLS, http://<first ingress host> without, or http://localhost:<port> with no ingress.
     baseUrl: ""
-    # How many proxies in front add to X-Forwarded-For, for the per-address sign-in limits. Empty: 1
-    # with the ingress, 0 without (every client then shares one limit).
+    # How many proxies in front of the web pod append to X-Forwarded-For, the ingress included. The
+    # sign-in limits count clients by the address this many entries from the right. Empty: 1 with
+    # the ingress, 0 without. Add one for each extra appending proxy (Cloudflare, an HTTP-mode load
+    # balancer); a TCP pass-through (MetalLB) adds none. Too high lets a client forge its address;
+    # too low makes clients share one limit. Check: the Account tab's Sign-ins list shows your IP.
     trustedProxies: ""
     resources: {}
     nodeSelector: {}
