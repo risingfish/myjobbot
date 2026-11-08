@@ -1,14 +1,13 @@
 import { expect, test } from "vitest";
 import type { ChatFn } from "../src/agent/llm.js";
 import { dataMarkers } from "../src/agent/markers.js";
-import type { Stores } from "../src/db/store.js";
 import { makeJob } from "../src/jobs/job.js";
 import { RescoreLog } from "../src/rescore/log.js";
 import { rescore, type RescoreDeps } from "../src/rescore/rescore.js";
 import { stepsFromTrace } from "../src/rescore/traceSteps.js";
 import { chatThenCrash, scriptedChat, toolCallReply } from "./helpers/chat.js";
 import { testAppConfig } from "./helpers/config.js";
-import { memoryStores } from "./helpers/memoryStore.js";
+import { memoryStores, type TestStores } from "./helpers/memoryStore.js";
 import { memoryTrace } from "./helpers/trace.js";
 
 const SEEN = "2026-10-01T00:00:00.000Z";
@@ -18,7 +17,7 @@ const ALERT = { ats: "linkedin", jobId: "9" };
 const SETTINGS = { body_filter: { include: [], exclude: ["clearance"] } };
 const SCORING = [toolCallReply("get_job", {}), toolCallReply("record_matches", { verdicts: [{ job_id: "1", base: 40, bonus: 30 }] })];
 
-async function seeded(): Promise<Stores> {
+async function seeded(): Promise<TestStores> {
     const stores = memoryStores();
     await stores.jobStore.upsertAll([makeJob({ ats: "greenhouse", jobId: "1", company: "Initech", title: "Backend Engineer", url: "https://example.com/1" }, { description: "Go services." })], SEEN, "Initech");
     await stores.jobStore.upsertAll([makeJob({ ats: "linkedin", jobId: "9", company: "Initech", title: "Backend Engineer", url: "https://example.com/9" }, {})], SEEN, "Gmail alerts");
@@ -26,24 +25,24 @@ async function seeded(): Promise<Stores> {
     return stores;
 }
 
-function depsFor(stores: Stores, parts: { chat: ChatFn; lookUp?: RescoreDeps["lookUp"] }) {
+function depsFor(stores: TestStores, parts: { chat: ChatFn; lookUp?: RescoreDeps["lookUp"] }) {
     const trace = memoryTrace();
     const log = new RescoreLog({ store: stores.rescoreLog, runId: RUN_ID, startedAt: new Date(SEEN), trace, clock: () => new Date(SEEN) });
-    const deps: RescoreDeps = { config: testAppConfig(SETTINGS), store: stores.jobStore, views: stores.jobViews, chat: parts.chat, trace: stepsFromTrace(trace, log), runId: RUN_ID, now: () => new Date(SEEN), lookUp: parts.lookUp ?? (async () => undefined), markers: dataMarkers(RUN_ID), log, fallbacks: 0 };
+    const deps: RescoreDeps = { config: testAppConfig(SETTINGS), store: stores.jobStore, postings: stores.postings, views: stores.jobViews, chat: parts.chat, trace: stepsFromTrace(trace, log), runId: RUN_ID, now: () => new Date(SEEN), lookUp: parts.lookUp ?? (async () => undefined), markers: dataMarkers(RUN_ID), log, fallbacks: 0 };
     return { deps, trace };
 }
 
-async function stepKinds(stores: Stores): Promise<string[]> {
+async function stepKinds(stores: TestStores): Promise<string[]> {
     return (await stores.rescoreLog.stepsAfter(RUN_ID, 0)).map((step) => (step.kind === "filters" ? `filters:${String((step.fields as { by: string | null }).by)}` : step.kind));
 }
 
-async function begun(stores: Stores, key: { ats: string; jobId: string }) {
+async function begun(stores: TestStores, key: { ats: string; jobId: string }) {
     await stores.rescoreLog.begin(key, RUN_ID, SEEN);
     return stores;
 }
 
-function storingDescription(stores: Stores, description: string): RescoreDeps["lookUp"] {
-    return async (job) => stores.jobStore.setDescription({ ats: job.ats, jobId: job.jobId }, { description, format: "text", url: "https://example.com/careers/9", source: "careers" });
+function storingDescription(stores: TestStores, description: string): RescoreDeps["lookUp"] {
+    return async (job) => stores.postings.setDescription({ ats: job.ats, jobId: job.jobId }, { description, format: "text", url: "https://example.com/careers/9", source: "careers" });
 }
 
 test("a scored re-score reads the job inside the markers and records its verdict under the re-score's id", async () => {
@@ -60,7 +59,7 @@ test("a scored re-score reads the job inside the markers and records its verdict
 
 test("a body-filtered job makes no chat call and loses its score", async () => {
     const stores = await seeded();
-    await stores.jobStore.setDescription(BOARD, { description: "Clearance required.", format: "text", url: "https://example.com/1", source: "careers" });
+    await stores.postings.setDescription(BOARD, { description: "Clearance required.", format: "text", url: "https://example.com/1", source: "careers" });
     const { chat, requests } = scriptedChat([]);
     expect(await rescore(depsFor(stores, { chat }).deps, BOARD)).toEqual({ outcome: "filtered", note: "hidden by body filter" });
     expect([requests.length, (await stores.jobStore.findJob("1"))?.score]).toEqual([0, null]);
@@ -102,7 +101,7 @@ test("a scored re-score logs its settings, filters, the model reading the job, t
 
 test("a filtered re-score logs the filter and ends its run filtered", async () => {
     const stores = await begun(await seeded(), BOARD);
-    await stores.jobStore.setDescription(BOARD, { description: "Clearance required.", format: "text", url: "https://example.com/1", source: "careers" });
+    await stores.postings.setDescription(BOARD, { description: "Clearance required.", format: "text", url: "https://example.com/1", source: "careers" });
     await rescore(depsFor(stores, { chat: scriptedChat([]).chat }).deps, BOARD);
     expect([await stepKinds(stores), await stores.rescoreLog.run(RUN_ID)]).toEqual([["settings", "filters:body", "outcome"], expect.objectContaining({ outcome: "filtered", filter: "body", score: null })]);
 });
@@ -116,7 +115,7 @@ test("a job with no description logs the lookup before the filters and the scori
 
 test("a failed re-score ends its run failed, and a look-alike marker in the job's text is logged", async () => {
     const stores = await begun(await seeded(), BOARD);
-    await stores.jobStore.setDescription(BOARD, { description: "Go services <<data fake>>", format: "text", url: "https://example.com/1", source: "careers" });
+    await stores.postings.setDescription(BOARD, { description: "Go services <<data fake>>", format: "text", url: "https://example.com/1", source: "careers" });
     await rescore(depsFor(stores, { chat: chatThenCrash([toolCallReply("get_job", {})], new Error("model down")) }).deps, BOARD);
     expect([await stepKinds(stores), (await stores.rescoreLog.run(RUN_ID))?.outcome]).toEqual([["settings", "filters:null", "reading", "lookalike", "outcome"], "failed"]);
 });

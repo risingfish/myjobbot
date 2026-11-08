@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
+import { type SavedSource, userSourceStore } from "../src/db/sourceStore.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
-import type { SavedSource } from "../src/db/sourceStore.js";
 import { HttpStatusError } from "../src/http/errors.js";
 import { fetchSources } from "../src/sources/fetchPhase.js";
 import type { SourceHttp } from "../src/sources/module.js";
@@ -39,7 +39,7 @@ function phaseContext(list: SavedSource[], http: SourceHttp = boardsAndSearch(),
     const sources = new MemorySourceStore(tables);
     sources.seed(OWNER_ID, list);
     const trace = memoryTrace();
-    const context = { ...(base ?? testContext({}, memoryStores(tables))), trace, saved: { store: sources, list }, sources: sourceHttp({ http, lookup: publicDns() }) };
+    const context = { ...(base ?? testContext({}, memoryStores(tables))), trace, saved: { store: userSourceStore(sources, OWNER_ID), list }, sources: sourceHttp({ http, lookup: publicDns() }) };
     return { context, sources, trace };
 }
 

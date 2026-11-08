@@ -40,3 +40,20 @@ export interface ResumeStore {
     profile(userId: number): Promise<ResumeProfile | null>;
     saveProfile(userId: number, profile: ResumeProfile): Promise<void>;
 }
+
+export interface UserResumeStore {
+    currentResume(): Promise<Resume | null>;
+    saveResume(upload: ResumeUpload): Promise<Resume>;
+    profile(): Promise<ResumeProfile | null>;
+    saveProfile(profile: ResumeProfile): Promise<void>;
+}
+
+/** Gives one user's resume and profile, every call made for that user. */
+export function userResumeStore(store: ResumeStore, userId: number): UserResumeStore {
+    return {
+        currentResume: () => store.currentResume(userId),
+        saveResume: (upload) => store.saveResume(userId, upload),
+        profile: () => store.profile(userId),
+        saveProfile: (profile) => store.saveProfile(userId, profile),
+    };
+}

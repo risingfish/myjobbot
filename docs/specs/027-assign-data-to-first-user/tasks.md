@@ -62,7 +62,7 @@ It never changes what user 1 sees (FR-018).
 
 ## Phase 1: Setup
 
-- [ ] T001 Stop the stack (`docker compose stop`, no `docker:watch`). Create `.specify/sitting-in-progress` naming S1. Run `npm run check` and `npm run check:db` on `027-assign-data-to-first-user`, and write the counts into the ledger's baseline row below.
+- [X] T001 Stop the stack (`docker compose stop`, no `docker:watch`). Create `.specify/sitting-in-progress` naming S1. Run `npm run check` and `npm run check:db` on `027-assign-data-to-first-user`, and write the counts into the ledger's baseline row below.
 
 ---
 
@@ -75,7 +75,7 @@ caller on user 1.
 
 ### Tests (S1)
 
-- [ ] T002 [US1] Write an integration test (1), `tests/integration/userJobsMigration.test.ts`.
+- [X] T002 [US1] Write an integration test (1), `tests/integration/userJobsMigration.test.ts`.
   - **Setup**: migrate a database to `019_session_details` (`migrateBefore`). Seed three jobs: one
     scored, one hidden, one applied, each with a `source` and `source_id` from a `user_sources`
     row. Add their verdicts, one re-score run, and a Gmail connection and alert state. Then apply
@@ -105,7 +105,7 @@ caller on user 1.
     `jobs.applied`, `applied_on` or `source_id`, stop before `023` (a filtered `MIGRATIONS`) and read
     through `withTables`.
   - Add `user_jobs` to `TABLES` in `tests/helpers/testDb.ts`, before `jobs`.
-- [ ] T003 [P] [US1] Add `tests/helpers/userJobContract.ts`. Register `userJobContract(make)` in `tests/storeContract.test.ts` and `userJobStrictCases(make)` in `tests/integration/storeContract.test.ts`.
+- [X] T003 [P] [US1] Add `tests/helpers/userJobContract.ts`. Register `userJobContract(make)` in `tests/storeContract.test.ts` and `userJobStrictCases(make)` in `tests/integration/storeContract.test.ts`.
 
   Unit cases (10, every case on memory):
   - user 2's `jobViews` lists none of user 1's jobs
@@ -123,11 +123,11 @@ caller on user 1.
   - two users upserting the same posting at once give one posting and two views
   - `rescoreLog.begin` for the same job by two users both start, while a second `begin` by one user is refused
   - `postings.prune` never deletes a posting another user still has
-- [ ] T004 [P] [US1] Write a unit test (1), `tests/forUser.test.ts`. `memoryStores().forUser(2)` binds `jobStore`, `jobViews`, `gmail`, `alerts`, `rescoreLog`, `sources`, `searchSettings` and `resume` to user 2, and passes `companies`, `careers`, `apiCalls`, `postings`, `sourcePlans` and the account stores through as the same objects.
+- [X] T004 [P] [US1] Write a unit test (1), `tests/forUser.test.ts`. `memoryStores().forUser(2)` binds `jobStore`, `jobViews`, `gmail`, `alerts`, `rescoreLog`, `sources`, `searchSettings` and `resume` to user 2, and passes `companies`, `careers`, `apiCalls`, `postings`, `sourcePlans` and the account stores through as the same objects.
 
 ### Implementation (S1)
 
-- [ ] T005 [US1] Create four migration steps, one change each (R11), and list them in order in `src/db/migrations/index.ts`.
+- [X] T005 [US1] Create four migration steps, one change each (R11), and list them in order in `src/db/migrations/index.ts`.
   - **Rules**: Kysely's schema and query builders only, with data steps typed with `db.withTables<…>()` under `Kysely<unknown>`. `sql` is only for `tinyint` and table options.
   1. **`src/db/migrations/020_user_jobs.ts`**:
      - Make sure user 1 exists (insert `{ id: 1, name: "owner", created_at }`, doing nothing on a duplicate).
@@ -146,12 +146,12 @@ caller on user 1.
   4. **`023_jobs_without_user_columns.ts`**: drop FK `jobs_source_fk`, then indexes `jobs_source` and `jobs_by_source`, then `source_id`, `scored_at`, `score`, `base_score`, `bonus_score`, `reasons`, `gaps`, `hidden`, `applied` and `applied_on` from `jobs`, with any other index on them.
 
   T002 passes.
-- [ ] T006 [US1] Update the schema:
+- [X] T006 [US1] Update the schema:
   - `src/db/schema/jobs.ts`: `JobsTable` drops the moved columns; add `UserJobsTable` (with `source` and `source_id`); `VerdictsTable.user_id`
   - `src/db/schema/rescore.ts`: `RescoreRunsTable.user_id`
   - `src/db/schema/gmail.ts`: `id` becomes `user_id`
   - `src/db/schema.ts`: add `user_jobs: UserJobsTable`
-- [ ] T007 [US1] Bind the Kysely job stores to a user: `KyselyJobStore(db, userId)` and `KyselyJobViews(db, userId)`. Move the posting half of `upsertAll` (the old-format read and the upsert into `jobs`) into `src/db/kysely/postingWrites.ts`, an internal helper that `KyselyJobStore` calls inside its own transaction. It has no interface of its own and nothing else calls it. That keeps `jobStore.ts` under 200 lines. `PostingStore` (T008) remains the one public owner of posting operations.
+- [X] T007 [US1] Bind the Kysely job stores to a user: `KyselyJobStore(db, userId)` and `KyselyJobViews(db, userId)`. Move the posting half of `upsertAll` (the old-format read and the upsert into `jobs`) into `src/db/kysely/postingWrites.ts`, an internal helper that `KyselyJobStore` calls inside its own transaction. It has no interface of its own and nothing else calls it. That keeps `jobStore.ts` under 200 lines. `PostingStore` (T008) remains the one public owner of posting operations.
   - **`upsertAll`**: one transaction, in this order (R7):
     1. Read the stored `description_format` of the incoming keys.
     2. Write the postings to `jobs`, no longer refreshing `jobs.source`, and keeping an existing non-null description over an incoming null (`description`, `description_format`, `description_source`, `description_url`).
@@ -166,7 +166,7 @@ caller on user 1.
     - every `JobViews` method; `scoredFrom`'s source filter reads `user_jobs.source`
     - `fromSource` and `outsideSource` (in `jobStore.ts`) read `user_jobs.source` and `source_id`
   - **Removed from `JobStore`**: `setDescription`, `flagInjection`, `linkUnlinkedJobs`, `earliestSeen` and `pruneLastSeenBefore`. They work on the shared posting, so they move to `PostingStore` (T008, R14). `JobStore` is the user's view only.
-- [ ] T008 [P] [US1] Create the shared `PostingStore` (R14): the interface in `src/db/postingStore.ts`, Kysely in `src/db/kysely/postingStore.ts`. It owns the posting and its lifecycle:
+- [X] T008 [P] [US1] Create the shared `PostingStore` (R14): the interface in `src/db/postingStore.ts`, Kysely in `src/db/kysely/postingStore.ts`. It owns the posting and its lifecycle:
   - `known(keys)`: for each key, whether the posting exists and whether it has a description
   - `setDescription(key, found)`: writes the posting and clears `scored_at` on every user's view of it, as today
   - `flagInjection`, `linkUnlinkedJobs` and `earliestSeen` (which reads `jobs.first_seen`), moved from `KyselyJobStore`
@@ -176,12 +176,12 @@ caller on user 1.
     3. delete postings no view points at
 
   Its contract cases (the moved `descriptionContract` and injection cases, plus T003's prune cases) reach it through `stores.postings`.
-- [ ] T009 [P] [US1] Bind the other per-user stores:
+- [X] T009 [P] [US1] Bind the other per-user stores:
   - `KyselyRescoreLogStore(db, userId)`: runs carry `user_id`, `begin` locks the user's `user_jobs` row, and reads filter by user.
   - `KyselyGmailStore(db, userId)` and `KyselyAlertStore(db, userId)`: key by `user_id` instead of `ROW`.
   - `src/db/kysely/sourceStore.ts`: `replaceSource` relabels `user_jobs.source` for that user. Removing a source relies on `user_jobs.source_id`'s `ON DELETE SET NULL`. Create `SourcePlans` (interface `src/db/sourcePlans.ts`, Kysely `src/db/kysely/sourcePlans.ts`) with one method, `scheduledOnForAll()`: every user's scheduled sources that are on, for the budget checks. It is read-only and is not part of `SourceStore`.
   - `src/db/kysely/accountStore.ts`: add `userIds()`, every `users.id` in order.
-- [ ] T010 [US1] Split what the store factory returns (R4, R14):
+- [X] T010 [US1] Split what the store factory returns (R4, R14):
   - **`Stores`** (`src/db/store.ts`, `src/db/kysely/stores.ts`): a container of the shared stores only (`companies`, `careers`, `apiCalls`, `accounts`, `postings`, `sourcePlans` and the sign-in stores; never the per-call `SourceStore`, `SearchSettingsStore` or `ResumeStore`, whose methods take any user), plus `forUser(userId): UserStores` and `close`. It has no operations of its own.
   - **`UserStores`**: composed in a new `src/db/userStores.ts` (which holds nothing else): the bound stores, plus the shared ones passed through.
   - **Bound wrappers, each beside its own store**:
@@ -193,14 +193,14 @@ caller on user 1.
   - **Contracts**: `searchSettingsContract`, `sourceContract` and `resumeContract` reach those stores through `forUser(n)`.
 
   There is no default user. T004 passes.
-- [ ] T011 [US1] Rebuild the memory stores to match.
+- [X] T011 [US1] Rebuild the memory stores to match.
   - `Tables` gains `userJobs`, and jobs keep only posting fields.
   - The bound memory stores take a `userId`: `memoryStore.ts` (split the job store into `memoryJobStore.ts`), `memoryJobViews.ts`, `memoryRescoreLog.ts`, `memoryGmailStore.ts` and `memoryAlertStore.ts`.
   - The memory `PostingStore` goes in `tests/helpers/memoryPostingStore.ts`. The memory `SourcePlans` goes in `tests/helpers/memorySourcePlans.ts`, reading the memory source rows, and `userIds` goes in `memoryAccountStore.ts`, each with its owner.
   - `memoryStores()` returns shared stores plus `forUser`, and a new `ownerStores()` returns `memoryStores().forUser(1)`.
 
   T003's unit cases pass on memory.
-- [ ] T012 [US1] Hand every caller user 1's `UserStores`, changing no behaviour. Afterwards nothing reads a per-user store from `Stores` (it no longer has them), and S1 typechecks.
+- [X] T012 [US1] Hand every caller user 1's `UserStores`, changing no behaviour. Afterwards nothing reads a per-user store from `Stores` (it no longer has them), and S1 typechecks.
   - **The run**: `src/app/run.ts`, `runSettings.ts` and `beforeAgent.ts` take the user's `UserStores` from their caller. `runOnce(environment, seams, userId)` builds `stores.forUser(userId)`, and `src/cli.ts` passes `OWNER_ID`, so `src/app/` never names it. `pruneOldJobs` calls `stores.postings.prune` instead of the removed `pruneLastSeenBefore`.
   - **Posting operations** (R14): the six callers of `setDescription`, `flagInjection`, `linkUnlinkedJobs` and `earliestSeen` use `postings` instead of the job store:
     - `src/careers/lookUpJob.ts` (`deps.postings`)
@@ -233,9 +233,29 @@ caller on user 1.
   - the `web/` files listed above, which S2 removes
 
   Confirm with `grep -rn OWNER_ID src web`.
-- [ ] T013 [US1] Update the tests that seed jobs or Gmail rows directly to the per-user tables, changing set-up only. Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
+- [X] T013 [US1] Update the tests that seed jobs or Gmail rows directly to the per-user tables, changing set-up only. Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
 
 **Checkpoint**: The data is per user, and the app and run are unchanged for user 1.
+
+**S1 as done (2026-11-08)**, where it differed from the tasks above:
+- `SourcePlans.scheduledOnForAll()` (T009) and `AccountStore.userIds()` (T010) are not built yet:
+  nothing calls them until S2 (T022) and S3 (T028), and knip reports exports with no caller. Each
+  arrives in the sitting that first calls it.
+- T003 is two files, `userJobContract.ts` (postings, views, marks, lookups) and `userDataContract.ts`
+  (re-score runs, Gmail, the JSearch count, clean-up), sharing `withTwoUsers` and a `seedUsers`
+  hook (a no-op on memory; real `users` rows on MariaDB).
+- Tests that only need user 1 get `TestStores` (`memoryStores()` and `withOwner(storesOver(db))`):
+  the shared stores merged with user 1's, plus `forUser`; the memory per-call stores are on
+  `memory` so tests can seed them. Production `Stores` still has no per-user members.
+- Integration tests that store jobs empty the tables with `emptyWithOwner`, since `user_jobs` needs
+  its user to exist, as it always does in a real database after step 020.
+- The two tests that migrate an empty database through every step get 120 s: the four new steps
+  push them past the 30 s default on the MariaDB server.
+- `runOnce(environment, seams, userId)` takes the user from `cli.ts`, so `src/app/` never names
+  `OWNER_ID`. `src/evals/command.ts` names user 1 until S4 adds `--user`.
+- The careers lookup's dependency `jobs: JobStore` became `postings: PostingStore` (its only uses
+  were `setDescription` and `flagInjection`); the one-job sessions (re-score, evals) take
+  `postings` for the job's age and the injection flag.
 
 ---
 
@@ -394,8 +414,9 @@ is what makes other users useful.
 
 | Point | Unit | Integration | UI |
 |---|---|---|---|
-| Baseline (T001) | | | |
+| Baseline (T001, 2026-11-08) | 1108 | 84 (83 + 1 skipped) | 78 |
 | S1 planned | +11 (T003 ×10, T004) | +4 (T002, T003 strict ×3) | +0 |
+| Actual after S1 (2026-11-08) | 1120 (+12: the two contracts' 11 memory cases, `forUser`) | 89 (+5: 2 migration, 3 strict) | 78 (+0) |
 | S2 planned | +11 (T015 ×7, T016, T017 ×3) | +0 | +0 |
 | S3 planned | +7 (T026 ×4, T027 ×3) | +0 | +0 |
 | S4 planned | +3 (T033) | +0 | +0 |

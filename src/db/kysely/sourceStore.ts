@@ -90,7 +90,7 @@ async function replaceSource(trx: Transaction<Database>, key: SourceKey, fields:
     await trx.updateTable("user_sources").set(unfetched).where("id", "=", key.id).where("user_id", "=", key.userId).where("target", "!=", fields.target).execute();
     await trx.updateTable("user_sources").set(fields).where("id", "=", key.id).where("user_id", "=", key.userId).execute();
     const owned = trx.selectFrom("user_sources").select("id").where("id", "=", key.id).where("user_id", "=", key.userId);
-    await trx.updateTable("jobs").set({ source: fields.name }).where("source_id", "in", owned).execute();
+    await trx.updateTable("user_jobs").set({ source: fields.name }).where("user_id", "=", key.userId).where("source_id", "in", owned).execute();
     return key.id;
 }
 

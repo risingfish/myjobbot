@@ -16,7 +16,7 @@ async function fetchAndFinishRun(dataDir: string) {
     const score: [string, object] = ["record_matches", { verdicts: [{ job_id: "1000", base: 10, bonus: 0 }] }];
     const replies = [toolCallsReply(["next_jobs", { source: "Stripe" }], score, ["finish", { summary: "done" }])];
     const http = fakeBoard(greenhouseBoard(["Backend Engineer"]));
-    return runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) });
+    return runOnce({ ...TEST_ENV, MYJOBBOT_DATA_DIR: dataDir }, { chat: scriptedChat(replies).chat, http, lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) }, 1);
 }
 
 function fileFor(dir: string, runId: string, suffix: string): string {

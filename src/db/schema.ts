@@ -1,13 +1,14 @@
 import type { AccountCodesTable, AuthAttemptsTable, AuthChallengesTable, EmailTokensTable, HardwareKeysTable, RecoveryCodesTable, SecurityEventsTable, SessionsTable, SignInMethodsTable } from "./schema/accounts.js";
 import type { ApiCallsTable, CareersAuditTable } from "./schema/careers.js";
 import type { GmailAlertStateTable, GmailConnectionTable } from "./schema/gmail.js";
-import type { CompaniesTable, JobsTable, VerdictsTable } from "./schema/jobs.js";
+import type { CompaniesTable, JobsTable, UserJobsTable, VerdictsTable } from "./schema/jobs.js";
 import type { RescoreRunsTable, RescoreStepsTable } from "./schema/rescore.js";
 import type { ResumeProfilesTable, ResumesTable } from "./schema/resume.js";
 import type { UserSettingsTable, UserSourcesTable, UsersTable } from "./schema/users.js";
 
 export interface Database {
     jobs: JobsTable;
+    user_jobs: UserJobsTable;
     companies: CompaniesTable;
     verdicts: VerdictsTable;
     api_calls: ApiCallsTable;

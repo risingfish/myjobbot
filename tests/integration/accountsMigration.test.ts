@@ -1,7 +1,6 @@
 import { sql } from "kysely";
 import { expect, test } from "vitest";
-import { migrateToLatest } from "../../src/db/migrate.js";
-import { columnTypes, migrateBefore } from "../helpers/migrationSteps.js";
+import { columnTypes, migrateBefore, migrateUpTo } from "../helpers/migrationSteps.js";
 import { testDatabase } from "../helpers/testDb.js";
 
 const NEW_TABLES = ["account_codes", "auth_attempts", "auth_challenges", "email_tokens", "hardware_keys", "recovery_codes", "security_events", "sessions", "sign_in_methods"];
@@ -30,7 +29,7 @@ test("steps 018 and 019 add accounts to users and the sign-in tables, every one 
     const db = await testDatabase();
     try {
         await migrateBefore(db, "018");
-        expect(await migrateToLatest(db)).toEqual(["018_accounts", "019_session_details"]);
+        expect(await migrateUpTo(db, "020")).toEqual(["018_accounts", "019_session_details"]);
         expect(await columnTypes(db, "users", ["email", "email_key", "is_admin"])).toEqual(USER_TYPES);
         expect(await columnTypes(db, "sign_in_methods", ["totp_last_step"])).toEqual(BIGINTS);
         expect(await columnTypes(db, "hardware_keys", ["counter", "credential_id", "name"])).toEqual(KEY_TYPES);

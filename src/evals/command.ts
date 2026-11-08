@@ -2,6 +2,7 @@ import type { Trace } from "../agent/trace.js";
 import { settingsForRun } from "../app/runSettings.js";
 import { loadConfig, type Environment } from "../config/load.js";
 import { envSchema } from "../config/schema.js";
+import { OWNER_ID } from "../db/searchSettingsStore.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
 import { execFileSync } from "node:child_process";
@@ -49,12 +50,13 @@ async function checkCommand({ files, port }: Context): Promise<number> {
 
 /** Captures stored jobs as cases, with the resume and settings resolved as a run resolves them, and closes the database after. */
 async function captureCommand({ environment, files, port }: Context, args: string[]): Promise<number> {
-    const stores = await openStores(parseDbSettings(environment));
+    const opened = await openStores(parseDbSettings(environment));
     try {
+        const stores = opened.forUser(OWNER_ID);
         const config = await settingsForRun(loadConfig(environment), stores, UNTRACED);
         return await captureCases(args, { stores, files, port, config, now: () => new Date(), print: (line) => console.log(line) });
     } finally {
-        await stores.close();
+        await opened.close();
     }
 }
 
@@ -77,7 +79,7 @@ function seriesCommand(context: Context, args: string[]): Promise<number> {
 async function withRunDeps({ environment, files, port }: Context, use: (deps: RunDeps) => Promise<number>): Promise<number> {
     const stores = await openStores(parseDbSettings(environment));
     try {
-        const config = await settingsForRun(loadConfig(environment), stores, UNTRACED);
+        const config = await settingsForRun(loadConfig(environment), stores.forUser(OWNER_ID), UNTRACED);
         const chatFor = (model: string) => (log: Trace) => createChat({ ...config.env, LLM_MODEL: model }, log);
         return await use({ files, experiments: new ExperimentFiles(port), config, chatFor, now: () => new Date(), random: Math.random, gitCommit, print: (line) => console.log(line) });
     } finally {

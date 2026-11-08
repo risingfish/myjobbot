@@ -18,5 +18,9 @@ import { descriptionBoosts } from "./016_description_boosts.js";
 import { resume } from "./017_resume.js";
 import { accounts } from "./018_accounts.js";
 import { sessionDetails } from "./019_session_details.js";
+import { userJobs } from "./020_user_jobs.js";
+import { historyOwners } from "./021_history_owners.js";
+import { gmailByUser } from "./022_gmail_by_user.js";
+import { jobsWithoutUserColumns } from "./023_jobs_without_user_columns.js";
 
-export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied, "009_companies": companies, "010_fold_careers_pages": foldCareersPages, "011_user_settings": userSettings, "012_user_sources": userSources, "013_move_sources": moveSources, "014_rescore_runs": rescoreRuns, "015_lookup_indexes": lookupIndexes, "016_description_boosts": descriptionBoosts, "017_resume": resume, "018_accounts": accounts, "019_session_details": sessionDetails };
+export const MIGRATIONS: Record<string, Migration> = { "001_initial": initial, "002_gmail": gmail, "003_gmail_alerts": gmailAlerts, "004_careers_lookup": careersLookup, "005_page_sources": pageSources, "006_injection_flag": injectionFlag, "007_description_format": descriptionFormat, "008_applied": applied, "009_companies": companies, "010_fold_careers_pages": foldCareersPages, "011_user_settings": userSettings, "012_user_sources": userSources, "013_move_sources": moveSources, "014_rescore_runs": rescoreRuns, "015_lookup_indexes": lookupIndexes, "016_description_boosts": descriptionBoosts, "017_resume": resume, "018_accounts": accounts, "019_session_details": sessionDetails, "020_user_jobs": userJobs, "021_history_owners": historyOwners, "022_gmail_by_user": gmailByUser, "023_jobs_without_user_columns": jobsWithoutUserColumns };

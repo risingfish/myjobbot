@@ -6,9 +6,9 @@ import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
 import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
-import { OWNER_ID } from "../db/searchSettingsStore.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { Stores } from "../db/store.js";
+import type { UserStores } from "../db/userStores.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { BrowserPort } from "../careers/browser.js";
@@ -37,7 +37,7 @@ interface RunSeams {
 
 interface RunParts {
     logs: RunLogs;
-    stores: Stores;
+    stores: UserStores;
     key: SecretKeyStatus;
 }
 
@@ -57,14 +57,15 @@ const NO_SOURCES = "no sources are on";
 
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
-/** Runs one full agent session end to end: loads config and the stored search settings, runs the agent, and prunes stale jobs afterward. */
-export async function runOnce(environment: Environment, seams: RunSeams = {}): Promise<RunReport> {
+/** Runs one full agent session end to end for one user: loads config and their stored search settings, runs the agent, and prunes stale jobs afterward. */
+export async function runOnce(environment: Environment, seams: RunSeams, userId: number): Promise<RunReport> {
     const loaded = loadConfig(environment);
     const logs = openRunLogs(loaded);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
-        const config = await settingsForRun(loaded, stores, logs.trace);
-        return await runWithStores(config, seams, { logs, stores, key: secretKeyStatus(environment) });
+        const mine = stores.forUser(userId);
+        const config = await settingsForRun(loaded, mine, logs.trace);
+        return await runWithStores(config, seams, { logs, stores: mine, key: secretKeyStatus(environment) });
     } finally {
         await stores.close();
     }
@@ -73,7 +74,7 @@ export async function runOnce(environment: Environment, seams: RunSeams = {}): P
 /** Links stored jobs to their companies, runs the agent, or finishes at once when no source is on, against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
-    const saved = await parts.stores.sources.list(OWNER_ID);
+    const saved = await parts.stores.sources.list();
     const context = buildContext(config, seams, { ...parts, chat, saved, gmail: await gmailState(parts.stores.gmail, parts.key), clients: runClients(config, seams) });
     try {
         if (sourcesOn(context).length === 0) return { status: "finished", reason: NO_SOURCES, steps: 0, runId: parts.logs.runId, summary: NO_SOURCES };
@@ -99,7 +100,7 @@ async function afterAgent(context: ToolContext): Promise<void> {
 /** Deletes jobs and API call records older than the configured retention window. */
 async function pruneOldJobs(context: ToolContext): Promise<void> {
     const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
-    await context.store.pruneLastSeenBefore(cutoff);
+    await context.postings.prune(cutoff);
     await context.apiCalls.pruneBefore(cutoff);
     await context.careers.store.pruneAuditBefore(cutoff);
 }
@@ -126,8 +127,8 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, g
 }
 
 /** Gives the stores the tools read and write jobs, API calls and company records through. */
-function storeParts(stores: Stores): Pick<ToolContext, "store" | "apiCalls" | "companies"> {
-    return { store: stores.jobStore, apiCalls: stores.apiCalls, companies: stores.companies };
+function storeParts(stores: UserStores): Pick<ToolContext, "store" | "postings" | "apiCalls" | "companies"> {
+    return { store: stores.jobStore, postings: stores.postings, apiCalls: stores.apiCalls, companies: stores.companies };
 }
 
 /** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */

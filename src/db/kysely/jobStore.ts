@@ -1,188 +1,106 @@
-import { sql, type ExpressionBuilder, type Kysely } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 import { z } from "zod";
 import { companyKeys } from "../../companies/keys.js";
-import { normalizeCompany } from "../../jobs/company.js";
 import type { Job } from "../../jobs/job.js";
 import { sourceParts, type JobSource } from "../jobSource.js";
-import { jobRowSchema, toParams, type JobFields } from "../rows.js";
+import { jobRowSchema } from "../rows.js";
 import type { Database } from "../schema.js";
-import { linkJobs, recordCompanies, touchCompanyOf } from "./companyRows.js";
-import type { FoundDescription, JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
-
-const REFRESHED: Array<keyof JobFields | "company_id" | "source_id"> = ["company_id", "source_id", "company", "source", "title", "normalized_title", "location", "department", "team", "workplace_type", "is_remote", "compensation", "url", "posted_at", "description", "description_format", "description_source", "description_url", "publisher", "requirements", "skills", "preferred_skills"];
+import { recordCompanies, touchCompanyOf } from "./companyRows.js";
+import { keyOf, plainPostings, upsertPostings, type PostingBatch } from "./postingWrites.js";
+import { fromSource, outsideSource, ROW_COLUMNS, userJobsOf } from "./userJobsQuery.js";
+import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
 
 const jobRows = z.array(jobRowSchema);
 
-interface Batch {
-    seen: string;
-    source: JobSource;
-    companyIds: Map<string, number>;
-}
-
-/** Builds the insert row for a fetched job, first and last seen at the fetch time and linked to its company's record and saved source. */
-function insertRow(job: Job, batch: Batch) {
-    const { label, id } = sourceParts(batch.source);
-    const { seen: _seen, ...fields } = toParams(job, batch.seen, label);
-    return { ...fields, company_id: batch.companyIds.get(normalizeCompany(job.company)) ?? null, source_id: id, first_seen: batch.seen, last_seen: batch.seen };
-}
-
-/** Narrows a query to the jobs from one source: its saved source when it has one, otherwise its label. */
-function fromSource(eb: ExpressionBuilder<Database, "jobs">, source: JobSource) {
-    const { label, id } = sourceParts(source);
-    return id === null ? eb("source", "=", label) : eb("source_id", "=", id);
-}
-
-/** Narrows a query to the jobs from anywhere but one source. */
-function outsideSource(eb: ExpressionBuilder<Database, "jobs">, source: JobSource) {
-    const { label, id } = sourceParts(source);
-    return id === null ? eb("source", "!=", label) : eb.or([eb("source_id", "is", null), eb("source_id", "!=", id)]);
-}
-
-/** Keeps a job's scoring time, or clears it the first time its description turns from plain text (or no format) to Markdown; it must precede the format's own update, which MariaDB applies in order. */
-function scoredAtAfterRefresh(eb: ExpressionBuilder<Database, "jobs">) {
-    const wasPlain = eb.or([eb("description_format", "=", "text"), eb("description_format", "is", null)]);
-    const becomesMarkdown = eb(sql<string>`VALUES(description_format)`, "=", "markdown");
-    return eb
-        .case()
-        .when(eb.and([wasPlain, becomesMarkdown]))
-        .then(null)
-        .else(eb.ref("scored_at"))
-        .end();
-}
-
 export class KyselyJobStore implements JobStore {
-    constructor(private readonly db: Kysely<Database>) {}
+    constructor(
+        private readonly db: Kysely<Database>,
+        private readonly userId: number,
+    ) {}
 
-    /** Records the companies of fetched jobs, then inserts or refreshes the jobs linked to them and to their source, keeping first seen, score, the hidden flag and the applied mark of known jobs, and marking a job for scoring again when its description first becomes Markdown. */
+    /** Records the companies of fetched jobs, then stores their postings and the user's view of each, keeping first seen, score and marks of known jobs, and marking a job for scoring again, for every user, when its description first becomes Markdown. */
     async upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void> {
         if (jobs.length === 0) return;
         const companyIds = await recordCompanies(this.db, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
-        const refresh = Object.fromEntries([...REFRESHED, "last_seen"].map((column) => [column, sql`VALUES(${sql.ref(column)})`]));
-        await this.db
-            .insertInto("jobs")
-            .values(jobs.map((job) => insertRow(job, { seen, source, companyIds })))
-            .onDuplicateKeyUpdate((eb) => ({ scored_at: scoredAtAfterRefresh(eb), ...refresh }))
-            .execute();
+        await this.db.transaction().execute(async (trx) => {
+            const plain = await plainPostings(trx, jobs);
+            await upsertPostings(trx, { jobs, seen, source, companyIds });
+            await this.upsertViews(trx, { jobs, seen, source, companyIds });
+            const turned = jobs.filter((job) => job.description !== null && job.descriptionFormat === "markdown" && plain.has(keyOf({ ats: job.ats, jobId: job.jobId })));
+            for (const job of turned) await trx.updateTable("user_jobs").set({ scored_at: null }).where("ats", "=", job.ats).where("job_id", "=", job.jobId).execute();
+        });
     }
 
-    /** Returns jobs from a source that were last seen in a given fetch and still need scoring. */
+    /** Returns the user's jobs from a source that were last seen in a given fetch and still need scoring. */
     async unscoredSince(source: JobSource, seen: string): Promise<JobRow[]> {
-        const rows = await this.unscoredQuery(source).where("last_seen", "=", seen).execute();
+        const rows = await this.unscoredQuery(source).where("u.last_seen", "=", seen).execute();
         return jobRows.parse(rows);
     }
 
-    /** Returns every unscored job for a source, regardless of when it was last seen. */
+    /** Returns every unscored job the user has from a source, regardless of when it was last seen. */
     async unscoredForSource(source: JobSource): Promise<JobRow[]> {
         return jobRows.parse(await this.unscoredQuery(source).execute());
     }
 
-    /** Lists company names with company-board postings for a title, so JSearch duplicates can be skipped; alert jobs don't count as board postings. */
+    /** Lists company names among the user's company-board postings with a title, so JSearch duplicates can be skipped; alert jobs don't count as board postings. */
     async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        const rows = await this.db.selectFrom("jobs").select("company").distinct().where("ats", "not in", ["jsearch", "linkedin"]).where("normalized_title", "=", normalizedTitle).execute();
+        const rows = await userJobsOf(this.db, this.userId).select("j.company").distinct().where("j.ats", "not in", ["jsearch", "linkedin"]).where("j.normalized_title", "=", normalizedTitle).execute();
         return rows.map((row) => row.company);
     }
 
-    /** Lists company names with a job of this title from any source but one, so alert copies of known jobs can be skipped. */
+    /** Lists company names among the user's jobs with this title from any source but one, so alert copies of known jobs can be skipped. */
     async companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]> {
-        const rows = await this.db
-            .selectFrom("jobs")
-            .select("company")
+        const rows = await userJobsOf(this.db, this.userId)
+            .select("j.company")
             .distinct()
             .where((eb) => outsideSource(eb, source))
-            .where("normalized_title", "=", normalizedTitle)
+            .where("j.normalized_title", "=", normalizedTitle)
             .execute();
         return rows.map((row) => row.company);
     }
 
-    /** Moves only the last-seen time of known jobs, and their companies' found date, so seeing them again never erases their details or score. */
+    /** Moves only the last-seen time of known jobs, the posting's and the user's, and their companies' found date, so seeing them again never erases their details or score. */
     async markSeen(keys: JobKey[], seen: string): Promise<void> {
         for (const key of keys) {
             await this.db.updateTable("jobs").set({ last_seen: seen }).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
+            await this.db.updateTable("user_jobs").set({ last_seen: seen }).where("user_id", "=", this.userId).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
             await touchCompanyOf(this.db, key, seen);
         }
     }
 
-    /** Links every job without a company record to one, oldest first so each new record is named after its oldest job, and returns how many were linked. */
-    async linkUnlinkedJobs(): Promise<number> {
-        const rows = await this.db.selectFrom("jobs").select(["ats", "job_id", "company", "first_seen", "last_seen"]).where("company_id", "is", null).orderBy("first_seen").orderBy("ats").orderBy("job_id").execute();
-        const companyIds = await recordCompanies(this.db, companyKeys(rows.map((row) => ({ name: row.company, firstSeen: row.first_seen, lastSeen: row.last_seen }))));
-        return linkJobs(
-            this.db,
-            rows.map((row) => ({ ats: row.ats, job_id: row.job_id, company_key: normalizeCompany(row.company) })),
-            companyIds,
-        );
-    }
-
-    /** Stores a description found outside the job's own source, with where it came from, and marks the job for scoring again. */
-    async setDescription(key: JobKey, found: FoundDescription): Promise<void> {
-        const values = { description: found.description, description_format: found.format, description_source: found.source, description_url: found.url, scored_at: null };
-        await this.db.updateTable("jobs").set(values).where("ats", "=", key.ats).where("job_id", "=", key.jobId).execute();
-    }
-
-    /** Records when a job's outside text was first found carrying a forged data marker, on every job with that id, keeping the first time. */
-    async flagInjection(jobId: string, at: string): Promise<void> {
-        await this.db.updateTable("jobs").set({ injection_seen_at: at }).where("job_id", "=", jobId).where("injection_seen_at", "is", null).execute();
-    }
-
-    /** Stores a job's score on every job with that id and appends each to the verdict history; reports whether any existed. */
+    /** Stores the user's score of a job on each of their jobs with that id and appends each to their verdict history; reports whether they had any. */
     async recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean> {
         const values = verdictValues(verdict, stamp);
         return this.db.transaction().execute(async (trx) => {
-            const matches = await trx.selectFrom("jobs").select("ats").where("job_id", "=", verdict.job_id).forUpdate().execute();
+            const matches = await trx.selectFrom("user_jobs").select("ats").where("user_id", "=", this.userId).where("job_id", "=", verdict.job_id).forUpdate().execute();
             if (matches.length === 0) return false;
-            await trx.updateTable("jobs").set(values).where("job_id", "=", verdict.job_id).execute();
-            const history = matches.map(({ ats }) => ({ ...values, ats, job_id: verdict.job_id, run_id: stamp.runId }));
+            await trx.updateTable("user_jobs").set(values).where("user_id", "=", this.userId).where("job_id", "=", verdict.job_id).execute();
+            const history = matches.map(({ ats }) => ({ ...values, user_id: this.userId, ats, job_id: verdict.job_id, run_id: stamp.runId }));
             await trx.insertInto("verdicts").values(history).execute();
             return true;
         });
     }
 
-    /** Returns the oldest date seen for a company and title across reposts, so ghost detection counts true age. */
-    async earliestSeen(company: string, normalizedTitle: string): Promise<string> {
-        const earliest = sql<string | null>`LEAST(MIN(first_seen), COALESCE(MIN(posted_at), MIN(first_seen)))`.as("earliest");
-        const row = await this.db.selectFrom("jobs").select(earliest).where("company", "=", company).where("normalized_title", "=", normalizedTitle).executeTakeFirst();
-        return z.object({ earliest: z.string() }).parse(row).earliest;
-    }
-
-    /** Deletes jobs not seen since a cutoff, except those marked applied, and their now-orphaned verdicts and re-score runs (whose steps go with them); returns the number of jobs removed. */
-    async pruneLastSeenBefore(cutoff: string): Promise<number> {
-        const result = await this.db.deleteFrom("jobs").where("last_seen", "<", cutoff).where("applied", "=", 0).executeTakeFirst();
-        await this.deleteOrphansOf("verdicts");
-        await this.deleteOrphansOf("rescore_runs");
-        return Number(result.numDeletedRows);
-    }
-
-    /** Deletes a table's rows whose job no longer exists. */
-    private async deleteOrphansOf(table: "verdicts" | "rescore_runs"): Promise<void> {
-        await this.db
-            .deleteFrom(table)
-            .where(({ not, exists, selectFrom }) =>
-                not(
-                    exists(
-                        selectFrom("jobs")
-                            .select(sql`1`.as("one"))
-                            .whereRef("jobs.ats", "=", `${table}.ats`)
-                            .whereRef("jobs.job_id", "=", `${table}.job_id`),
-                    ),
-                ),
-            )
-            .execute();
-    }
-
-    /** Looks up a single job by its id, or null if no such job is stored. */
+    /** Looks up one of the user's jobs by its id, or null if they have no such job. */
     async findJob(jobId: string): Promise<JobRow | null> {
-        const row = await this.db.selectFrom("jobs").selectAll().where("job_id", "=", jobId).limit(1).executeTakeFirst();
+        const row = await userJobsOf(this.db, this.userId).select([...ROW_COLUMNS]).where("j.job_id", "=", jobId).limit(1).executeTakeFirst();
         return row === undefined ? null : jobRowSchema.parse(row);
     }
 
-    /** Starts the query for a source's unscored jobs, ordered by job id. */
+    /** Stores the user's view of each fetched posting, the source that found it and when, keeping their first seen, score and marks. */
+    private async upsertViews(trx: Transaction<Database>, batch: PostingBatch): Promise<void> {
+        const { label, id } = sourceParts(batch.source);
+        const rows = batch.jobs.map((job) => ({ user_id: this.userId, ats: job.ats, job_id: job.jobId, source_id: id, source: label, first_seen: batch.seen, last_seen: batch.seen }));
+        await trx.insertInto("user_jobs").values(rows).onDuplicateKeyUpdate({ source_id: id, source: label, last_seen: batch.seen }).execute();
+    }
+
+    /** Starts the query for the user's unscored jobs from a source, ordered by job id. */
     private unscoredQuery(source: JobSource) {
-        return this.db
-            .selectFrom("jobs")
-            .selectAll()
+        return userJobsOf(this.db, this.userId)
+            .select([...ROW_COLUMNS])
             .where((eb) => fromSource(eb, source))
-            .where("scored_at", "is", null)
-            .orderBy("job_id");
+            .where("u.scored_at", "is", null)
+            .orderBy("j.job_id");
     }
 }
 

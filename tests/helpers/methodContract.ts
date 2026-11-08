@@ -1,11 +1,11 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
 
-export function withOwner(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
+export function withOwner(makeStores: MakeStores, check: (stores: TestStores) => Promise<void>) {
     return async () => {
         const stores = await makeStores();
         try {
@@ -17,13 +17,13 @@ export function withOwner(makeStores: MakeStores, check: (stores: Stores) => Pro
     };
 }
 
-async function passwordSet({ methods }: Stores): Promise<void> {
+async function passwordSet({ methods }: TestStores): Promise<void> {
     await methods.setPassword(OWNER_ID, "new", NOW);
     expect(await methods.passwordDigest(OWNER_ID)).toBe("new");
     expect(await methods.passwordDigest(99)).toBeNull();
 }
 
-async function fourWaysListed({ methods }: Stores): Promise<void> {
+async function fourWaysListed({ methods }: TestStores): Promise<void> {
     expect(await methods.methods(OWNER_ID)).toEqual([
         { kind: "password", enabled: true, ready: true },
         { kind: "email_link", enabled: false, ready: false },
@@ -34,7 +34,7 @@ async function fourWaysListed({ methods }: Stores): Promise<void> {
     expect((await methods.methods(OWNER_ID))[3]).toEqual({ kind: "authenticator", enabled: true, ready: false });
 }
 
-async function lastWayKept({ methods }: Stores): Promise<void> {
+async function lastWayKept({ methods }: TestStores): Promise<void> {
     expect(await methods.setEnabled(OWNER_ID, { kind: "password", enabled: false, mailOn: true }, NOW)).toBe("last_way");
     expect(await methods.setEnabled(OWNER_ID, { kind: "email_link", enabled: true, mailOn: true }, NOW)).toBe("ok");
     expect(await methods.setEnabled(OWNER_ID, { kind: "password", enabled: false, mailOn: false }, NOW)).toBe("last_way");

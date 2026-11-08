@@ -1,8 +1,9 @@
+import type { PostingStore } from "../db/postingStore.js";
 import type { ChatFn } from "../agent/llm.js";
 import type { DataMarkers } from "../agent/markers.js";
 import type { Trace } from "../agent/trace.js";
 import type { Settings } from "../config/schema.js";
-import type { JobRow, JobStore } from "../db/store.js";
+import type { JobRow } from "../db/store.js";
 import type { CareersStore } from "../db/careersStore.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { HostLookup } from "./fetchPage.js";
@@ -26,7 +27,7 @@ export interface CareersParts {
     settings: Settings["careers_lookup"];
     chat: ChatFn;
     trace: Trace;
-    jobs: JobStore;
+    postings: PostingStore;
     runId: string;
     now: () => Date;
     http: JsonGetter;

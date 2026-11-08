@@ -6,7 +6,7 @@ import { migrateToLatest } from "../../src/db/migrate.js";
 import type { Database } from "../../src/db/schema.js";
 import { describeConnectionError, parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 
-export const TABLES = ["rescore_steps", "rescore_runs", "verdicts", "jobs", "user_sources", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "security_events", "auth_attempts", "auth_challenges", "email_tokens", "account_codes", "sessions", "recovery_codes", "hardware_keys", "sign_in_methods", "resume_profiles", "resumes", "user_settings", "users"] as const;
+export const TABLES = ["rescore_steps", "rescore_runs", "verdicts", "user_jobs", "jobs", "user_sources", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "security_events", "auth_attempts", "auth_challenges", "email_tokens", "account_codes", "sessions", "recovery_codes", "hardware_keys", "sign_in_methods", "resume_profiles", "resumes", "user_settings", "users"] as const;
 
 const TEST_KEYS = ["HOST", "PORT", "USER", "PASSWORD"] as const;
 
@@ -45,4 +45,9 @@ export async function connectTestDb(): Promise<Kysely<Database>> {
 
 export async function emptyTables(db: Kysely<Database>): Promise<void> {
     for (const table of TABLES) await db.deleteFrom(table).execute();
+}
+
+export async function emptyWithOwner(db: Kysely<Database>): Promise<void> {
+    await emptyTables(db);
+    await db.insertInto("users").values({ id: 1, name: "owner", created_at: "2026-11-08T00:00:00.000Z" }).execute();
 }

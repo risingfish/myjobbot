@@ -35,6 +35,6 @@ test("pruning a job removes its verdict history", async () => {
     const { context, views } = scoredContext();
     await nextPage(context, "Stripe");
     await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 50, bonus: 10 }] });
-    await context.store.pruneLastSeenBefore("2099-01-01T00:00:00.000Z");
+    await context.postings.prune("2099-01-01T00:00:00.000Z");
     expect(await views.countVerdicts()).toBe(0);
 });

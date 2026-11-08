@@ -1,6 +1,5 @@
 import { ALERTS_SOURCE } from "../../src/gmail/alertJobs/source.js";
 import { randomBytes } from "node:crypto";
-import type { Stores } from "../../src/db/store.js";
 import { readAlerts, recordAlertRead, type AlertDeps, type AlertSummary } from "../../src/gmail/alertFetch.js";
 import type { LookupDeps } from "../../src/gmail/alertLookupStep.js";
 import type { JsonGetter } from "../../src/http/client.js";
@@ -8,7 +7,7 @@ import { testAppSettings } from "./config.js";
 import type { AlertEmail } from "../../src/gmail/alertJobs/parse.js";
 import { seal } from "../../src/gmail/seal.js";
 import { fakeImap, type FakeImap, type FakeImapScript } from "./fakeImap.js";
-import { memoryStores } from "./memoryStore.js";
+import { memoryStores, type TestStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";
 
 export const KEY = randomBytes(32);
@@ -17,17 +16,17 @@ export const SENDERS = ["jobalerts-noreply@linkedin.com", "jobs-noreply@linkedin
 
 export interface AlertSetup {
     deps: AlertDeps;
-    stores: Stores;
+    stores: TestStores;
     fake: FakeImap;
     trace: ReturnType<typeof memoryTrace>;
 }
 
-export async function connectedStores(stores: Stores = memoryStores()): Promise<Stores> {
+export async function connectedStores(stores: TestStores = memoryStores()): Promise<TestStores> {
     await stores.gmail.connected({ email: "me@example.com", sealedPassword: seal("apppassword", "app_password", KEY) }, NOW.toISOString());
     return stores;
 }
 
-export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = {}, stores?: Stores): Promise<AlertSetup> {
+export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = {}, stores?: TestStores): Promise<AlertSetup> {
     const opened = stores ?? (await connectedStores());
     const fake = fakeImap({ mailbox: { uidValidity: 7, emails }, ...script });
     const trace = memoryTrace();

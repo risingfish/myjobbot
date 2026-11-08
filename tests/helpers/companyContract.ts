@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { Stores } from "../../src/db/store.js";
+import type { TestStores } from "./memoryStore.js";
 import { makeJob, type Job } from "../../src/jobs/job.js";
 import { searchSteps } from "./companySearchSteps.js";
 import type { MakeStores } from "./storeContract.js";
@@ -38,7 +38,7 @@ export interface SearchOutcome {
 }
 
 export interface Contract {
-    stores: Stores;
+    stores: TestStores;
     hooks: CompanyHooks;
 }
 
@@ -78,11 +78,11 @@ async function backfillsUnlinkedJobs({ stores, hooks }: Contract): Promise<void>
         { jobId: "old_2", company: "BETA LABS", firstSeen: DAY_ONE, lastSeen: DAY_THREE },
         { jobId: "old_1", company: "Beta Labs Inc", firstSeen: LONG_AGO, lastSeen: DAY_ONE },
     ]);
-    expect(await stores.jobStore.linkUnlinkedJobs()).toBe(2);
+    expect(await stores.postings.linkUnlinkedJobs()).toBe(2);
     const beta = (await hooks.listCompanies()).find((company) => company.company_key === "beta labs");
     expect(beta).toMatchObject({ name: "Beta Labs Inc", created_date: LONG_AGO, last_found_date: DAY_THREE });
     expect((await hooks.jobLinks()).filter((link) => link.company_id === beta?.id).length).toBe(2);
-    expect(await stores.jobStore.linkUnlinkedJobs()).toBe(0);
+    expect(await stores.postings.linkUnlinkedJobs()).toBe(0);
 }
 
 async function lookupNeverTouchesBoardPages({ stores, hooks }: Contract): Promise<void> {
@@ -109,7 +109,7 @@ async function boardPagesWin({ stores, hooks }: Contract): Promise<void> {
 }
 
 async function keptThroughPruning({ stores, hooks }: Contract): Promise<void> {
-    await stores.jobStore.pruneLastSeenBefore("2027-01-01T00:00:00.000Z");
+    await stores.postings.prune("2027-01-01T00:00:00.000Z");
     expect([(await hooks.jobLinks()).length, (await hooks.listCompanies()).length]).toEqual([0, 2]);
 }
 

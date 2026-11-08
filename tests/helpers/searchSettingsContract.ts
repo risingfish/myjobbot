@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { OWNER_ID, type SearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID, type UserSearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import type { TestStores } from "./memoryStore.js";
 import type { MakeStores } from "./storeContract.js";
 
 export interface SearchSettingsHooks {
@@ -19,26 +20,27 @@ const DOCUMENT = {
     exclude_publishers: ["jobmesh.io"],
 };
 
-async function nothingStoredYet(store: SearchSettingsStore): Promise<void> {
-    expect(await store.load(OWNER_ID)).toBeNull();
+async function nothingStoredYet(store: UserSearchSettingsStore): Promise<void> {
+    expect(await store.load()).toBeNull();
 }
 
-async function savesFirst(store: SearchSettingsStore): Promise<void> {
-    await store.save(OWNER_ID, DOCUMENT, AT);
+async function savesFirst(store: UserSearchSettingsStore): Promise<void> {
+    await store.save(DOCUMENT, AT);
 }
 
-async function roundTripsExactly(store: SearchSettingsStore): Promise<void> {
-    expect(JSON.stringify(await store.load(OWNER_ID))).toBe(JSON.stringify(DOCUMENT));
+async function roundTripsExactly(store: UserSearchSettingsStore): Promise<void> {
+    expect(JSON.stringify(await store.load())).toBe(JSON.stringify(DOCUMENT));
 }
 
-async function savesWholePerUser(store: SearchSettingsStore, hooks: SearchSettingsHooks): Promise<void> {
-    await store.save(OWNER_ID, { match_threshold: 50 }, AT);
-    expect(await store.load(OWNER_ID)).toEqual({ match_threshold: 50 });
-    await expect(store.save(2, { match_threshold: 40 }, AT)).rejects.toThrow();
-    expect(await store.load(2)).toBeNull();
+async function savesWholePerUser(stores: TestStores, hooks: SearchSettingsHooks): Promise<void> {
+    const other = stores.forUser(2).searchSettings;
+    await stores.searchSettings.save({ match_threshold: 50 }, AT);
+    expect(await stores.searchSettings.load()).toEqual({ match_threshold: 50 });
+    await expect(other.save({ match_threshold: 40 }, AT)).rejects.toThrow();
+    expect(await other.load()).toBeNull();
     await hooks.seedUser(2);
-    await store.save(2, { match_threshold: 40 }, AT);
-    expect([await store.load(2), await store.load(OWNER_ID)]).toEqual([{ match_threshold: 40 }, { match_threshold: 50 }]);
+    await other.save({ match_threshold: 40 }, AT);
+    expect([await other.load(), await stores.searchSettings.load()]).toEqual([{ match_threshold: 40 }, { match_threshold: 50 }]);
 }
 
 export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHooks): void {
@@ -48,7 +50,7 @@ export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHo
         await savesFirst(stores.searchSettings);
         await roundTripsExactly(stores.searchSettings);
         expect(await hooks.owners()).toEqual([OWNER_ID]);
-        await savesWholePerUser(stores.searchSettings, hooks);
+        await savesWholePerUser(stores, hooks);
         await stores.close();
     });
 }

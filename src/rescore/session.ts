@@ -5,6 +5,7 @@ import type { Trace } from "../agent/trace.js";
 import { reportLookalike } from "../app/lookalikes.js";
 import type { AppConfig } from "../config/load.js";
 import type { Settings } from "../config/schema.js";
+import type { PostingStore } from "../db/postingStore.js";
 import type { JobKey, JobStore } from "../db/store.js";
 import type { RescoreLog } from "./log.js";
 import { oneJobStore } from "./oneJobStore.js";
@@ -17,6 +18,7 @@ const RESCORE_MAX_MINUTES = 3;
 interface SessionDeps {
     config: AppConfig;
     store: JobStore;
+    postings: PostingStore;
     key: JobKey;
     chat: ChatFn;
     trace: Trace;
@@ -33,7 +35,7 @@ export async function scoreOne(deps: SessionDeps): Promise<number | null> {
         saved = score;
         deps.log.step({ kind: "saved", fields: { score } });
     });
-    const context = { store, key: deps.key, config: deps.config.settings, now: deps.now, runId: deps.runId };
+    const context = { store, postings: deps.postings, key: deps.key, config: deps.config.settings, now: deps.now, runId: deps.runId };
     await runAgent(agentDeps(deps, context), rescoreMessages(deps.config, deps.markers));
     return saved;
 }
@@ -47,7 +49,7 @@ function agentDeps(deps: SessionDeps, context: RescoreToolContext): AgentDeps {
         settings: deps.config.settings,
         isFinished: () => context.store.recorded(),
         markers: deps.markers,
-        onLookalike: (hit) => reportLookalike({ store: context.store, trace: deps.trace, now: deps.now }, hit),
+        onLookalike: (hit) => reportLookalike({ postings: deps.postings, trace: deps.trace, now: deps.now }, hit),
     });
 }
 

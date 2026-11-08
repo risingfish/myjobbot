@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
 import type { AttemptKey } from "../../src/db/sessionStore.js";
-import type { Stores } from "../../src/db/store.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
@@ -11,7 +11,7 @@ function session(idDigest: string, at = NOW) {
     return { idDigest, userId: OWNER_ID, csrfDigest: `csrf-${idDigest}`, createdAt: at, lastUsedAt: at, verifiedAt: at, address: "direct", device: { ip: null, os: null, location: null } };
 }
 
-function withStores(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
+function withStores(makeStores: MakeStores, check: (stores: TestStores) => Promise<void>) {
     return async () => {
         const stores = await makeStores();
         try {
@@ -23,7 +23,7 @@ function withStores(makeStores: MakeStores, check: (stores: Stores) => Promise<v
     };
 }
 
-async function foundUntilExpiredOrEnded({ sessions }: Stores): Promise<void> {
+async function foundUntilExpiredOrEnded({ sessions }: TestStores): Promise<void> {
     await sessions.create(session("a"));
     expect(await sessions.find("a", "2026-12-05T09:00:00.000Z")).toMatchObject({ idDigest: "a", userId: OWNER_ID, csrfDigest: "csrf-a", endedAt: null });
     expect(await sessions.find("a", "2026-12-06T10:00:01.000Z")).toBeNull();
@@ -32,7 +32,7 @@ async function foundUntilExpiredOrEnded({ sessions }: Stores): Promise<void> {
     expect(await sessions.find("missing", NOW)).toBeNull();
 }
 
-async function endedOneOrAll({ sessions }: Stores): Promise<void> {
+async function endedOneOrAll({ sessions }: TestStores): Promise<void> {
     for (const id of ["a", "b", "c"]) await sessions.create(session(id));
     await sessions.end("a", NOW);
     expect(await sessions.find("a", NOW)).toBeNull();
@@ -42,13 +42,13 @@ async function endedOneOrAll({ sessions }: Stores): Promise<void> {
     expect(await sessions.find("b", NOW)).toBeNull();
 }
 
-async function csrfRebound({ sessions }: Stores): Promise<void> {
+async function csrfRebound({ sessions }: TestStores): Promise<void> {
     await sessions.create(session("a"));
     await sessions.rebindCsrf("a", "fresh");
     expect((await sessions.find("a", NOW))?.csrfDigest).toBe("fresh");
 }
 
-async function attemptsCountedWithinADay({ sessions }: Stores): Promise<void> {
+async function attemptsCountedWithinADay({ sessions }: TestStores): Promise<void> {
     const key: AttemptKey = { kind: "signin_fail", scope: "email", keyDigest: "k" };
     await sessions.recordAttempt(key, "2026-11-04T10:00:00.000Z");
     await sessions.recordAttempt(key, "2026-11-06T09:50:00.000Z");
@@ -59,7 +59,7 @@ async function attemptsCountedWithinADay({ sessions }: Stores): Promise<void> {
     expect(await sessions.countAttempts({ ...key, kind: "mail_request" }, "2026-11-01T00:00:00.000Z")).toBe(0);
 }
 
-async function oldSessionsPruned({ sessions }: Stores): Promise<void> {
+async function oldSessionsPruned({ sessions }: TestStores): Promise<void> {
     await sessions.create(session("ended-long-ago", "2026-09-01T00:00:00.000Z"));
     await sessions.end("ended-long-ago", "2026-09-02T00:00:00.000Z");
     await sessions.create(session("ended-recently", "2026-11-01T00:00:00.000Z"));
@@ -74,13 +74,13 @@ async function oldSessionsPruned({ sessions }: Stores): Promise<void> {
     expect(await sessions.find("live", NOW)).not.toBeNull();
 }
 
-async function verifiedAgain({ sessions }: Stores): Promise<void> {
+async function verifiedAgain({ sessions }: TestStores): Promise<void> {
     await sessions.create(session("a"));
     await sessions.setVerified("a", "2026-11-06T10:30:00.000Z");
     expect((await sessions.find("a", NOW))?.verifiedAt).toBe("2026-11-06T10:30:00.000Z");
 }
 
-async function activeListed({ sessions }: Stores): Promise<void> {
+async function activeListed({ sessions }: TestStores): Promise<void> {
     await sessions.create({ ...session("old", "2026-11-01T00:00:00.000Z"), device: { ip: "203.0.113.9", os: "macOS", location: "Seattle, WA, US" } });
     await sessions.create(session("new"));
     await sessions.create(session("ended"));

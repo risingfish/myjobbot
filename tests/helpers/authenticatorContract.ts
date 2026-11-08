@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
 import { withOwner } from "./methodContract.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
 
-async function authenticatorSavedAndRemoved({ methods, authenticators }: Stores): Promise<void> {
+async function authenticatorSavedAndRemoved({ methods, authenticators }: TestStores): Promise<void> {
     await authenticators.saveAuthenticator(OWNER_ID, { sealedSecret: "sealed-1", ready: false }, NOW);
     expect(await authenticators.authenticator(OWNER_ID)).toEqual({ sealedSecret: "sealed-1", enabled: true, ready: false });
     await authenticators.saveAuthenticator(OWNER_ID, { sealedSecret: "sealed-1", ready: true }, NOW);
@@ -18,7 +18,7 @@ async function authenticatorSavedAndRemoved({ methods, authenticators }: Stores)
     expect(await authenticators.removeAuthenticator(OWNER_ID, { mailOn: true }, NOW)).toBe("last_way");
 }
 
-async function stepsAcceptedInOrder({ authenticators }: Stores): Promise<void> {
+async function stepsAcceptedInOrder({ authenticators }: TestStores): Promise<void> {
     await authenticators.saveAuthenticator(OWNER_ID, { sealedSecret: "sealed", ready: true }, NOW);
     expect(await authenticators.acceptStep(OWNER_ID, 100)).toBe(true);
     expect([await authenticators.acceptStep(OWNER_ID, 100), await authenticators.acceptStep(OWNER_ID, 99)]).toEqual([false, false]);

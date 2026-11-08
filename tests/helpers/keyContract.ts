@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-07T10:00:00.000Z";
 const BLUE = { name: "Blue key", credentialId: "cred-blue", publicKey: "pk-blue", counter: 0, transports: ["usb"] };
 
-function withOwner(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
+function withOwner(makeStores: MakeStores, check: (stores: TestStores) => Promise<void>) {
     return async () => {
         const stores = await makeStores();
         try {
@@ -22,7 +22,7 @@ function minutesLater(minutes: number): string {
     return new Date(Date.parse(NOW) + minutes * 60 * 1000).toISOString();
 }
 
-async function namesAndCredentialsUnique({ keys }: Stores): Promise<void> {
+async function namesAndCredentialsUnique({ keys }: TestStores): Promise<void> {
     expect(await keys.addKey(OWNER_ID, BLUE, NOW)).toBe("ok");
     expect(await keys.addKey(OWNER_ID, { ...BLUE, credentialId: "cred-other" }, NOW)).toBe("name_taken");
     expect(await keys.addKey(OWNER_ID, { ...BLUE, name: "Red key" }, NOW)).toBe("credential_taken");
@@ -31,7 +31,7 @@ async function namesAndCredentialsUnique({ keys }: Stores): Promise<void> {
     expect(spent.filter((row) => row !== null)).toHaveLength(1);
 }
 
-async function keysListedAndCounted({ keys, methods }: Stores): Promise<void> {
+async function keysListedAndCounted({ keys, methods }: TestStores): Promise<void> {
     await keys.addKey(OWNER_ID, BLUE, NOW);
     expect(await keys.keys(OWNER_ID)).toEqual([{ id: expect.any(Number), name: "Blue key" }]);
     expect((await methods.methods(OWNER_ID))[2]).toEqual({ kind: "hardware_key", enabled: true, ready: true });
@@ -42,7 +42,7 @@ async function keysListedAndCounted({ keys, methods }: Stores): Promise<void> {
     expect(await keys.keyByCredential("nope")).toBeNull();
 }
 
-async function lastKeyRemoved({ keys, methods }: Stores): Promise<void> {
+async function lastKeyRemoved({ keys, methods }: TestStores): Promise<void> {
     await keys.addKey(OWNER_ID, BLUE, NOW);
     const [blue] = await keys.keys(OWNER_ID);
     await methods.setEnabled(OWNER_ID, { kind: "password", enabled: false, mailOn: true }, NOW);
@@ -54,7 +54,7 @@ async function lastKeyRemoved({ keys, methods }: Stores): Promise<void> {
     expect([await keys.keys(OWNER_ID), key?.ready, key?.enabled]).toEqual([[], false, false]);
 }
 
-async function challengesOnceWithinFiveMinutes({ keys }: Stores): Promise<void> {
+async function challengesOnceWithinFiveMinutes({ keys }: TestStores): Promise<void> {
     await keys.makeChallenge("a", { purpose: "register", userId: OWNER_ID }, NOW);
     await keys.makeChallenge("b", { purpose: "signin", userId: null }, NOW);
     expect(await keys.spendChallenge("a", "signin", minutesLater(1))).toBeNull();

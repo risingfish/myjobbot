@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import type { AppConfig } from "../config/load.js";
-import type { JobKey, JobRow, Stores } from "../db/store.js";
+import type { JobKey, JobRow } from "../db/store.js";
+import type { UserStores } from "../db/userStores.js";
 import { jobDetails } from "../tools/getJobDetails.js";
 import { asScoredDates, buildCase, profileOf } from "./capture.js";
 import type { EvalCase } from "./format.js";
@@ -14,7 +15,7 @@ const NOTE = "note: observed scores used the resume and preferences of their tim
 const MAX_RECENT = 200;
 
 export interface CaptureDeps {
-    stores: Pick<Stores, "jobStore" | "jobViews" | "careers">;
+    stores: Pick<UserStores, "jobStore" | "jobViews" | "careers" | "postings">;
     files: EvalFiles;
     port: FilePort;
     config: AppConfig;
@@ -74,8 +75,8 @@ async function captureOne(capture: Capture, key: JobKey): Promise<Outcome> {
 async function caseInput(capture: Capture, key: JobKey, row: JobRow) {
     const { stores, port, config } = capture.deps;
     const [verdict = null] = await stores.jobViews.jobVerdicts(key);
-    const payload = await jobDetails({ store: stores.jobStore, now: () => new Date(capture.capturedAt), config: config.settings }, key.jobId);
-    const earliestSeen = await stores.jobStore.earliestSeen(row.company, row.normalized_title);
+    const payload = await jobDetails({ store: stores.jobStore, postings: stores.postings, now: () => new Date(capture.capturedAt), config: config.settings }, key.jobId);
+    const earliestSeen = await stores.postings.earliestSeen(row.company, row.normalized_title);
     const dates = asScoredDates({ earliestSeen, capturedAt: capture.capturedAt, scoredAt: verdict?.scored_at ?? null, ghostThresholdDays: config.settings.ghost_threshold_days });
     const read = verdict === null ? ("unknown" as const) : observedRead(await traceOf(port, verdict.run_id), key.jobId);
     const descriptionFoundAt = row.description_source === "careers" ? await stores.careers.descriptionFoundAt(key) : null;

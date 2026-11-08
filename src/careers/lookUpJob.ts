@@ -1,10 +1,11 @@
+import type { PostingStore } from "../db/postingStore.js";
 import { runAgent, type AgentDeps } from "../agent/loop.js";
 import { describeError } from "../errors.js";
 import type { ChatFn } from "../agent/llm.js";
 import type { DataMarkers, Lookalike } from "../agent/markers.js";
 import { taggedTrace, type Trace } from "../agent/trace.js";
 import type { Settings } from "../config/schema.js";
-import type { JobStore } from "../db/store.js";
+
 import type { CareersStore } from "../db/careersStore.js";
 import type { Tool } from "../tools/tool.js";
 import type { PageFetchDeps } from "./fetchPage.js";
@@ -26,7 +27,7 @@ export interface LookupDeps {
     trace: Trace;
     settings: CareersSettings;
     pages: PageFetchDeps;
-    jobs: JobStore;
+    postings: PostingStore;
     careers: CareersStore;
     runId: string;
     now: () => Date;
@@ -92,7 +93,7 @@ function lookupTrace(deps: LookupDeps, job: SoughtJob): Trace {
 async function noteLookalike({ deps, trace, job }: { deps: LookupDeps; trace: Trace; job: SoughtJob }, hit: Lookalike): Promise<void> {
     trace.write({ type: "lookalike_removed", tool: hit.tool, job_id: job.jobId });
     try {
-        await deps.jobs.flagInjection(job.jobId, deps.now().toISOString());
+        await deps.postings.flagInjection(job.jobId, deps.now().toISOString());
     } catch (error) {
         trace.write({ type: "injection_flag_failed", tool: hit.tool, job_id: job.jobId, error: describeError(error) });
     }
@@ -103,7 +104,7 @@ async function recordOutcome(sinks: { deps: LookupDeps; audit: Audit; key: strin
     const { deps, audit } = sinks;
     const { job } = session;
     if (!outcome.found) return audit({ step: "finish", url: session.careersPage?.url ?? null, outcome: "failed", reason: outcome.reason, warning: true, detail: outcome.reason === "no_careers_page" ? session.resultUrls.join(" ") : null });
-    await deps.jobs.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, format: outcome.format, url: outcome.url, source: "careers" });
+    await deps.postings.setDescription({ ats: job.ats, jobId: job.jobId }, { description: outcome.description, format: outcome.format, url: outcome.url, source: "careers" });
     if (outcome.careersUrl !== null) await deps.careers.setLookupPage({ key: sinks.key, name: job.company, url: outcome.careersUrl }, deps.now().toISOString());
     await audit({ step: "finish", url: outcome.url, outcome: "found", reason: null });
 }

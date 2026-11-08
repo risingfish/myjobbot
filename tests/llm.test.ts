@@ -39,7 +39,7 @@ test("createChat returns the model's message and logs the raw response", async (
 test("runOnce writes each raw LLM response to the log directory", async () => {
     const logDir = mkdtempSync(join(tmpdir(), "myjobbot-log-"));
     const env = { ...(await fakeLlm()).env, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY), MYJOBBOT_LOG_DIR: logDir };
-    expect(await runOnce(env, { http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) })).toMatchObject({ status: "finished", steps: 1 });
+    expect(await runOnce(env, { http: fakeBoard(greenhouseBoard([])), lookup: publicDns(), openStores: async () => storesWithSettings(ONE_COMPANY) }, 1)).toMatchObject({ status: "finished", steps: 1 });
     const files = readdirSync(logDir).filter((file) => file.endsWith(".llm.jsonl"));
     expect(files).toHaveLength(1);
     const lines = readFileSync(join(logDir, files[0] ?? ""), "utf8")

@@ -36,5 +36,5 @@ function sameJob(left: JobRow, right: JobRow): boolean {
 
 /** Gathers the careers lookup's parts from the run's context. */
 function careersParts(context: ToolContext): CareersParts {
-    return { careers: context.careers, settings: context.config.careers_lookup, chat: context.chat, trace: context.trace, jobs: context.store, runId: context.runId, now: context.now, http: context.http, markers: context.markers };
+    return { careers: context.careers, settings: context.config.careers_lookup, chat: context.chat, trace: context.trace, postings: context.postings, runId: context.runId, now: context.now, http: context.http, markers: context.markers };
 }

@@ -1,6 +1,5 @@
-import type { Stores } from "../../src/db/store.js";
 import { makeJob } from "../../src/jobs/job.js";
-import { memoryStores } from "./memoryStore.js";
+import { memoryStores, type TestStores } from "./memoryStore.js";
 
 export const FIRST_PAGE = { offset: 0, limit: 100 };
 
@@ -18,7 +17,7 @@ export interface SeedJob {
     appliedOn?: string;
 }
 
-export async function seededStores(entries: SeedJob[]): Promise<Stores> {
+export async function seededStores(entries: SeedJob[]): Promise<TestStores> {
     const stores = memoryStores();
     for (const entry of entries) await stores.jobStore.upsertAll([seedJob(entry)], "2026-10-01T00:00:00.000Z", entry.source ?? "Stripe");
     const scored = entries.filter((entry) => entry.score !== undefined);

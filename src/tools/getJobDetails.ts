@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PostingStore } from "../db/postingStore.js";
 import type { JobRow, JobStore } from "../db/store.js";
 import { readableDescription } from "../descriptions/readable.js";
 import type { ToolContext } from "./context.js";
@@ -8,7 +9,7 @@ import { defineTool, type Tool } from "./tool.js";
 const MAX_DESCRIPTION_CHARS = 6000;
 const schema = z.object({ job_id: z.union([z.string(), z.number()]).transform(String) });
 
-type DetailsContext = { store: Pick<JobStore, "findJob" | "earliestSeen"> } & Pick<ToolContext, "now" | "config">;
+type DetailsContext = { store: Pick<JobStore, "findJob">; postings: Pick<PostingStore, "earliestSeen"> } & Pick<ToolContext, "now" | "config">;
 
 /** Builds the get_job_details tool: fetches one job's full description, requirements, and skills. */
 export function getJobDetailsTool(context: ToolContext): Tool {

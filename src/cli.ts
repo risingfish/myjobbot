@@ -6,7 +6,9 @@ import { runOnce } from "./app/run.js";
 import type { Environment } from "./config/load.js";
 import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
-import type { JobKey, Stores } from "./db/store.js";
+import { OWNER_ID } from "./db/searchSettingsStore.js";
+import type { JobKey } from "./db/store.js";
+import type { UserStores } from "./db/userStores.js";
 import { describeError } from "./errors.js";
 import { evalCommand } from "./evals/command.js";
 import { openRescore } from "./rescore/open.js";
@@ -35,7 +37,7 @@ function positional(command: Command): Command {
 
 /** Runs one agent session, prints its outcome, and maps the result to an exit code. */
 async function runCommand(environment: Environment): Promise<number> {
-    const report = await runOnce(environment);
+    const report = await runOnce(environment, {}, OWNER_ID);
     console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
     if (report.summary) console.log(report.summary);
     return report.status === "finished" ? 0 : 1;
@@ -46,14 +48,14 @@ async function rescoreCommand(environment: Environment, [ats, jobId]: string[]):
     if (!ats || !jobId) return usage();
     const stores = await openStores(parseDbSettings(environment));
     try {
-        return await rescoreWith(environment, stores, { ats, jobId });
+        return await rescoreWith(environment, stores.forUser(OWNER_ID), { ats, jobId });
     } finally {
         await stores.close();
     }
 }
 
 /** Opens a re-score against open stores and records its run, printing each step as it happens, or that one is already running; closes its page renderer afterward. */
-async function rescoreWith(environment: Environment, stores: Stores, key: JobKey): Promise<number> {
+async function rescoreWith(environment: Environment, stores: UserStores, key: JobKey): Promise<number> {
     const opened = await openRescore(environment, stores, (line, elapsedMs) => console.log(consoleLine(line, elapsedMs)));
     try {
         const begun = await opened.begin(key);
@@ -76,7 +78,7 @@ function printed(line: string, code: number): number {
 /** Copies an old SQLite database into the configured MariaDB database once, printing the row counts. */
 async function importCommand(environment: Environment, [path]: string[]): Promise<number> {
     if (!path) return usage();
-    const report = await importSqlite(path, parseDbSettings(environment));
+    const report = await importSqlite(path, parseDbSettings(environment), OWNER_ID);
     console.log(`imported jobs ${report.jobs}, verdicts ${report.verdicts}, api_calls ${report.api_calls}, hidden ${report.hidden}`);
     return 0;
 }

@@ -8,7 +8,8 @@ import { requireSession } from "./session.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
 import type { ResumeProfile } from "../../src/db/resumeStore.js";
 import type { Account } from "../../src/db/accountStore.js";
-import type { AlertStore, GmailStore, JobViews, Stores } from "../../src/db/store.js";
+import type { AlertStore, GmailStore, JobViews } from "../../src/db/store.js";
+import type { UserStores } from "../../src/db/userStores.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
@@ -30,7 +31,7 @@ interface UiState {
 }
 
 interface OpenStores {
-    stores: Stores;
+    stores: UserStores;
     key: SecretKeyStatus;
 }
 
@@ -61,7 +62,7 @@ function secretKey(): SecretKeyStatus {
 
 /** Returns the open stores and the sealing key without resolving any settings, for what must work before search settings are stored. */
 export async function getStores(): Promise<OpenStores> {
-    return { stores: await openedStores(), key: secretKey() };
+    return { stores: (await openedStores()).forUser(OWNER_ID), key: secretKey() };
 }
 
 /** Returns the database views, the re-score log, the Gmail store, the sealing key, and the settings resolved afresh for one request with what resolving them reported. */
@@ -69,7 +70,7 @@ export async function getUiState(): Promise<UiState> {
     await requireSession();
     const { stores: opened, key } = await getStores();
     const { settings, notices } = await resolveSettings(loadFileConfig(dataDir()), opened.searchSettings);
-    const names = sourceNames(await opened.sources.list(OWNER_ID));
+    const names = sourceNames(await opened.sources.list());
     return { views: opened.jobViews, rescoreLog: opened.rescoreLog, gmail: opened.gmail, alerts: opened.alerts, key, config: settings, notices, sourceNames: names };
 }
 
@@ -78,16 +79,16 @@ export async function getSettingsState(): Promise<SettingsState> {
     const { account } = await requireSession();
     const { stores: opened, key } = await getStores();
     const admin = account.isAdmin ? { accounts: await opened.accounts.accounts() } : null;
-    const stored = await opened.searchSettings.load(OWNER_ID);
+    const stored = await opened.searchSettings.load();
     const notices = settingsNotices(splitSettings(loadFileConfig(dataDir())), stored);
-    const [uploaded, profile] = await Promise.all([opened.resume.currentResume(OWNER_ID), opened.resume.profile(OWNER_ID)]);
+    const [uploaded, profile] = await Promise.all([opened.resume.currentResume(), opened.resume.profile()]);
     const resume = resumeShown(uploaded, readResumeFile(dataDir()));
     return { gmail: opened.gmail, alerts: opened.alerts, key, notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile, admin };
 }
 
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */
-async function sourcesView(opened: Stores): Promise<SourcesView> {
-    const [saved, met, used] = await Promise.all([opened.sources.list(OWNER_ID), metNeeds(opened), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
+async function sourcesView(opened: UserStores): Promise<SourcesView> {
+    const [saved, met, used] = await Promise.all([opened.sources.list(), metNeeds(opened), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
     const rows = sourceRows(saved, { hasSearchKey: met.jsearch_key, gmailConnected: met.gmail });
     return { rows, usage: searchUsage(used, sourceConfig().jsearch.monthly_request_cap), choices: sourceChoices(met) };
 }
@@ -98,7 +99,7 @@ export function sourceConfig(): Pick<Settings, "http" | "jsearch"> {
 }
 
 /** Reports which source requirements are set up: the JSearch key, and a Gmail connection. */
-export async function metNeeds(opened: Stores): Promise<Met> {
+export async function metNeeds(opened: UserStores): Promise<Met> {
     return { jsearch_key: Boolean(process.env.JSEARCH_API_KEY), gmail: gmailConnected(await opened.gmail.connection()) };
 }
 

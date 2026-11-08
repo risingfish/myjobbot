@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
+import type { TestStores } from "./memoryStore.js";
 import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { Stores } from "../../src/db/store.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
 const ADA = { email: "ada@example.com", emailKey: "ada@example.com", name: "Ada", passwordDigest: "d" };
 
-function withOwner(makeStores: MakeStores, check: (stores: Stores) => Promise<void>) {
+function withOwner(makeStores: MakeStores, check: (stores: TestStores) => Promise<void>) {
     return async () => {
         const stores = await makeStores();
         try {
@@ -22,14 +22,14 @@ function minutesLater(minutes: number): string {
     return new Date(Date.parse(NOW) + minutes * 60 * 1000).toISOString();
 }
 
-async function codeExpires({ accounts, tokens }: Stores): Promise<void> {
+async function codeExpires({ accounts, tokens }: TestStores): Promise<void> {
     await tokens.makeCode("early", OWNER_ID, NOW);
     await tokens.makeCode("late", OWNER_ID, NOW);
     expect((await accounts.createAccount(ADA, "early", "2026-11-13T09:59:59.000Z")).kind).toBe("created");
     expect(await accounts.createAccount({ ...ADA, email: "b@example.com", emailKey: "b@example.com" }, "late", "2026-11-13T10:00:01.000Z")).toEqual({ kind: "refused" });
 }
 
-async function linksLastByPurpose({ tokens }: Stores): Promise<void> {
+async function linksLastByPurpose({ tokens }: TestStores): Promise<void> {
     await tokens.makeEmailToken(OWNER_ID, { purpose: "signin", digest: "s" }, NOW);
     await tokens.makeEmailToken(OWNER_ID, { purpose: "reset", digest: "r" }, NOW);
     await tokens.makeEmailToken(OWNER_ID, { purpose: "email_change", digest: "e", newEmail: "new@example.com" }, NOW);
@@ -40,7 +40,7 @@ async function linksLastByPurpose({ tokens }: Stores): Promise<void> {
     expect(await tokens.spendEmailToken({ digest: "e", purpose: "email_change" }, minutesLater(23 * 60))).toEqual({ userId: OWNER_ID, newEmail: "new@example.com", returnPath: null });
 }
 
-async function newLinkEndsOld({ tokens }: Stores): Promise<void> {
+async function newLinkEndsOld({ tokens }: TestStores): Promise<void> {
     await tokens.makeEmailToken(OWNER_ID, { purpose: "signin", digest: "first" }, NOW);
     await tokens.makeEmailToken(OWNER_ID, { purpose: "reset", digest: "other-purpose" }, NOW);
     await tokens.makeEmailToken(OWNER_ID, { purpose: "signin", digest: "second" }, minutesLater(1));
@@ -49,7 +49,7 @@ async function newLinkEndsOld({ tokens }: Stores): Promise<void> {
     expect(await tokens.spendEmailToken({ digest: "other-purpose", purpose: "reset" }, minutesLater(2))).not.toBeNull();
 }
 
-async function stepUpBoundToItsSession({ tokens }: Stores): Promise<void> {
+async function stepUpBoundToItsSession({ tokens }: TestStores): Promise<void> {
     await tokens.makeEmailToken(OWNER_ID, { purpose: "step_up", digest: "u", sessionDigest: "mine", returnPath: "/account" }, NOW);
     expect(await tokens.spendEmailToken({ digest: "u", purpose: "step_up", sessionDigest: "theirs" }, minutesLater(1))).toBeNull();
     expect(await tokens.emailTokenFor("u", minutesLater(1))).toEqual({ purpose: "step_up", sessionDigest: "mine", live: true });
@@ -58,13 +58,13 @@ async function stepUpBoundToItsSession({ tokens }: Stores): Promise<void> {
     expect(await tokens.emailTokenFor("never", NOW)).toBeNull();
 }
 
-async function oneSpendWins({ tokens }: Stores): Promise<void> {
+async function oneSpendWins({ tokens }: TestStores): Promise<void> {
     await tokens.makeEmailToken(OWNER_ID, { purpose: "signin", digest: "race" }, NOW);
     const spent = await Promise.all([1, 2].map(() => tokens.spendEmailToken({ digest: "race", purpose: "signin" }, minutesLater(1))));
     expect(spent.filter((row) => row !== null)).toHaveLength(1);
 }
 
-async function emailChangedUnlessTaken({ accounts, tokens }: Stores): Promise<void> {
+async function emailChangedUnlessTaken({ accounts, tokens }: TestStores): Promise<void> {
     await tokens.makeCode("c", OWNER_ID, NOW);
     await accounts.createAccount(ADA, "c", NOW);
     expect(await accounts.changeEmail(OWNER_ID, "Zac@Example.com", "zac@example.com")).toBe("ok");
@@ -73,7 +73,7 @@ async function emailChangedUnlessTaken({ accounts, tokens }: Stores): Promise<vo
     expect(await accounts.changeEmail(OWNER_ID, "ADA@example.com", "ada@example.com")).toBe("taken");
 }
 
-async function recoveryCodesReplacedAndSpent({ tokens }: Stores): Promise<void> {
+async function recoveryCodesReplacedAndSpent({ tokens }: TestStores): Promise<void> {
     await tokens.replaceRecoveryCodes(OWNER_ID, ["a", "b", "c"], NOW);
     expect(await tokens.recoveryCodesLeft(OWNER_ID)).toBe(3);
     expect([await tokens.spendRecoveryCode(OWNER_ID, "a", NOW), await tokens.spendRecoveryCode(OWNER_ID, "a", NOW), await tokens.spendRecoveryCode(99, "b", NOW)]).toEqual([true, false, false]);

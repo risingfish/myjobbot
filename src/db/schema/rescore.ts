@@ -2,6 +2,7 @@ import type { Count, Text } from "./columns.js";
 
 export interface RescoreRunsTable {
     id: string;
+    user_id: number;
     ats: string;
     job_id: string;
     started_at: string;

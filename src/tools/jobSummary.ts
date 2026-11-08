@@ -1,12 +1,13 @@
-import type { JobRow, JobStore } from "../db/store.js";
+import type { PostingStore } from "../db/postingStore.js";
+import type { JobRow } from "../db/store.js";
 import { daysBetween } from "../jobs/age.js";
 import type { ToolContext } from "./context.js";
 
-type SummaryContext = { store: Pick<JobStore, "earliestSeen"> } & Pick<ToolContext, "now" | "config">;
+type SummaryContext = { postings: Pick<PostingStore, "earliestSeen"> } & Pick<ToolContext, "now" | "config">;
 
 /** Builds the compact job fields (title, location, age, possible-ghost flag, etc.) shown to the model. */
 export async function summarizeJob(context: SummaryContext, row: JobRow): Promise<Record<string, unknown>> {
-    const daysOpen = daysBetween(await context.store.earliestSeen(row.company, row.normalized_title), context.now());
+    const daysOpen = daysBetween(await context.postings.earliestSeen(row.company, row.normalized_title), context.now());
     return withoutNulls({
         job_id: row.job_id,
         title: row.title,

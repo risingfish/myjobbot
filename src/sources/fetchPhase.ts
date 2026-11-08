@@ -1,4 +1,3 @@
-import { OWNER_ID } from "../db/searchSettingsStore.js";
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
 import type { Job } from "../jobs/job.js";
 import { recordAlertRead, type AlertSummary } from "../gmail/alertFetch.js";
@@ -128,7 +127,7 @@ async function failed(context: ToolContext, saved: SavedSource, failure: { at: s
 /** Stores how a source's fetch went and where its next one starts, and traces and logs it. */
 async function finishFetch(context: ToolContext, saved: SavedSource, done: Finished): Promise<void> {
     const { read } = done;
-    await context.saved.store.recordFetch({ userId: OWNER_ID, id: saved.id }, { at: done.at, outcome: done.outcome, jobs: read.jobs, cost: read.cost, reason: done.reason }, done.cursor);
+    await context.saved.store.recordFetch(saved.id, { at: done.at, outcome: done.outcome, jobs: read.jobs, cost: read.cost, reason: done.reason }, done.cursor);
     context.trace.write({ type: "source_fetch", source: saved.name, module: saved.module, pages: read.pages, jobs: read.jobs, cost: read.cost, outcome: done.outcome, ...(done.reason === null ? {} : { reason: done.reason }) });
     const skipped = { skipped_duplicates: read.skipped.duplicates, skipped_publishers: read.skipped.publishers };
     context.jobLog.write({ type: "source_fetch", source: saved.name, module: saved.module, job_count: read.stored.length, ...skipped, jobs: read.stored.map(withoutDescription) });

@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { userSourceStore } from "../src/db/sourceStore.js";
 import { OWNER_ID } from "../src/db/searchSettingsStore.js";
 import { HttpStatusError } from "../src/http/errors.js";
 import type { SourceHttp } from "../src/sources/module.js";
@@ -18,7 +19,7 @@ function setup(http: SourceHttp) {
     const tables = newTables();
     const store = new MemorySourceStore(tables);
     const apiCalls = memoryStores(tables).apiCalls;
-    const deps = { store, facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true } }, test: { access: { http, jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
+    const deps = { store: userSourceStore(store, OWNER_ID), facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true } }, test: { access: { http, jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
     return { store, apiCalls, deps };
 }
 
