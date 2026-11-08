@@ -62,24 +62,24 @@ async function runCommand(environment: Environment, _args: string[], email: stri
     return runExitCode(runs, chosen.only);
 }
 
-/** Opens the stores to find the user `--user` names, handing them on to the run, or closes them and gives the refusal. */
+/** Opens the stores to find the user `--user` names, handing them on to the run, or closes them and gives the refusal or the error. */
 async function chosenUser(environment: Environment, email: string): Promise<Chosen | Refused> {
     const stores = await openStores(parseDbSettings(environment));
-    const mine = await storesFor(stores, email);
+    const mine = await storesFor(stores, email).catch(async (error: unknown) => closedThenThrown(stores, error));
     if ("refused" in mine) await stores.close();
     return "refused" in mine ? mine : { seams: { openStores: async () => stores }, only: mine.userId };
+}
+
+/** Closes the stores, then fails with the error that stopped their use. */
+async function closedThenThrown(stores: Stores, error: unknown): Promise<never> {
+    await stores.close();
+    throw error;
 }
 
 /** Prints why the `--user` email was refused, giving exit code 1. */
 function refused(refusal: Refused): number {
     console.error(refusal.refused);
     return 1;
-}
-
-/** Closes the stores and prints why the `--user` email was refused, giving exit code 1. */
-async function closedRefusal(stores: Stores, refusal: Refused): Promise<number> {
-    await stores.close();
-    return refused(refusal);
 }
 
 /** Prints one user's line, then their summary when they ran, or why they failed on standard error. */
@@ -93,10 +93,9 @@ function printRun(run: UserRun): void {
 async function rescoreCommand(environment: Environment, [ats, jobId]: string[], email: string | undefined): Promise<number> {
     if (!ats || !jobId) return usage();
     const stores = await openStores(parseDbSettings(environment));
-    const mine = await storesFor(stores, email);
-    if ("refused" in mine) return closedRefusal(stores, mine);
     try {
-        return await rescoreWith(environment, mine, { ats, jobId });
+        const mine = await storesFor(stores, email);
+        return "refused" in mine ? refused(mine) : await rescoreWith(environment, mine, { ats, jobId });
     } finally {
         await stores.close();
     }

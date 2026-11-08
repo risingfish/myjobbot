@@ -93,9 +93,9 @@ npm start -- eval report 20261104-030111-167a --against 20261104-030029-80d2
 npm start -- eval check                             # count the files and name any that are bad
 ```
 
-`eval capture` and `eval run` act for user 1, or for the user `--user <email>` names: capture reads
-that user's scores and records their `userId` in the case, and a run replays with that user's
-resume and profile.
+`eval capture`, `eval run` and `eval series run` act for user 1, or for the user `--user <email>`
+names: capture reads that user's scores and records their `userId` in the case, and a run replays
+with that user's resume and profile.
 
 - **A case** is one stored job frozen as the scoring model reads it, with its age as of its latest
   score (counted as a run counts it), that score, whether that score's model read the full

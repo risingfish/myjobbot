@@ -32,16 +32,19 @@ look-alike Unicode characters or a typed-out escape sequence isn't caught.
 
 ```mermaid
 flowchart TD
-    CLI["src/cli.ts<br/>load .env, call runOnce()"] --> CFG
-    CFG["config/load.ts<br/>env (validated with zod), config.json, resume.md"] --> SET
-    SET["app/runSettings.ts<br/>stored search settings + config.json runtime settings<br/>(validated with zod; a bad stored value falls back)"] --> CTX
+    CLI["src/cli.ts<br/>load .env, call runAll()"] --> CFG
+    CFG["config/load.ts<br/>env (validated with zod), config.json, resume.md"] --> PLAN
+    PLAN["app/runAll.ts + app/usersToRun.ts<br/>every user in id order; skip one with no source on or no resume"] --> SET
+    SET["runForUser in app/run.ts, for each user, with its own logs;<br/>app/runSettings.ts:<br/>stored search settings + config.json runtime settings<br/>(validated with zod; a bad stored value falls back)"] --> CTX
     CTX["app/run.ts<br/>tool context: MariaDB stores, rate-limited HTTP,<br/>clock, per-run state → build the 5 tools"] --> LINK
     LINK["app/beforeAgent.ts<br/>link unlinked jobs to companies,<br/>set company sources' careers pages"] --> FETCH
     FETCH["sources/fetchPhase.ts<br/>fetch every source that is on, through its module:<br/>boards, then Gmail alerts (with careers lookups), then due searches"] --> LOOP
     LOOP(["agent/loop.ts<br/>agent loop runs until finish or a limit"]) --> SEARCH
-    SEARCH["companies/searchCompanies.ts<br/>find missing websites and careers pages"] --> PRUNE
-    PRUNE["app/run.ts<br/>prune postings not seen in 90 days"] --> OUT
-    OUT["print status, steps, reason<br/>and the model's summary"]
+    SEARCH["companies/searchCompanies.ts<br/>find missing websites and careers pages"] --> NEXT
+    NEXT{"another user?"} -->|yes| SET
+    NEXT -->|no| PRUNE
+    PRUNE["app/runAll.ts, once<br/>prune views and postings not seen in 90 days"] --> OUT
+    OUT["print one line per user (app/runLines.ts)<br/>and each user's summary"]
 ```
 
 ## The loop

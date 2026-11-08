@@ -10,10 +10,10 @@ owner, except the run's summary lines (below).
 | `npm start -- run --user <email>` | runs for that user only |
 | `npm start -- rescore <ats> <job_id> [--user <email>]` | re-scores that user's view of the job; a job the user doesn't have prints `rescore <ats> <job_id>: failed`, exit 1, as a missing job does today |
 | `npm start -- eval capture <ats> <job_id> [--user <email>]`, `eval capture --recent N [--user <email>]` | captures from that user's scores; the case records `userId` |
-| `npm start -- eval run … [--user <email>]` | replays with that user's resume and profile |
+| `npm start -- eval run … [--user <email>]`, `eval series run <name> [--user <email>]` | replays with that user's resume and profile |
 | `npm start -- import-sqlite <path>` | unchanged; the copy goes to user 1 |
 
-The other commands (`eval check`, `answer-key`, `report`, `prompt`, `series` and `account`) are
+The other commands (`eval check`, `answer-key`, `report`, `prompt`, `series save` and `series report`, and `account`) are
 unchanged.
 
 **Refusals** (exit 1, nothing done):

@@ -9,7 +9,7 @@ Where jobs come from: the source modules, saving and testing a source, JSearch a
 A **source** is somewhere jobs come from. Each kind of source is a **module** shipped with the app
 (`src/sources/modules/`); what you save on the Settings page is a **saved source**: a module, a
 name, the module's fields, and whether it is on. Saved sources are rows in `user_sources`, and
-every job remembers the one it came from (`jobs.source_id`).
+every job remembers the one it came from (`user_jobs.source_id`).
 
 | Module | Kind | Fields | Fetched |
 |---|---|---|---|
