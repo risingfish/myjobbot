@@ -32,7 +32,6 @@ erDiagram
     JOBS {
         text ats PK "greenhouse | lever | ashby | workday | jsearch | linkedin"
         text job_id PK
-        text source "the name of the source it came from, kept if the source is deleted"
         text company
         text title
         text normalized_title "for repost matching"
@@ -52,22 +51,30 @@ erDiagram
         text requirements "JSON array (JSearch qualifications)"
         text skills "JSON array (JSearch required technologies)"
         text preferred_skills "JSON array (JSearch preferred technologies)"
-        text first_seen "first time the bot saw it"
-        text last_seen "last run it was still listed"
+        text emailed_at "reserved for the email digest"
+        text injection_seen_at "first time its text tried to escape the data markers"
+        int company_id FK "the company's record"
+    }
+    USER_JOBS {
+        int user_id PK, FK
+        text ats PK, FK
+        text job_id PK, FK
+        int source_id FK "the user's saved source it came from (null once that is deleted)"
+        text source "the name of that source, kept if the source is deleted"
+        text first_seen "first time the user's run saw it"
+        text last_seen "the user's last run it was still listed in"
         int score "base + bonus, set by record_matches"
         int base_score "0-50, resume fit"
         int bonus_score "0-50, preference fit"
         text reasons "JSON array"
         text gaps "JSON array"
         text scored_at
-        int hidden "1 when you hid it in the web UI"
-        int applied "1 when you marked it applied in the web UI"
-        text applied_on "when you marked it applied (UTC), set with applied"
-        text emailed_at "reserved for the email digest"
-        text injection_seen_at "first time its text tried to escape the data markers"
-        int company_id FK "the company's record"
-        int source_id FK "the saved source it came from (null once that is deleted)"
+        int hidden "1 when the user hid it in the web UI"
+        int applied "1 when the user marked it applied"
+        text applied_on "when they marked it applied (UTC), set with applied"
     }
+    JOBS ||--o{ USER_JOBS : "seen by"
+    USERS ||--o{ USER_JOBS : "sees"
     COMPANIES {
         int id PK
         text company_key "the normalized name, unique"
@@ -112,9 +119,14 @@ erDiagram
         text last_reason "a fixed reason, when failing"
     }
     USERS ||--o{ USER_SOURCES : "fetches from"
-    USER_SOURCES ||--o{ JOBS : "supplies"
+    USER_SOURCES ||--o{ USER_JOBS : "supplies"
     COMPANIES ||--o{ USER_SOURCES : "has boards"
 ```
+
+`jobs` holds each posting once, shared by every user who finds it: what the posting says. `user_jobs`
+holds each user's view of it: when their runs saw it, which of their sources it came from, their
+score and their marks. A user only ever reads their own views, and a posting is pruned only once no
+user has a view of it.
 
 Company boards and JSearch save the job description (see below). Alert emails carry none: an alert job takes the description of a matching JSearch result,
 or the one the [careers lookup](how-it-works.md#careers-lookup) finds, and otherwise has none
@@ -127,12 +139,12 @@ The other tables, each listed in `src/db/schema.ts` with its columns in `src/db/
 
 | Tables | Hold |
 |---|---|
-| `verdicts` | every scoring decision, with its run |
+| `verdicts` | every scoring decision, with its run and user |
 | `api_calls` | the JSearch request log, for the monthly budget |
 | `careers_audit` | each careers lookup step: addresses and sizes, never page text |
-| `gmail_connection`, `gmail_alert_state` | the Gmail address and sealed app password, and where reading alerts left off |
-| `rescore_runs`, `rescore_steps` | each re-score and its steps, shown as its Log |
-| `resumes`, `resume_profiles` | the uploaded resume's text and its extracted profile |
+| `gmail_connection`, `gmail_alert_state` | each user's Gmail address and sealed app password, and where reading their alerts left off |
+| `rescore_runs`, `rescore_steps` | each re-score, with its user, and its steps, shown as its Log |
+| `resumes`, `resume_profiles` | each user's uploaded resume text and its extracted profile |
 | `sign_in_methods`, `hardware_keys`, `recovery_codes`, `sessions`, `account_codes`, `email_tokens`, `auth_challenges`, `auth_attempts`, `security_events` | accounts and signing in (see [Accounts and signing in](how-it-works.md#accounts-and-signing-in)) |
 
 ## How descriptions are stored
@@ -173,8 +185,9 @@ plain text and always show as plain text.
 `posted_at` or `first_seen`, across all rows with the same company and normalized title.
 That way a job reposted under a new ID still shows its true age. Over 60 days
 (`ghost_threshold_days`) sets `possible_ghost: true`, and the model lowers its score a
-little. Rows not seen for 90 days (`job_retention_days`) are pruned after each run, except jobs
-you've marked applied, which are kept with their scoring history. Company records are never pruned.
+little. After each run, once every user has had their turn, a user's views not seen for 90 days
+(`job_retention_days`) are pruned, except jobs they've marked applied, which are kept with their
+scoring history; a posting goes once no user has a view of it. Company records are never pruned.
 
 ## Useful queries
 

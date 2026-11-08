@@ -141,7 +141,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   never `dangerouslySetInnerHTML` or `rehype-raw`. The model and description boosts read
   `readableDescription` (links reduced to their words). A board's HTML that arrives escaped
   (Greenhouse) is decoded once with `decodeEntities`; raw HTML (Workday, Ashby, Lever, Gem) never is.
-- The applied mark (feature 013) is `jobs.applied` with `jobs.applied_on`, written only through
+- The applied mark (feature 013) is `user_jobs.applied` with `user_jobs.applied_on`, written only through
   `JobViews.setApplied`: both columns in one statement, at the server's time, keeping the first time
   on a repeat. The cleanup after each run never prunes an applied job. Applied jobs are listed on the Applied tab (`JobViews.appliedJobs`) and left out of Recommended. Hide and Applied save through
   `useSave` and show `SaveFailedNote`; a new job action should too (Re-score is the one exception,
@@ -158,7 +158,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - Job sources are modules (feature 017): each implements `SourceModule` (`src/sources/module.ts`)
   and is listed in `MODULES` (`src/sources/registry.ts`); users only save instances, as rows in
   `user_sources` written only through `SourceStore`, and every job points at its source
-  (`jobs.source_id`). A module makes requests only through the `SourceHttp` it is given (built by
+  (`user_jobs.source_id`). A module makes requests only through the `SourceHttp` it is given (built by
   `sourceHttp`, address-checked), stores nothing itself, and fails with fixed reasons
   (`failureReason`), never answer text. The fetch phase (`src/sources/fetchPhase.ts`) fetches every
   source that is on before the agent, and shared code (`ingest.ts`) stores the pages; the model only
@@ -291,21 +291,47 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   log a password, code, token, secret or typed email. New pages use Pico first (research R18); a
   primary button inside a `.panel` is a form's submit button with no `type`, since
   `.panel button[type="button"]` is styled small.
+- Each account's own data (feature 027): `jobs` is the posting, stored once and shared; `user_jobs`
+  is each user's view of it (`source_id`, `source`, `first_seen`, `last_seen`, the scores, `reasons`,
+  `gaps`, `hidden`, `applied`, `applied_on`), keyed `(user_id, ats, job_id)`. `verdicts`,
+  `rescore_runs` and the Gmail tables carry `user_id`. Steps `020_user_jobs` (copies every view to
+  user 1), `021_history_owners`, `022_gmail_by_user`, then `023_jobs_without_user_columns`, which
+  drops the moved columns last so a failed step never loses data before it is copied; MariaDB DDL
+  isn't transactional, so a partial upgrade is restored from backup, not re-run. `Stores`
+  (`src/db/store.ts`) is only a container: the shared stores (`postings`, `sourcePlans`, careers,
+  companies, API calls, the account stores) and `forUser(id)`, which gives `UserStores`
+  (`src/db/userStores.ts`) bound to that user; there is no default user. `PostingStore` is the
+  shared posting (`known`, `setDescription`, `prune`, ...), `JobStore`/`JobViews` the user's views.
+  Each cross-user listing sits on its owning store (`SourcePlans.sourcesOnForAll`,
+  `AccountStore.userIds`), one responsibility per module (R14). The web reaches data only through
+  `myStores()` (`web/lib/myStores.ts`, the signed-in user's), so nobody, admins included, sees
+  another user's data. A run is `runAll` (`src/app/runAll.ts`): every user in id order, planned by
+  `usersToRun` (no source on, no resume: skipped), each through `runForUser` (`src/app/run.ts`) with
+  its own logs, settings and resume, a failure reported without stopping the next, one prune after
+  all, and lines and exit code from `runLines.ts`. A description found for one user is never looked
+  up again for another (`postings.known` in the alert read; the careers step reads the shared
+  posting). The JSearch budget counts every user's searches. `data/resume.md` is user 1's only
+  (`ownsResumeFile`). `run`, `rescore`, `eval capture` and `eval run` take `--user <email>`
+  (`src/cliUser.ts`: `userOption`, `storesFor`), else user 1; captured cases record `userId`.
+  `OWNER_ID` remains only where user 1 is meant: the account and settings stores making user 1,
+  `ownsResumeFile`, `import-sqlite` and the `--user` default (`tests/ownerIdScan.test.ts` keeps it
+  out of `web/` and `src/app/`). Tests use `withOwner`/`memoryStores` (user 1 merged in) and
+  `forUser(2)` for a second user.
 
 ## Commands
 
 - `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
 - `npm run check:db`: the MariaDB integration tests against the checkout's test database (needs
   `.env`'s `MYJOBBOT_DB_*` and `MYJOBBOT_TEST_DB_*`); required with `npm run check` at the end of every sitting and before commits and PRs
-- `npm start -- run`: one agent run using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, resume, traces)
-- `npm start -- rescore <ats> <job_id>`: re-score one job at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
-- `npm start -- eval check | capture <ats> <job_id> | capture --recent N | answer-key <case-id> <verdict> | run [--variant name] [--view v] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (`docs/cli.md`, Evals); `run` and `series run` call the real model
+- `npm start -- run [--user <email>]`: one agent run for every user in turn (or the one named), using `.env` (including `MYJOBBOT_DB_*`) and `data/` (config, user 1's resume, traces); one line per user
+- `npm start -- rescore <ats> <job_id> [--user <email>]`: re-score one job of user 1's (or the named user's) at once (prints each step as it runs, then scored, filtered or failed; `already running` and exit 1 when the job has a re-score open)
+- `npm start -- eval check | capture <ats> <job_id> | capture --recent N [--user <email>] | answer-key <case-id> <verdict> | run [--variant name] [--view v] [--user <email>] | report <run-id> | prompt export|diff | series save|run|report`: the scoring evals and prompt variants (`docs/cli.md`, Evals); `run` and `series run` call the real model
 - `scripts/copy-prod.sh myjobbot_dev|myjobbot_dev_alt [--yes]`: replaces every table in a dev database
   with a snapshot of production, read with the read-only `MYJOBBOT_COPY_DB_*` login (`docs/developing.md`),
   copying no rows of `sessions`, `email_tokens`, `auth_challenges`, `auth_attempts` or
   `account_codes`; refuses any other target
 - `npm start -- account init|reset <email>`: make user 1 the first admin, or give an admin a new
   password, typed at a hidden prompt
-- `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database (refuses a non-empty target)
+- `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database, as user 1's (refuses a non-empty target)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

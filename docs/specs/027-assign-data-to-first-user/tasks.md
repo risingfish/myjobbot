@@ -389,25 +389,25 @@ caller on user 1.
 
 **Independent Test**: quickstart §6.
 
-- [ ] T032 Create `.specify/sitting-in-progress` naming S4.
-- [ ] T033 [P] [US5] Write unit tests (3) in `tests/cliUser.test.ts` for `src/cliUser.ts`:
+- [X] T032 Create `.specify/sitting-in-progress` naming S4.
+- [X] T033 [P] [US5] Write unit tests (3) in `tests/cliUser.test.ts` for `src/cliUser.ts`:
   - `--user` is parsed out of the arguments; no flag means user 1
   - an unknown email gives `--user: no account with that email`, and a malformed one gives `--user: not a valid address`, neither repeating the email
   - `storesFor(stores, args)` gives the resolved user's `UserStores`; `run`, `rescore`, `eval capture` and `eval run` all call it
-- [ ] T034 [US5] Create `src/cliUser.ts` and wire `--user`:
+- [X] T034 [US5] Create `src/cliUser.ts` and wire `--user`:
   - `src/cli.ts`: replace `positional()` for `run` and `rescore` with a parser that allows `--user`, and update the `USAGE` line
   - `src/rescore/open.ts`
   - `src/evals/command.ts` and `src/evals/captureCommand.ts`: captured cases record an optional `userId`, so old cases still parse
   - the eval run's resume and profile read
 
   T033 passes.
-- [ ] T035 [P] Update the docs, split by 026 into a short README and pages under `docs/` (`how-it-works.md`, `cli.md`, `database.md`, `developing.md`, `deploying.md`, `sources.md`), each fact on the page it belongs to:
+- [X] T035 [P] Update the docs, split by 026 into a short README and pages under `docs/` (`how-it-works.md`, `cli.md`, `database.md`, `developing.md`, `deploying.md`, `sources.md`), each fact on the page it belongs to:
   - accounts are now separate users
   - runs go through every user, with one trace each
   - `--user` on `run`, `rescore` and the evals
   - `data/resume.md` is the owner's
   - back up before the upgrade, and restore rather than re-run if it fails partway
-- [ ] T036 [P] Add a feature 027 entry to CLAUDE.md:
+- [X] T036 [P] Add a feature 027 entry to CLAUDE.md:
   - `user_jobs` vs `jobs`
   - `Stores`/`forUser`/`UserStores` with no default user, and `ownerStores()` in tests
   - `PostingStore` (the shared posting) vs the user-bound `JobStore`
@@ -419,8 +419,21 @@ caller on user 1.
   - where `OWNER_ID` remains (T012's list)
 
   Fix earlier entries that name moved columns: 013's `jobs.applied`/`applied_on`, and 017's `jobs.source_id`. Update the Commands lines for `run`, `rescore`, `eval` and `import-sqlite`.
-- [ ] T037 Check `scripts/copy-prod.sh` against the new tables: `user_jobs` is copied, and the skipped list is unchanged. Adjust `tests/integration/copyProd.test.ts` if it lists tables.
-- [ ] T038 Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
+- [X] T037 Check `scripts/copy-prod.sh` against the new tables: `user_jobs` is copied, and the skipped list is unchanged. Adjust `tests/integration/copyProd.test.ts` if it lists tables.
+- [X] T038 Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
+
+**S4 as done (2026-11-08)**, where it differed from the tasks above:
+- `src/cliUser.ts` has `userOption(args)` (takes `--user <email>` or `--user=<email>` out, leaving
+  the rest) and `storesFor(stores, email)` (user 1's stores with no email, else the named user's,
+  or a `{ refused }` line). `rescore` and both eval entry points call `storesFor`; `run` calls it
+  only when `--user` is given and hands the open stores to `runAll`, so a run without `--user`
+  still reports a config error before touching the database (`tests/cli.test.ts`).
+- `src/rescore/open.ts` already took the user's stores (S1) and needed no change.
+- The other eval subcommands accept `--user` and ignore it.
+- T037: `copy-prod.sh` copies every table and empties only the sign-in ones, so `user_jobs` is
+  copied; its test fakes `mysql` and lists no tables, so neither changed.
+- The docs got a new section, `docs/deploying.md` "Upgrading to per-user data", for the backup
+  and restore advice. CLAUDE.md names `withOwner`, not `ownerStores()`, which never existed.
 
 ---
 
@@ -463,5 +476,6 @@ is what makes other users useful.
 | S3 planned | +7 (T026 ×4, T027 ×3) | +0 | +0 |
 | Actual after S3 (2026-11-08) | 1139 (+8: T026 ×4, T027 ×3, the alert copy) | 89 (+0; the strict owner case also checks `userIds`) | 78 (+0) |
 | S4 planned | +3 (T033) | +0 | +0 |
+| Actual after S4 (2026-11-08) | 1142 (+3) | 89 (+0) | 78 (+0) |
 | Planned after | +32 | +4 | +0 |
-| Actual | | | |
+| Actual | +34 (1108 → 1142) | +5 (84 → 89) | +0 |

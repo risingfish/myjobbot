@@ -300,8 +300,10 @@ The rubric narrows that spread; treat a score as a sort order, not a verdict.
 
 ## Traces and logs
 
-Each run gets a UUID (printed as `run <id> finished after …`). Every log line carries it as
-`run_id`, and every file name ends with it, so one run's files sort together:
+A run goes through every user in turn, and each user's part gets its own UUID (printed as
+`user <id>: run <run id> finished after …`), so it has its own trace whose first event names the
+user (`{"type":"user","userId":…}`). Every log line carries the id as `run_id`, and every file
+name ends with it, so one user's files sort together:
 
 | File | One line per |
 |---|---|
@@ -421,9 +423,13 @@ in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:
 
 Every page needs a sign-in, except `/sign-in`, `/create-account` and `/link`. A signed-out request
 gets only a redirect to the sign-in page (or `401 Signed out` for data), never any job data, and
-signed-in pages are never stored by the browser. Until data is tied to users, every account sees
-and changes the same jobs, settings, resume, sources and Gmail connection; only Settings' Admin
-section is for admins.
+signed-in pages are never stored by the browser. Each account is a separate user: their own
+sources, search settings, resume, Gmail connection, scores, hidden and applied marks and re-score
+history, and no one else's, admins included; only Settings' Admin section is for admins. A job
+posting found by several users is stored once and shared, with each user's view of it (when they
+first and last saw it, its score and marks) kept apart, so a description found for one user is
+never looked up again for another. The JSearch monthly budget is the deployment's, counted across
+every user's searches. `data/resume.md` is user 1's only: any other user needs to upload one.
 
 The first admin is made from the command line ([`account init`](cli.md#account)). The settings a
 deployment needs for sign-in, the base URL, account mail and the server key, are in

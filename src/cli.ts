@@ -2,25 +2,34 @@ import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { runAccountCommand } from "./accounts/terminal.js";
 import { importSqlite } from "./app/importSqlite.js";
+import type { RunSeams } from "./app/run.js";
 import { runAll } from "./app/runAll.js";
 import { runExitCode, runLine, type UserRun } from "./app/runLines.js";
 import type { Environment } from "./config/load.js";
 import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
 import { OWNER_ID } from "./db/searchSettingsStore.js";
-import type { JobKey } from "./db/store.js";
+import type { JobKey, Stores } from "./db/store.js";
 import type { UserStores } from "./db/userStores.js";
+import { storesFor, userOption, type Refused } from "./cliUser.js";
 import { describeError } from "./errors.js";
 import { evalCommand } from "./evals/command.js";
 import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run | rescore <ats> <job_id> | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
+const USAGE = "usage: myjobbot run [--user <email>] | rescore <ats> <job_id> [--user <email>] | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: positional(runCommand), rescore: positional(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
+interface Chosen {
+    seams: RunSeams;
+    only: number | undefined;
+}
+
+type UserCommand = (environment: Environment, args: string[], email: string | undefined) => Promise<number>;
+
+const COMMANDS: Record<string, Command> = { run: forUser(runCommand), rescore: forUser(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
 
 /** Dispatches to the command named first, handing it the rest of the arguments as given, and returns the process exit code. */
 async function main(argv: string[]): Promise<number> {
@@ -36,11 +45,41 @@ function positional(command: Command): Command {
     return (environment, args) => command(environment, parseArgs({ args, allowPositionals: true }).positionals);
 }
 
-/** Runs every user's agent session, prints each user's outcome, and maps the results to an exit code. */
-async function runCommand(environment: Environment): Promise<number> {
-    const runs = await runAll(environment, {});
+/** Wraps a command that acts for a user, taking `--user` out and refusing any other flag as before. */
+function forUser(command: UserCommand): Command {
+    return (environment, args) => {
+        const { email, rest } = userOption(args);
+        return command(environment, parseArgs({ args: rest, allowPositionals: true }).positionals, email);
+    };
+}
+
+/** Runs every user's agent session, or only the one `--user` names, prints each user's outcome, and maps the results to an exit code. */
+async function runCommand(environment: Environment, _args: string[], email: string | undefined): Promise<number> {
+    const chosen: Chosen | Refused = email === undefined ? { seams: {}, only: undefined } : await chosenUser(environment, email);
+    if ("refused" in chosen) return refused(chosen);
+    const runs = await runAll(environment, chosen.seams, chosen.only);
     for (const run of runs) printRun(run);
-    return runExitCode(runs, undefined);
+    return runExitCode(runs, chosen.only);
+}
+
+/** Opens the stores to find the user `--user` names, handing them on to the run, or closes them and gives the refusal. */
+async function chosenUser(environment: Environment, email: string): Promise<Chosen | Refused> {
+    const stores = await openStores(parseDbSettings(environment));
+    const mine = await storesFor(stores, email);
+    if ("refused" in mine) await stores.close();
+    return "refused" in mine ? mine : { seams: { openStores: async () => stores }, only: mine.userId };
+}
+
+/** Prints why the `--user` email was refused, giving exit code 1. */
+function refused(refusal: Refused): number {
+    console.error(refusal.refused);
+    return 1;
+}
+
+/** Closes the stores and prints why the `--user` email was refused, giving exit code 1. */
+async function closedRefusal(stores: Stores, refusal: Refused): Promise<number> {
+    await stores.close();
+    return refused(refusal);
 }
 
 /** Prints one user's line, then their summary when they ran, or why they failed on standard error. */
@@ -50,12 +89,14 @@ function printRun(run: UserRun): void {
     if ("failed" in run) console.error(`myjobbot: ${run.failed}`);
 }
 
-/** Re-scores one job at once from the command line, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */
-async function rescoreCommand(environment: Environment, [ats, jobId]: string[]): Promise<number> {
+/** Re-scores one job at once from the command line, for user 1 or the one `--user` names, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */
+async function rescoreCommand(environment: Environment, [ats, jobId]: string[], email: string | undefined): Promise<number> {
     if (!ats || !jobId) return usage();
     const stores = await openStores(parseDbSettings(environment));
+    const mine = await storesFor(stores, email);
+    if ("refused" in mine) return closedRefusal(stores, mine);
     try {
-        return await rescoreWith(environment, stores.forUser(OWNER_ID), { ats, jobId });
+        return await rescoreWith(environment, mine, { ats, jobId });
     } finally {
         await stores.close();
     }

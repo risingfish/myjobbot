@@ -57,6 +57,7 @@ const caseShape = z.strictObject({
     observed: observed.nullable(),
     descriptionChangedSinceScored: z.boolean(),
     tags: z.array(tag).max(20),
+    userId: z.number().int().min(1).optional(),
 });
 
 /** Adds an issue for each way a case's dates disagree with each other or with the age it sends. */

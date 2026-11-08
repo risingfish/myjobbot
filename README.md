@@ -58,7 +58,7 @@ Sign in, add a source on **Settings → Sources** as above, then run the agent w
 | **Email in: Gmail** | Reads your LinkedIn job-alert emails, read-only over IMAP | No | No "Gmail alerts" source | Connected on Settings with an app password, sealed by `MYJOBBOT_SECRET_KEY` ([Gmail alerts](docs/sources.md#gmail-alerts)) |
 | **Email out: account mail** | Sends sign-in links, password resets and security notices over SMTP | No | No "Email me a link", no "Forgot password", no notices | `MYJOBBOT_SMTP_*`, `MYJOBBOT_MAIL_FROM` ([Account settings](docs/deploying.md#account-settings)) |
 | **JSearch** | An API over Google for Jobs (LinkedIn, Indeed and more) for saved searches | No | No saved searches; alert jobs get no JSearch description | `JSEARCH_API_KEY` ([JSearch](docs/sources.md#jsearch)) |
-| **`data/` folder** | Runtime settings (`config.json`), a fallback `resume.md`, run traces and logs | Yes | | `MYJOBBOT_DATA_DIR`, `MYJOBBOT_LOG_DIR`. The Docker containers won't start without `data/config.json` and `data/resume.md` (any file will do once a resume is uploaded); with `npm`, `resume.md` is optional once a resume is uploaded |
+| **`data/` folder** | Runtime settings (`config.json`), a fallback `resume.md` (user 1's only), run traces and logs | Yes | | `MYJOBBOT_DATA_DIR`, `MYJOBBOT_LOG_DIR`. The Docker containers won't start without `data/config.json` and `data/resume.md` (any file will do once a resume is uploaded); with `npm`, `resume.md` is optional once a resume is uploaded |
 
 **The LLM** is reached through the OpenAI chat-completions API with tool calling, so it must be a
 server that speaks that API. It is tested with llama.cpp's `llama-server`, started with `--jinja`

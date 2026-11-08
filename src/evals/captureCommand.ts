@@ -10,12 +10,12 @@ import type { FilePort } from "./filePort.js";
 import { caseId } from "./ids.js";
 import { observedRead, traceOf } from "./observedRead.js";
 
-const USAGE = "usage: myjobbot eval capture <ats> <job_id> | --recent <N> [--tag t]... [--fresh]";
+const USAGE = "usage: myjobbot eval capture <ats> <job_id> | --recent <N> [--tag t]... [--fresh] [--user <email>]";
 const NOTE = "note: observed scores used the resume and preferences of their time; cases use today's";
 const MAX_RECENT = 200;
 
 export interface CaptureDeps {
-    stores: Pick<UserStores, "jobStore" | "jobViews" | "careers" | "postings">;
+    stores: Pick<UserStores, "userId" | "jobStore" | "jobViews" | "careers" | "postings">;
     files: EvalFiles;
     port: FilePort;
     config: AppConfig;
@@ -80,7 +80,7 @@ async function caseInput(capture: Capture, key: JobKey, row: JobRow) {
     const dates = asScoredDates({ earliestSeen, capturedAt: capture.capturedAt, scoredAt: verdict?.scored_at ?? null, ghostThresholdDays: config.settings.ghost_threshold_days });
     const read = verdict === null ? ("unknown" as const) : observedRead(await traceOf(port, verdict.run_id), key.jobId);
     const descriptionFoundAt = row.description_source === "careers" ? await stores.careers.descriptionFoundAt(key) : null;
-    return { source: key, title: row.title, company: row.company, payload, dates, verdict, read, descriptionFoundAt, profile: capture.profile.id, tags: capture.tags };
+    return { source: key, title: row.title, company: row.company, payload, dates, verdict, read, descriptionFoundAt, profile: capture.profile.id, tags: capture.tags, userId: stores.userId };
 }
 
 /** Says what was captured: the score and how it was read with the age as scored, or that the job was never scored. */

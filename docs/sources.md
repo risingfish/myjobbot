@@ -122,8 +122,7 @@ saves the pair only if that works. After that:
 
 The senders that count as job alerts are `gmail.alert_senders` in `data/config.json`. An app
 password gives full access to the mailbox (Google has no read-only kind), and myjobbot only ever
-reads it. Every signed-in account shares the one Gmail connection (until data is tied to users), so
-any of them can connect or disconnect. The stored app password can't be read back through the UI.
+reads it. Each user connects their own Gmail, and a run reads only that user's alerts. The stored app password can't be read back through the UI.
 
 ## Descriptions
 
