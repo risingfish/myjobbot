@@ -128,6 +128,17 @@ test("lookups stop at the allowance, and a JSearch failure or missing key leaves
     expect(await fetchAlerts(keyless, { ...keyless.deps, lookup: { ...lookupDeps(http), apiKey: null } })).toMatchObject({ searches: 0, alert_only: 2 });
 });
 
+test("an alert for a posting another user already has with a description gives this user their own view without a second lookup", async () => {
+    const owner = memoryStores();
+    const found = makeJob({ ats: "linkedin", jobId: "li_4100000000", company: "Company 0", title: "Senior Engineer 0", url: "https://x" }, { description: "found once" });
+    await owner.jobStore.upsertAll([found], "2026-10-01T00:00:00.000Z", "Gmail alerts");
+    const second = await connectedStores({ ...owner, ...owner.forUser(2) });
+    const http = routedHttp(jsearchResults(["4100000000"]));
+    const setup = await alertSetup([alertEmail(10, SEARCH_SENDER, searchAlert(fixtureJobs(1, 4100000000), "senior engineer"))], {}, second);
+    expect(await fetchAlerts(setup, { ...setup.deps, lookup: lookupDeps(http) })).toMatchObject({ stored: 1, searches: 0 });
+    expect([http.requests.length, (await second.jobStore.findJob("li_4100000000"))?.description]).toEqual([0, "found once"]);
+});
+
 test("Gmail counts as connected from a sign-in until Disconnect, even while it needs reconnecting", () => {
     const row = { email: "me@example.com", app_password: "sealed", connected_at: "2026-10-31T00:00:00.000Z", status: "connected" as const, reason: null };
     expect(gmailConnected(null)).toBe(false);

@@ -17,6 +17,11 @@ export async function resolveSettings(fileRaw: unknown, store: UserSearchSetting
     return { settings: settingsSchema.parse(mergeSettings(split.runtime, search)), notices: settingsNotices(split, stored) };
 }
 
+/** Resolves config.json's runtime settings alone, with no user's search settings, for work done once for every user, such as pruning. */
+export function runtimeSettings(fileRaw: unknown): Settings {
+    return settingsSchema.parse(mergeSettings(splitSettings(fileRaw).runtime, {}));
+}
+
 /** Lists what the search settings report: each stored value that fell back, the search settings config.json still holds, which are never used, and the boards and searches left behind by the move to saved sources. */
 export function settingsNotices(split: SplitSettings, stored: RawSearchSettings | null): SettingsNotice[] {
     const ignored = settingNames(split.search);

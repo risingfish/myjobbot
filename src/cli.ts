@@ -2,7 +2,8 @@ import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { runAccountCommand } from "./accounts/terminal.js";
 import { importSqlite } from "./app/importSqlite.js";
-import { runOnce } from "./app/run.js";
+import { runAll } from "./app/runAll.js";
+import { runExitCode, runLine, type UserRun } from "./app/runLines.js";
 import type { Environment } from "./config/load.js";
 import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
@@ -35,12 +36,18 @@ function positional(command: Command): Command {
     return (environment, args) => command(environment, parseArgs({ args, allowPositionals: true }).positionals);
 }
 
-/** Runs one agent session, prints its outcome, and maps the result to an exit code. */
+/** Runs every user's agent session, prints each user's outcome, and maps the results to an exit code. */
 async function runCommand(environment: Environment): Promise<number> {
-    const report = await runOnce(environment, {}, OWNER_ID);
-    console.log(`run ${report.runId} ${report.status} after ${report.steps} steps: ${report.reason}`);
-    if (report.summary) console.log(report.summary);
-    return report.status === "finished" ? 0 : 1;
+    const runs = await runAll(environment, {});
+    for (const run of runs) printRun(run);
+    return runExitCode(runs, undefined);
+}
+
+/** Prints one user's line, then their summary when they ran, or why they failed on standard error. */
+function printRun(run: UserRun): void {
+    console.log(runLine(run));
+    if ("report" in run && run.report.summary) console.log(run.report.summary);
+    if ("failed" in run) console.error(`myjobbot: ${run.failed}`);
 }
 
 /** Re-scores one job at once from the command line, printing its log and outcome and mapping a failure, or a re-score already running, to exit code 1. */

@@ -331,20 +331,20 @@ caller on user 1.
 
 ### Tests (S3)
 
-- [ ] T025 Create `.specify/sitting-in-progress` naming S3.
-- [ ] T026 [P] [US3] Write unit tests (4): two in `tests/usersToRun.test.ts` for `usersToRun` (`src/app/usersToRun.ts`, a pure function over each user's sources-on and resume presence), and two in `tests/runLines.test.ts` for `src/app/runLines.ts`:
+- [X] T025 Create `.specify/sitting-in-progress` naming S3.
+- [X] T026 [P] [US3] Write unit tests (4): two in `tests/usersToRun.test.ts` for `usersToRun` (`src/app/usersToRun.ts`, a pure function over each user's sources-on and resume presence), and two in `tests/runLines.test.ts` for `src/app/runLines.ts`:
   - users are in id order, including one without an email
   - a user with no source on is skipped as `no sources are on`, and one with no resume as `no resume`; only user 1's `data/resume.md` counts
   - `runLine` gives the lines in contracts/cli.md: `user <id>: run <runId> <status> after <N> steps: <reason>`, the skip lines, and `user <id>: failed`
   - `runExitCode` gives 1 when any user failed, and 1 when the only user asked for was skipped
-- [ ] T027 [P] [US3] Write unit tests (3) in `tests/runAll.test.ts`, using the run's seams (`chat`, `http`, `openStores`) and a temporary data dir (`tests/helpers/dataDir.ts`), as `tests/run.test.ts` already does, with two users:
+- [X] T027 [P] [US3] Write unit tests (3) in `tests/runAll.test.ts`, using the run's seams (`chat`, `http`, `openStores`) and a temporary data dir (`tests/helpers/dataDir.ts`), as `tests/run.test.ts` already does, with two users:
   - each user's jobs are scored with their own settings and resume, and each user's trace starts with their `userId`
   - a posting both find, including through an alert copy, gives each user their own view with one careers or description lookup, and keeps its description
   - one user's failure is reported, the next user still runs, and the exit is 1
 
 ### Implementation (S3)
 
-- [ ] T028 [US3] Create `src/app/usersToRun.ts`, `src/app/runLines.ts` and `src/app/runAll.ts`, and narrow `src/app/run.ts` to one user's run (R6, R14):
+- [X] T028 [US3] Create `src/app/usersToRun.ts`, `src/app/runLines.ts` and `src/app/runAll.ts`, and narrow `src/app/run.ts` to one user's run (R6, R14):
   - `runAll(environment, seams, only?)` in `runAll.ts` replaces `runOnce`: open the stores once, run `usersToRun` over `stores.accounts.userIds()`, then call `runForUser(stores.forUser(id))` (in `run.ts`) for each runner.
   - Each user's part calls `openRunLogs` as now (its own random run id, today's file names), writes a first trace event `{ type: "user", userId }`, and runs its own `settingsForRun` and `gmailState`. `runForUser` is the old `runWithStores`.
   - `stores.postings.prune`, the API-call prune and the careers-audit prune run once in `runAll`, after every user.
@@ -352,11 +352,34 @@ caller on user 1.
   - `runOnce`'s `userId` parameter from S1 is gone; `cli.ts` passes `--user`'s user to `runAll` in S4.
 
   T026 and T027 pass.
-- [ ] T029 [US3] Share lookups and descriptions across users (R7) in `src/tools/careersStep.ts` and `src/sources/ingest.ts`: a posting `postings.known` reports as having a description is not looked up again. The duplicate checks read the user's own postings.
-- [ ] T030 [US4] Verify only: S1 already passes the user's bound `gmail` and `alerts` through the run context (`src/app/run.ts`, `gmailState.ts`, `src/sources/alertAccess.ts`). T027 confirms a user without a connection is skipped quietly.
-- [ ] T031 [US3] Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
+- [X] T029 [US3] Share lookups and descriptions across users (R7) in `src/tools/careersStep.ts` and `src/sources/ingest.ts`: a posting `postings.known` reports as having a description is not looked up again. The duplicate checks read the user's own postings.
+- [X] T030 [US4] Verify only: S1 already passes the user's bound `gmail` and `alerts` through the run context (`src/app/run.ts`, `gmailState.ts`, `src/sources/alertAccess.ts`). T027 confirms a user without a connection is skipped quietly.
+- [X] T031 [US3] Run `npm run check` and `npm run check:db` until green, record the ledger, and delete the marker.
 
 **Checkpoint**: Every user with a source on gets their own scored jobs on each run.
+
+**S3 as done (2026-11-08)**, where it differed from the tasks above:
+- `runOnce` is gone. `runForUser(loaded, seams, { stores, key })` in `run.ts` is one user's part;
+  `RunReport` moved to `runLines.ts`, beside `UserRun`, and `NO_SOURCES` to `usersToRun.ts`. The
+  tests that drove `runOnce` go through `tests/helpers/runOneUser.ts` (`runAll` for one user,
+  which throws on a skip or a failure); the no-source test now expects the skip.
+- The prune after every user reads `job_retention_days` from `runtimeSettings(fileRaw)`
+  (`src/config/resolve.ts`), config.json's runtime settings with no user's search settings: it is a
+  deployment setting, and resolving it through user 1's stores would name the owner in the run
+  (`tests/ownerIdScan.test.ts`).
+- A user's failure is printed as `user <id>: failed`, then its reason on standard error as
+  `myjobbot: <reason>`, as a failed run is today.
+- `AccountStore.userIds()` (every `users.id` in order) is checked in the strict account case, so it
+  runs on MariaDB too.
+- T029: the careers step needed no change. Its rows join the shared `jobs` row, so a description
+  another user's run found is already there, and the lookup audit and retries are shared. The one
+  second lookup was the alert read: an alert copy is fresh for each user, so its JSearch lookup ran
+  again. `readAlerts` now leaves out the fresh jobs `postings.known` reports as described
+  (`AlertDeps.postings`), and the upsert keeps the description. `ingest.ts` makes no lookups and
+  is unchanged.
+- T027's shared-posting test is two tests: in `runAll.test.ts` both users' boards give one posting,
+  a view each and its description kept; the alert copy is in `alertFetch.test.ts`, since a run's
+  seams can't reach Gmail.
 
 ---
 
@@ -438,6 +461,7 @@ is what makes other users useful.
 | S2 planned | +11 (T015 ×7, T016, T017 ×3) | +0 | +0 |
 | Actual after S2 (2026-11-08) | 1131 (+11) | 89 (+0) | 78 (+0) |
 | S3 planned | +7 (T026 ×4, T027 ×3) | +0 | +0 |
+| Actual after S3 (2026-11-08) | 1139 (+8: T026 ×4, T027 ×3, the alert copy) | 89 (+0; the strict owner case also checks `userIds`) | 78 (+0) |
 | S4 planned | +3 (T033) | +0 | +0 |
 | Planned after | +32 | +4 | +0 |
 | Actual | | | |

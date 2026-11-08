@@ -8,7 +8,7 @@ import { scheduledSearches } from "../web/sourceRules.js";
 export async function alertAccess(context: ToolContext, saved: SavedSource): Promise<{ alerts?: AlertDeps }> {
     if (saved.module !== "gmail_alerts" || context.gmail.usable !== true) return {};
     const { gmail, config } = context;
-    const reading = { gmail: gmail.store, alerts: gmail.alerts, known: context.store, key: gmail.key, imap: gmail.imap, senders: config.gmail.alert_senders, now: context.now(), source: { id: saved.id, name: saved.name } };
+    const reading = { gmail: gmail.store, alerts: gmail.alerts, known: context.store, postings: context.postings, key: gmail.key, imap: gmail.imap, senders: config.gmail.alert_senders, now: context.now(), source: { id: saved.id, name: saved.name } };
     return { alerts: { ...reading, lookup: await lookupDeps(context) } };
 }
 

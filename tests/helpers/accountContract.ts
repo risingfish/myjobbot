@@ -22,6 +22,7 @@ async function ownerInitOnce({ accounts, methods }: TestStores): Promise<void> {
     expect(await accounts.initOwner({ ...LOGIN, email: "other@example.com", emailKey: "other@example.com" }, NOW)).toBe(false);
     expect(await accounts.account(OWNER_ID)).toEqual({ id: OWNER_ID, name: "owner", email: "Owner@Example.com", isAdmin: true });
     expect(await methods.passwordDigest(OWNER_ID)).toBe("argon2id$x");
+    expect(await accounts.userIds()).toEqual([OWNER_ID]);
 }
 
 async function foundByKey({ accounts }: TestStores): Promise<void> {
@@ -99,6 +100,6 @@ export function accountContract(makeStores: MakeStores): void {
 }
 
 export function accountStrictCases(makeStores: MakeStores): void {
-    test("the owner gets an email, the admin mark and a usable password once, and never again", withStores(makeStores, ownerInitOnce));
+    test("the owner gets an email, the admin mark and a usable password once, and never again, and is the one user listed", withStores(makeStores, ownerInitOnce));
     test("two accounts made at once with one code: one is made and the other refused", withStores(makeStores, oneCodeOneAccount));
 }

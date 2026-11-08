@@ -13,7 +13,7 @@ export interface Sorted {
 type KnownJobs = Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
 
 /** Returns the stored job id for a LinkedIn posting, prefixed so it can't collide with board ids. */
-function alertJobId(linkedinId: string): string {
+export function alertJobId(linkedinId: string): string {
     return `li_${linkedinId}`;
 }
 

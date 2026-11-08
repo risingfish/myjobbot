@@ -1,15 +1,12 @@
 import { searchCompanies } from "../companies/searchCompanies.js";
 import { describeError } from "../errors.js";
 import { createChat, type ChatFn } from "../agent/llm.js";
-import { runAgent, type AgentDeps, type AgentResult } from "../agent/loop.js";
+import { runAgent, type AgentDeps } from "../agent/loop.js";
 import { COMPACTION_NOTICE, initialMessages, NUDGE } from "../agent/prompt.js";
-import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
-import { openStores } from "../db/connect.js";
-import { parseDbSettings } from "../db/settings.js";
+import type { AppConfig, LoadedConfig } from "../config/load.js";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { Stores } from "../db/store.js";
 import type { UserStores } from "../db/userStores.js";
-import { MS_PER_DAY } from "../jobs/age.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { BrowserPort } from "../careers/browser.js";
 import type { HostLookup } from "../careers/fetchPage.js";
@@ -17,7 +14,7 @@ import { sourceHttp } from "../sources/sourceHttp.js";
 import { sourcesOn } from "../tools/sources.js";
 import { beforeAgent } from "./beforeAgent.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
-import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
+import type { SecretKeyStatus } from "../gmail/secretKey.js";
 import { gmailState, type GmailState } from "./gmailState.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
@@ -25,8 +22,10 @@ import { dataMarkers } from "../agent/markers.js";
 import { openRunLogs, type RunLogs } from "./runLogs.js";
 import { pageRenderer, runClients, type RunClients } from "./runParts.js";
 import { settingsForRun } from "./runSettings.js";
+import type { RunReport } from "./runLines.js";
+import { NO_SOURCES } from "./usersToRun.js";
 
-interface RunSeams {
+export interface RunSeams {
     chat?: ChatFn;
     http?: JsonGetter & JsonPoster;
     pages?: TextGetter;
@@ -35,10 +34,13 @@ interface RunSeams {
     browser?: (url: string) => Promise<BrowserPort>;
 }
 
-interface RunParts {
-    logs: RunLogs;
+interface UserParts {
     stores: UserStores;
     key: SecretKeyStatus;
+}
+
+interface RunParts extends UserParts {
+    logs: RunLogs;
 }
 
 interface ContextParts extends RunParts {
@@ -48,30 +50,17 @@ interface ContextParts extends RunParts {
     clients: RunClients;
 }
 
-interface RunReport extends AgentResult {
-    runId: string;
-    summary: string | null;
-}
-
-const NO_SOURCES = "no sources are on";
-
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
-/** Runs one full agent session end to end for one user: loads config and their stored search settings, runs the agent, and prunes stale jobs afterward. */
-export async function runOnce(environment: Environment, seams: RunSeams, userId: number): Promise<RunReport> {
-    const loaded = loadConfig(environment);
+/** Runs one user's agent session with their own logs, settings and resume, against stores already bound to them. */
+export async function runForUser(loaded: LoadedConfig, seams: RunSeams, { stores, key }: UserParts): Promise<RunReport> {
     const logs = openRunLogs(loaded);
-    const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
-    try {
-        const mine = stores.forUser(userId);
-        const config = await settingsForRun(loaded, mine, logs.trace);
-        return await runWithStores(config, seams, { logs, stores: mine, key: secretKeyStatus(environment) });
-    } finally {
-        await stores.close();
-    }
+    logs.trace.write({ type: "user", userId: stores.userId });
+    const config = await settingsForRun(loaded, stores, logs.trace);
+    return runWithStores(config, seams, { logs, stores, key });
 }
 
-/** Links stored jobs to their companies, runs the agent, or finishes at once when no source is on, against open stores, then searches for companies' addresses and prunes stale jobs, reporting the run's outcome. */
+/** Links stored jobs to their companies, runs the agent, or finishes at once when no source is on, against open stores, then searches for companies' addresses, reporting the run's outcome. */
 async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts): Promise<RunReport> {
     const chat = seams.chat ?? createChat(config.env, parts.logs.llm);
     const saved = await parts.stores.sources.list();
@@ -87,22 +76,13 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
     }
 }
 
-/** Finishes the run's stored data after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run, then prunes. */
+/** Finishes the user's part after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run. */
 async function afterAgent(context: ToolContext): Promise<void> {
     try {
         await searchCompanies(context);
     } catch (error) {
         context.trace.write({ type: "company_search_failed", error: describeError(error) });
     }
-    await pruneOldJobs(context);
-}
-
-/** Deletes jobs and API call records older than the configured retention window. */
-async function pruneOldJobs(context: ToolContext): Promise<void> {
-    const cutoff = new Date(context.now().getTime() - context.config.job_retention_days * MS_PER_DAY).toISOString();
-    await context.postings.prune(cutoff);
-    await context.apiCalls.pruneBefore(cutoff);
-    await context.careers.store.pruneAuditBefore(cutoff);
 }
 
 /** Assembles the tool context (stores, HTTP client, run state) a single run's tools operate against. */

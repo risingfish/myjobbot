@@ -30,7 +30,7 @@ export async function alertSetup(emails: AlertEmail[], script: FakeImapScript = 
     const opened = stores ?? (await connectedStores());
     const fake = fakeImap({ mailbox: { uidValidity: 7, emails }, ...script });
     const trace = memoryTrace();
-    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, known: opened.jobStore, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, now: NOW, source: ALERTS_SOURCE };
+    const deps: AlertDeps = { gmail: opened.gmail, alerts: opened.alerts, known: opened.jobStore, postings: opened.postings, key: { status: "ok", key: KEY }, imap: fake.factory, senders: SENDERS, now: NOW, source: ALERTS_SOURCE };
     return { deps, stores: opened, fake, trace };
 }
 

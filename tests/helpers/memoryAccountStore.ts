@@ -55,6 +55,10 @@ export class MemoryAccountStore implements AccountStore {
         return this.tables.users.filter((user) => user.email !== null).map(toAccount);
     }
 
+    async userIds(): Promise<number[]> {
+        return this.tables.users.map((user) => user.id).sort((a, b) => a - b);
+    }
+
     async setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin"> {
         const admins = this.tables.users.filter((user) => user.isAdmin);
         if (!admin && admins.length === 1 && admins[0]?.id === userId) return "last_admin";
