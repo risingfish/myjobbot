@@ -439,7 +439,7 @@ caller on user 1.
 
 ## Phase 6: Polish
 
-- [ ] T039 After merge, the owner backs up production, deploys, and walks quickstart §2–§6 on the real stack with a second account. That includes §4's timing check: user 1's run takes no more than 10% longer than before (SC-005).
+- [ ] T039 After merge, the owner tags a release and follows `docs/upgrade-to-accounts.md` on production (counts, backup, deploy, `account init` for user 1, the checks that every job moved to user 1), then walks quickstart §2–§6 on the real stack with a second account. That includes §4's timing check: user 1's run takes no more than 10% longer than before (SC-005).
 
 ---
 
