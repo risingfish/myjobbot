@@ -73,7 +73,7 @@ and its format and source, `company_id`, `injection_seen_at` and `emailed_at`.
 ## Code entities
 
 - **`Stores`** (`src/db/store.ts`): a container of the shared stores only (`companies`, `careers`,
-  `apiCalls`, `accounts`, `postings`, `sources` and the sign-in stores), plus `forUser(userId)` and
+  `apiCalls`, `accounts`, `postings`, `sourcePlans` and the sign-in stores), plus `forUser(userId)` and
   `close()`. It has no operations of its own, no per-user members and no default user.
 - **`PostingStore`** (`src/db/postingStore.ts`, shared): the posting itself.
   - `known(keys)`: whether postings exist and have a description, used only to skip lookups
@@ -81,8 +81,9 @@ and its format and source, `company_id`, `injection_seen_at` and `emailed_at`.
   - `prune(cutoff)`: clean-up across users, replacing `JobStore.pruneLastSeenBefore`
 - **Cross-user listings on their owners**:
   - `AccountStore.userIds()`: every user, for the run
-  - `SourceStore.scheduledOnForAll()`: every user's scheduled sources that are on, for the JSearch
-    budget checks
+  - `SourcePlans.scheduledOnForAll()` (`src/db/sourcePlans.ts`, its own one-method interface):
+    every user's scheduled sources that are on, for the JSearch budget checks. The per-call
+    `SourceStore` is never on `Stores`; callers only get the bound `UserSourceStore`.
 - **`UserStores`** (`stores.forUser(id)`, composed in `src/db/userStores.ts`): bound to the user:
   `jobStore` (the user's view: `upsertAll`, `markSeen`, unscored reads, duplicate checks,
   `findJob`, `recordVerdict`), `jobViews`, `gmail`, `alerts`, `rescoreLog`, `sources`,

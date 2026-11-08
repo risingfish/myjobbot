@@ -56,7 +56,7 @@ Where a decision changed because of them, the entry says so.
 
 - **Decision**: split what `openStores` gives into two parts:
   - **`Stores`**: a container of the shared stores only (`companies`, `careers`, `apiCalls`,
-    `accounts`, `postings`, `sources`, the sign-in stores), `forUser(userId): UserStores` and
+    `accounts`, `postings`, `sourcePlans`, the sign-in stores), `forUser(userId): UserStores` and
     `close`. It has no operations of its own; every cross-user operation belongs to the store that
     owns that data (R14).
   - **`UserStores`**: bound to one user (`jobStore`, `jobViews`, `gmail`, `alerts`, `rescoreLog`,
@@ -78,8 +78,12 @@ Where a decision changed because of them, the entry says so.
     1's `UserStores` for tests that only care about the owner.
 - **Clean-up across users**: `JobStore.pruneLastSeenBefore` is removed. `postings.prune(cutoff)`
   on the shared `PostingStore` replaces it (R9, R14), and the run calls it from S1 on.
-- **Budget across users**: the shared `SourceStore.scheduledOnForAll()` lists every user's
-  scheduled sources that are on, for the JSearch budget checks (R8).
+- **Budget across users**: the shared, narrow `SourcePlans` (`src/db/sourcePlans.ts`, one method,
+  `scheduledOnForAll()`) lists every user's scheduled sources that are on, for the JSearch budget
+  checks (R8). The per-call `SourceStore`, whose methods take any `userId`, is never on `Stores`:
+  the only source store a caller can name is the bound `UserSourceStore` (`UserStores.sources`).
+  That keeps "no store without a chosen user" true for sources too, and leaves no two members
+  named `sources`.
 - **Every user**: `AccountStore.userIds()` lists every `users.id` (R6).
 - **`OWNER_ID` afterwards**: it stays only where user 1 is truly meant:
   - the migration
@@ -176,7 +180,7 @@ Where a decision changed because of them, the entry says so.
 - **Decision**: `api_calls` stays one table without a user. The run-time `budget used` check counts
   all of it, as now.
 - **Planning the budget**: three checks count every user's scheduled sources that are on (from the
-  shared `sources.scheduledOnForAll()`), not only the user's own:
+  shared `sourcePlans.scheduledOnForAll()`), not only the user's own:
   - turning a source on: `enableProblem`
   - saving a new source, which is saved on: `saveSourcePlan` → `sourceProblems`, in
     `src/web/saveSource.ts`
@@ -288,7 +292,9 @@ Where a decision changed because of them, the entry says so.
     `src/evals/captureCommand.ts`.
   - **Cross-user listings on their owners**:
     - `AccountStore.userIds()`
-    - `SourceStore.scheduledOnForAll()`, the shared, unbound source store's read across users
+    - `SourcePlans.scheduledOnForAll()`, a one-method shared interface for the read across users,
+      implemented beside the source store (Kysely in `src/db/kysely/sourcePlans.ts`). It's
+      deliberately not the per-call `SourceStore`, which could read or write any user's sources.
   - **Bound store interfaces beside their stores**: `UserSourceStore` in `src/db/sourceStore.ts`,
     `UserSearchSettingsStore` in `searchSettingsStore.ts`, `UserResumeStore` in `resumeStore.ts`.
     Each wrapper's Kysely and memory code lives with its own store. `src/db/userStores.ts` only

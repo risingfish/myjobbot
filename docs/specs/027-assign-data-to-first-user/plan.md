@@ -109,11 +109,14 @@ src/db/
 ├── userStores.ts                        # composes UserStores only
 ├── postingStore.ts                      # PostingStore: known, setDescription, flagInjection, linkUnlinkedJobs, earliestSeen, prune
 ├── sourceStore.ts, searchSettingsStore.ts, resumeStore.ts   # each gains its own bound User…Store
+├── sourcePlans.ts                       # SourcePlans: every user's scheduled sources that are on
 ├── accountStore.ts                      # + userIds()
 └── kysely/
-    ├── jobStore.ts (split: postingWrites.ts), jobViews.ts   # bound to a user; posting + user_jobs
+    ├── jobStore.ts, jobViews.ts         # bound to a user: the user's view
+    ├── postingWrites.ts                 # internal to JobStore.upsertAll: the posting half of its transaction
     ├── postingStore.ts                  # the shared posting and its lifecycle
-    ├── sourceStore.ts                   # replaceSource on user_jobs; scheduledOnForAll
+    ├── sourceStore.ts                   # replaceSource on user_jobs
+    ├── sourcePlans.ts                   # SourcePlans.scheduledOnForAll (shared, read-only, across users)
     ├── rescoreLogStore.ts, gmailStore.ts, alertStore.ts   # bound to a user
     └── stores.ts
 src/app/

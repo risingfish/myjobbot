@@ -13,7 +13,8 @@ quickstart.md. Revised 2026-11-08 after two passes of `/speckit-analyze-deep`.
 **Tests**: required by the constitution (Principle II). Each test task names its kind and count.
 
 The existing suite holds user 1's behaviour fixed. A test may change:
-- how it builds its stores (`ownerStores()` or `forUser`)
+- how it builds its stores (`ownerStores()` or `forUser`), or which store a method that moved now
+  lives on (for example `postings.setDescription` instead of `jobStore.setDescription`)
 - how it seeds data, now that per-user columns sit in `user_jobs`
 - for migration tests that read moved columns, where they stop (before `020`) and how they read
   (`withTables`)
@@ -48,6 +49,9 @@ It never changes what user 1 sees (FR-018).
   is unchanged. S2 and S3 then change which user it is.
 - **No default user (R4)**: `Stores` has no per-user members. A caller that didn't choose a user
   fails typecheck.
+- **SOLID review at each sitting's end** (constitution Principle VI): before the closing checks,
+  review the sitting's change against SOLID, through a reviewer if one is available. A breach is
+  fixed in the same sitting, like a habit-hooks finding.
 - **Never print** a `--user` email, a resume, or another user's data in a trace or a log line.
   Users appear by id only (FR-015).
 - **File sizes**: `jobStore.ts` (193 lines), `storeContract.ts` (188), `src/db/store.ts` (181),
@@ -119,7 +123,7 @@ caller on user 1.
   - two users upserting the same posting at once give one posting and two views
   - `rescoreLog.begin` for the same job by two users both start, while a second `begin` by one user is refused
   - `postings.prune` never deletes a posting another user still has
-- [ ] T004 [P] [US1] Write a unit test (1), `tests/forUser.test.ts`. `memoryStores().forUser(2)` binds `jobStore`, `jobViews`, `gmail`, `alerts`, `rescoreLog`, `sources`, `searchSettings` and `resume` to user 2, and passes `companies`, `careers`, `apiCalls` and the account stores through as the same objects.
+- [ ] T004 [P] [US1] Write a unit test (1), `tests/forUser.test.ts`. `memoryStores().forUser(2)` binds `jobStore`, `jobViews`, `gmail`, `alerts`, `rescoreLog`, `sources`, `searchSettings` and `resume` to user 2, and passes `companies`, `careers`, `apiCalls`, `postings`, `sourcePlans` and the account stores through as the same objects.
 
 ### Implementation (S1)
 
@@ -147,7 +151,7 @@ caller on user 1.
   - `src/db/schema/rescore.ts`: `RescoreRunsTable.user_id`
   - `src/db/schema/gmail.ts`: `id` becomes `user_id`
   - `src/db/schema.ts`: add `user_jobs: UserJobsTable`
-- [ ] T007 [US1] Bind the Kysely job stores to a user: `KyselyJobStore(db, userId)` and `KyselyJobViews(db, userId)`. Move the posting writes into a new `src/db/kysely/postingWrites.ts` so `jobStore.ts` stays under 200 lines.
+- [ ] T007 [US1] Bind the Kysely job stores to a user: `KyselyJobStore(db, userId)` and `KyselyJobViews(db, userId)`. Move the posting half of `upsertAll` (the old-format read and the upsert into `jobs`) into `src/db/kysely/postingWrites.ts`, an internal helper that `KyselyJobStore` calls inside its own transaction. It has no interface of its own and nothing else calls it. That keeps `jobStore.ts` under 200 lines. `PostingStore` (T008) remains the one public owner of posting operations.
   - **`upsertAll`**: one transaction, in this order (R7):
     1. Read the stored `description_format` of the incoming keys.
     2. Write the postings to `jobs`, no longer refreshing `jobs.source`, and keeping an existing non-null description over an incoming null (`description`, `description_format`, `description_source`, `description_url`).
@@ -175,10 +179,10 @@ caller on user 1.
 - [ ] T009 [P] [US1] Bind the other per-user stores:
   - `KyselyRescoreLogStore(db, userId)`: runs carry `user_id`, `begin` locks the user's `user_jobs` row, and reads filter by user.
   - `KyselyGmailStore(db, userId)` and `KyselyAlertStore(db, userId)`: key by `user_id` instead of `ROW`.
-  - `src/db/kysely/sourceStore.ts`: `replaceSource` relabels `user_jobs.source` for that user. Removing a source relies on `user_jobs.source_id`'s `ON DELETE SET NULL`. Add `scheduledOnForAll()`, every user's scheduled sources that are on, for the budget checks.
+  - `src/db/kysely/sourceStore.ts`: `replaceSource` relabels `user_jobs.source` for that user. Removing a source relies on `user_jobs.source_id`'s `ON DELETE SET NULL`. Create `SourcePlans` (interface `src/db/sourcePlans.ts`, Kysely `src/db/kysely/sourcePlans.ts`) with one method, `scheduledOnForAll()`: every user's scheduled sources that are on, for the budget checks. It is read-only and is not part of `SourceStore`.
   - `src/db/kysely/accountStore.ts`: add `userIds()`, every `users.id` in order.
 - [ ] T010 [US1] Split what the store factory returns (R4, R14):
-  - **`Stores`** (`src/db/store.ts`, `src/db/kysely/stores.ts`): a container of the shared stores only (`companies`, `careers`, `apiCalls`, `accounts`, `postings`, `sources` and the sign-in stores), plus `forUser(userId): UserStores` and `close`. It has no operations of its own.
+  - **`Stores`** (`src/db/store.ts`, `src/db/kysely/stores.ts`): a container of the shared stores only (`companies`, `careers`, `apiCalls`, `accounts`, `postings`, `sourcePlans` and the sign-in stores; never the per-call `SourceStore`, `SearchSettingsStore` or `ResumeStore`, whose methods take any user), plus `forUser(userId): UserStores` and `close`. It has no operations of its own.
   - **`UserStores`**: composed in a new `src/db/userStores.ts` (which holds nothing else): the bound stores, plus the shared ones passed through.
   - **Bound wrappers, each beside its own store**:
     - `UserSourceStore` in `src/db/sourceStore.ts`
@@ -192,7 +196,7 @@ caller on user 1.
 - [ ] T011 [US1] Rebuild the memory stores to match.
   - `Tables` gains `userJobs`, and jobs keep only posting fields.
   - The bound memory stores take a `userId`: `memoryStore.ts` (split the job store into `memoryJobStore.ts`), `memoryJobViews.ts`, `memoryRescoreLog.ts`, `memoryGmailStore.ts` and `memoryAlertStore.ts`.
-  - The memory `PostingStore` goes in `tests/helpers/memoryPostingStore.ts`. `scheduledOnForAll` goes in `memorySourceStore.ts` and `userIds` in `memoryAccountStore.ts`, each with its owning store.
+  - The memory `PostingStore` goes in `tests/helpers/memoryPostingStore.ts`. The memory `SourcePlans` goes in `tests/helpers/memorySourcePlans.ts`, reading the memory source rows, and `userIds` goes in `memoryAccountStore.ts`, each with its owner.
   - `memoryStores()` returns shared stores plus `forUser`, and a new `ownerStores()` returns `memoryStores().forUser(1)`.
 
   T003's unit cases pass on memory.
@@ -203,17 +207,17 @@ caller on user 1.
     - `src/rescore/oneJobStore.ts`
     - `src/app/beforeAgent.ts`, `src/app/lookalikes.ts` and `src/tools/jobSummary.ts` (`context.postings`, added to `src/tools/context.ts`)
     - `src/evals/captureCommand.ts`
-  - **The tools' context**: `src/tools/context.ts` types `saved.store` and the other store fields as the bound interfaces.
+  - **The tools' context**: `src/tools/context.ts` types `saved.store` and the other store fields as the bound interfaces, and gains `postings` and `sourcePlans` (the shared stores the run needs), set in `run.ts`'s `storeParts`.
   - **Fetching and settings**: `src/sources/fetchPhase.ts` and `src/app/beforeAgent.ts` call the bound `recordFetch` and `linkCompany` without `OWNER_ID`. `src/config/resolve.ts` takes the bound `searchSettings`.
   - **Gmail**:
     - `src/gmail/connection.ts` calls the bound `sources.ensureAccountSource({ module, name }, …)`.
     - `src/gmail/alertStore.ts` `sortAlertJobs` keeps using the user's own `findJob` for "seen again" (R7).
     - `src/gmail/alertLookupStep.ts` skips the description lookup for postings `postings.known` reports as already described.
   - **Resume profile**: `src/resumeProfile/open.ts` passes `UserStores` to `settingsForRun`.
+  - **`src/web/saveSource.ts`**: it takes a `UserSourceStore` in its `deps` and drops `OWNER_ID` from its calls. It never chooses a user; its callers hand it the user's store.
   - **Web helpers**: these use `stores.forUser(OWNER_ID)` in this sitting and switch to `myStores()` in S2:
-    - `src/web/saveSource.ts`
     - `web/lib/uiState.ts`: `getStores()`, the `OpenStores` type, `sourcesView` and `metNeeds`
-    - `web/lib/settingsActions.ts` and `sourceActions.ts`
+    - `web/lib/settingsActions.ts` and `sourceActions.ts` (which hands `saveSource` the user's `sources`)
     - `web/lib/resumeRows.ts` (`Pick<UserStores, "resume">`, with no `OWNER_ID` in the calls)
     - `web/lib/gmailDeps.ts`
     - `web/app/api/rescores/[id]/route.ts` (`(await openedStores()).forUser(OWNER_ID).rescoreLog`)
@@ -269,9 +273,9 @@ caller on user 1.
 - [ ] T020 [US2] `web/app/api/rescores/[id]/route.ts` swaps `forUser(OWNER_ID)` for `myStores()`. Another user's run id gets the missing-run answer.
 - [ ] T021 [US2] The resume file is the owner's (R11b). Create `ownsResumeFile(userId)` in `src/config/resumeFile.ts`, a pure function and the one place the rule lives. `resumeShown` (`src/web/resumeView.ts`) and `resumeInUse` (`src/app/runSettings.ts`) take the user id and use `data/resume.md` only when it says so. Neither file names `OWNER_ID`.
 - [ ] T022 [US2] Plan the budget across users (R8):
-  - `enableProblem` and `saveSourcePlan` take `stores.sources.scheduledOnForAll()`, every user's, in place of the user's own list for the budget check. Same-board repeats are still checked against the user's own sources only.
+  - `enableProblem` and `saveSourcePlan` take `stores.sourcePlans.scheduledOnForAll()`, every user's, in place of the user's own list for the budget check. Same-board repeats are still checked against the user's own sources only.
   - `sourceActions.ts` and `src/web/saveSource.ts` pass it in.
-  - `lookupDeps` (`src/sources/alertAccess.ts`) counts every user's scheduled searches.
+  - `lookupDeps` (`src/sources/alertAccess.ts`) counts every user's scheduled searches through `context.sourcePlans.scheduledOnForAll()`.
 
   T017 passes.
 - [ ] T023 [US4] Gmail on Settings (`src/gmail/connection.ts` through `web/lib/gmailDeps.ts` and `gmailActions.ts`): connecting stores the connection under the signed-in user and adds their own "Gmail alerts" source. Disconnecting removes only theirs.
