@@ -9,7 +9,7 @@ import { asc, userRows, viewOf, type Row, type Tables } from "./memoryJobViews.j
 
 const UNSCORED_VIEW = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null };
 
-const NEW_POSTING = { company_id: null, emailed_at: null, injection_seen_at: null };
+const NEW_POSTING = { company_id: null, injection_seen_at: null };
 
 const DESCRIBED = ["description", "description_format", "description_source", "description_url"];
 

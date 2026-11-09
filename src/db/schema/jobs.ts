@@ -27,7 +27,6 @@ export interface JobsTable {
     preferred_skills: Text;
     first_seen: string;
     last_seen: string;
-    emailed_at: Text;
     company_id: Count;
 }
 

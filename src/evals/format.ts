@@ -108,6 +108,7 @@ const runs = z.strictObject({
     variant: z.string().nullable().optional(),
     promptChanged: z.boolean().optional(),
     view: z.enum(RESUME_VIEWS).optional(),
+    userId: z.number().int().min(1).optional(),
 });
 
 const SCHEMAS = {

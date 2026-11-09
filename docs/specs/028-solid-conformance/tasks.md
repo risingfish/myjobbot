@@ -47,8 +47,10 @@ changed (FR-004). The run prompt snapshot must not change.
 
 ## Phase 1: Setup
 
-- [ ] T001 Record the baseline on the branch: `npm run check` and `npm run check:db` green, and the
+- [X] T001 Record the baseline on the branch: `npm run check` and `npm run check:db` green, and the
   counts in the ledger below (expected unit 1142, integration 89, UI 78). Note them in this file.
+  - 2026-11-09: both green. Unit and UI 1220 (1142 + 78) in 228 files; integration 89 (88 passed,
+    the real-browser case skipped without `MYJOBBOT_TEST_BROWSER_URL`).
 
 ---
 
@@ -61,11 +63,11 @@ one. Eval reports name their user and warn when compared runs differ.
 
 ### Sitting S1: the digest mark, the eval run's user, the unused log method
 
-- [ ] T002 Create `.specify/sitting-in-progress` naming S1.
+- [X] T002 Create `.specify/sitting-in-progress` naming S1.
 
 **Tests first (S1)**
 
-- [ ] T003 [P] [US2] Write one integration test in a new
+- [X] T003 [P] [US2] Write one integration test in a new
   `tests/integration/digestMarkMigration.test.ts`, in the style of
   `tests/integration/userJobsMigration.test.ts`. It covers both outcomes of step
   `024_jobs_without_digest_mark` in one database setup, so the step costs one integration case:
@@ -80,7 +82,7 @@ one. Eval reports name their user and warn when compared runs differ.
   `migrateUpTo(db, "025")`: first expect the refusal, then clear the mark and expect it to run
   `["024_jobs_without_digest_mark"]`. `migrateUpTo` runs only the steps whose names sort before the
   one given.
-- [ ] T004 [P] [US2] Write unit tests (9). The wording is in `contracts/eval-report.md`.
+- [X] T004 [P] [US2] Write unit tests (9). The wording is in `contracts/eval-report.md`.
 
   Seven are in `tests/evalRunUser.test.ts`, with the memory file port
   (`tests/helpers/memoryFilePort.ts`):
@@ -106,12 +108,13 @@ one. Eval reports name their user and warn when compared runs differ.
   `…Views` interface in `src/db/*.ts` is called somewhere in `src/` or `web/` outside `src/db/`.
   - A distinctive name matches on `.<method>(`.
   - A generic name (`record`, `spend`, `lookup`, `left`, `replace`, `make`, `list`, `save`, `run`)
-    must appear as `.<storeProperty>.<method>(`, the property named in `SharedStores` or
-    `UserStores`. That way, after S2's renames, an unrelated `.record(` can't satisfy it.
+    must be called on a receiver named after a store: a property of `SharedStores` or
+    `UserStores`, or a name ending in `store` or `log` (`apiCalls.record(`, `store.run(`). That
+    way an unrelated `z.record(` or `this.record(` can't satisfy it.
 
 **Implementation (S1)**
 
-- [ ] T005 [US2] Add step `src/db/migrations/024_jobs_without_digest_mark.ts`:
+- [X] T005 [US2] Add step `src/db/migrations/024_jobs_without_digest_mark.ts`:
   - count `jobs` rows with `emailed_at IS NOT NULL` through `selectFrom`
   - with any, throw `new Error(\`${n} postings have an email-digest mark, which nothing should have written; restore or clear it before upgrading\`)`.
     The migrator adds the step's name.
@@ -125,11 +128,11 @@ one. Eval reports name their user and warn when compared runs differ.
   - in `src/app/importPlan.ts`, add `RETIRED = new Set(["emailed_at"])`, which `splitJob` leaves out
     of the posting, and remove `emailed_at` from `LIMITS`, so `import-sqlite` still reads an old
     database that has the column
-- [ ] T006 [US2] Record the run's user: add `userId: z.number().int().min(1).optional()` to `runs` in
+- [X] T006 [US2] Record the run's user: add `userId: z.number().int().min(1).optional()` to `runs` in
   `src/evals/format.ts`. Add `userId: number` to `RunDeps` (`src/evals/runCases.ts`), and set it in
   `started()`. `withRunDeps` in `src/evals/command.ts` passes `mine.userId`. Series runs go through
   `executeRun`, so they record theirs too.
-- [ ] T007 [US2] Show it:
+- [X] T007 [US2] Show it:
   - `headerLine` in `src/evals/reportText.ts` appends `· user <id>` or `· user not recorded`, after
     the view and before `· unfinished`
   - a plain module `src/evals/userNote.ts` holds `runsNote(a: Run, b: Run)` and
@@ -144,25 +147,36 @@ one. Eval reports name their user and warn when compared runs differ.
   - `tests/evalReport.test.ts:76` and `:81`: their fixture run has no `userId`, so they gain
     `· user not recorded`
   - `tests/evalSeriesReport.test.ts:15`: its anchored line
-- [ ] T008 [US2] D8 and D10, the store methods nothing calls:
+- [X] T008 [US2] D8 and D10, the store methods nothing calls:
   - remove `lastCallAt` from `ApiCallLog` (`src/db/store.ts`), `src/db/kysely/apiCalls.ts` and
     `MemoryApiCallLog` (`tests/helpers/memoryStore.ts`). Drop its calls from the
     `tests/helpers/storeContract.ts` expectation and keep the `countSince` check.
   - remove `isAdmin` from `AccountStore`, `KyselyAccountStore` and `MemoryAccountStore`. Change
     `tests/helpers/accountContract.ts:32-33` and `tests/adminFlow.test.ts:34,47` to read
     `(await accounts.account(id))?.isAdmin` (FR-004's structure exception).
-- [ ] T009 [US2] Docs:
+- [X] T009 [US2] Docs:
   - `docs/cli.md` (Evals): reports name the user, and comparisons note different users
   - `docs/database.md`: `jobs` loses `emailed_at` in the diagram
   - `docs/deploying.md`, "Upgrading to per-user data": one line that the release with step 024
     needs a backup first, linking `docs/upgrade-to-accounts.md`'s backup step
-- [ ] T010 [US2] Walk quickstart §S1 by hand and record the result here:
+- [X] T010 [US2] Walk quickstart §S1 by hand and record the result here:
   - one real `eval run --tag baseline` for user 1 and one with `--user` for a second account, then
     `eval report --against`
   - step 024 on a copy of production's database: `scripts/copy-prod.sh myjobbot_dev`, then start the
     app against it (quickstart §S1 step 1). The dev database login works again (checked
     2026-11-09).
-- [ ] T011 [US2] Run both checks until green, record the ledger, review S1 against Principle VI, mark
+  - 2026-11-09 result:
+    - `eval run --case greenhouse-6637207` against the real model wrote `"userId": 1`, and
+      `eval report 20261109-083650-4436 --against 20261105-211626-815a` printed the header ending
+      `· user 1` and `note: a run's user wasn't recorded, so the users can't be checked` right
+      before the `against` line. The dev database has no second account, so the `--user` half rests
+      on `tests/evalRunUser.test.ts`.
+    - `scripts/copy-prod.sh myjobbot_dev --yes` failed: the server refuses the read-only
+      `myjobbot_copy` login (1045). The script drops the target's tables before reading production,
+      so it left `myjobbot_dev` empty. Starting the app then ran every step from 001 to
+      `024_jobs_without_digest_mark` on it, ending with no `jobs.emailed_at`. Step 024 on a populated
+      027 database, refused and then run, is `tests/integration/digestMarkMigration.test.ts`.
+- [X] T011 [US2] Run both checks until green, record the ledger, review S1 against Principle VI, mark
   D8 and D10 done in `inventory/06-stores-database.md`, and delete the marker.
 
 **Checkpoint**: S1 can ship on its own (with its backup note).
@@ -695,7 +709,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | S6 planned | +12 (T054 ×6, T055 ×2, T056 ×4) | +0 | +0 |
 | S7 planned | +3 (T064, in S7a) | +0 | +0 |
 | **Planned after** | **+48** | **+3** | **+0** |
-| Actual | | | |
+| Actual after S1 | 1142 + 9 (with UI: 1229) | 89 + 1 = 90 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

@@ -12,7 +12,7 @@ test("the report sets the tests side by side, each with its pass rate, tokens an
     lines.length = 0;
     expect(await seriesReport(["pair"], deps)).toBe(0);
     const text = lines.join("\n");
-    expect([lines[1], /^ {2}now +code +passed 1\/1 \(100%\) +2\.1k tok +0m0s$/.test(lines[2] ?? ""), /^ {2}strict +strict +passed 0\/1 \(0%\)/.test(lines[3] ?? ""), lines[4], /^ {2}greenhouse-4012345 +Senior Engineer · Acme +pass +fail$/.test(lines[5] ?? ""), text.includes("Build APIs.")]).toEqual(["tests:", true, true, "cases (splits first):", true, false]);
+    expect([lines[1], /^ {2}now +code +passed 1\/1 \(100%\) +2\.1k tok +0m0s +user 1$/.test(lines[2] ?? ""), /^ {2}strict +strict +passed 0\/1 \(0%\)/.test(lines[3] ?? ""), lines[4], /^ {2}greenhouse-4012345 +Senior Engineer · Acme +pass +fail$/.test(lines[5] ?? ""), text.includes("Build APIs.")]).toEqual(["tests:", true, true, "cases (splits first):", true, false]);
 });
 
 test("a test that didn't run shows as not run, and a variant exported before the code's prompt changed is marked", async () => {

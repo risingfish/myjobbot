@@ -51,7 +51,6 @@ erDiagram
         text requirements "JSON array (JSearch qualifications)"
         text skills "JSON array (JSearch required technologies)"
         text preferred_skills "JSON array (JSearch preferred technologies)"
-        text emailed_at "reserved for the email digest"
         text injection_seen_at "first time its text tried to escape the data markers"
         int company_id FK "the company's record"
     }

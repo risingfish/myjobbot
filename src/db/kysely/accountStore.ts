@@ -38,11 +38,6 @@ export class KyselyAccountStore implements AccountStore {
         return row === undefined ? null : fromRow(row);
     }
 
-    /** Says whether an account holds the admin mark. */
-    async isAdmin(id: number): Promise<boolean> {
-        return (await this.account(id))?.isAdmin ?? false;
-    }
-
     /** Makes an account with an unspent creation code, spending it in the same transaction. */
     async createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult> {
         return createAccountSafely(() => this.db.transaction().execute((trx) => createAccountIn(trx, { account, codeDigest, now })));

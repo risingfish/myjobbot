@@ -24,6 +24,7 @@ export interface RunDeps {
     random: () => number;
     gitCommit: () => string | null;
     print: (line: string) => void;
+    userId: number;
 }
 
 interface Selection {
@@ -138,7 +139,7 @@ async function started({ deps, selection, prompt: chosen }: Starting, options: {
         await deps.files.writePrompt(prompts[id], prompt);
     }
     const now = deps.now();
-    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted, view: options.view };
+    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted, view: options.view, userId: deps.userId };
     await deps.files.writeRun(run);
     return run;
 }

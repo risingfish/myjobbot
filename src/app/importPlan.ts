@@ -17,7 +17,6 @@ const LIMITS: Record<string, Record<string, number>> = {
         first_seen: 32,
         last_seen: 32,
         scored_at: 32,
-        emailed_at: 32,
     },
     verdicts: { ats: 32, job_id: 255, run_id: 64, scored_at: 32 },
     api_calls: { api: 32, source: 255, called_at: 32 },
@@ -58,9 +57,11 @@ const VIEW_COLUMNS = ["source", "source_id", "first_seen", "last_seen", "scored_
 
 const MOVED = new Set(VIEW_COLUMNS.filter((column) => !["source", "first_seen", "last_seen"].includes(column)));
 
-/** Splits an old job row into the shared posting and one user's view of it, as the database keeps them since step 020. */
+const RETIRED = new Set(["emailed_at"]);
+
+/** Splits an old job row into the shared posting and one user's view of it, as the database keeps them since step 020, dropping retired columns. */
 export function splitJob(job: Record<string, unknown>, userId: number): { posting: Record<string, unknown>; view: Record<string, unknown> } {
-    const posting = Object.fromEntries(Object.entries(job).filter(([column]) => !MOVED.has(column)));
+    const posting = Object.fromEntries(Object.entries(job).filter(([column]) => !MOVED.has(column) && !RETIRED.has(column)));
     const kept = VIEW_COLUMNS.filter((column) => column in job).map((column) => [column, job[column]]);
     return { posting, view: { user_id: userId, ats: job.ats, job_id: job.job_id, ...Object.fromEntries(kept) } };
 }

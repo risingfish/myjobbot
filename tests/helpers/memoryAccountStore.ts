@@ -36,10 +36,6 @@ export class MemoryAccountStore implements AccountStore {
         return user === undefined ? null : toAccount(user);
     }
 
-    async isAdmin(id: number): Promise<boolean> {
-        return (await this.account(id))?.isAdmin ?? false;
-    }
-
     async createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult> {
         if (this.tables.users.some((user) => user.emailKey === account.emailKey)) return { kind: "taken" };
         const code = this.tables.codes.find((row) => row.digest === codeDigest && row.usedBy === null && row.expiresAt > now);

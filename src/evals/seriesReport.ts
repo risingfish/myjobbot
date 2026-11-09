@@ -4,6 +4,7 @@ import { contextOf } from "./reportCommand.js";
 import { aligned, duration, shortened } from "./reportText.js";
 import { SERIES_USAGE } from "./series.js";
 import type { Series, SeriesRun } from "./seriesFormat.js";
+import { userText } from "./userNote.js";
 
 const NOT_RUN = "not run";
 
@@ -57,13 +58,13 @@ function seriesReportLines({ name, series, record, tests }: Found & { tests: Tes
     return [header, "tests:", ...aligned(tests.map(testCells)), "cases (splits first):", ...caseLines(tests, ran)];
 }
 
-/** Gives one test's cells: its label, prompt, pass rate, tokens, time and model, or that it didn't run. */
+/** Gives one test's cells: its label, prompt, pass rate, tokens, time, user and model, or that it didn't run. */
 function testCells({ label, variant, model, report }: TestResult): string[] {
     const prompt = variant ?? "code";
     if (report === null) return [label, prompt, NOT_RUN];
     const rate = report.judged === 0 ? "" : ` (${Math.round((100 * report.passed) / report.judged)}%)`;
     const drift = report.run.promptChanged === true ? "(prompt changed since export)" : "";
-    return [label, prompt, `passed ${report.passed}/${report.judged}${rate}`, `${((report.tokensIn + report.tokensOut) / 1000).toFixed(1)}k tok`, duration(report.ms), model ?? "", drift];
+    return [label, prompt, `passed ${report.passed}/${report.judged}${rate}`, `${((report.tokensIn + report.tokensOut) / 1000).toFixed(1)}k tok`, duration(report.ms), userText(report.run), model ?? "", drift];
 }
 
 /** Writes a line per case with its state under each test, the cases whose states differ between the tests that ran listed first. */

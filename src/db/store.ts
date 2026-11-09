@@ -97,7 +97,6 @@ export interface JobViews {
 
 export interface ApiCallLog {
     record(api: string, source: string, calledAt: string): Promise<void>;
-    lastCallAt(api: string, source: string): Promise<string | null>;
     countSince(api: string, since: string): Promise<number>;
     pruneBefore(cutoff: string): Promise<void>;
 }

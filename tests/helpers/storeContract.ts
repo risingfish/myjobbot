@@ -161,7 +161,7 @@ async function case13(make: MakeStores): Promise<void> {
     await apiCalls.record("jsearch", "A", "2026-09-30T23:00:00.000Z");
     await apiCalls.record("jsearch", "A", "2026-10-02T10:00:00.000Z");
     await apiCalls.record("jsearch", "B", "2026-10-03T10:00:00.000Z");
-    expect([await apiCalls.countSince("jsearch", DAY_ONE), await apiCalls.lastCallAt("jsearch", "A"), await apiCalls.lastCallAt("jsearch", "C")]).toEqual([2, "2026-10-02T10:00:00.000Z", null]);
+    expect(await apiCalls.countSince("jsearch", DAY_ONE)).toBe(2);
     await apiCalls.pruneBefore(DAY_ONE);
     expect(await apiCalls.countSince("jsearch", "2000-01-01T00:00:00.000Z")).toBe(2);
 }

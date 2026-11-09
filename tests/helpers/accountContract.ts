@@ -29,8 +29,8 @@ async function foundByKey({ accounts }: TestStores): Promise<void> {
     await accounts.initOwner(LOGIN, NOW);
     expect((await accounts.byEmailKey("owner@example.com"))?.id).toBe(OWNER_ID);
     expect(await accounts.byEmailKey("Owner@Example.com")).toBeNull();
-    expect(await accounts.isAdmin(OWNER_ID)).toBe(true);
-    expect([await accounts.account(99), await accounts.isAdmin(99)]).toEqual([null, false]);
+    expect((await accounts.account(OWNER_ID))?.isAdmin).toBe(true);
+    expect(await accounts.account(99)).toBeNull();
 }
 
 const LATER = "2026-11-06T11:00:00.000Z";

@@ -10,17 +10,6 @@ export class KyselyApiCallLog implements ApiCallLog {
         await this.db.insertInto("api_calls").values({ api, source, called_at: calledAt }).execute();
     }
 
-    /** Returns when a source was last fetched from an API, or null if it never was. */
-    async lastCallAt(api: string, source: string): Promise<string | null> {
-        const row = await this.db
-            .selectFrom("api_calls")
-            .select((eb) => eb.fn.max("called_at").as("last"))
-            .where("api", "=", api)
-            .where("source", "=", source)
-            .executeTakeFirst();
-        return row?.last ?? null;
-    }
-
     /** Counts calls to an API since a timestamp, to enforce a monthly request budget. */
     async countSince(api: string, since: string): Promise<number> {
         const row = await this.db

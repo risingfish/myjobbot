@@ -265,6 +265,7 @@ Not findings, checked on purpose:
 - **Fix**: remove `lastCallAt` from `ApiCallLog`, `KyselyApiCallLog` and `MemoryApiCallLog`, and
   drop its two calls from the `storeContract.ts:164` expectation, keeping the `countSince` check.
 - **Size**: S
+- **Done**: S1
 
 ### D9 · SRP · `src/db/store.ts:59`
 - **Breach**: `src/db/store.ts` still groups the interfaces of five unrelated stores:
@@ -301,6 +302,7 @@ Not findings, checked on purpose:
 - **Fix**: remove `isAdmin` from `AccountStore`, `KyselyAccountStore` and `MemoryAccountStore`. The
   two tests read `(await accounts.account(id))?.isAdmin`. Done in S1 with D8 (tasks T008).
 - **Size**: S
+- **Done**: S1
 
 ## Mechanical checks
 

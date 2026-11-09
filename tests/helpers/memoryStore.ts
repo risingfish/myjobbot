@@ -20,7 +20,7 @@ import { MemoryRescoreLog } from "./memoryRescoreLog.js";
 import { MemorySearchSettingsStore } from "./memorySearchSettingsStore.js";
 import { MemorySourceStore } from "./memorySourceStore.js";
 import { savedSources, type SourceLists } from "./savedSources.js";
-import { asc, MemoryJobViews, newTables, type Tables } from "./memoryJobViews.js";
+import { MemoryJobViews, newTables, type Tables } from "./memoryJobViews.js";
 import { MemoryJobStore } from "./memoryJobStore.js";
 import { MemoryPostingStore } from "./memoryPostingStore.js";
 import { MemorySourcePlans } from "./memorySourcePlans.js";
@@ -30,11 +30,6 @@ class MemoryApiCallLog implements ApiCallLog {
 
     async record(api: string, source: string, calledAt: string): Promise<void> {
         this.tables.calls.push({ api, source, called_at: calledAt });
-    }
-
-    async lastCallAt(api: string, source: string): Promise<string | null> {
-        const times = this.tables.calls.filter((call) => call.api === api && call.source === source).map((call) => String(call.called_at));
-        return times.sort(asc).at(-1) ?? null;
     }
 
     async countSince(api: string, since: string): Promise<number> {

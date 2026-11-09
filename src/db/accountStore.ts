@@ -34,7 +34,6 @@ export interface AccountStore {
     initOwner(owner: OwnerLogin, now: string): Promise<boolean>;
     byEmailKey(emailKey: string): Promise<Account | null>;
     account(id: number): Promise<Account | null>;
-    isAdmin(id: number): Promise<boolean>;
     recordEvent(event: SecurityEvent): Promise<void>;
     createAccount(account: NewAccount, codeDigest: string, now: string): Promise<CreateResult>;
     accounts(): Promise<Account[]>;

@@ -26,7 +26,7 @@ function setup(variants: Record<string, string>) {
         const chat = usageChat(scoring()).makeChat(log);
         return async (...args: Parameters<typeof chat>) => (systems.push(String(args[0][0]?.content)), chat(...args));
     };
-    const deps = { files: new EvalFiles(port), experiments: new ExperimentFiles(port), config: testAppConfig(), chatFor: () => makeChat, now: () => new Date(AT), random: () => 0.25, gitCommit: () => null, print: (line: string) => void lines.push(line) };
+    const deps = { files: new EvalFiles(port), experiments: new ExperimentFiles(port), config: testAppConfig(), chatFor: () => makeChat, now: () => new Date(AT), random: () => 0.25, gitCommit: () => null, print: (line: string) => void lines.push(line), userId: 1 };
     const runRecord = () => JSON.parse(files.get("evals/runs/20261103-180000-4000/run.json") ?? "{}") as { variant?: string | null; promptChanged?: boolean; prompts: Record<string, string> };
     return { files, lines, systems, runRecord, run: (args: string[]) => runCases(args, deps) };
 }

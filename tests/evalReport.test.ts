@@ -73,10 +73,10 @@ test("the report names each case by title and company, never its description, sh
     const plain = reportLines(report, null, false).join("\n");
     const detailed = reportLines(report, null, true).join("\n");
     expect([plain.includes("Senior Engineer · Acme"), plain.includes("Dev · Beta"), plain.includes("SECRET"), plain.includes("Go only"), detailed.includes("#1 reasons: Go only · gaps: no TypeScript"), detailed.includes("SECRET")]).toEqual([true, true, false, false, true, false]);
-    expect([plain.split("\n")[0], plain.includes("answer key changed since the run: greenhouse-4012345"), plain.includes(`recommend 65-85`), plain.includes(AT)]).toEqual(["run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · unfinished", true, true, false]);
+    expect([plain.split("\n")[0], plain.includes("answer key changed since the run: greenhouse-4012345"), plain.includes(`recommend 65-85`), plain.includes(AT)]).toEqual(["run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · user not recorded · unfinished", true, true, false]);
 });
 
 test("a run made with a variant names it in the header, and says when the code's prompt had changed since its export; an older run reads as the code's prompt", () => {
     const header = (overrides: Record<string, unknown>) => reportLines(summarize(theRun({ endedAt: AT, ...overrides }), [], context()), null, false)[0];
-    expect([header({ variant: "strict", promptChanged: false }), header({ variant: "old", promptChanged: true }), header({})]).toEqual(["run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · variant strict", "run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · variant old · prompt changed since export", "run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3"]);
+    expect([header({ variant: "strict", promptChanged: false }), header({ variant: "old", promptChanged: true }), header({})]).toEqual(["run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · variant strict · user not recorded", "run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · variant old · prompt changed since export · user not recorded", "run 20261103-180000-3f2a · model qwen3 · prompt prompt1 · 2 cases × 3 · user not recorded"]);
 });

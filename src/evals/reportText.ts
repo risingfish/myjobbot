@@ -1,23 +1,24 @@
 import type { againstObserved, againstRun, CaseRow, RunReport } from "./report.js";
+import { userText } from "./userNote.js";
 
 const MAX_TITLE = 60;
 
 type RunComparison = ReturnType<typeof againstRun>;
 type ObservedComparison = ReturnType<typeof againstObserved>;
 
-/** Writes a run's report: its header and totals, a line per case, the unstable cases, answer keys changed since, and any comparison; never a description. */
-export function reportLines(report: RunReport, comparison: RunComparison | ObservedComparison | null, reasons: boolean): string[] {
+/** Writes a run's report: its header and totals, a line per case, the unstable cases, answer keys changed since, and any comparison after its note; never a description. */
+export function reportLines(report: RunReport, comparison: RunComparison | ObservedComparison | null, reasons: boolean, note: string | null = null): string[] {
     const unstable = report.rows.filter((row) => row.unstable);
-    return [headerLine(report), totalsLine(report), "cases:", ...caseLines(report.rows, reasons), ...(unstable.length === 0 ? [] : [`unstable (mixed or range ≥ 10): ${unstable.map((row) => `${row.id} (${row.range?.min ?? "?"}-${row.range?.max ?? "?"})`).join(", ")}`]), ...(report.changedKeys.length === 0 ? [] : [`answer key changed since the run: ${report.changedKeys.join(", ")}`]), ...(comparison === null ? [] : comparisonLines(comparison))];
+    return [headerLine(report), totalsLine(report), "cases:", ...caseLines(report.rows, reasons), ...(unstable.length === 0 ? [] : [`unstable (mixed or range ≥ 10): ${unstable.map((row) => `${row.id} (${row.range?.min ?? "?"}-${row.range?.max ?? "?"})`).join(", ")}`]), ...(report.changedKeys.length === 0 ? [] : [`answer key changed since the run: ${report.changedKeys.join(", ")}`]), ...(note === null ? [] : [note]), ...(comparison === null ? [] : comparisonLines(comparison))];
 }
 
-/** Names the run, its model, prompt, size, what the model read about the owner, and whether it ended. */
+/** Names the run, its model, prompt, size, what the model read about the owner, whose it was, and whether it ended. */
 function headerLine({ run }: RunReport): string {
     const prompts = Object.values(run.prompts);
     const prompt = prompts.length === 1 ? `prompt ${prompts[0]}` : `${prompts.length} prompts`;
     const variant = run.variant === undefined || run.variant === null ? "" : ` · variant ${run.variant}${run.promptChanged === true ? " · prompt changed since export" : ""}`;
     const view = run.view === undefined || run.view === "resume" ? "" : ` · view ${run.view}`;
-    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${variant}${view}${run.endedAt === null ? " · unfinished" : ""}`;
+    return `run ${run.id} · model ${run.model} · ${prompt} · ${run.cases.length} cases × ${run.repeats}${variant}${view} · ${userText(run)}${run.endedAt === null ? " · unfinished" : ""}`;
 }
 
 /** Gives the pass rate, how many cases have answer keys, and the tokens and time used. */

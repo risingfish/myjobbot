@@ -226,3 +226,8 @@ again rather than re-running on the half-moved database.
 [Upgrading to accounts and per-user data](upgrade-to-accounts.md) is the runbook: the checks
 before, the backup, the deploy, creating the first user with `account init`, the counts that show
 every job moved, and the rollback.
+
+The release after it (feature 028) adds step `024_jobs_without_digest_mark`, which drops the
+always-empty `jobs.emailed_at` and can't be undone, so back up first as in
+[the runbook's step 4](upgrade-to-accounts.md#4-back-up-the-database). The step refuses to start,
+changing nothing, if any posting holds a digest mark.

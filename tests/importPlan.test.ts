@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { batches, compareCounts, oversizedValues, sampleIndexes } from "../src/app/importPlan.js";
+import { batches, compareCounts, oversizedValues, sampleIndexes, splitJob } from "../src/app/importPlan.js";
 
 test("values longer than their column are listed by table and column", () => {
     const row = { ats: "greenhouse", job_id: "x".repeat(256), title: "t".repeat(600), url: "https://example.com", description: "d".repeat(20_000) };
@@ -27,4 +27,10 @@ test("sample indexes are spread evenly, repeatable, and never more than the rows
 test("count differences name each table that differs", () => {
     expect(compareCounts({ jobs: 754, verdicts: 720, api_calls: 45 }, { jobs: 754, verdicts: 719, api_calls: 45 })).toEqual(["verdicts: expected 720, found 719"]);
     expect(compareCounts({ jobs: 1 }, { jobs: 1 })).toEqual([]);
+});
+
+test("an old job's retired email-digest mark is left out of the posting it becomes", () => {
+    const { posting, view } = splitJob({ ats: "greenhouse", job_id: "1", title: "Engineer", source: "Acme", emailed_at: "2026-10-01T00:00:00.000Z", score: 80 }, 1);
+    expect(posting).toEqual({ ats: "greenhouse", job_id: "1", title: "Engineer", source: "Acme" });
+    expect(view).toEqual({ user_id: 1, ats: "greenhouse", job_id: "1", source: "Acme", score: 80 });
 });

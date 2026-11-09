@@ -86,7 +86,7 @@ async function withRunDeps({ environment, email, files, port }: Context, use: (d
         if ("refused" in mine) return printedRefusal(mine);
         const config = await settingsForRun(loadConfig(environment), mine, UNTRACED);
         const chatFor = (model: string) => (log: Trace) => createChat({ ...config.env, LLM_MODEL: model }, log);
-        return await use({ files, experiments: new ExperimentFiles(port), config, chatFor, now: () => new Date(), random: Math.random, gitCommit, print: (line) => console.log(line) });
+        return await use({ files, experiments: new ExperimentFiles(port), config, chatFor, now: () => new Date(), random: Math.random, gitCommit, print: (line) => console.log(line), userId: mine.userId });
     } finally {
         await stores.close();
     }
