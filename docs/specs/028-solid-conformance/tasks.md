@@ -597,7 +597,7 @@ Two parts:
 
 **Tests first (S7a)**
 
-- [ ] T064 [P] [US1] Write unit tests (3):
+- [X] T064 [P] [US1] Write unit tests (3):
   - `tests/settingsNoticeLines.test.ts` (K3): each notice kind gives today's lines
   - `tests/componentScan.test.ts` (K3, K4): no component compares against
     `src/config/searchSettings.ts`'s reason constants, and the timestamp format
@@ -612,7 +612,7 @@ Two parts:
   `FilterField` exported from `src/web/settingsSections.ts` in S7a). The groups become
   `GROUPS: Record<FilterField, group>`, so a new filter field fails to compile until it has both a
   label and a group. Same markup.
-- [ ] T066 [US1] (S7a) K3 and K4:
+- [X] T066 [US1] (S7a) K3 and K4:
   - `noticeLines` and `wholeFallback` move to `src/web/settingsNoticeLines.ts`, keyed by notice
     kind and comparing against `NOT_SEARCH`, exported from `src/config/searchSettings.ts` here
   - `minutes()` moves to `src/time/minutes.ts`, a neutral place, so mail doesn't depend on the web
@@ -727,6 +727,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S5 | + 5 (with UI: 1254) | 92 | 78 |
 | Actual after S6a | + 4 (with UI: 1258) | 92 | 78 |
 | Actual after S6b | + 8 (with UI: 1266) | 92 | 78 |
+| Actual after S7a | + 3 (with UI: 1269) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

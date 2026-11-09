@@ -6,7 +6,7 @@ const PUBLISHERS = "exclude_publishers";
 
 const DOMAIN_REASON = "not a valid domain entry";
 
-const NOT_SEARCH = "not a search setting";
+export const NOT_SEARCH = "not a search setting";
 
 const FILTER_LISTS = new Set(["include", "exclude", "extra_exclude"]);
 

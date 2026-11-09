@@ -28,6 +28,12 @@ export type FieldName = (typeof SECTIONS)[number]["name"];
 
 export type FieldSpec = FieldDeclaration & { name: FieldName };
 
+type FilterSpec = Extract<(typeof SECTIONS)[number], { section: "filters" }>;
+
+export type FilterField = FilterSpec["name"];
+
+export const FILTER_FIELDS: readonly FilterField[] = SECTIONS.filter((spec): spec is FilterSpec => spec.section === "filters").map((spec) => spec.name);
+
 export const BOOST_FIELDS = ["title_boosts", "description_boosts"] as const;
 
 export type BoostField = (typeof BOOST_FIELDS)[number];

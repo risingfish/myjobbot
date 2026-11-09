@@ -1,5 +1,6 @@
 "use client";
 
+import { utcMinutes } from "../../../src/time/minutes.js";
 import { useState } from "react";
 import type { Account } from "../../../src/db/accountStore.js";
 import { adminChangeEmail, makeAccountCodeNow, setAdminMark, type CodeAnswer } from "../../lib/adminActions.js";
@@ -39,7 +40,7 @@ function CodeShown({ answer }: { answer: CodeAnswer }) {
             <button type="button" className="secondary outline" onClick={() => void navigator.clipboard.writeText(answer.code)}>
                 Copy
             </button>{" "}
-            <small>Works once, until {answer.expiresAt.slice(0, 16).replace("T", " ")} UTC. It isn't shown again.</small>
+            <small>Works once, until {utcMinutes(answer.expiresAt)}. It isn't shown again.</small>
         </>
     );
 }

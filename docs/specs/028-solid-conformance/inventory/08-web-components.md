@@ -103,6 +103,7 @@ Considered and not reported: `WayCard`'s `CONTROLS` and `GmailPanel`'s `offers` 
 - **Decision**: fix
 - **Fix**: move `noticeLines` and `wholeFallback` to a new pure `src/web/settingsNoticeLines.ts` (wording per kind in a `Record<SettingsNotice["kind"], ...>`), comparing the reason against an exported `NOT_SEARCH` from `src/config/searchSettings.ts`; add a unit test with each notice kind. `SettingsNotices.tsx` only maps the lines. Output unchanged.
 - **Size**: M
+- **Done**: S7a
 
 ### K4 · SRP · `web/components/account/AccountView.tsx:71`
 - **Breach**: three presentation components format timestamps themselves with the same rule, `iso.slice(0, 16).replace("T", " ") + " UTC"`: `AccountView.tsx:71` (activity), `SignInsPanel.tsx:27` (last used) and `AdminSection.tsx:42` (code expiry), while `src/web/rowViews.ts` already owns that rule as `minutes()` (and `src/mail/messages.ts:18` repeats it again).
@@ -111,6 +112,7 @@ Considered and not reported: `WayCard`'s `CONTROLS` and `GmailPanel`'s `offers` 
 - **Fix**: move `minutes()` out of `rowViews.ts` (which pulls in filter and boost code that client components should not import) into a small `src/web/minutes.ts`, with a `utcMinutes(iso)` that adds `" UTC"`; `rowViews.ts`, the three components and `src/mail/messages.ts` call it. Text unchanged.
 - **Size**: M
 - **Amended by the analysis (2026-11-08)**: the helper goes to `src/time/minutes.ts`, not `src/web/`, so `src/mail/messages.ts` doesn't depend on the web rules.
+- **Done**: S7a
 
 ### K5 · OCP · `web/components/settings/FiltersSection.tsx:12`
 - **Breach**: `TermName` and `listsOf` restate, by hand, the seven field names the filters section owns, which `src/web/settingsSections.ts` already lists (`SECTIONS`, `fieldsOf("filters")`).
@@ -119,6 +121,7 @@ Considered and not reported: `WayCard`'s `CONTROLS` and `GmailPanel`'s `offers` 
 - **Fix**: export a `FilterField` type from `settingsSections.ts` (e.g. `Exclude<FieldName, "preferences" | "match_threshold" | "resume_view" | BoostField>`) and use it for `TermName`, so `LABELS: Record<FilterField, string>` forces a label; build `listsOf` from `fieldsOf("filters")` instead of destructuring. Touches `FiltersSection.tsx` and `settingsSections.ts`.
 - **Size**: S
 - **Amended by the analysis (2026-11-08)**: `GROUPS` becomes `Record<FilterField, group>` too, so a new filter field fails to compile until it has a group as well as a label.
+- **Done**: S7a
 
 ### K6 · DIP · `web/components/account/StepUp.tsx:5`
 - **Breach**: 21 client components import their server actions directly (`web/lib/accountActions`, `authenticatorActions`, `keyActions`, `signInActions`, `adminActions`, `gmailActions`, `sourceActions`, `resumeActions`, and the browser helper `keyBrowser`) rather than receiving them as props, so their logic (e.g. `useStepUpAnswers`, `useKeyActions`) cannot be exercised with in-memory fakes without module mocking.

@@ -1,4 +1,5 @@
 import type { SettingsNotice } from "../../../src/config/resolve.js";
+import { noticeLines } from "../../../src/web/settingsNoticeLines.js";
 import { Panel } from "../sections/Panel.js";
 
 /** Renders the Settings notices panel: each search setting that fell back and why, the search settings config.json still holds, and boards or searches left over from before saved sources; nothing when there are none. */
@@ -14,16 +15,4 @@ export function SettingsNotices({ notices }: { notices: SettingsNotice[] }) {
             </ul>
         </Panel>
     );
-}
-
-/** Reports whether a fallback replaced a whole setting with its default, rather than leaving out an entry or a key that isn't a search setting. */
-function wholeFallback({ setting, reason }: { setting: string; reason: string }): boolean {
-    return !setting.endsWith("]") && reason !== "not a search setting";
-}
-
-/** Words one notice for the panel. */
-function noticeLines(notice: SettingsNotice): string[] {
-    if (notice.kind === "fallback") return [`${notice.setting} ${wholeFallback(notice) ? "fell back to its default" : "was left out"}: ${notice.reason}`];
-    if (notice.kind === "retired") return [`Company boards and saved searches are now saved sources, so ${notice.keys.join(" and ")} in config.json or the stored settings are no longer used. They can be removed.`];
-    return [`config.json still holds search settings (${notice.keys.join(", ")}), which are no longer used. They can be removed from the file.`];
 }
