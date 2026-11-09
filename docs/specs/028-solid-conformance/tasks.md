@@ -593,7 +593,7 @@ Two parts:
   so every turn of S7b ends with habit-hooks clean, even while the sitting marker exists. That is
   the UI-work rule in CLAUDE.md and constitution 2.5.0.
 
-- [ ] T063 Create `.specify/sitting-in-progress` naming S7a (then S7b).
+- [X] T063 Create `.specify/sitting-in-progress` naming S7a (then S7b).
 
 **Tests first (S7a)**
 
@@ -605,7 +605,7 @@ Two parts:
 
 **Implementation (S7a, then S7b)**
 
-- [ ] T065 [US1] (K1, K2 in S7b; K5 in S7a) K1, K2 and K5: `Record`-keyed tables in
+- [X] T065 [US1] (K1, K2 in S7b; K5 in S7a) K1, K2 and K5: `Record`-keyed tables in
   `web/components/account/LinkButton.tsx` (`PURPOSES`),
   `web/components/settings/SourceEditor.tsx` (`INPUTS`) and
   `web/components/settings/FiltersSection.tsx` (`LABELS: Record<FilterField, string>`, with
@@ -618,7 +618,7 @@ Two parts:
   - `minutes()` moves to `src/time/minutes.ts`, a neutral place, so mail doesn't depend on the web
     rules. It gets `utcMinutes(iso)`, used by `rowViews.ts`, the three components and
     `src/mail/messages.ts`.
-- [ ] T067 [US1] Run both checks until green, record the ledger, review S7 against Principle VI, mark
+- [X] T067 [US1] Run both checks until green, record the ledger, review S7 against Principle VI, mark
   K1–K5 done (inventory 08), and delete the marker.
 
 **Checkpoint**: every fix finding is marked done.
@@ -728,6 +728,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S6a | + 4 (with UI: 1258) | 92 | 78 |
 | Actual after S6b | + 8 (with UI: 1266) | 92 | 78 |
 | Actual after S7a | + 3 (with UI: 1269) | 92 | 78 |
+| Actual after S7b | + 0 (with UI: 1269) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

@@ -89,6 +89,7 @@ Considered and not reported: `WayCard`'s `CONTROLS` and `GmailPanel`'s `offers` 
 - **Decision**: fix
 - **Fix**: replace `BUTTONS` and `DONE` with one `PURPOSES: Record<LinkPurpose, { button: string; asksPassword: boolean; after: "follow" | { text: string; href: string; label: string } }>` in `LinkButton.tsx`; `LinkForm` reads `asksPassword` and `after === "follow"`, `Outcome` reads `after`. Same text and addresses, so no visible change. Only `LinkButton.tsx` changes; the `Record` makes a new purpose a compile error until it has an entry.
 - **Size**: S
+- **Done**: S7b
 
 ### K2 · OCP · `web/components/settings/SourceEditor.tsx:69`
 - **Breach**: `FieldInput` picks the control for a source module's field with a nested ternary on `field.input` (`"checkbox"` / `"select"` / anything else as text), building all three elements every render and keeping the one it wants.
@@ -96,6 +97,7 @@ Considered and not reported: `WayCard`'s `CONTROLS` and `GmailPanel`'s `offers` 
 - **Decision**: fix
 - **Fix**: add `const INPUTS: Record<SourceField["input"], (props: { field; value; onChange }) => ReactNode>` in `SourceEditor.tsx` (text, select, checkbox renderers) and render `INPUTS[field.input](...)`. Same markup; only `SourceEditor.tsx` changes.
 - **Size**: S
+- **Done**: S7b
 
 ### K3 · SRP · `web/components/settings/SettingsNotices.tsx:20`
 - **Breach**: the component both renders the notices panel and decides their wording, including `wholeFallback`, which classifies a fallback by matching the reason against the literal `"not a search setting"` (owned as `NOT_SEARCH` in `src/config/searchSettings.ts`) and the setting name against the `"[...]"` entry notation `sanitizeSearchSettings` produces. A decision about another module's string formats lives in a React file.

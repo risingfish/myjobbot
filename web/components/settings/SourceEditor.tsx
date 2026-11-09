@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 import type { TestOutcome } from "../../../src/sources/testFetch.js";
 import type { SourceSaveResult } from "../../../src/web/saveSource.js";
 import { sourceFormView, type FieldValues, type SourceChoice, type SourceDraft, type SourceFormView } from "../../../src/web/sourceForm.js";
@@ -51,22 +51,42 @@ function SourceFields({ view, onName, onValue }: { view: SourceFormView; onName:
     );
 }
 
-/** Renders one of a module's fields as its input under its label, with the problems placed on it. */
-function FieldInput({ shown, onChange }: { shown: ShownField; onChange: (value: string | boolean) => void }) {
-    const { field, value } = shown;
-    const text = <input value={String(value)} placeholder={field.placeholder} onChange={(event) => onChange(event.target.value)} />;
-    const choices = (
+interface InputProps {
+    field: ShownField["field"];
+    value: ShownField["value"];
+    onChange: (value: string | boolean) => void;
+}
+
+const INPUTS: Record<ShownField["field"]["input"], (props: InputProps) => ReactNode> = { text: TextInput, select: ChoiceInput, checkbox: BoxInput };
+
+/** Renders a text field's box. */
+function TextInput({ field, value, onChange }: InputProps) {
+    return <input value={String(value)} placeholder={field.placeholder} onChange={(event) => onChange(event.target.value)} />;
+}
+
+/** Renders a field with fixed choices as a drop-down. */
+function ChoiceInput({ field, value, onChange }: InputProps) {
+    return (
         <select value={String(value)} onChange={(event) => onChange(event.target.value)}>
             {(field.options ?? []).map((option) => (
                 <option key={option}>{option}</option>
             ))}
         </select>
     );
-    const box = <input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} />;
+}
+
+/** Renders a yes-or-no field as a checkbox. */
+function BoxInput({ value, onChange }: InputProps) {
+    return <input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} />;
+}
+
+/** Renders one of a module's fields as its input under its label, with the problems placed on it. */
+function FieldInput({ shown, onChange }: { shown: ShownField; onChange: (value: string | boolean) => void }) {
+    const { field, value } = shown;
     return (
         <div className="setting">
             <label>
-                {field.label} {field.input === "checkbox" ? box : field.input === "select" ? choices : text}
+                {field.label} {INPUTS[field.input]({ field, value, onChange })}
             </label>
             <Messages list={shown.problems} />
         </div>
