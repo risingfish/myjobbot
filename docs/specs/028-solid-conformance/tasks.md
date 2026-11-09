@@ -515,7 +515,7 @@ Two parts:
     can reach config reads (`dataDir`, `sourceConfig`, `runtimeSettings`, `alertSenders`) or
     `metNeeds` through it, and no `web/lib/*Actions.ts` file or `web/lib/sourceDeps.ts` imports
     `settingsState.js`
-- [ ] T055 [P] [US1] Write unit tests (2) in `tests/settingsShape.test.ts`:
+- [X] T055 [P] [US1] Write unit tests (2) in `tests/settingsShape.test.ts`:
   - U6: every `LINK_PURPOSES` entry parses from a `/link` fragment
   - U7: every Settings field is in exactly one section, and `settingsView(null).fields` has exactly
     the `SECTIONS` names. Both halves pass today, so these are regression guards. The real guard is
@@ -528,14 +528,14 @@ Two parts:
 
 **Implementation (S6)**
 
-- [ ] T057 [US1] U1–U4:
+- [X] T057 [US1] U1–U4:
   - `PageViews` in `src/web/pageData.ts`, and the source store's `Pick` in `src/web/saveSource.ts`
   - move `gmailSettings`, `sourceSettings` and `runtimePart` to `src/config/runtimeParts.ts`, with
     their tests moved to `tests/runtimeParts.test.ts`
   - move `localTime` to `src/web/localTime.ts`
-  - export `NOT_SEARCH` from `src/config/searchSettings.ts` (for K3 in S7a). It is a constant on the
-    run's path, so it changes here, in a sitting with the stack stopped.
-- [ ] T058 [US1] U5–U7:
+  - (moved to S7a, 2026-11-09: exporting `NOT_SEARCH` here would leave it unused until K3, which
+    knip refuses, and S7a runs with the stack stopped too)
+- [X] T058 [US1] U5–U7:
   - `sourceRows(saved, met: Met)` with `ROW_NEEDS: Record<Requirement, string>`
     (`src/web/sourceRows.ts`)
   - `LINK_PURPOSES` and `isLinkPurpose` (`src/db/` email link store module after T020, and
@@ -543,8 +543,8 @@ Two parts:
   - `SECTIONS` as the one source of `FieldName`, with `shownFields` mapped from it
     (`src/web/settingsView.ts`, `src/web/settingsSections.ts`). `FieldSpec.name` is typed `string`
     in the declaration, so `FieldName` can be derived from `SECTIONS` without a circular type.
-  - export `FilterField` from `src/web/settingsSections.ts` (for K5 in S7b), so S7b changes only
-    components
+  - (moved to S7a with K5, 2026-11-09: exporting `FilterField` before K5 uses it would leave an
+    unused export)
 - [ ] T059 [US1] W1–W3:
   - split `web/lib/uiState.ts` into `web/lib/fileConfig.ts` and `web/lib/settingsState.ts`, with
     `uiState.ts` keeping `getStores` and `getUiState`
@@ -583,11 +583,13 @@ Two parts:
 ### Sitting S7: web components (K1–K5)
 
 Two parts:
-- **S7a**, display helpers out of components (K3, K4), with the stack **stopped**: T064, T066. It
-  moves code into `src/web/`, `src/time/` and `src/mail/messages.ts`, which are not components,
-  styles or page wiring, so it isn't UI work under constitution 2.5.0.
-- **S7b**, the components' tables (K1, K2, K5), with the stack **running**: T065. It changes only
-  the three components, using `FilterField` exported in S6a. The stack serves this checkout live,
+- **S7a**, display helpers out of components and the filter labels (K3, K4, K5), with the stack
+  **stopped**: T064, T066, and T065's K5 part. It moves code into `src/web/`, `src/time/` and
+  `src/mail/messages.ts`, which are not components, styles or page wiring, so it isn't UI work
+  under constitution 2.5.0. It exports `NOT_SEARCH` (for K3) and `FilterField` (for K5) in the
+  sitting that first uses them, so no export is ever unused.
+- **S7b**, the components' tables (K1, K2), with the stack **running**: T065's K1 and K2 parts. It
+  changes only the two components. The stack serves this checkout live,
   so every turn of S7b ends with habit-hooks clean, even while the sitting marker exists. That is
   the UI-work rule in CLAUDE.md and constitution 2.5.0.
 
@@ -603,16 +605,16 @@ Two parts:
 
 **Implementation (S7a, then S7b)**
 
-- [ ] T065 [US1] (S7b) K1, K2 and K5: `Record`-keyed tables in
+- [ ] T065 [US1] (K1, K2 in S7b; K5 in S7a) K1, K2 and K5: `Record`-keyed tables in
   `web/components/account/LinkButton.tsx` (`PURPOSES`),
   `web/components/settings/SourceEditor.tsx` (`INPUTS`) and
   `web/components/settings/FiltersSection.tsx` (`LABELS: Record<FilterField, string>`, with
-  `FilterField` from `src/web/settingsSections.ts`, exported in S6a). The groups become
+  `FilterField` exported from `src/web/settingsSections.ts` in S7a). The groups become
   `GROUPS: Record<FilterField, group>`, so a new filter field fails to compile until it has both a
   label and a group. Same markup.
 - [ ] T066 [US1] (S7a) K3 and K4:
   - `noticeLines` and `wholeFallback` move to `src/web/settingsNoticeLines.ts`, keyed by notice
-    kind and comparing against `NOT_SEARCH`, exported in S6a
+    kind and comparing against `NOT_SEARCH`, exported from `src/config/searchSettings.ts` here
   - `minutes()` moves to `src/time/minutes.ts`, a neutral place, so mail doesn't depend on the web
     rules. It gets `utcMinutes(iso)`, used by `rowViews.ts`, the three components and
     `src/mail/messages.ts`.
@@ -723,6 +725,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S3b | + 6 (with UI: 1244) | 92 | 78 |
 | Actual after S4 | + 5 (with UI: 1249) | 92 | 78 |
 | Actual after S5 | + 5 (with UI: 1254) | 92 | 78 |
+| Actual after S6a | + 4 (with UI: 1258) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

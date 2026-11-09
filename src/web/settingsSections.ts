@@ -2,16 +2,14 @@ export const SECTION_NAMES = ["preferences", "scoring", "filters"] as const;
 
 export type SectionName = (typeof SECTION_NAMES)[number];
 
-export type FieldName = "preferences" | "match_threshold" | "resume_view" | "title_boosts" | "description_boosts" | "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
-
-export interface FieldSpec {
-    name: FieldName;
+interface FieldDeclaration {
+    name: string;
     section: SectionName;
-    stored: string[];
-    check: string[];
+    stored: readonly string[];
+    check: readonly string[];
 }
 
-export const SECTIONS: readonly FieldSpec[] = [
+export const SECTIONS = [
     { name: "preferences", section: "preferences", stored: ["preferences"], check: ["preferences"] },
     { name: "match_threshold", section: "scoring", stored: ["match_threshold"], check: ["match_threshold"] },
     { name: "resume_view", section: "scoring", stored: ["resume_view"], check: ["resume_view"] },
@@ -24,7 +22,11 @@ export const SECTIONS: readonly FieldSpec[] = [
     { name: "body_exclude", section: "filters", stored: ["body_filter", "exclude"], check: ["body_filter", "exclude"] },
     { name: "exclude_companies", section: "filters", stored: ["exclude_companies"], check: ["exclude_companies"] },
     { name: "exclude_publishers", section: "filters", stored: ["exclude_publishers"], check: ["jsearch", "exclude_publishers"] },
-];
+] as const satisfies readonly FieldDeclaration[];
+
+export type FieldName = (typeof SECTIONS)[number]["name"];
+
+export type FieldSpec = FieldDeclaration & { name: FieldName };
 
 export const BOOST_FIELDS = ["title_boosts", "description_boosts"] as const;
 
@@ -37,5 +39,5 @@ export function isBoostField(name: FieldName): name is BoostField {
 
 /** Lists the fields one section of the Settings page owns. */
 export function fieldsOf(section: SectionName): FieldSpec[] {
-    return SECTIONS.filter((field) => field.section === section);
+    return SECTIONS.filter((field: FieldSpec) => field.section === section);
 }

@@ -129,8 +129,8 @@ is in its finding's **Fix** line:
 | S5 | Evals, resume, profile | E1–E9 | US1 |
 | S6a | Web rules | U1–U7 | US1 |
 | S6b | Web server side | W1–W10 | US1 |
-| S7a | Display helpers out of components (stack stopped) | K3, K4 | US1 |
-| S7b | Components' tables (stack running, UI work) | K1, K2, K5 | US1 |
+| S7a | Display helpers out of components, filter labels (stack stopped) | K3, K4, K5 | US1 |
+| S7b | Components' tables (stack running, UI work) | K1, K2 | US1 |
 | S8 | Guidance and final check | FR-007; the inventory closed | US1 |
 
 Each row is one sitting and one commit; the feature ships as one pull request (research R9). The
@@ -140,8 +140,7 @@ components.
 
 S1 is independent and ships first, with the backup note. S2 then S3 come before the rest, because
 they change the interfaces the others import. After S3 the order is S4 → S5 (both change the
-one-job session's clock, C5 then E5) and S6 → S7 (K3 needs S6a's `NOT_SEARCH`, K5 its `FilterField`
-and U7). Then S8.
+one-job session's clock, C5 then E5) and S6 → S7 (K5 needs U7). Then S8.
 
 ## Test ledger (Principle II)
 

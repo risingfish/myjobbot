@@ -3,7 +3,7 @@ import type { RawSearchSettings } from "../db/searchSettingsStore.js";
 import type { SaveRequest } from "./settingsForm.js";
 import { fieldsOf, isBoostField, SECTIONS, type FieldName } from "./settingsSections.js";
 
-const ROOTS = new Set(SECTIONS.map((field) => field.stored[0]));
+const ROOTS = new Set<string>(SECTIONS.map((field) => field.stored[0]));
 
 interface AppliedSection {
     toStore: RawSearchSettings;
@@ -31,7 +31,7 @@ function editedValue(name: FieldName, request: SaveRequest): unknown {
 }
 
 /** Sets or removes a value at a path in a settings document, keeping the keys' order and dropping a nested object left empty. */
-function setAt(doc: RawSearchSettings, path: string[], value: unknown): RawSearchSettings {
+function setAt(doc: RawSearchSettings, path: readonly string[], value: unknown): RawSearchSettings {
     const [key = "", ...rest] = path;
     const inner = doc[key];
     const next = rest.length === 0 ? value : setAt(isRawObject(inner) ? inner : {}, rest, value);

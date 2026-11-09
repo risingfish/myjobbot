@@ -90,6 +90,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: declare `type PageViews = Pick<JobViews, "scoredFrom" | "allJobs" | "countAllJobs" | "appliedJobs" | "countApplied" | "verdictHistory" | "countVerdicts">` in `pageData.ts` and type `PageInput.views` (and `recommendedJobs`' `views`) with it. Callers (`web/lib/rows.ts`, `tests/pageData.test.ts`) still compile unchanged, since a full `JobViews` satisfies the `Pick`.
 - **Size**: S
+- **Done**: S6a
 
 ### U2 · ISP · `src/web/saveSource.ts:10`
 - **Breach**: `SaveSourceDeps.store` is the whole `UserSourceStore` (seven operations, including `remove`, `setEnabled`, `linkCompany` and `ensureAccountSource`), while `saveSource` and `recordTest` use only `list`, `save` and `recordFetch`.
@@ -97,6 +98,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: `store: Pick<UserSourceStore, "list" | "save" | "recordFetch">` in `SaveSourceDeps`, and the same `Pick` for `recordTest`'s parameter. Callers (`web/lib/sourceActions.ts`, `tests/saveSource.test.ts`) need no change.
 - **Size**: S
+- **Done**: S6a
 
 ### U3 · SRP · `src/web/settingsView.ts:74`
 - **Breach**: the module that builds the Settings page's field view (stored search settings after fallback, each with its default mark) also reads `config.json`'s runtime part for Gmail, HTTP and JSearch (`gmailSettings`, `sourceSettings`, `runtimePart`). Those are two unrelated jobs over different data: user search settings from the database, and runtime settings from the file.
@@ -104,6 +106,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: move `gmailSettings`, `sourceSettings` and `runtimePart` to a new `src/config/runtimeParts.ts` (beside `splitSettings` in `src/config/searchSettings.ts`, which they already use). Update the import in `web/lib/uiState.ts:18` and move their cases from `tests/settingsView.test.ts` to a `tests/runtimeParts.test.ts`.
 - **Size**: M
+- **Done**: S6a
 
 ### U4 · SRP · `src/web/gmailPanel.ts:48`
 - **Breach**: `localTime`, a general "stored UTC time to server-local YYYY-MM-DD HH:mm" formatter, is exported from the Gmail panel's view module and imported by `src/web/sourceRows.ts:3`, so the Sources list depends on the Gmail panel for a time format.
@@ -111,6 +114,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: move `localTime` to `src/web/localTime.ts`; import it from there in `gmailPanel.ts` and `sourceRows.ts` (and any test that imports it from `gmailPanel.js`).
 - **Size**: S
+- **Done**: S6a
 
 ### U5 · OCP · `src/web/sourceRows.ts:69`
 - **Breach**: `rowNote` branches on one requirement by name (`found.requires.includes("jsearch_key") && !hasSearchKey`), and `RowFacts` has one boolean per requirement (`hasSearchKey`, `gmailConnected`), while `sourceChoices.ts` already handles requirements generically through `Met` (`Record<Requirement, boolean>`) and a `NEEDS` table. A new `Requirement` in `src/sources/module.ts` must be added to `Met` and `NEEDS` (enforced by the compiler) and also by hand to `RowFacts` and `rowNote` (not enforced), or saved sources of that module never show what they need.
@@ -118,6 +122,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: `sourceRows(saved, met: Met)` with a row-text table `ROW_NEEDS: Record<Requirement, string>` (`jsearch_key: "needs JSEARCH_API_KEY in .env"`, `gmail: "needs Gmail connected"`), `rowNote` returning the first unmet requirement's text after the existing `unavailable` / `needs fixing` checks, and the account filter reading `met.gmail`. Output is unchanged: `gmail` is required only by the account source, which is already left out when Gmail isn't connected. Caller `web/lib/uiState.ts:92` passes `met` directly; `tests/sourceRows.test.ts` changes its facts argument.
 - **Size**: S
+- **Done**: S6a
 
 ### U6 · OCP · `src/web/linkFragment.ts:3`
 - **Breach**: the emailed-link purposes are listed again as an untyped `Set<string>` (`PURPOSES`) and the result is cast `as LinkPurpose`. `LinkPurpose` is a union in `src/db/tokenStore.ts`, and every other per-purpose table (`SPENDS` in `flows/emailLinks.ts`, `LIFETIME_MINUTES`, `BUTTONS` in `LinkButton.tsx`) is a `Record<LinkPurpose, …>` the compiler checks; this one isn't.
@@ -125,6 +130,7 @@ Reviewed: 75 modules, 8 findings.
 - **Decision**: fix
 - **Fix**: in `src/db/tokenStore.ts` export `LINK_PURPOSES = ["signin", "reset", "email_change", "step_up"] as const` and derive `LinkPurpose` from it (the module has no runtime imports, so it stays safe for the client bundle); in `linkFragment.ts` replace `PURPOSES` and the cast with a type guard `isLinkPurpose(value): value is LinkPurpose` over `LINK_PURPOSES`.
 - **Size**: S
+- **Done**: S6a
 
 ### U7 · OCP · `src/web/settingsView.ts:90`
 - **Breach**: a Settings field is described in several parallel places: the `FieldName` union and the `SECTIONS` list (`settingsSections.ts`), `ROW_SHAPES` (`settingsForm.ts`), and `FieldValues`, `SHOWN`, `DEFAULTS` and the hand-written `shownFields` object (`settingsView.ts`). The `Record`s are compiler-checked, but `FieldName` and `SECTIONS` are not tied: a name added to the union without a `SECTIONS` entry compiles, belongs to no section, never saves, and `storedValue` falls back to the empty path and hands the whole settings document to that field's schema, which fails only when the page loads.
@@ -133,6 +139,7 @@ Reviewed: 75 modules, 8 findings.
 - **Fix**: make `SECTIONS` the source: declare it `as const satisfies readonly FieldSpec[]` with `name` as a string literal and derive `FieldName` as `(typeof SECTIONS)[number]["name"]`; build `shownFields` by mapping over `SECTIONS` (`Object.fromEntries(SECTIONS.map(({ name }) => [name, shownField(name, settings)]))`) instead of listing each field, and let `storedValue` take the `FieldSpec`. The remaining per-field `Record`s (`ROW_SHAPES`, `SHOWN`, `DEFAULTS`) stay; the compiler then forces each of them for any new section entry. Callers unchanged.
 - **Size**: M
 - **Amended by the analysis (2026-11-08)**: `FieldSpec.name` is typed `string` in the declaration, so `FieldName` can be derived from `SECTIONS` without a circular type.
+- **Done**: S6a
 
 ### U8 · ISP · `src/accounts/flows/context.ts:18`
 - **Breach**: every account flow takes the whole `AuthContext` (six stores, clock, randomness, mail, secret key, relying party) even when it uses one store, e.g. `saveName` uses only `stores.accounts`, `signOut` only `stores.sessions` and the clock.

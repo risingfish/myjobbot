@@ -1,4 +1,6 @@
-export type LinkPurpose = "signin" | "reset" | "email_change" | "step_up";
+export const LINK_PURPOSES = ["signin", "reset", "email_change", "step_up"] as const;
+
+export type LinkPurpose = (typeof LINK_PURPOSES)[number];
 
 const LIFETIME_MINUTES: Record<LinkPurpose, number> = { signin: 15, step_up: 15, reset: 30, email_change: 24 * 60 };
 

@@ -16,7 +16,8 @@ import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
 import { resumeShown, type ResumeShown } from "../../src/web/resumeView.js";
-import { gmailSettings, settingsView, sourceSettings, type SettingsView } from "../../src/web/settingsView.js";
+import { gmailSettings, sourceSettings } from "../../src/config/runtimeParts.js";
+import { settingsView, type SettingsView } from "../../src/web/settingsView.js";
 import type { Met } from "../../src/sources/module.js";
 import { sourceChoices } from "../../src/web/sourceChoices.js";
 import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceRows.js";
@@ -91,7 +92,7 @@ export async function getSettingsState(): Promise<SettingsState> {
 /** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */
 async function sourcesView(opened: UserStores): Promise<SourcesView> {
     const [saved, met, used] = await Promise.all([opened.sources.list(), metNeeds(opened), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
-    const rows = sourceRows(saved, { hasSearchKey: met.jsearch_key, gmailConnected: met.gmail });
+    const rows = sourceRows(saved, met);
     return { rows, usage: searchUsage(used, sourceConfig().jsearch.monthly_request_cap), choices: sourceChoices(met) };
 }
 

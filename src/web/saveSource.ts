@@ -4,10 +4,12 @@ import { testFetch, type TestDeps, type TestOutcome } from "../sources/testFetch
 import type { Problem } from "./settingsProblems.js";
 import { isScheduled, saveSourcePlan, type SaveFacts } from "./sourceRules.js";
 
+type SaveStore = Pick<UserSourceStore, "list" | "save" | "recordFetch">;
+
 export type SourceSaveResult = { ok: true; test: TestOutcome } | { ok: false; problems: Problem[] } | { ok: false; failed: true };
 
 export interface SaveSourceDeps {
-    store: UserSourceStore;
+    store: SaveStore;
     facts: Omit<SaveFacts, "saved">;
     test: Omit<TestDeps, "at">;
     now: () => Date;
@@ -32,7 +34,7 @@ export async function saveSource(deps: SaveSourceDeps, request: z.infer<typeof s
 }
 
 /** Records a test as the source's last fetch, except a passing test of a scheduled search, whose jobs weren't stored, so the next run still fetches it. */
-async function recordTest(store: UserSourceStore, source: SavedSource, done: { at: string; test: TestOutcome }): Promise<void> {
+async function recordTest(store: Pick<UserSourceStore, "recordFetch">, source: SavedSource, done: { at: string; test: TestOutcome }): Promise<void> {
     const { test } = done;
     if (test.ok && isScheduled(source.module)) return;
     const outcome = test.ok ? { outcome: "ok" as const, jobs: test.jobs, reason: null } : { outcome: "failing" as const, jobs: 0, reason: test.reason };

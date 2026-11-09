@@ -6,8 +6,10 @@ import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 import type { PageData, PageName } from "./api.js";
 import { toJobRowView, toVerdictRowView, type RowContext } from "./rowViews.js";
 
+type PageViews = Pick<JobViews, "scoredFrom" | "allJobs" | "countAllJobs" | "appliedJobs" | "countApplied" | "verdictHistory" | "countVerdicts">;
+
 export interface PageInput {
-    views: JobViews;
+    views: PageViews;
     config: Settings;
     sourceNames: string[];
     page: Page;
@@ -37,7 +39,7 @@ async function loadRecommended({ views, config, sourceNames, page, now }: PageIn
 }
 
 /** Returns the jobs, from saved sources, not marked applied and not hidden by a filter as the filters stand now, whose boosted score meets the match threshold. */
-async function recommendedJobs(views: JobViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
+async function recommendedJobs(views: PageViews, { config, sourceNames }: PageSettings): Promise<JobView[]> {
     const threshold = config.match_threshold;
     const lists = boostLists(config);
     const scored = await views.scoredFrom({ sources: sourceNames, minScore: threshold - maxBoost(lists) });

@@ -15,7 +15,7 @@ type Section = BoundFunctions<typeof queries>;
 
 function renderSection(): Section {
     const saved = savedSources({ companies: [STRIPE_BOARD], searches: [{ name: "Remote", query: "go" }] }).map((source) => (source.module === "jsearch" ? { ...source, enabled: false } : source));
-    const sources = { rows: sourceRows(saved, { hasSearchKey: true, gmailConnected: true }), usage: searchUsage(3, 190), choices: sourceChoices({ jsearch_key: true, gmail: true }) };
+    const sources = { rows: sourceRows(saved, { jsearch_key: true, gmail: true }), usage: searchUsage(3, 190), choices: sourceChoices({ jsearch_key: true, gmail: true }) };
     return within(render(<SourcesSection sources={sources} />).container);
 }
 
