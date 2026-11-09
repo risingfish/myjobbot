@@ -100,6 +100,18 @@ async function emailChangedUnlessTaken({ accounts, accountCodes }: TestStores): 
     expect(await accounts.changeEmail(OWNER_ID, "ADA@example.com", "ada@example.com")).toBe("taken");
 }
 
+async function statusStored({ accounts, accountCodes }: TestStores): Promise<void> {
+    await accounts.initOwner({ email: "o@example.com", emailKey: "o@example.com", passwordDigest: "d" }, NOW);
+    await accountCodes.makeCode("c", OWNER_ID, NOW);
+    const created = await accounts.createAccount({ email: "ada@example.com", emailKey: "ada@example.com", name: "Ada", passwordDigest: "d" }, "c", NOW);
+    const adaId = created.kind === "created" ? created.userId : 0;
+    await accounts.setStatus(adaId, { deactivatedAt: NOW, deleteAfter: "2026-12-06T10:00:00.000Z" });
+    expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: NOW, deleteAfter: "2026-12-06T10:00:00.000Z" });
+    expect(await accounts.account(OWNER_ID)).toMatchObject({ deactivatedAt: null, deleteAfter: null });
+    await accounts.setStatus(adaId, { deactivatedAt: NOW, deleteAfter: null });
+    expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: NOW, deleteAfter: null });
+}
+
 export function accountContract(makeStores: MakeStores): void {
     test("an account's name can be changed", withStores(makeStores, renamed));
     test("an account's last 20 security events read back newest first, with their address or none", withStores(makeStores, eventsListed));
@@ -113,4 +125,5 @@ export function accountContract(makeStores: MakeStores): void {
 export function accountStrictCases(makeStores: MakeStores): void {
     test("the owner gets an email, the admin mark and a usable password once, and never again, and is the one user listed", withStores(makeStores, ownerInitOnce));
     test("two accounts made at once with one code: one is made and the other refused", withStores(makeStores, oneCodeOneAccount));
+    test("an account's deactivation and deletion dates are stored and read back, touching no other account", withStores(makeStores, statusStored));
 }

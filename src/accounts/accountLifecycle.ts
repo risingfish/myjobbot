@@ -7,3 +7,12 @@ type Status = Pick<Account, "deactivatedAt" | "deleteAfter">;
 export function reactivateFirst(account: Status): string | null {
     return account.deactivatedAt === null ? null : MESSAGES.reactivate_first;
 }
+
+export type AccountLifecycle = "active" | "deactivated" | "pending_deletion" | "held";
+
+/** Names where an account stands: active, deactivated, waiting for its deletion, or held because its deletion is due but it is the only admin. */
+export function statusOf(account: Status, now: string, onlyAdmin: boolean): AccountLifecycle {
+    if (account.deactivatedAt === null) return "active";
+    if (account.deleteAfter === null) return "deactivated";
+    return account.deleteAfter <= now && onlyAdmin ? "held" : "pending_deletion";
+}

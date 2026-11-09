@@ -17,7 +17,10 @@ vi.mock("../../web/lib/accountActions.js", () => actions);
 vi.mock("../../web/lib/keyActions.js", () => ({ startKeyRegistration: vi.fn(), finishKeyRegistration: vi.fn(), removeKey: vi.fn(), startKeySignIn: vi.fn(), finishKeySignIn: vi.fn() }));
 vi.mock("../../web/lib/authenticatorActions.js", () => ({ startAuthenticatorSetup: vi.fn(), confirmAuthenticator: vi.fn(), removeAuthenticator: vi.fn(), makeRecoveryCodes: vi.fn() }));
 
+vi.mock("../../web/lib/accountStatusActions.js", () => ({ deactivateAccount: vi.fn(), reactivateAccount: vi.fn() }));
+
 const STATE = {
+    status: { status: "active" as const, deactivatedAt: null, deleteAfter: null, onlyAdmin: true },
     name: "Zac",
     email: "zac@forthebrew.com",
     ways: [
@@ -59,7 +62,7 @@ async function signInsListed() {
 
 test("the Account tab shows User Profile, the four ways with each one's controls only while it is on, the only usable way locked on, each sign-in with its device and a Sign out, and recent events", async () => {
     render(<AccountView state={STATE} />);
-    expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual(["User Profile", "Ways of signing in", "Recovery codes", "Sign-ins", "Recent activity"]);
+    expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual(["User Profile", "Ways of signing in", "Recovery codes", "Sign-ins", "Recent activity", "Account status"]);
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Zac");
     expect(screen.getByText("zac@forthebrew.com")).toBeTruthy();
     expect(screen.getByText(/7 of 10 recovery codes left/)).toBeTruthy();

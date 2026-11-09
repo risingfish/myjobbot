@@ -29,4 +29,5 @@ export const MESSAGES = {
     page_failed: "Something went wrong loading this page. Try again.",
     base_url: "myjobbot: MYJOBBOT_BASE_URL is missing or not allowed (see .env.example).",
     reactivate_first: "Your account is deactivated. Reactivate it on the Account tab first.",
+    deletion_pending: "Cancel the deletion first.",
 } as const;

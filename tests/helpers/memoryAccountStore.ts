@@ -1,4 +1,4 @@
-import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../../src/db/accountStore.js";
+import type { Account, AccountStatus, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../../src/db/accountStore.js";
 import { OWNER_ID } from "../../src/db/owner.js";
 import { upsertMethod, type AuthTables, type MemoryUser } from "./memoryAuthTables.js";
 
@@ -66,5 +66,9 @@ export class MemoryAccountStore implements AccountStore {
         if (this.tables.users.some((user) => user.emailKey === emailKey && user.id !== userId)) return "taken";
         for (const user of this.tables.users) if (user.id === userId) Object.assign(user, { email, emailKey });
         return "ok";
+    }
+
+    async setStatus(userId: number, status: AccountStatus): Promise<void> {
+        for (const user of this.tables.users) if (user.id === userId) Object.assign(user, status);
     }
 }

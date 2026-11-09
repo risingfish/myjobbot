@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from "kysely";
-import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../accountStore.js";
+import type { Account, AccountStatus, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../accountStore.js";
 import { createAccountIn, createAccountSafely } from "./accountCreation.js";
 import type { Database } from "../schema.js";
 import type { UsersTable } from "../schema/users.js";
@@ -84,6 +84,11 @@ export class KyselyAccountStore implements AccountStore {
             if ((error as { code?: unknown } | null)?.code === "ER_DUP_ENTRY") return "taken";
             throw error;
         }
+    }
+
+    /** Sets when an account was deactivated and when its requested deletion is due, each null when not. */
+    async setStatus(userId: number, status: AccountStatus): Promise<void> {
+        await this.db.updateTable("users").set({ deactivated_at: status.deactivatedAt, delete_after: status.deleteAfter }).where("id", "=", userId).execute();
     }
 }
 

@@ -7,6 +7,8 @@ export interface Account {
     deleteAfter: string | null;
 }
 
+export type AccountStatus = Pick<Account, "deactivatedAt" | "deleteAfter">;
+
 export interface OwnerLogin {
     email: string;
     emailKey: string;
@@ -32,4 +34,5 @@ export interface AccountStore {
     setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
     saveName(userId: number, name: string): Promise<void>;
     changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken">;
+    setStatus(userId: number, status: AccountStatus): Promise<void>;
 }

@@ -19,7 +19,9 @@ export type SecurityEventName =
     | "code_made"
     | "signed_out_elsewhere"
     | "device_signed_out"
-    | "key_counter_error";
+    | "key_counter_error"
+    | "account_deactivated"
+    | "account_reactivated";
 
 const LABELS: Record<SecurityEventName, string> = {
     signed_in: "Signed in",
@@ -43,9 +45,11 @@ const LABELS: Record<SecurityEventName, string> = {
     signed_out_elsewhere: "Signed out everywhere else",
     device_signed_out: "A device was signed out",
     key_counter_error: "A hardware key answered out of order and was refused",
+    account_deactivated: "Account deactivated",
+    account_reactivated: "Account reactivated",
 };
 
-const NOTICED = new Set<SecurityEventName>(["locked", "password_changed", "password_reset", "method_enabled", "method_disabled", "key_added", "key_removed", "app_added", "app_removed", "recovery_codes_made", "recovery_code_used", "admin_granted", "admin_removed"]);
+const NOTICED = new Set<SecurityEventName>(["locked", "password_changed", "password_reset", "method_enabled", "method_disabled", "key_added", "key_removed", "app_added", "app_removed", "recovery_codes_made", "recovery_code_used", "admin_granted", "admin_removed", "account_deactivated", "account_reactivated"]);
 
 /** Returns a security event's fixed wording, as the Account tab shows it. */
 export function eventLabel(event: SecurityEventName): string {
