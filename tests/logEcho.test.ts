@@ -25,7 +25,7 @@ test("a line trace prints each event as one JSON line, stamped with the time, th
 test("with MYJOBBOT_LOG_STDOUT=1 a run's trace and job log are echoed to stdout as well as written to their files, and the model log is not echoed", () => {
     const lines: string[] = [];
     const { root, config } = loaded("1");
-    const logs = openRunLogs(config, (line) => void lines.push(line));
+    const logs = openRunLogs(config, { write: (line) => void lines.push(line), isTTY: false });
     logs.trace.write({ type: "a" });
     logs.jobs.write({ type: "b" });
     logs.llm.write({ type: "c" });
@@ -35,7 +35,15 @@ test("with MYJOBBOT_LOG_STDOUT=1 a run's trace and job log are echoed to stdout 
 
 test("without MYJOBBOT_LOG_STDOUT nothing is echoed", () => {
     const lines: string[] = [];
-    const logs = openRunLogs(loaded(undefined).config, (line) => void lines.push(line));
+    const logs = openRunLogs(loaded(undefined).config, { write: (line) => void lines.push(line), isTTY: false });
+    logs.trace.write({ type: "a" });
+    logs.jobs.write({ type: "b" });
+    expect(lines).toEqual([]);
+});
+
+test("a command typed at a terminal isn't echoed even with MYJOBBOT_LOG_STDOUT=1, so its own output stays readable", () => {
+    const lines: string[] = [];
+    const logs = openRunLogs(loaded("1").config, { write: (line) => void lines.push(line), isTTY: true });
     logs.trace.write({ type: "a" });
     logs.jobs.write({ type: "b" });
     expect(lines).toEqual([]);

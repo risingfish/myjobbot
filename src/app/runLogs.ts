@@ -13,15 +13,28 @@ export interface RunLogs {
 
 type Stream = Exclude<keyof RunLogs, "runId">;
 
+interface Output {
+    write(line: string): unknown;
+    isTTY?: boolean;
+}
+
 // The model log is left out: it holds every model response with the job text, and would swamp the container's log.
 const ECHOED: Record<Stream, boolean> = { trace: true, jobs: true, llm: false };
 
-/** Opens the trace, LLM, and job JSONL log files used to record one run, echoing the trace and job log to stdout as well when MYJOBBOT_LOG_STDOUT is 1. */
-export function openRunLogs(config: LoadedConfig, echo: (line: string) => void = (line) => void process.stdout.write(line)): RunLogs {
+/** Opens the trace, LLM, and job JSONL log files used to record one run, echoing the trace and job log to stdout as well when MYJOBBOT_LOG_STDOUT is 1 and stdout isn't a terminal. */
+export function openRunLogs(config: LoadedConfig, out: Output = process.stdout): RunLogs {
     const runId = randomUUID();
     const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
     const logDir = config.env.MYJOBBOT_LOG_DIR;
-    const echoed = (stream: Stream, file: Trace) => (config.env.MYJOBBOT_LOG_STDOUT === "1" && ECHOED[stream] ? teeTrace(file, lineTrace(echo, stream, runId)) : file);
+    // A command typed at a terminal prints its own lines; only the services' processes, which have none, echo.
+    const echoing = config.env.MYJOBBOT_LOG_STDOUT === "1" && out.isTTY !== true;
+    const echoed = (stream: Stream, file: Trace) =>
+        echoing && ECHOED[stream]
+            ? teeTrace(
+                  file,
+                  lineTrace((line) => void out.write(line), stream, runId),
+              )
+            : file;
     return {
         runId,
         trace: echoed("trace", openJsonl(join(config.dataDir, "runs"), `${name}.jsonl`, runId)),
