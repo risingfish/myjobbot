@@ -10,10 +10,10 @@ import { parseAlert, type AlertEmail, type AlertJob, type ParsedAlert } from "./
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
 import { ALERT_ATS, alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
-import { imapApi, type ImapFactory } from "./imap.js";
+import type { ImapFactory } from "./imap.js";
 import type { AlertMail } from "./imapAlerts.js";
 import { GmailError } from "./imapErrors.js";
-import type { SecretKeyStatus } from "./secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 
 export interface AlertDeps {
     gmail: GmailStore;
@@ -21,7 +21,7 @@ export interface AlertDeps {
     known: Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
     postings: Pick<PostingStore, "known">;
     key: SecretKeyStatus;
-    imap?: ImapFactory;
+    imap: ImapFactory;
     senders: string[];
     now: Date;
     source: JobSource;
@@ -111,7 +111,7 @@ async function readMail(deps: AlertDeps, marker: AlertStateRow | null): Promise<
     const access = alertsUsability(await deps.gmail.connection(), deps.key);
     if (!access.usable) throw new AlertsUnavailable(access.note);
     try {
-        return await (deps.imap ?? imapApi)({ email: access.email, password: access.password }).readAlerts({ senders: deps.senders, marker, max: MAX_EMAILS });
+        return await deps.imap({ email: access.email, password: access.password }).readAlerts({ senders: deps.senders, marker, max: MAX_EMAILS });
     } catch (error) {
         if (!(error instanceof GmailError)) throw error;
         if (error.code === "bad_login") await deps.gmail.needsReconnect("app password rejected; create a new one");

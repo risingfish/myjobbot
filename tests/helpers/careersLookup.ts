@@ -1,3 +1,4 @@
+import { checkBrowserLan } from "../../src/careers/lanCheck.js";
 import type { AssistantMessage, ChatFn } from "../../src/agent/llm.js";
 import { dataMarkers } from "../../src/agent/markers.js";
 import type { BrowserPort } from "../../src/careers/browser.js";
@@ -58,7 +59,8 @@ export async function lookupSetup(setup: Setup) {
     const searches: string[] = [];
     const trace = memoryTrace();
     const pages = { pages: fakePages(setup.pages ?? {}), lookup: publicDns(), maxBytes: 1_000_000 };
-    const renderer = new PageRenderer({ connect: setup.connect ?? null, settings: testAppSettings().careers_lookup, lookup: pages.lookup, careers, trace, runId: "run-1", now: () => TEST_NOW });
+    const settings = testAppSettings().careers_lookup;
+    const renderer = new PageRenderer({ connect: setup.connect ?? null, settings, lookup: pages.lookup, checkLan: checkBrowserLan({ settings, careers, trace, runId: "run-1", now: () => TEST_NOW }), now: () => TEST_NOW });
     const deps: LookupDeps = { chat: setup.chat ?? scripted.chat, trace, settings: testAppSettings().careers_lookup, pages, postings: stores.postings, careers, runId: "run-1", now: () => TEST_NOW, boards: { http: fakeBoardHttp(setup.boards ?? {}), cache: new Map() }, renderer, markers: dataMarkers(TEST_RUN_ID), search: async (company) => (searches.push(company), setup.results ?? []) };
     return { deps, stores, careers, searches, trace, requests: scripted.requests };
 }

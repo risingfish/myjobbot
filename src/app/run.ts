@@ -1,3 +1,4 @@
+import { imapApi } from "../gmail/imap.js";
 import { searchCompanies } from "../companies/searchCompanies.js";
 import { describeError } from "../errors.js";
 import { createChat, type ChatFn } from "../agent/llm.js";
@@ -14,7 +15,7 @@ import { sourceHttp } from "../sources/sourceHttp.js";
 import { sourcesOn } from "../tools/sources.js";
 import { beforeAgent } from "./beforeAgent.js";
 import { newRunState, type ToolContext } from "../tools/context.js";
-import type { SecretKeyStatus } from "../gmail/secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 import { gmailState, type GmailState } from "./gmailState.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
@@ -99,7 +100,7 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, g
         now: () => new Date(),
         jobLog: logs.jobs,
         jsearchApiKey: config.env.JSEARCH_API_KEY ?? null,
-        gmail: { store: stores.gmail, alerts: stores.alerts, key, ...gmail },
+        gmail: { store: stores.gmail, alerts: stores.alerts, key, imap: imapApi, ...gmail },
         trace: logs.trace,
         chat,
         careers: { store: stores.careers, searxngUrl: config.env.MYJOBBOT_SEARXNG_URL ?? null, lookup, pages: seams.pages ?? client, boards, renderer: pageRenderer(config, seams, { logs, stores }) },

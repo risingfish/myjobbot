@@ -11,17 +11,11 @@ async function check(url: string): Promise<void> {
 }
 
 function render(browser: ReturnType<typeof fakeBrowser>, maxBytes = 100_000) {
-    return renderPage(browser.port, { url: PAGE, check, seconds: 15, maxBytes });
+    return renderPage(browser.port, { url: PAGE, check, seconds: 15, maxBytes, clock: Date.now });
 }
 
 test("images, fonts, media and every refused address are aborted, and public scripts, documents and data requests go through", async () => {
-    const requests = [
-        { url: "https://cdn.example/logo.png", kind: "image", mainNavigation: false },
-        { url: "https://cdn.example/font.woff2", kind: "font", mainNavigation: false },
-        { url: "https://cdn.example/clip.mp4", kind: "media", mainNavigation: false },
-        ...[...PRIVATE].filter((url) => !url.startsWith("ws:")).map((url) => ({ url, kind: "fetch", mainNavigation: false })),
-        ...["script", "document", "xhr", "fetch"].map((kind) => ({ url: `https://cdn.example/${kind}`, kind, mainNavigation: false })),
-    ];
+    const requests = [{ url: "https://cdn.example/logo.png", kind: "image", mainNavigation: false }, { url: "https://cdn.example/font.woff2", kind: "font", mainNavigation: false }, { url: "https://cdn.example/clip.mp4", kind: "media", mainNavigation: false }, ...[...PRIVATE].filter((url) => !url.startsWith("ws:")).map((url) => ({ url, kind: "fetch", mainNavigation: false })), ...["script", "document", "xhr", "fetch"].map((kind) => ({ url: `https://cdn.example/${kind}`, kind, mainNavigation: false }))];
     const browser = fakeBrowser({ requests, sockets: ["ws://10.0.0.5/socket", "wss://live.example/socket"] });
     await render(browser);
     expect(browser.verdicts.filter(([, allowed]) => allowed).map(([url]) => url)).toEqual(["https://cdn.example/script", "https://cdn.example/document", "https://cdn.example/xhr", "https://cdn.example/fetch", "wss://live.example/socket"]);

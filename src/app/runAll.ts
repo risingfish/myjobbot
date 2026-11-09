@@ -4,7 +4,7 @@ import { runtimeSettings } from "../config/resolve.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
-import { secretKeyStatus, type SecretKeyStatus } from "../gmail/secretKey.js";
+import { secretKeyStatus, type SecretKeyStatus } from "../secrets/secretKey.js";
 import { MS_PER_DAY } from "../jobs/age.js";
 import { runForUser, type RunSeams } from "./run.js";
 import type { UserRun } from "./runLines.js";

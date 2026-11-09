@@ -11,7 +11,7 @@ import type { Account } from "../../src/db/accountStore.js";
 import type { AlertStore, GmailStore } from "../../src/db/gmailStore.js";
 import type { JobViews } from "../../src/db/jobViews.js";
 import type { UserStores } from "../../src/db/userStores.js";
-import { secretKeyStatus, type SecretKeyStatus } from "../../src/gmail/secretKey.js";
+import { secretKeyStatus, type SecretKeyStatus } from "../../src/secrets/secretKey.js";
 import { gmailConnected } from "../../src/gmail/alertJobs/usable.js";
 import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";

@@ -403,45 +403,45 @@ Two parts:
 
 ### Sitting S4: Gmail, the careers lookup, re-score (S6–S8, C1, C2, C5–C7)
 
-- [ ] T036 Create `.specify/sitting-in-progress` naming S4.
+- [X] T036 Create `.specify/sitting-in-progress` naming S4.
 
 **Tests first (S4)**
 
-- [ ] T037 [P] [US1] Write unit tests (4, one per bullet) in `tests/rootsScan.test.ts`:
+- [X] T037 [P] [US1] Write unit tests (4, one per bullet) in `tests/rootsScan.test.ts`:
   - S8: `imapApi` is referenced only in `src/gmail/imap.ts`, `src/app/` and `web/lib/`
   - S7: nothing under `src/accounts/`, nor `web/lib/authDeps.ts`, imports from `src/gmail/`
   - C5, C6: no `Date.now` or argument-less `new Date()` in `src/careers/` or `src/rescore/`, except
     the composition roots `src/rescore/open.ts` and `src/app/runParts.ts`
   - C1, C2: a type-level case (`expectTypeOf`) that the careers lookup's store is the four-method
     `LookupCareers`, and that `RescoreDeps.views` is `Pick<JobViews, "clearScore">`
-- [ ] T038 [P] [US1] Write 1 unit test in `tests/lanCheck.test.ts` (C7), both outcomes in one case: `checkBrowserLan` gives the
+- [X] T038 [P] [US1] Write 1 unit test in `tests/lanCheck.test.ts` (C7), both outcomes in one case: `checkBrowserLan` gives the
   `LAN check not configured` note when the probe isn't configured, and null otherwise, with a fake
   port and the memory careers store.
 
 **Implementation (S4)**
 
-- [ ] T039 [US1] S7: move `src/gmail/seal.ts` and `src/gmail/secretKey.ts` unchanged to
+- [X] T039 [US1] S7: move `src/gmail/seal.ts` and `src/gmail/secretKey.ts` unchanged to
   `src/secrets/`. Update every import, and the `src/gmail/seal.ts` mentions in CLAUDE.md. The field
   names and the sealed format stay the same.
-- [ ] T040 [US1] S6 and S8:
+- [X] T040 [US1] S6 and S8:
   - `check` and `disconnect` (`src/gmail/check.ts`) take the `Pick`s they use
   - `imap: ImapFactory` is required in `AlertDeps`, `GmailDeps` and the run context's `gmail`, and
     passed at the roots (`src/app/run.ts`, `web/lib/gmailDeps.ts`, the Gmail actions)
   - drop the `?? imapApi` fallbacks
-- [ ] T041 [US1] C1 and C2:
+- [X] T041 [US1] C1 and C2:
   - `LookupCareers` (four methods) for the careers lookup's store, and `loggedCareers` wraps four
     (`src/careers/lookUpJob.ts`, `src/careers/deps.ts`, `src/rescore/traceSteps.ts`)
   - `RescoreDeps` (`src/rescore/rescore.ts`) takes the `Pick`s it uses
-- [ ] T042 [US1] C5 and C6: `clock` on `OneJobSession` (`src/rescore/session.ts`; `scoreOne` passes
+- [X] T042 [US1] C5 and C6: `clock` on `OneJobSession` (`src/rescore/session.ts`; `scoreOne` passes
   `() => deps.now().getTime()`) and on `RenderRequest` (`src/careers/render.ts`). `oneJobAgentDeps`'
   other caller, `src/evals/session.ts:35`, passes `Date.now` until S5's T050 gives it the session's
   clock. Production passes the same time as before.
-- [ ] T043 [US1] C7: the LAN probe moves to `src/careers/lanCheck.ts` (`checkBrowserLan`), and
+- [X] T043 [US1] C7: the LAN probe moves to `src/careers/lanCheck.ts` (`checkBrowserLan`), and
   `RendererDeps` takes `checkLan` in place of `careers`, `trace` and `runId`. It is built in
   `pageRenderer` (`src/app/runParts.ts`) and in the test builders `tests/helpers/careersLookup.ts`
   and `tests/helpers/context.ts`. `tests/careersRenderState.test.ts:17`, which builds a `PageRenderer`
   and tests the probe, moves its probe case to `tests/lanCheck.test.ts`.
-- [ ] T044 [US1] Run both checks until green, record the ledger, review S4 against Principle VI, mark
+- [X] T044 [US1] Run both checks until green, record the ledger, review S4 against Principle VI, mark
   the findings done (inventories 02, 03), and delete the marker.
 
 ### Sitting S5: evals, resume, profile (E1–E9)
@@ -721,6 +721,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S2b | + 4 (with UI: 1236) | 92 | 78 |
 | Actual after S3a | + 2 (with UI: 1238) | 92 | 78 |
 | Actual after S3b | + 6 (with UI: 1244) | 92 | 78 |
+| Actual after S4 | + 5 (with UI: 1249) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

@@ -108,7 +108,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   password, through imapflow created with `logger: false` and mailboxes opened read-only. Runs read
   LinkedIn alert emails into jobs (feature 007): the pure logic is in `src/gmail/alertJobs/`, only
   each email's HTML part is downloaded, and only job fields are stored, never email text. The app
-  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
+  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/secrets/seal.ts`) before it reaches the
   database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
   Never print `.env`, sealed columns or app passwords.
 - The careers lookup lives in `src/careers/` (feature 008) and knows nothing about alerts; only
@@ -284,7 +284,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   security event through `recordSecurityEvent`, which queues its notice. One-time values (codes,
   links, recovery codes, key challenges, TOTP steps) are stored as digests and spent in the
   statement that checks them; passwords are Argon2id (`node:crypto`); authenticator secrets are
-  sealed with `MYJOBBOT_SECRET_KEY` (`seal.ts` field `totp_secret`). Mail goes through
+  sealed with `MYJOBBOT_SECRET_KEY` (`src/secrets/seal.ts` field `totp_secret`). Mail goes through
   `src/mail/` (nodemailer, queued, failures logged by fixed reason). Emailed links carry their
   token in the URL fragment, read once by `/link`. Device details (IP, OS, location: browser
   position rounded, else geoip-lite, kept out of the Next bundle) are stored per session. Never

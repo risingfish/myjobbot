@@ -110,6 +110,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: `check(deps: Pick<GmailDeps, "gmail" | "key" | "imap">, ...)`, `disconnect(deps: Pick<GmailDeps, "gmail" | "alerts">)`. Callers (`web/lib/gmailActions.ts`) still pass a full `GmailDeps`, which satisfies both.
 - **Size**: S
+- **Done**: S4
 
 ### S7 · SRP · `src/gmail/seal.ts:3`
 - **Breach**: sealing secrets with `MYJOBBOT_SECRET_KEY` (`seal.ts`) and reading that key (`secretKey.ts`) are app-wide jobs, used by accounts (`accounts/ways/authenticator.ts`, `accounts/terminal.ts`, `web/lib/authDeps.ts`) as much as by Gmail, yet they live in `src/gmail/`, whose `SealedField` union lists the accounts field `totp_secret`.
@@ -117,6 +118,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: move both files unchanged to `src/secrets/` (`seal.ts`, `secretKey.ts`); field names and the sealed text format stay the same, so stored values still open. Update imports in `src/gmail/*`, `src/accounts/*`, `src/app/run.ts`, `src/app/runAll.ts`, `src/app/gmailState.ts`, `src/tools/context.ts`, `web/lib/authDeps.ts`, `web/lib/uiState.ts`, the tests, and the `src/gmail/seal.ts` mentions in CLAUDE.md.
 - **Size**: M
+- **Done**: S4
 
 ### S8 · DIP · `src/gmail/alertFetch.ts:112`
 - **Breach**: the alert read, the connection check (`check.ts:19`) and connect (`connection.ts:36`) each pick the real IMAP client themselves with `(deps.imap ?? imapApi)`; `imap` is optional in `AlertDeps`, `GmailDeps` and `ToolContext.gmail`, and no composition root passes it, so production relies on the decisions' own fallback.
@@ -124,6 +126,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: make `imap: ImapFactory` required in `AlertDeps`, `GmailDeps` and the run context's `gmail`; pass `imapApi` at the composition roots (`src/app/run.ts`, `web/lib/gmailDeps.ts`, the Gmail web actions) and drop the `?? imapApi` fallbacks and their `imapApi` imports from `alertFetch.ts`, `check.ts`, `connection.ts`.
 - **Size**: M
+- **Done**: S4
 
 ### S9 · DIP · `src/gmail/alertLookupStep.ts:69`
 - **Breach**: the alert description lookup calls a concrete source module's function (`fetchJsearch` from `sources/modules/jsearch.ts`) instead of a search it is handed, so Gmail logic depends on one module's implementation (and `sources/module.ts` in turn imports Gmail types, a two-way dependency).

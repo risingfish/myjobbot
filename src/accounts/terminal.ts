@@ -4,7 +4,7 @@ import { Writable } from "node:stream";
 import type { Environment } from "../config/load.js";
 import { openStores } from "../db/connect.js";
 import { parseDbSettings } from "../db/settings.js";
-import { secretKeyStatus } from "../gmail/secretKey.js";
+import { secretKeyStatus } from "../secrets/secretKey.js";
 import { mailSlot } from "../mail/fromEnv.js";
 import { parseBaseUrl } from "../web/security/baseUrl.js";
 import { accountCommand, type AccountIo } from "./cli.js";

@@ -31,7 +31,7 @@ export async function scoreCase(evalCase: EvalCase, profile: Profile, deps: Sess
     const tally: Tally = { recorded: false, calls: 0, failures: 0 };
     const started = Date.now();
     const onLookalike = (hit: Parameters<typeof reportLookalike>[1]) => reportLookalike({ postings: { flagInjection: async () => {} }, trace: deps.trace, now: () => new Date() }, hit);
-    const session = { chat: deps.makeChat({ write: (event) => void responses.push(event) }), trace: deps.trace, tools: caseTools(evalCase, store, tally), settings: config.settings, isFinished: () => store.recorded() !== null, markers, onLookalike };
+    const session = { chat: deps.makeChat({ write: (event) => void responses.push(event) }), trace: deps.trace, tools: caseTools(evalCase, store, tally), settings: config.settings, isFinished: () => store.recorded() !== null, markers, onLookalike, clock: Date.now };
     const result = await runAgent(oneJobAgentDeps(session), rescoreMessages(config, markers, deps.template));
     const verdict = store.recorded();
     const failure = failureOf(result, { ...tally, recorded: verdict !== null });

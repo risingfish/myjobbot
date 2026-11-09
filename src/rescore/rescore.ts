@@ -17,9 +17,9 @@ import { scoreOne } from "./session.js";
 
 export interface RescoreDeps {
     config: AppConfig;
-    store: JobStore;
-    postings: PostingStore;
-    views: JobViews;
+    store: Pick<JobStore, "findJob" | "recordVerdict">;
+    postings: Pick<PostingStore, "earliestSeen" | "flagInjection">;
+    views: Pick<JobViews, "clearScore">;
     chat: ChatFn;
     trace: Trace;
     runId: string;

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
-import { secretKeyStatus } from "../src/gmail/secretKey.js";
+import { secretKeyStatus } from "../src/secrets/secretKey.js";
 
 test("the secret key is missing, invalid without revealing itself, or a 32-byte key", () => {
     expect(secretKeyStatus({})).toEqual({ status: "missing" });

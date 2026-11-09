@@ -1,7 +1,7 @@
 import type { GmailConnectionRow } from "../../db/gmailStore.js";
 import { SourceFailure, type FailureReason } from "../../sources/failure.js";
-import type { SecretKeyStatus } from "../secretKey.js";
-import { openOrNull } from "../seal.js";
+import type { SecretKeyStatus } from "../../secrets/secretKey.js";
+import { openOrNull } from "../../secrets/seal.js";
 
 export const ALERT_NOTES = {
     notConnected: "Gmail not connected",

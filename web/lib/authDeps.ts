@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { AuthContext, MailSlot } from "../../src/accounts/flows/context.js";
-import { secretKeyStatus } from "../../src/gmail/secretKey.js";
+import { secretKeyStatus } from "../../src/secrets/secretKey.js";
 import { mailSlot } from "../../src/mail/fromEnv.js";
 import { cookieOptions, type CookieSpec } from "../../src/web/security/cookies.js";
 import { parseBaseUrl } from "../../src/web/security/baseUrl.js";

@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import type { BrowserPort } from "../src/careers/browser.js";
+import { checkBrowserLan } from "../src/careers/lanCheck.js";
 import { PageRenderer } from "../src/careers/renderState.js";
 import { testAppSettings } from "./helpers/config.js";
 import { TEST_NOW } from "./helpers/context.js";
@@ -14,7 +15,7 @@ function renderer(connect: (() => Promise<BrowserPort>) | null, probe?: string) 
     const careers = new MemoryCareersStore();
     const trace = memoryTrace();
     const settings = testAppSettings({ careers_lookup: probe === undefined ? {} : { lan_probe_url: probe } }).careers_lookup;
-    return { careers, trace, renderer: new PageRenderer({ connect, settings, lookup: publicDns(), careers, trace, runId: "run-1", now: () => TEST_NOW }) };
+    return { careers, trace, renderer: new PageRenderer({ connect, settings, lookup: publicDns(), checkLan: checkBrowserLan({ settings, careers, trace, runId: "run-1", now: () => TEST_NOW }), now: () => TEST_NOW }) };
 }
 
 test("with no browser service, nothing is rendered and the note says rendering is not configured", async () => {

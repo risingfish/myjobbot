@@ -1,16 +1,16 @@
 import type { AlertStore, GmailConnectionRow, GmailStore } from "../db/gmailStore.js";
 import type { UserSourceStore } from "../db/sourceStore.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
-import { imapApi, type ImapFactory } from "./imap.js";
+import type { ImapFactory } from "./imap.js";
 import { GmailError } from "./imapErrors.js";
-import { openOrNull, seal } from "./seal.js";
+import { openOrNull, seal } from "../secrets/seal.js";
 
 export interface GmailDeps {
     gmail: GmailStore;
     alerts: AlertStore;
     sources: UserSourceStore;
     key: Buffer;
-    imap?: ImapFactory;
+    imap: ImapFactory;
 }
 
 export interface GmailLoginInput {
@@ -33,7 +33,7 @@ export async function connect(deps: GmailDeps, input: GmailLoginInput, now: Date
     const problem = inputProblem(email, password);
     if (problem !== null) return { ok: false, error: problem };
     try {
-        await (deps.imap ?? imapApi)({ email, password }).verify();
+        await deps.imap({ email, password }).verify();
     } catch (error) {
         if (!(error instanceof GmailError)) throw error;
         return { ok: false, error: error.message };
@@ -44,7 +44,7 @@ export async function connect(deps: GmailDeps, input: GmailLoginInput, now: Date
 }
 
 /** Forgets the Gmail address, the app password and where alert reading stopped; revoking the password is done in the Google account. */
-export async function disconnect(deps: GmailDeps): Promise<void> {
+export async function disconnect(deps: Pick<GmailDeps, "gmail" | "alerts">): Promise<void> {
     await deps.gmail.disconnect();
     await deps.alerts.clear();
 }

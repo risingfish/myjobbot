@@ -22,13 +22,15 @@ import { lookupTools, type PageKind } from "./tools.js";
 
 type CareersSettings = Settings["careers_lookup"];
 
+export type LookupCareers = Pick<CareersStore, "careersPage" | "setLookupPage" | "clearLookupPage" | "audit">;
+
 export interface LookupDeps {
     chat: ChatFn;
     trace: Trace;
     settings: CareersSettings;
     pages: PageFetchDeps;
     postings: PostingStore;
-    careers: CareersStore;
+    careers: LookupCareers;
     runId: string;
     now: () => Date;
     search: (company: string) => Promise<SearchResult[]>;

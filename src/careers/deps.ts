@@ -7,6 +7,7 @@ import type { JobRow } from "../db/jobStore.js";
 import type { CareersStore } from "../db/careersStore.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { HostLookup } from "./fetchPage.js";
+import type { LookupCareers } from "./lookUpJob.js";
 import type { CareersDeps } from "./lookUpJobs.js";
 import type { PageRenderer } from "./renderState.js";
 import type { SoughtJob } from "./session.js";
@@ -23,7 +24,7 @@ export interface CareersAccess {
 }
 
 export interface CareersParts {
-    careers: CareersAccess;
+    careers: Omit<CareersAccess, "store"> & { store: LookupCareers };
     settings: Settings["careers_lookup"];
     chat: ChatFn;
     trace: Trace;

@@ -6,7 +6,7 @@ import type { JsonGetter } from "../../src/http/client.js";
 import { alertSearch } from "../../src/sources/modules/jsearch.js";
 import { testAppSettings } from "./config.js";
 import type { AlertEmail } from "../../src/gmail/alertJobs/parse.js";
-import { seal } from "../../src/gmail/seal.js";
+import { seal } from "../../src/secrets/seal.js";
 import { fakeImap, type FakeImap, type FakeImapScript } from "./fakeImap.js";
 import { memoryStores, type TestStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";

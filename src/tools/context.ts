@@ -11,7 +11,7 @@ import type { AlertStore, GmailStore } from "../db/gmailStore.js";
 import type { ApiCallLog } from "../db/apiCallLog.js";
 import type { JobStore } from "../db/jobStore.js";
 import type { ImapFactory } from "../gmail/imap.js";
-import type { SecretKeyStatus } from "../gmail/secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 import type { JsonGetter } from "../http/client.js";
 import type { SourceHttp } from "../sources/module.js";
 import type { CareersSummary } from "../careers/lookUpJobs.js";
@@ -70,7 +70,7 @@ export interface GmailAccess {
     store: GmailStore;
     alerts: AlertStore;
     key: SecretKeyStatus;
-    imap?: ImapFactory;
+    imap: ImapFactory;
     usable: true | string;
     connected: boolean;
 }

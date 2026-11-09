@@ -54,6 +54,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: add `type LookupCareers = Pick<CareersStore, "careersPage" | "setLookupPage" | "clearLookupPage" | "audit">` (in `lookUpJob.ts`) and use it for `LookupDeps.careers`; type `AuditDeps.careers` as `Pick<CareersStore, "audit">`. `loggedCareers(store: LookupCareers, log): LookupCareers` wraps four methods instead of eight. In `src/careers/deps.ts`, `CareersParts.careers` becomes `Omit<CareersAccess, "store"> & { store: LookupCareers }`, so `CareersAccess` (and `src/tools/careersStep.ts`, which needs `attempted`/`retries`) keep the full store. Callers touched: `deps.ts`, `traceSteps.ts`, `rescore/open.ts` (type only), lookup test helpers.
 - **Size**: M
+- **Done**: S4
 
 ### C2 · ISP · `src/rescore/rescore.ts:18`
 - **Breach**: `RescoreDeps` takes `views: JobViews` (13 members) to call only `clearScore`, `store: JobStore` (8 members) to call only `findJob` and `recordVerdict`, and `postings: PostingStore` (6 members) where the re-score path uses only `earliestSeen` (get_job) and `flagInjection` (look-alikes); `SessionDeps` in `session.ts:20` and `oneJobStore(store: JobStore, ...)` in `oneJobStore.ts:6` repeat the wide `JobStore`/`PostingStore`.
@@ -61,6 +62,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: type `RescoreDeps.views` as `Pick<JobViews, "clearScore">`, `RescoreDeps.store`/`SessionDeps.store`/`oneJobStore`'s parameter as `Pick<JobStore, "findJob" | "recordVerdict">`, and `postings` as `Pick<PostingStore, "earliestSeen" | "flagInjection">`. Callers (`rescore/open.ts`, which `src/cli.ts` and `web/lib/actions.ts` use) pass the full stores unchanged, which stay assignable; test fakes can shrink.
 - **Size**: M
+- **Done**: S4
 
 ### C3 · ISP · `src/companies/searchCompanies.ts:9`
 - **Breach**: `searchCompanies(context: ToolContext)` depends on the agent's whole tool context (19 members: run state, the job store, Gmail access, the chat function, source plans, JSearch key...) to use six things: two settings sections, `companies`, `careers.searxngUrl`, `http`, `trace` and `now`. `ToolContext` is a container mixing stores with operations and per-run state, the shape the rule calls out.
@@ -84,6 +86,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: add `clock` to `OneJobSession` (`Pick<AgentDeps, ... | "clock">`) and drop the hard-wired value; `scoreOne` passes `() => deps.now().getTime()`, and `src/evals/session.ts` (the other caller) passes `Date.now`. Production behaviour is unchanged (`now` is `() => new Date()`).
 - **Size**: S
+- **Done**: S4
 
 ### C6 · DIP · `src/careers/render.ts:18`
 - **Breach**: `renderPage` reads `Date.now()` itself (lines 18 and 59) to set and spend its deadline, while its caller `PageRenderer` already holds an injected `now`.
@@ -91,6 +94,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: add `clock: () => number` to `RenderRequest`; `PageRenderer.render` passes `() => this.deps.now().getTime()`; the two render tests pass a clock. No output changes.
 - **Size**: S
+- **Done**: S4
 
 ### C7 · SRP · `src/careers/renderState.ts:77`
 - **Breach**: `PageRenderer` both renders pages (connection, on/off state, fallbacks) and runs the once-per-run LAN reachability probe, writing its own trace event and a hand-built `careers_audit` row; it needs `careers`, `trace` and `runId` only for that probe.
@@ -98,6 +102,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: move the probe to `src/careers/lanCheck.ts` as `checkBrowserLan(deps: { settings, careers: Pick<CareersStore, "audit">, trace, runId, now }) => (port: BrowserPort) => Promise<string | null>` (returning the `LAN check not configured` note or null); `RendererDeps` takes `checkLan: (port) => Promise<string | null>` in place of `careers`, `trace` and `runId`, and still runs it once and adds a returned note to `said`. `pageRenderer` in `src/app/runParts.ts` builds it. Touches `renderState.ts`, the new file, `runParts.ts`, `tests/careersRenderState.test.ts`.
 - **Size**: M
+- **Done**: S4
 
 ## Mechanical checks
 
