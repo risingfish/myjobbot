@@ -1,14 +1,24 @@
 import { ZodError } from "zod";
 import { FetchRefused } from "../careers/fetchPage.js";
-import { ALERT_NOTES, AlertsUnavailable } from "../gmail/alertJobs/usable.js";
 import { HttpStatusError, NetworkError } from "../http/errors.js";
 
 export type FailureReason = "not found" | "refused" | "unreachable" | "unexpected answer" | "not set up";
 
-export class NotSetUp extends Error {
+export class SourceFailure extends Error {
+    /** Reports that a source's fetch failed for a reason its own code chose from the fixed reasons. */
+    constructor(
+        readonly reason: FailureReason,
+        message: string,
+    ) {
+        super(message);
+        this.name = "SourceFailure";
+    }
+}
+
+export class NotSetUp extends SourceFailure {
     /** Reports that a source can't be fetched until something it needs is set up. */
     constructor(message: string) {
-        super(message);
+        super("not set up", message);
         this.name = "NotSetUp";
     }
 }
@@ -24,11 +34,10 @@ export function failureReason(error: unknown): FailureReason {
 
 /** Names one failure by its kind, or null when its kind says nothing. */
 function reasonOf(error: Error): FailureReason | null {
-    if (error instanceof NotSetUp) return "not set up";
+    if (error instanceof SourceFailure) return error.reason;
     if (error instanceof HttpStatusError) return statusReason(error.status);
     if (error instanceof NetworkError) return "unreachable";
     if (error instanceof FetchRefused) return "refused";
-    if (error instanceof AlertsUnavailable) return alertReason(error.note);
     return error instanceof ZodError ? "unexpected answer" : null;
 }
 
@@ -36,10 +45,4 @@ function reasonOf(error: Error): FailureReason | null {
 function statusReason(status: number): FailureReason {
     if (status === 404) return "not found";
     return status === 401 || status === 403 ? "refused" : "unexpected answer";
-}
-
-/** Names why Gmail alerts couldn't be read, by its fixed note: Gmail unreachable, a Gmail error, or something to set up again. */
-function alertReason(note: string): FailureReason {
-    if (note === ALERT_NOTES.unreachable) return "unreachable";
-    return note === ALERT_NOTES.error ? "unexpected answer" : "not set up";
 }

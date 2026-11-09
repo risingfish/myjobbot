@@ -1,5 +1,5 @@
 import type { Settings } from "../config/schema.js";
-import { parseBoardLink } from "../sources/boardLink.js";
+import { parseBoardLink } from "../sources/boardLinks.js";
 import { boardPage, type BoardAccess } from "./boardPages.js";
 import { embeddedBoard } from "./embeddedBoard.js";
 import { fetchPublicPage, FetchRefused, type PageFetchDeps } from "./fetchPage.js";

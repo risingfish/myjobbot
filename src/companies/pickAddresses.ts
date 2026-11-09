@@ -1,6 +1,6 @@
 import type { SearchResult } from "../careers/searxng.js";
 import { onHost } from "../careers/skipHosts.js";
-import { parseBoardLink } from "../sources/boardLink.js";
+import { parseBoardLink } from "../sources/boardLinks.js";
 import { mainName, storableUrl } from "./hosts.js";
 
 type MissReason = "no_results" | "no_match";

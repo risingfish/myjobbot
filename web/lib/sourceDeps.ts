@@ -12,6 +12,6 @@ export async function sourceDeps(): Promise<SaveSourceDeps> {
     const { http, jsearch } = sourceConfig();
     const client = new HttpClient({ config: http, clock: systemClock, fetchFn: globalThis.fetch, random: Math.random }).withoutRedirects();
     const apiKey = process.env.JSEARCH_API_KEY ?? "";
-    const access = { http: sourceHttp({ http: client, lookup: systemLookup }), ...(apiKey === "" ? {} : { jsearch: { apiKey, settings: jsearch } }) };
-    return { store: stores.sources, facts: { limits: jsearch, met: await metNeeds(stores), elsewhere: scheduledElsewhere(await stores.sourcePlans.sourcesOnForAll(), stores.userId) }, test: { access, apiCalls: stores.apiCalls }, now: () => new Date() };
+    const access = apiKey === "" ? {} : { jsearch: { apiKey, settings: jsearch } };
+    return { store: stores.sources, facts: { limits: jsearch, met: await metNeeds(stores), elsewhere: scheduledElsewhere(await stores.sourcePlans.sourcesOnForAll(), stores.userId) }, test: { http: sourceHttp({ http: client, lookup: systemLookup }), access, apiCalls: stores.apiCalls }, now: () => new Date() };
 }

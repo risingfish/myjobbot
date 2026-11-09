@@ -15,6 +15,11 @@ type KnownJobs = Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
 
 export const ALERT_ATS = "linkedin" as const;
 
+/** Tells whether a stored job came from a Gmail alert. */
+export function isAlertJob(job: { ats: string }): boolean {
+    return job.ats === ALERT_ATS;
+}
+
 /** Returns the stored job id for a LinkedIn posting, prefixed so it can't collide with board ids. */
 export function alertJobId(linkedinId: string): string {
     return `li_${linkedinId}`;

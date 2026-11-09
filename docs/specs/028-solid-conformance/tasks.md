@@ -298,11 +298,11 @@ Two parts:
 - **S3a**, the run's contexts (A4, A1, A2, C3): T025's A4 case, T026, T028, T029, T030
 - **S3b**, sources and their hooks (S1–S5, S9, A3, C4): T025's other three cases, T027, T031–T034
 
-- [ ] T024 Create `.specify/sitting-in-progress` naming S3.
+- [X] T024 Create `.specify/sitting-in-progress` naming S3.
 
 **Tests first (S3)**
 
-- [ ] T025 [P] [US1] Write unit tests (4, one per bullet) in `tests/sourceVariantScan.test.ts` (A3, S1, S5, C4):
+- [X] T025 [P] [US1] Write unit tests (4, one per bullet) in `tests/sourceVariantScan.test.ts` (A3, S1, S5, C4):
   - no `src/**/*.ts` file outside `src/sources/modules/`, `src/sources/hooks/` and `src/gmail/`
     compares `module` to a string, or `ats` or `kind` to a registered module id or `"linkedin"`
   - shared files directly under `src/sources/` import nothing from `src/gmail/`. That includes
@@ -315,7 +315,7 @@ Two parts:
     the tool builders named in inventory A1's check
   - `lookUpAlertJobs` is not among them: T029 narrows it
   - nothing under `src/companies/` or `src/careers/` imports `src/tools/context.ts`
-- [ ] T027 [P] [US1] Write unit tests (3, one per bullet) in `tests/runHooks.test.ts` (S1):
+- [X] T027 [P] [US1] Write unit tests (3, one per bullet) in `tests/runHooks.test.ts` (S1):
   - `hookFor("gmail_alerts")` gives the alerts hook
   - every board module has no hook
   - a fetch of a board source with no Gmail stores set up still stores its jobs
@@ -349,7 +349,7 @@ Two parts:
     Which sources count as on doesn't change. Recorded under A1 in inventory 01.
 - [X] T030 [US1] C3: `searchCompanies` takes `CompanySearchDeps` (`src/companies/searchCompanies.ts`),
   built in `afterAgent` (`src/app/run.ts`).
-- [ ] T031 [US1] S3 and S4 (`src/sources/`):
+- [X] T031 [US1] S3 and S4 (`src/sources/`):
   - add `limits.spends` to `SourceLimits`, and move `recordCost` to `src/sources/cost.ts`, recording
     against it
   - add `limits.skipWhenBudgetUsed` (`jsearch: true`, every other module `false`).
@@ -359,7 +359,7 @@ Two parts:
     `reasonOf` dropping its Gmail imports
 
   The rows written and the reasons given are unchanged.
-- [ ] T032 [US1] S1, S2 and S9:
+- [X] T032 [US1] S1, S2 and S9:
   - add the run hook registry `src/sources/runHooks.ts` (`access`, `afterPage`, `afterFetch`)
   - add `src/sources/hooks/gmailAlerts.ts`, holding today's `alertAccess`, `recordAlerts` and the
     `lookUpAlertJobs` call
@@ -381,11 +381,11 @@ Two parts:
     `fetchJsearch`
 
   The trace, stored rows and `SourceRun` are unchanged.
-- [ ] T033 [US1] A3: add `descriptions: "included" | "careers_lookup"` to `SourceModule`, set to
+- [X] T033 [US1] A3: add `descriptions: "included" | "careers_lookup"` to `SourceModule`, set to
   `"careers_lookup"` only in `gmailAlerts.ts`. `careersStep.freshJobs` picks sources by it.
   `recordMatches` uses one exported `isAlertJob(row)` owned by the Gmail alert code (the constant from
   T021) instead of `ats === "linkedin"`.
-- [ ] T034 [US1] S5 then C4:
+- [X] T034 [US1] S5 then C4:
   - each board module declares its link reader (`SourceModule.boardLink?(url)`), moved from
     `src/sources/boardLink.ts` into the board files
   - a new `src/sources/boardModules.ts` exports `BOARD_MODULES` (the board modules only), and
@@ -398,7 +398,7 @@ Two parts:
     `workday:<tenant>/<site>`, …), and `src/careers/boardPages.ts` uses `link.board`
 
   The strings are identical, so audit rows and cache keys don't change.
-- [ ] T035 [US1] Run both checks until green, record the ledger, review S3 against Principle VI, mark
+- [X] T035 [US1] Run both checks until green, record the ledger, review S3 against Principle VI, mark
   the sitting's findings done in their inventory files (01, 02, 03), and delete the marker.
 
 ### Sitting S4: Gmail, the careers lookup, re-score (S6–S8, C1, C2, C5–C7)
@@ -720,6 +720,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S2a | + 2 planned + 1 retry (with UI: 1232) | 90 | 78 |
 | Actual after S2b | + 4 (with UI: 1236) | 92 | 78 |
 | Actual after S3a | + 2 (with UI: 1238) | 92 | 78 |
+| Actual after S3b | + 6 (with UI: 1244) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

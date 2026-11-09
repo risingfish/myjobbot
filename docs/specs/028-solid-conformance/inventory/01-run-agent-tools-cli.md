@@ -85,6 +85,7 @@ Reviewed: 53 modules, 5 findings.
 - **Decision**: fix
 - **Fix**: Add a declarative capability to `SourceModule` (`src/sources/module.ts`), for example `readonly descriptions: "included" | "careers_lookup"`, set to `"careers_lookup"` only in `gmailAlerts.ts`. `careersStep.freshJobs` then picks every on source whose `moduleFor(source.module)?.descriptions === "careers_lookup"`, so the decision stays in `careersStep.ts` as CLAUDE.md requires. For `recordMatches`, move the ats test into one exported predicate owned by the Gmail alert code (for example `isAlertJob(row)` in `src/gmail/alertJobs/`, beside `alertJobId`), so the tool asks "is this an alert job without a description" without knowing the ats. Behaviour, stored data and the gap text are unchanged. Touches `module.ts`, every module file (one new field, or make it optional with `"included"` as the default), `careersStep.ts`, `recordMatches.ts` and `alertAccess.ts`.
 - **Size**: M
+- **Done**: S3b
 
 ### A4 · ISP · `src/agent/rubric.ts:42`
 - **Breach**: `scoringRubric` and `rubricValues` take a whole `AppConfig` (`env` with the LLM key, `resume`, `profile`, `dataDir`, `settings`) but read only `settings.match_threshold` and `settings.preferences`. `agent/prompt.ts#systemPrompt` passes a whole `AppConfig` along for the same reason.

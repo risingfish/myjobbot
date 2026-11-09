@@ -2,7 +2,7 @@ import { z } from "zod";
 import { markdownDescription } from "../../descriptions/toMarkdown.js";
 import { makeJob, type Job } from "../../jobs/job.js";
 import { optionalDate, optionalFlag, optionalText } from "../fields.js";
-import { slugBoard } from "./slugBoard.js";
+import { slugAndPosting, slugBoard } from "./slugBoard.js";
 
 const posting = z.object({
     id: z.string(),
@@ -28,6 +28,7 @@ export const ashby = slugBoard({
     url: (slug) => `https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(slug)}?includeCompensation=true`,
     postings,
     toJob,
+    link: (url, parts) => (url.hostname === "jobs.ashbyhq.com" ? slugAndPosting(parts) : null),
     keep: (post) => post.isListed !== false,
 });
 

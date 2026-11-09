@@ -1,13 +1,9 @@
+import { BOARD_MODULES } from "./boardModules.js";
 import type { SourceModule } from "./module.js";
-import { ashby } from "./modules/ashby.js";
-import { gem } from "./modules/gem.js";
 import { gmailAlerts } from "./modules/gmailAlerts.js";
-import { greenhouse } from "./modules/greenhouse.js";
 import { jsearch } from "./modules/jsearch.js";
-import { lever } from "./modules/lever.js";
-import { workday } from "./modules/workday.js";
 
-export const MODULES: readonly SourceModule<unknown>[] = [greenhouse, lever, ashby, gem, workday, jsearch, gmailAlerts];
+export const MODULES: readonly SourceModule<unknown>[] = [...BOARD_MODULES, jsearch, gmailAlerts];
 
 /** Lists the ats values of the jobs that don't come from a company's own board, so a board's copy of a job can be told from theirs. */
 export function nonBoardAts(): string[] {

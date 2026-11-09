@@ -1,6 +1,4 @@
 import type { z } from "zod";
-import type { Settings } from "../config/schema.js";
-import type { AlertDeps, AlertRead } from "../gmail/alertFetch.js";
 import type { JsonGetter, JsonPoster } from "../http/client.js";
 import type { DescriptionFormat, Job } from "../jobs/job.js";
 
@@ -8,24 +6,26 @@ export type SourceHttp = JsonGetter & JsonPoster;
 
 export type Cursor = Record<string, unknown>;
 
-interface JsearchAccess {
-    apiKey: string;
-    settings: Settings["jsearch"];
-}
-
-export interface SourceContext {
+export interface SourceContext<A = unknown> {
     http: SourceHttp;
     sourceName: string;
-    jsearch?: JsearchAccess;
-    alerts?: AlertDeps;
+    access?: A;
     preview?: boolean;
+}
+
+export interface BoardLink {
+    kind: string;
+    board: string;
+    slug: string;
+    postingId: string | null;
+    host?: string;
+    site?: string;
 }
 
 export interface SourcePage {
     jobs: Job[];
     cost: number;
     next: Cursor | null;
-    alerts?: AlertRead;
 }
 
 export interface SourceField {
@@ -51,6 +51,8 @@ export const OFF_WHILE_UNMET: Record<Requirement, boolean> = { gmail: true, jsea
 interface SourceLimits {
     maxJobsPerRun: number | null;
     refresh: "every_run" | "jsearch_refresh_hours";
+    spends: "jsearch" | null;
+    skipWhenBudgetUsed: boolean;
 }
 
 export interface BoardPosting {
@@ -68,21 +70,23 @@ interface BoardPostings<P> {
     one?(params: P, postingId: string, http: SourceHttp): Promise<BoardPosting>;
 }
 
-export interface SourceModule<P> {
+export interface SourceModule<P, A = unknown> {
     readonly id: string;
     readonly name: string;
     readonly description: string;
     readonly kind: "ats" | "api" | "email" | "web";
     readonly jobAts?: string;
+    readonly descriptions: "included" | "careers_lookup";
     readonly scope: "company" | "query" | "account";
     readonly params: z.ZodType<P>;
     readonly fields: readonly SourceField[];
     readonly requires: readonly Requirement[];
     readonly limits: SourceLimits;
     fromUrl?(url: URL): P | null;
+    boardLink?(url: URL): BoardLink | null;
     suggestName?(params: P): string;
     target(params: P): string;
-    fetch(params: P, ctx: SourceContext, from: Cursor | null): AsyncIterable<SourcePage>;
+    fetch(params: P, ctx: SourceContext<A>, from: Cursor | null): AsyncIterable<SourcePage>;
     company?(params: P, name: string): CompanyHint;
     readonly postings?: BoardPostings<P>;
 }

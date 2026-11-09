@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { boardPage } from "../src/careers/boardPages.js";
-import { parseBoardLink } from "../src/sources/boardLink.js";
+import { parseBoardLink } from "../src/sources/boardLinks.js";
 import { ashbyBoard, fakeBoardHttp, workdayDetail, workdaySearch } from "./helpers/boardData.js";
 import { publicDns } from "./helpers/fakeDns.js";
 

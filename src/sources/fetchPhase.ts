@@ -1,22 +1,19 @@
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
 import type { Job } from "../jobs/job.js";
-import { recordAlertRead, type AlertSummary } from "../gmail/alertFetch.js";
-import { lookUpAlertJobs, type AlertLookupContext } from "../tools/careersStep.js";
 import type { SourceRun, ToolContext } from "../tools/context.js";
 import { withoutDescription } from "../tools/jobLog.js";
 import { requestsThisMonth } from "../tools/searchBudget.js";
-import { alertAccess, type AlertAccessContext } from "./alertAccess.js";
 import { failureReason } from "./failure.js";
 import { fetchOrder, fetchPlan, type FetchFacts, type SkipReason } from "./fetchPlan.js";
-import { ingest, sourceContext } from "./ingest.js";
-import type { Cursor, SourceModule, SourcePage } from "./module.js";
-import { recordCost } from "./testFetch.js";
+import { ingest } from "./ingest.js";
+import type { Cursor, SourceModule } from "./module.js";
+import { hookFor, type HookContext, type RunHook } from "./runHooks.js";
+import { recordCost } from "./cost.js";
 
 type FinishContext = Pick<ToolContext, "saved" | "trace" | "jobLog">;
 type FactsContext = Pick<ToolContext, "config" | "now" | "jsearchApiKey" | "gmail" | "apiCalls">;
-type AlertsContext = Pick<ToolContext, "store" | "gmail" | "trace" | "now">;
-type PagesContext = AlertAccessContext & AlertsContext & Pick<ToolContext, "config" | "sources" | "jsearchApiKey" | "apiCalls">;
-export type FetchContext = FinishContext & FactsContext & PagesContext & AlertLookupContext & Pick<ToolContext, "run">;
+type PagesContext = HookContext & Pick<ToolContext, "store" | "config" | "sources" | "apiCalls">;
+export type FetchContext = FinishContext & FactsContext & PagesContext & Pick<ToolContext, "run">;
 
 interface Read {
     pages: number;
@@ -25,13 +22,14 @@ interface Read {
     next: Cursor | null;
     stored: Job[];
     skipped: { duplicates: number; publishers: number };
-    alerts?: AlertSummary;
+    access?: unknown;
 }
 
 const NOTHING_READ: Read = { pages: 0, jobs: 0, cost: 0, next: null, stored: [], skipped: { duplicates: 0, publishers: 0 } };
 
 interface Planned {
     module: SourceModule<unknown>;
+    hook: RunHook<unknown, HookContext> | null;
     params: unknown;
     cursor: Cursor | null;
     seen: string;
@@ -67,14 +65,15 @@ async function fetchSource(context: FetchContext, saved: SavedSource): Promise<S
     const plan = fetchPlan(saved, await fetchFacts(context));
     if ("skip" in plan) return skipped(context, saved, plan.skip);
     const seen = context.now().toISOString();
-    const fetched = await settle(readPages(context, saved, { ...plan, seen }));
+    const hook = hookFor(saved.module);
+    const fetched = await settle(readPages(context, saved, { ...plan, hook, seen }));
     if ("error" in fetched) return failed(context, saved, { at: seen, error: fetched.error });
     const read = fetched.value;
     const outcome = read.next === null ? "ok" : "partial";
     await finishFetch(context, saved, { at: seen, outcome, read, reason: null, cursor: read.next });
     const whole = plan.module.scope === "company" && plan.cursor === null && outcome === "ok";
-    const alerts = read.alerts === undefined ? {} : { alerts: read.alerts, careers: await lookUpAlertJobs(context) };
-    return { outcome, reason: null, seen: whole ? seen : null, ...alerts };
+    const after = hook?.afterFetch === undefined ? {} : await hook.afterFetch(context, read.access);
+    return { outcome, reason: null, seen: whole ? seen : null, ...after };
 }
 
 /** Waits for some work, giving back its value or what it threw, so a failure can be handled without a try around the rest. */
@@ -97,24 +96,18 @@ async function readPages(context: PagesContext, saved: SavedSource, planned: Pla
     const read: Read = { ...NOTHING_READ, next: planned.cursor, stored: [], skipped: { duplicates: 0, publishers: 0 } };
     const batch = { source: { id: saved.id, name: saved.name }, scope: planned.module.scope, seen: planned.seen };
     const limit = planned.module.limits.maxJobsPerRun;
-    const ctx = { ...sourceContext(context, saved.name), ...(await alertAccess(context, saved)) };
-    for await (const page of planned.module.fetch(planned.params, ctx, planned.cursor)) {
-        await recordCost(context.apiCalls, page, { source: saved.name, at: planned.seen });
+    const access = planned.hook === null ? undefined : await planned.hook.access(context, saved);
+    Object.assign(read, { access });
+    for await (const page of planned.module.fetch(planned.params, { http: context.sources, sourceName: saved.name, access }, planned.cursor)) {
+        await recordCost(context.apiCalls, planned.module, page, { source: saved.name, at: planned.seen });
         const ingested = await ingest(context, batch, page);
         read.stored.push(...ingested.stored);
         read.skipped = { duplicates: read.skipped.duplicates + ingested.skippedCopies, publishers: read.skipped.publishers + ingested.skippedPublishers };
-        await recordAlerts(context, page, read);
+        await planned.hook?.afterPage?.(context, page, access);
         Object.assign(read, { pages: read.pages + 1, jobs: read.jobs + page.jobs.length, cost: read.cost + page.cost, next: page.next });
         if (limit !== null && read.jobs >= limit) break;
     }
     return read;
-}
-
-/** Records an alert page's read once its jobs are stored, and keeps its summary for the run. */
-async function recordAlerts(context: AlertsContext, page: SourcePage, read: Read): Promise<void> {
-    if (page.alerts === undefined) return;
-    await recordAlertRead({ jobStore: context.store, alerts: context.gmail.alerts, trace: context.trace, now: context.now() }, page.alerts);
-    read.alerts = page.alerts.summary;
 }
 
 /** Traces a source the run doesn't fetch and why, giving that reason as its outcome, or null for a source that is off. */

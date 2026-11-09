@@ -67,6 +67,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: add a per-module run hook registry, `src/sources/runHooks.ts`: `interface RunHook { access?(context, saved): Promise<object>; afterPage?(context, page): Promise<void>; afterFetch?(context, read): Promise<Partial<SourceRun>> }` keyed by module id, with `gmailAlertsHook` in `src/sources/hooks/gmailAlerts.ts` holding today's `alertAccess`, `recordAlerts` and the `lookUpAlertJobs` call. `readPages`/`fetchSource` call `hookFor(saved.module)` generically. Touches `fetchPhase.ts`, `alertAccess.ts` (moves), `Read.alerts` handling; trace, stored rows and `SourceRun` are unchanged.
 - **Size**: M
+- **Done**: S3b
 
 ### S2 · ISP · `src/sources/module.ts:16`
 - **Breach**: `SourceContext`, the one interface every module's `fetch` receives, carries one module's access each: `jsearch?` (the API key and settings) and `alerts?` (Gmail stores, IMAP, the sealed-key status), and `SourcePage` carries `alerts?: AlertRead`. `sourceContext` (`ingest.ts:45`) hands the JSearch API key to every module, board modules included, and the shared `module.ts` imports Gmail's `AlertDeps`/`AlertRead`.
@@ -75,6 +76,7 @@ Reviewed: 52 modules, 9 findings.
 - **Fix**: keep `SourceContext` to `http`, `sourceName`, `preview`, plus an `access: A` typed by the module (`SourceModule<P, A = undefined>`), supplied by the module's run hook from S1 (`access`) and by the web test-on-save composition; `jsearch` and `gmailAlerts` declare their own access types, and the alert read travels in the hook's `afterPage` instead of `SourcePage.alerts`. Touches `module.ts`, `ingest.ts` (`sourceContext`), `alertAccess.ts`, `modules/jsearch.ts`, `modules/gmailAlerts.ts`, `testFetch.ts` and its web caller. Best done together with S1.
 - **Size**: M
 - **Settled by the analysis (2026-11-08)**: the alert read travels in the Gmail hook's own access object (an `AlertSession` the module writes each page's read into; `afterPage` records it, `afterFetch` returns the summary). `SourcePage.alerts` and `Read.alerts` are removed (tasks T032).
+- **Done**: S3b
 
 ### S3 · OCP · `src/sources/testFetch.ts:26`
 - **Breach**: the shared `recordCost` records every unit of any page's `cost` as a `"jsearch"` API call, and `fetchPlan` (`fetchPlan.ts:35`) applies the budget skip to whichever module lists the `jsearch_key` requirement; the shared contract's `cost` therefore silently means "JSearch requests". A module spending another paid API would be booked against JSearch's budget. `recordCost`, used by the run's fetch phase, also lives in the test-on-save module, a second job in that file (SRP).
@@ -83,6 +85,7 @@ Reviewed: 52 modules, 9 findings.
 - **Fix**: add `limits.spends: "jsearch" | null` to `SourceLimits` (`jsearch` and `gmailAlerts` say `"jsearch"`, boards `null`); move `recordCost` to `src/sources/cost.ts` taking the module and recording against `module.limits.spends`; `fetchPlan`'s budget skip keeps keying on the `jsearch_key` requirement (so Gmail alerts still aren't skipped) or names it via a separate `limits.skipWhenBudgetUsed`. Callers: `fetchPhase.ts`, `testFetch.ts`. Rows written are identical.
 - **Size**: S
 - **Settled by the analysis (2026-11-08)**: the budget skip becomes `limits.skipWhenBudgetUsed` (`jsearch: true`, others `false`), so `fetchPlan.ts` no longer names `jsearch_key` (tasks T031).
+- **Done**: S3b
 
 ### S4 · OCP · `src/sources/failure.ts:31`
 - **Breach**: the shared failure mapper `failureReason` imports Gmail's `AlertsUnavailable` and `ALERT_NOTES` and translates the alert notes into reasons (`alertReason`, lines 42-45). One module's error vocabulary is decoded by per-variant branches in shared code.
@@ -90,6 +93,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: introduce `class SourceFailure extends Error { constructor(readonly reason: FailureReason, message) }` in `failure.ts` (make `NotSetUp` one of them); `AlertsUnavailable` extends it, its reason chosen beside `ALERT_NOTES` in `usable.ts` (a `NOTE_REASONS` map). `reasonOf` checks `instanceof SourceFailure` and drops the Gmail imports. Touches `failure.ts`, `gmail/alertJobs/usable.ts`; reasons produced are unchanged.
 - **Size**: S
+- **Done**: S3b
 
 ### S5 · OCP · `src/sources/boardLink.ts:14`
 - **Breach**: link recognition for all five board modules lives in one shared file, under a closed `BoardKind` union (line 1) and a `HOST_LINKS` table naming each board's hosts and path shape, while `slugBoard.ts:6` repeats a closed `SlugBoardId` union. Each board module's `fromUrl` calls back into this file and filters by its own kind.
@@ -98,6 +102,7 @@ Reviewed: 52 modules, 9 findings.
 - **Fix**: each board declares its link reader with its module (`SlugBoardDef.link(url): { slug, postingId } | null` with today's `slugAndId`/`greenhouseLink`/`gemApiLink` moved into the board files; `workdayLink` into `workday.ts`), exposed as `SourceModule.boardLink?(url): BoardLink | null`; `parseBoardLink` moves beside the registry (`src/sources/boardLinks.ts`) and loops over `MODULES`, with `kind` the module id. `fromUrl` derives from the module's own reader. Callers keep the same `parseBoardLink` signature: `careers/readPage.ts`, `careers/boardPages.ts`, `careers/embeddedBoard.ts`, `companies/pickAddresses.ts`.
 - **Size**: M
 - **Amended by the analysis (2026-11-08)**: `parseBoardLink` loops over `BOARD_MODULES` (`src/sources/boardModules.ts`), from which `MODULES` is built, so a board is listed once and the careers lookup never imports the Gmail alerts module (tasks T034).
+- **Done**: S3b
 
 ### S6 · ISP · `src/gmail/check.ts:13`
 - **Breach**: `check` takes the whole `GmailDeps` (`gmail`, `alerts`, `sources`, `key`, `imap`) but uses only `gmail`, `key` and `imap`; `disconnect` (`connection.ts:47`) uses only `gmail` and `alerts`. Only `keyChanged` narrows with `Pick`.
@@ -126,6 +131,7 @@ Reviewed: 52 modules, 9 findings.
 - **Decision**: fix
 - **Fix**: `LookupDeps` gets `search(query: string): Promise<Job[]>` in place of `http`/`apiKey`/`settings` for the search (keeping `settings` for the allowance); `alertAccess` (or the S1 hook) builds it with `fetchJsearch` and the 7-day/US request it uses today. Touches `alertLookupStep.ts`, `alertAccess.ts`, `tests/helpers/alertFetchSetup.ts`.
 - **Size**: S
+- **Done**: S3b
 
 ## Mechanical checks
 

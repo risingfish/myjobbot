@@ -13,6 +13,11 @@ const savedSearch = z.object({ query: z.string().min(1), remote_only: z.boolean(
 type Search = z.infer<typeof savedSearch>;
 type JsearchSettings = Settings["jsearch"];
 
+export interface JsearchAccess {
+    apiKey: string;
+    settings: JsearchSettings;
+}
+
 const ENDPOINT = "https://api.openwebninja.com/jsearch/search-v2";
 
 const result = z.object({
@@ -42,11 +47,12 @@ interface SearchRequest {
     apiKey: string;
 }
 
-export const jsearch: SourceModule<Search> = {
+export const jsearch: SourceModule<Search, JsearchAccess> = {
     id: "jsearch",
     name: "JSearch",
     description: "A saved job search across many job boards, through the JSearch API.",
     kind: "api",
+    descriptions: "included",
     scope: "query",
     params: savedSearch,
     fields: [
@@ -55,16 +61,21 @@ export const jsearch: SourceModule<Search> = {
         { name: "remote_only", label: "Remote only", input: "checkbox", optional: true },
     ],
     requires: ["jsearch_key"],
-    limits: { maxJobsPerRun: null, refresh: "jsearch_refresh_hours" },
+    limits: { maxJobsPerRun: null, refresh: "jsearch_refresh_hours", spends: "jsearch", skipWhenBudgetUsed: true },
     suggestName: ({ query }) => query,
     target: ({ query, country, remote_only }) => `jsearch:${query}|${country}|${remote_only}`.toLowerCase(),
     fetch: (search, ctx) => searchPages(search, ctx),
 };
 
 /** Yields one search's results as one page, which costs one request from the month's JSearch budget. */
-async function* searchPages(search: Search, ctx: SourceContext): AsyncGenerator<SourcePage> {
-    if (ctx.jsearch === undefined) throw new NotSetUp("JSEARCH_API_KEY is not set");
-    yield { jobs: await fetchJsearch({ search, ...ctx.jsearch }, ctx.http), cost: 1, next: null };
+async function* searchPages(search: Search, ctx: SourceContext<JsearchAccess>): AsyncGenerator<SourcePage> {
+    if (ctx.access === undefined) throw new NotSetUp("JSEARCH_API_KEY is not set");
+    yield { jobs: await fetchJsearch({ search, ...ctx.access }, ctx.http), cost: 1, next: null };
+}
+
+/** Builds the search a Gmail alert email's description lookup runs: JSearch, in the US, over the last week. */
+export function alertSearch(http: JsonGetter, access: JsearchAccess): (query: string) => Promise<Job[]> {
+    return (query) => fetchJsearch({ search: { query, remote_only: false, country: "us" }, settings: { ...access.settings, date_posted: "7days" }, apiKey: access.apiKey }, http);
 }
 
 /** Builds the JSearch query-string parameters for a saved search given its settings. */
@@ -75,7 +86,7 @@ function searchParams(search: Search, settings: JsearchSettings): Record<string,
 }
 
 /** Queries the JSearch API for a saved search and maps the results into Jobs. */
-export async function fetchJsearch(request: SearchRequest, http: JsonGetter): Promise<Job[]> {
+async function fetchJsearch(request: SearchRequest, http: JsonGetter): Promise<Job[]> {
     const url = `${ENDPOINT}?${new URLSearchParams(searchParams(request.search, request.settings))}`;
     const body = await withKeyHint(() => http.getJson(url, { "x-api-key": request.apiKey }));
     return response.parse(body).data.jobs.map(toJob);

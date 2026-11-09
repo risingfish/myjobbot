@@ -76,6 +76,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: have each parser in `src/sources/boardLink.ts` set the name on the link it returns (a new `BoardLink.board` field: `slugAndId`/`gemApiLink`/`greenhouseLink` give `${kind}:${slug}`, `workdayLink` gives `workday:${tenant}/${site}`), and replace `boardName(link)` with `link.board`. The strings are identical, so audit rows and cache keys do not change. Touches `boardLink.ts`, `boardPages.ts`, and tests that build `BoardLink` literals.
 - **Size**: M
+- **Done**: S3b
 
 ### C5 · DIP · `src/rescore/session.ts:61`
 - **Breach**: `oneJobAgentDeps` hard-wires the agent loop's clock to `Date.now`, although the re-score is handed `now` (`SessionDeps.now`) and the career lookup's session in the same feature passes `() => deps.now().getTime()` (`lookUpJob.ts:78`).
