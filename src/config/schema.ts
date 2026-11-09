@@ -104,6 +104,7 @@ export const envSchema = z.object({
     LLM_API_KEY: z.string().min(1),
     MYJOBBOT_DATA_DIR: z.string().min(1).default("data"),
     MYJOBBOT_LOG_DIR: z.string().min(1).default("log"),
+    MYJOBBOT_LOG_STDOUT: z.enum(["0", "1"]).default("0"),
     JSEARCH_API_KEY: z.string().min(1).optional(),
     MYJOBBOT_SEARXNG_URL: z.url().optional(),
     MYJOBBOT_BROWSER_URL: z.url({ protocol: /^wss?$/ }).optional(),

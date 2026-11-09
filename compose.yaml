@@ -22,6 +22,7 @@ services:
         environment:
             MYJOBBOT_DATA_DIR: /data
             MYJOBBOT_LOG_DIR: /data/log
+            MYJOBBOT_LOG_STDOUT: "1"
         volumes:
             - ./data:/data
             - ./src:/app/src:ro
@@ -37,6 +38,7 @@ services:
         environment:
             MYJOBBOT_DATA_DIR: /data
             MYJOBBOT_LOG_DIR: /data/log
+            MYJOBBOT_LOG_STDOUT: "1"
             NEXT_DIST_DIR: .next-docker
         ports:
             - "${MYJOBBOT_PORT:-8080}:${MYJOBBOT_PORT:-8080}"
