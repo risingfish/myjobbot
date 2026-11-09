@@ -47,8 +47,8 @@ export class MemoryJobStore implements JobStore {
         return this.unscored(source);
     }
 
-    async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        return companies(this.rows().filter((job) => job.ats !== "jsearch" && job.ats !== "linkedin" && job.normalized_title === normalizedTitle));
+    async boardCompaniesWithTitle(normalizedTitle: string, notBoards: readonly string[]): Promise<string[]> {
+        return companies(this.rows().filter((job) => !notBoards.includes(String(job.ats)) && job.normalized_title === normalizedTitle));
     }
 
     async companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]> {

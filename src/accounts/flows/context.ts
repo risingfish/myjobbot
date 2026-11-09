@@ -15,7 +15,7 @@ export interface RelyingParty {
 }
 
 export interface AuthContext {
-    stores: Pick<Stores, "sessions" | "accounts" | "methods" | "authenticators" | "tokens" | "keys">;
+    stores: Pick<Stores, "sessions" | "attempts" | "accounts" | "events" | "methods" | "authenticators" | "accountCodes" | "emailLinks" | "recoveryCodes" | "keys">;
     now: () => string;
     random: RandomBytes;
     mail: MailSlot | null;

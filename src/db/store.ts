@@ -1,12 +1,16 @@
 import type { AccountStore } from "./accountStore.js";
+import type { AttemptStore } from "./attemptStore.js";
 import type { AuthenticatorStore } from "./authenticatorStore.js";
 import type { CompanyStore } from "./companyStore.js";
 import type { KeyStore } from "./keyStore.js";
 import type { MethodStore } from "./methodStore.js";
 import type { PostingStore } from "./postingStore.js";
 import type { SourcePlans } from "./sourcePlans.js";
+import type { SecurityEventLog } from "./securityEventLog.js";
 import type { SessionStore } from "./sessionStore.js";
-import type { TokenStore } from "./tokenStore.js";
+import type { AccountCodeStore } from "./accountCodeStore.js";
+import type { EmailLinkStore } from "./emailLinkStore.js";
+import type { RecoveryCodeStore } from "./recoveryCodeStore.js";
 import type { UserStores } from "./userStores.js";
 import type { CareersStore } from "./careersStore.js";
 import type { DescriptionFormat } from "../jobs/job.js";
@@ -37,10 +41,14 @@ export interface SharedStores {
     postings: PostingStore;
     sourcePlans: SourcePlans;
     sessions: SessionStore;
+    attempts: AttemptStore;
     accounts: AccountStore;
+    events: SecurityEventLog;
     methods: MethodStore;
     authenticators: AuthenticatorStore;
-    tokens: TokenStore;
+    accountCodes: AccountCodeStore;
+    emailLinks: EmailLinkStore;
+    recoveryCodes: RecoveryCodeStore;
     keys: KeyStore;
 }
 

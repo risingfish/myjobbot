@@ -128,6 +128,7 @@ Not findings, checked on purpose:
   `"attempts"` to the `Pick` in `src/accounts/flows/context.ts`, and move the attempt cases out of
   `sessionContract.ts` into their own contract.
 - **Size**: M
+- **Done**: S2b
 
 ### D2 · SRP · `src/db/accountStore.ts:38`
 - **Breach**: `AccountStore` holds the account records (`users`: create, look up, admin mark, name,
@@ -145,6 +146,7 @@ Not findings, checked on purpose:
   factories. Callers to update: `securityEvents.ts`, `web/lib/accountState.ts`, the flow context
   `Pick`, `accountContract.ts`, and any test reading `MemoryAccountStore.events`.
 - **Size**: M
+- **Done**: S2b
 
 ### D3 · SRP · `src/db/tokenStore.ts:33`
 - **Breach**: `TokenStore` groups three unrelated kinds of one-time value over three tables, each
@@ -163,6 +165,7 @@ Not findings, checked on purpose:
   `tokens` with `accountCodes`, `emailLinks` and `recoveryCodes`. Update the six callers above, the
   flow context `Pick`, and split `tokenContract.ts` along the same lines.
 - **Size**: M
+- **Done**: S2b
 
 ### D4 · OCP · `src/db/kysely/jobStore.ts:47`
 - **Breach**: `boardCompaniesWithTitle` decides which postings count as company-board postings by
@@ -181,6 +184,7 @@ Not findings, checked on purpose:
   Both stores then filter on the list they are given. Behaviour is unchanged while the list is
   `["jsearch", "linkedin"]`. The `storeContract` cases pass the list.
 - **Size**: M
+- **Done**: S2b
 
 ### D5 · OCP · `src/db/kysely/tokenStore.ts:27`
 - **Breach**: `spendEmailToken` branches on one purpose by name,
@@ -197,6 +201,7 @@ Not findings, checked on purpose:
   `EmailLinkStore` module after D3). Both implementations call `boundToSession(spend.purpose)`
   instead of naming `"step_up"`.
 - **Size**: S
+- **Done**: S2b
 
 ### D6 · SRP · `src/db/kysely/searchSettingsStore.ts:25`
 - **Breach**: creating the owner's user row (`ensureOwner`) and the owner's id (`OWNER_ID`,
@@ -253,6 +258,7 @@ Not findings, checked on purpose:
   - the memory `seedUsers` and `seedUser` hooks in `tests/storeContract.test.ts` add to
     `AuthTables.users`
   - `tests/runAll.test.ts` keeps `initOwner` where `createAccount`'s code check needs user 1's email
+- **Done**: S2b
 
 ### D8 · ISP · `src/db/store.ts:100`
 - **Breach**: `ApiCallLog.lastCallAt` is part of the interface but nothing in `src/` or `web/` calls

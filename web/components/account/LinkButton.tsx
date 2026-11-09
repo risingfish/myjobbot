@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
-import type { LinkPurpose } from "../../../src/db/tokenStore.js";
+import type { LinkPurpose } from "../../../src/db/emailLinkStore.js";
 import { parseLinkFragment } from "../../../src/web/linkFragment.js";
 import { spendEmailLinkNow, type LinkAnswer } from "../../lib/signInActions.js";
 import { Field } from "./Field.js";

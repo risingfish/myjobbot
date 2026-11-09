@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readAlerts } from "../../gmail/alertFetch.js";
 import { ALERTS_SOURCE } from "../../gmail/alertJobs/source.js";
+import { ALERT_ATS } from "../../gmail/alertStore.js";
 import { NotSetUp } from "../failure.js";
 import type { SourceContext, SourceModule, SourcePage } from "../module.js";
 
@@ -9,6 +10,7 @@ export const gmailAlerts: SourceModule<object> = {
     name: ALERTS_SOURCE,
     description: "LinkedIn job alert emails in the connected Gmail account.",
     kind: "email",
+    jobAts: ALERT_ATS,
     scope: "account",
     params: z.object({}),
     fields: [],

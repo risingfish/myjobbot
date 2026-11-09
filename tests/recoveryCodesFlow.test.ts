@@ -28,7 +28,7 @@ test("a recovery code signs in once, is recorded with its notice, and still work
     expect(mailer.sent.map((mail) => mail.text).join("\n")).toContain("A recovery code was used to sign in");
     await removeAuthenticator(ctx, actor);
     expect((await signInWithRecoveryCode(ctx, { ...SIGN_IN, code: second })).ok).toBe(true);
-    expect(await ctx.stores.tokens.recoveryCodesLeft(OWNER_ID)).toBe(8);
+    expect(await ctx.stores.recoveryCodes.left(OWNER_ID)).toBe(8);
 });
 
 test("a new set replaces the old one, and confirming it's you accepts an app code or a recovery code", async () => {

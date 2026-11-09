@@ -1,18 +1,18 @@
-import { OWNER_ID } from "../../src/db/owner.js";
 import { rawSearchSettings, type RawSearchSettings, type SearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import { ownerOrRefuse, type MemoryUser } from "./memoryAuthTables.js";
 
 export class MemorySearchSettingsStore implements SearchSettingsStore {
-    readonly users: number[] = [];
     private readonly rows = new Map<number, string>();
+
+    constructor(private readonly users: MemoryUser[] = []) {}
 
     async load(userId: number): Promise<RawSearchSettings | null> {
         const row = this.rows.get(userId);
         return row === undefined ? null : rawSearchSettings.parse(JSON.parse(row));
     }
 
-    async save(userId: number, settings: RawSearchSettings): Promise<void> {
-        if (userId === OWNER_ID && !this.users.includes(OWNER_ID)) this.users.push(OWNER_ID);
-        if (!this.users.includes(userId)) throw new Error(`no user ${userId}`);
+    async save(userId: number, settings: RawSearchSettings, at: string): Promise<void> {
+        ownerOrRefuse(this.users, userId, at);
         this.rows.set(userId, JSON.stringify(settings));
     }
 

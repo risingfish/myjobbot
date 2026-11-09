@@ -1,7 +1,7 @@
 import type { Kysely, Selectable } from "kysely";
 import type { Database } from "../schema.js";
 import type { SessionsTable } from "../schema/accounts.js";
-import { daysBefore, SESSION_DAYS, type AttemptKey, type NewSession, type Session, type SessionStore } from "../sessionStore.js";
+import { daysBefore, SESSION_DAYS, type NewSession, type Session, type SessionStore } from "../sessionStore.js";
 
 export class KyselySessionStore implements SessionStore {
     constructor(private readonly db: Kysely<Database>) {}
@@ -16,13 +16,7 @@ export class KyselySessionStore implements SessionStore {
 
     /** Returns a sign-in that hasn't ended and was used within its lifetime, or null. */
     async find(idDigest: string, now: string): Promise<Session | null> {
-        const row = await this.db
-            .selectFrom("sessions")
-            .selectAll()
-            .where("id_digest", "=", idDigest)
-            .where("ended_at", "is", null)
-            .where("last_used_at", ">", daysBefore(now, SESSION_DAYS))
-            .executeTakeFirst();
+        const row = await this.db.selectFrom("sessions").selectAll().where("id_digest", "=", idDigest).where("ended_at", "is", null).where("last_used_at", ">", daysBefore(now, SESSION_DAYS)).executeTakeFirst();
         return row === undefined ? null : fromRow(row);
     }
 
@@ -57,12 +51,6 @@ export class KyselySessionStore implements SessionStore {
             .execute();
     }
 
-    /** Records one attempt, deleting attempts older than a day. */
-    async recordAttempt(key: AttemptKey, at: string): Promise<void> {
-        await this.db.deleteFrom("auth_attempts").where("at", "<", daysBefore(at, 1)).execute();
-        await this.db.insertInto("auth_attempts").values({ kind: key.kind, scope: key.scope, key_digest: key.keyDigest, at }).execute();
-    }
-
     /** Returns an account's sign-ins that haven't ended or expired, most recently used first. */
     async activeFor(userId: number, now: string): Promise<Session[]> {
         const rows = await this.db.selectFrom("sessions").selectAll().where("user_id", "=", userId).where("ended_at", "is", null).where("last_used_at", ">", daysBefore(now, SESSION_DAYS)).orderBy("last_used_at", "desc").execute();
@@ -72,19 +60,6 @@ export class KyselySessionStore implements SessionStore {
     /** Records that a sign-in's holder just proved their identity again. */
     async setVerified(idDigest: string, now: string): Promise<void> {
         await this.db.updateTable("sessions").set({ verified_at: now }).where("id_digest", "=", idDigest).execute();
-    }
-
-    /** Counts the attempts of one kind and key since a time. */
-    async countAttempts(key: AttemptKey, since: string): Promise<number> {
-        const row = await this.db
-            .selectFrom("auth_attempts")
-            .select((eb) => eb.fn.countAll<number>().as("count"))
-            .where("kind", "=", key.kind)
-            .where("scope", "=", key.scope)
-            .where("key_digest", "=", key.keyDigest)
-            .where("at", ">=", since)
-            .executeTakeFirstOrThrow();
-        return Number(row.count);
     }
 }
 

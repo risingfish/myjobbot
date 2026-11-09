@@ -204,7 +204,7 @@ run alone. `withRetry` (`src/db/retry.ts`) takes a `retryable` test, and `upsert
 transaction again on a deadlock only (`isDeadlock`, error 1213), as MariaDB advises. One unit test
 in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
 
-- [ ] T012 Create `.specify/sitting-in-progress` naming S2.
+- [X] T012 Create `.specify/sitting-in-progress` naming S2.
 
 **Tests first (S2)**
 
@@ -212,7 +212,7 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
   objects from `memoryStores()` and `storesOver(db)` have no function members other than `forUser`
   and `close`. The research R7 guard: a container holds stores, not operations. It passes today, so it
   is a regression guard rather than a failing-first test.
-- [ ] T014 [P] [US1] Write unit tests (3) in `tests/storeVariantScan.test.ts`, in the style of
+- [X] T014 [P] [US1] Write unit tests (3) in `tests/storeVariantScan.test.ts`, in the style of
   `tests/wayBranches.test.ts`:
   - D4: no `src/db/**/*.ts` file (applied steps excepted) or `tests/helpers/memory*.ts` file compares
     against a registered module id from `MODULES` (`src/sources/registry.ts`) or `"linkedin"`.
@@ -221,7 +221,7 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
   - D5: no token store compares a `LinkPurpose` literal
   - D6: `OWNER_ID` is declared only in `src/db/owner.ts`, and `ensureOwner…` is defined only in
     `src/db/kysely/owner.ts`. The D8/D10 guard is S1's (T004).
-- [ ] T015 [P] [US1] D7: add contract cases. Each runs on memory (unit) and on MariaDB
+- [X] T015 [P] [US1] D7: add contract cases. Each runs on memory (unit) and on MariaDB
   (integration):
   - "a write for a user that doesn't exist is refused", in `tests/helpers/resumeContract.ts` and
     `tests/helpers/sourceContract.ts` (2 cases)
@@ -246,15 +246,15 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
   account stores call it, and so does the SQLite import, whose own insert of the owner's row
   (`src/app/importSqlite.ts:84`) is a fourth copy of the rule. Update every `OWNER_ID` importer
   (`src/cli.ts`, `src/cliUser.ts`, `src/config/resumeFile.ts`, the stores, the tests).
-- [ ] T018 [US1] D1: `AttemptStore` (`recordAttempt`, `countAttempts`, `AttemptKind`, `AttemptKey`)
+- [X] T018 [US1] D1: `AttemptStore` (`recordAttempt`, `countAttempts`, `AttemptKind`, `AttemptKey`)
   in `src/db/attemptStore.ts`, with `src/db/kysely/attemptStore.ts` and
   `tests/helpers/memoryAttemptStore.ts`. Add `attempts` to `SharedStores`, and wire it in
   `src/db/kysely/stores.ts` and `memoryStores`. Move the callers and the attempt contract cases.
-- [ ] T019 [US1] D2: `SecurityEventLog` (`record`, `recent`, `SecurityEvent`) in
+- [X] T019 [US1] D2: `SecurityEventLog` (`record`, `recent`, `SecurityEvent`) in
   `src/db/securityEventLog.ts`, with its Kysely and memory implementations. Add `events` to
   `SharedStores`. Callers: `src/accounts/flows/securityEvents.ts`, `web/lib/accountState.ts`, the flow
   context's `Pick`, and `tests/helpers/accountContract.ts`.
-- [ ] T020 [US1] D3 then D5:
+- [X] T020 [US1] D3 then D5:
   - split `TokenStore` into `AccountCodeStore`, `EmailLinkStore` and `RecoveryCodeStore`, each with
     its Kysely and memory implementation
   - replace `tokens` in `SharedStores` with `accountCodes`, `emailLinks` and `recoveryCodes`
@@ -265,7 +265,7 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
   - the email link store's interface module keeps no runtime imports, as `tokenStore.ts` has none
     today, because a client component (`web/components/account/LinkButton.tsx`) imports
     `LinkPurpose` from it
-- [ ] T021 [US1] D4: `boardCompaniesWithTitle(normalizedTitle, notBoards: readonly string[])` in
+- [X] T021 [US1] D4: `boardCompaniesWithTitle(normalizedTitle, notBoards: readonly string[])` in
   `JobStore`, both stores filtering on the list given. The caller `src/sources/ingest.ts` passes
   `nonBoardAts()`, a new function in `src/sources/registry.ts`. It is built from each module's kind,
   plus a new optional `SourceModule.jobAts`, which is the ats a module's jobs carry when it differs
@@ -273,7 +273,7 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
   exported constant (`ALERT_ATS`) beside `alertJobId` in `src/gmail/alertStore.ts`. T033's
   `isAlertJob` sits there too and uses it, and so do the Gmail code's own `"linkedin"` literals
   (`alertStore.ts`, `alertFetch.ts`).
-- [ ] T022 [US1] D7: `memoryStores` gets one users table (`AuthTables.users`), shared by
+- [X] T022 [US1] D7: `memoryStores` gets one users table (`AuthTables.users`), shared by
   `MemorySearchSettingsStore`, `MemoryResumeStore` and `MemorySourceStore`, and the private list is
   dropped. An owner write creates user 1; a write for an unknown user is refused, as in MariaDB.
   Make the test setup create users the way MariaDB has them:
@@ -289,7 +289,7 @@ in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
 
   Keep `initOwner` in `tests/runAll.test.ts` where it is still needed, to give user 1 the email that
   `createAccount`'s code check relies on. Remove only the seeding that no longer has a purpose.
-- [ ] T023 [US1] Run both checks until green, record the ledger, review S2 against Principle VI, mark
+- [X] T023 [US1] Run both checks until green, record the ledger, review S2 against Principle VI, mark
   D1–D7 and D9 done in `inventory/06-stores-database.md`, and delete the marker.
 
 ### Sitting S3: the run, tools and sources (A1–A4, S1–S5, S9, C3, C4)
@@ -718,6 +718,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | **Planned after** | **+48** | **+3** | **+0** |
 | Actual after S1 | 1142 + 9 (with UI: 1229) | 89 + 1 = 90 | 78 |
 | Actual after S2a | + 2 planned + 1 retry (with UI: 1232) | 90 | 78 |
+| Actual after S2b | + 4 (with UI: 1236) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

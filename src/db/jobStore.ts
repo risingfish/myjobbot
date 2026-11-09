@@ -24,7 +24,7 @@ export interface JobStore {
     upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void>;
     unscoredSince(source: JobSource, seen: string): Promise<JobRow[]>;
     unscoredForSource(source: JobSource): Promise<JobRow[]>;
-    boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]>;
+    boardCompaniesWithTitle(normalizedTitle: string, notBoards: readonly string[]): Promise<string[]>;
     recordVerdict(verdict: Verdict, stamp: VerdictStamp): Promise<boolean>;
     findJob(jobId: string): Promise<JobRow | null>;
     companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]>;

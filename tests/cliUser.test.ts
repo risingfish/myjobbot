@@ -8,7 +8,7 @@ const NOW = new Date().toISOString();
 async function withSecond(): Promise<TestStores> {
     const stores = memoryStores();
     await stores.accounts.initOwner({ email: "owner@example.com", emailKey: "owner@example.com", passwordDigest: "digest" }, NOW);
-    await stores.tokens.makeCode("code", 1, NOW);
+    await stores.accountCodes.makeCode("code", 1, NOW);
     await stores.accounts.createAccount({ email: "Second@Example.com", emailKey: "second@example.com", name: "Second", passwordDigest: "digest" }, "code", NOW);
     return stores;
 }

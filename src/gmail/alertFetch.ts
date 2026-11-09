@@ -9,7 +9,7 @@ import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type AlertJob, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
-import { alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
+import { ALERT_ATS, alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
 import { imapApi, type ImapFactory } from "./imap.js";
 import type { AlertMail } from "./imapAlerts.js";
 import { GmailError } from "./imapErrors.js";
@@ -93,7 +93,7 @@ export async function readAlerts(deps: AlertDeps): Promise<AlertRead> {
 
 /** Leaves out the new alert jobs whose posting another user already has with a description, so it is never looked up twice; storing it keeps that description. */
 async function undescribed(postings: Pick<PostingStore, "known">, fresh: AlertJob[]): Promise<AlertJob[]> {
-    const known = await postings.known(fresh.map((job) => ({ ats: "linkedin", jobId: alertJobId(job.linkedinId) })));
+    const known = await postings.known(fresh.map((job) => ({ ats: ALERT_ATS, jobId: alertJobId(job.linkedinId) })));
     const described = new Set(known.filter((posting) => posting.described).map((posting) => posting.jobId));
     return fresh.filter((job) => !described.has(alertJobId(job.linkedinId)));
 }

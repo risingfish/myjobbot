@@ -1,4 +1,4 @@
-import type { LinkPurpose } from "../db/tokenStore.js";
+import type { LinkPurpose } from "../db/emailLinkStore.js";
 
 const PURPOSES = new Set<string>(["signin", "reset", "email_change", "step_up"]);
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;

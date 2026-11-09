@@ -1,7 +1,9 @@
-import type { SecurityEvent } from "../../src/db/accountStore.js";
-import type { AttemptKey, Session } from "../../src/db/sessionStore.js";
+import type { SecurityEvent } from "../../src/db/securityEventLog.js";
+import type { AttemptKey } from "../../src/db/attemptStore.js";
+import type { Session } from "../../src/db/sessionStore.js";
 import { allMethods, keepsAWay } from "../../src/accounts/methods.js";
 import type { MethodChange, MethodKind, MethodRow } from "../../src/db/methodStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 
 export interface MemoryUser {
     id: number;
@@ -54,6 +56,15 @@ export interface AuthTables {
 
 export function newAuthTables(): AuthTables {
     return { users: [], methods: [], sessions: [], attempts: [], events: [], codes: [], emailTokens: [], recoveryCodes: [] };
+}
+
+export function memoryUser(id: number, at = "2026-11-01T00:00:00.000Z"): MemoryUser {
+    return { id, name: id === OWNER_ID ? "owner" : `user ${id}`, createdAt: at, email: null, emailKey: null, isAdmin: false };
+}
+
+export function ownerOrRefuse(users: MemoryUser[], userId: number, at: string): void {
+    if (userId === OWNER_ID && !users.some((user) => user.id === OWNER_ID)) users.push(memoryUser(OWNER_ID, at));
+    if (!users.some((user) => user.id === userId)) throw new Error(`no user ${userId}`);
 }
 
 export function upsertMethod(tables: AuthTables, method: MemoryMethod): void {

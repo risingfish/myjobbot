@@ -1,3 +1,4 @@
+import { ownerOrRefuse, type MemoryUser } from "./memoryAuthTables.js";
 import type { Tables } from "./memoryJobViews.js";
 import type { AccountSource, NewSource, SavedSource, SourceKey, SourceOutcome, SourceStore } from "../../src/db/sourceStore.js";
 
@@ -13,7 +14,10 @@ export class MemorySourceStore implements SourceStore {
     }
     private nextId = 1;
 
-    constructor(private readonly tables: Tables) {}
+    constructor(
+        private readonly tables: Tables,
+        private readonly users: MemoryUser[] = [],
+    ) {}
 
     seed(userId: number, sources: SavedSource[]): void {
         for (const source of sources) this.rows.push({ ...structuredClone(source), userId });
@@ -24,7 +28,8 @@ export class MemorySourceStore implements SourceStore {
         return this.rows.filter((row) => row.userId === userId).map(({ userId: _userId, ...saved }) => structuredClone(saved));
     }
 
-    async save(userId: number, source: NewSource | SavedSource): Promise<SavedSource> {
+    async save(userId: number, source: NewSource | SavedSource, at: string): Promise<SavedSource> {
+        ownerOrRefuse(this.users, userId, at);
         const id = "id" in source ? source.id : this.nextId++;
         const taken = this.rows.find((row) => row.userId === userId && row.id !== id && (row.target === source.target || row.name === source.name));
         if (taken !== undefined) throw new Error("duplicate saved source");
@@ -55,7 +60,8 @@ export class MemorySourceStore implements SourceStore {
         this.update(key, { companyId });
     }
 
-    async ensureAccountSource(userId: number, { module, name }: AccountSource): Promise<void> {
+    async ensureAccountSource(userId: number, { module, name }: AccountSource, at: string): Promise<void> {
+        ownerOrRefuse(this.users, userId, at);
         if (this.rows.some((row) => row.userId === userId && (row.target === module || row.name === name))) return;
         this.rows.push({ id: this.nextId++, userId, module, name, params: {}, target: module, enabled: true, companyId: null, cursor: null, last: null });
     }

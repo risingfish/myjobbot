@@ -1,6 +1,5 @@
 import type { Kysely, Selectable } from "kysely";
-import type { SecurityEventName } from "../../accounts/events.js";
-import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, SecurityEvent } from "../accountStore.js";
+import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../accountStore.js";
 import { createAccountIn, createAccountSafely } from "./accountCreation.js";
 import type { Database } from "../schema.js";
 import type { UsersTable } from "../schema/users.js";
@@ -60,7 +59,11 @@ export class KyselyAccountStore implements AccountStore {
         return this.db.transaction().execute(async (trx) => {
             const admins = await trx.selectFrom("users").select("id").where("is_admin", "=", 1).forUpdate().execute();
             if (!admin && admins.length === 1 && admins[0]?.id === userId) return "last_admin";
-            await trx.updateTable("users").set({ is_admin: admin ? 1 : 0 }).where("id", "=", userId).execute();
+            await trx
+                .updateTable("users")
+                .set({ is_admin: admin ? 1 : 0 })
+                .where("id", "=", userId)
+                .execute();
             return "ok";
         });
     }
@@ -68,12 +71,6 @@ export class KyselyAccountStore implements AccountStore {
     /** Changes an account's name. */
     async saveName(userId: number, name: string): Promise<void> {
         await this.db.updateTable("users").set({ name }).where("id", "=", userId).execute();
-    }
-
-    /** Returns an account's most recent security events, newest first. */
-    async recentEvents(userId: number, limit: number): Promise<SecurityEvent[]> {
-        const rows = await this.db.selectFrom("security_events").select(["user_id", "at", "address", "event", "method"]).where("user_id", "=", userId).orderBy("at", "desc").orderBy("id", "desc").limit(limit).execute();
-        return rows.map((row) => ({ userId: row.user_id, at: row.at, address: row.address, event: row.event as SecurityEventName, method: row.method }));
     }
 
     /** Changes an account's email and its key, refusing a key another account holds. */
@@ -87,11 +84,6 @@ export class KyselyAccountStore implements AccountStore {
             if ((error as { code?: unknown } | null)?.code === "ER_DUP_ENTRY") return "taken";
             throw error;
         }
-    }
-
-    /** Stores one security event. */
-    async recordEvent(event: SecurityEvent): Promise<void> {
-        await this.db.insertInto("security_events").values({ user_id: event.userId, at: event.at, address: event.address, event: event.event, method: event.method }).execute();
     }
 }
 

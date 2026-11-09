@@ -57,7 +57,12 @@ async function descriptionKept(stores: TestStores, second: ReturnType<TestStores
     await stores.jobStore.upsertAll([posting("described", { description: "Build APIs.", descriptionFormat: "text" })], SEEN, "Acme");
     await second.jobStore.upsertAll([posting("described")], LATER, "Gmail alerts");
     expect((await second.jobStore.findJob("described"))?.description).toBe("Build APIs.");
-    expect(await stores.postings.known([{ ats: "greenhouse", jobId: "described" }, { ats: "greenhouse", jobId: "absent" }])).toEqual([{ ats: "greenhouse", jobId: "described", described: true }]);
+    expect(
+        await stores.postings.known([
+            { ats: "greenhouse", jobId: "described" },
+            { ats: "greenhouse", jobId: "absent" },
+        ]),
+    ).toEqual([{ ats: "greenhouse", jobId: "described", described: true }]);
 }
 
 async function markdownRescoresEveryone(stores: TestStores, second: ReturnType<TestStores["forUser"]>): Promise<void> {

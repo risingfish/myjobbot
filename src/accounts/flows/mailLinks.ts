@@ -1,6 +1,6 @@
 import type { Account } from "../../db/accountStore.js";
 import type { Device } from "../../db/sessionStore.js";
-import type { NewEmailToken } from "../../db/tokenStore.js";
+import type { NewEmailToken } from "../../db/emailLinkStore.js";
 import type { MailContent } from "../../mail/messages.js";
 import { checkEmail } from "../emails.js";
 import { attemptKey, limitFor, windowStart } from "../limits.js";
@@ -18,15 +18,15 @@ export const MAIL_OFF: Answer = { ok: false, message: MESSAGES.mail_off };
 export async function mayMail(ctx: AuthContext, emailKey: string): Promise<boolean> {
     const limit = limitFor("mailEmail");
     const key = attemptKey(limit, emailKey);
-    const allowed = (await ctx.stores.sessions.countAttempts(key, windowStart(limit, ctx.now()))) < limit.max;
-    await ctx.stores.sessions.recordAttempt(key, ctx.now());
+    const allowed = (await ctx.stores.attempts.countAttempts(key, windowStart(limit, ctx.now()))) < limit.max;
+    await ctx.stores.attempts.recordAttempt(key, ctx.now());
     return allowed;
 }
 
 /** Makes a one-time link for an account and mails it, built from the app's address, to the given address or the account's own. */
 export async function mailLink(ctx: AuthContext, account: Account, link: { token: Omit<NewEmailToken, "digest">; to?: string; build: (name: string, url: string) => MailContent }): Promise<void> {
     const value = newToken(ctx.random);
-    await ctx.stores.tokens.makeEmailToken(account.id, { ...link.token, digest: tokenDigest(value) }, ctx.now());
+    await ctx.stores.emailLinks.make(account.id, { ...link.token, digest: tokenDigest(value) }, ctx.now());
     const to = link.to ?? account.email;
     if (to) mailTo(ctx, to, (baseUrl) => link.build(account.name, `${baseUrl}/link#p=${link.token.purpose}&t=${value}`));
 }

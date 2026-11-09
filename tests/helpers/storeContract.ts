@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { nonBoardAts } from "../../src/sources/registry.js";
 import type { TestStores } from "./memoryStore.js";
 import { makeJob, type Job } from "../../src/jobs/job.js";
 
@@ -69,7 +70,7 @@ async function case03(make: MakeStores): Promise<void> {
     const { jobStore } = await make();
     await jobStore.upsertAll([sample({ id: "1" }), sample({ id: "2" })], DAY_ONE, "Stripe");
     await jobStore.upsertAll([sample({ id: "js", ats: "jsearch", company: "Acme" })], DAY_ONE, "Search");
-    expect(await jobStore.boardCompaniesWithTitle("backend engineer")).toEqual(["Stripe"]);
+    expect(await jobStore.boardCompaniesWithTitle("backend engineer", nonBoardAts())).toEqual(["Stripe"]);
 }
 
 async function case04(make: MakeStores): Promise<void> {

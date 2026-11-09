@@ -1,4 +1,4 @@
-import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, SecurityEvent } from "../../src/db/accountStore.js";
+import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../../src/db/accountStore.js";
 import { OWNER_ID } from "../../src/db/owner.js";
 import { upsertMethod, type AuthTables, type MemoryUser } from "./memoryAuthTables.js";
 
@@ -8,10 +8,6 @@ function toAccount(user: MemoryUser): Account {
 
 export class MemoryAccountStore implements AccountStore {
     constructor(private readonly tables: AuthTables) {}
-
-    get events(): SecurityEvent[] {
-        return this.tables.events;
-    }
 
     async initOwner(owner: OwnerLogin, now: string): Promise<boolean> {
         let user = this.tables.users.find((row) => row.id === OWNER_ID);
@@ -66,22 +62,9 @@ export class MemoryAccountStore implements AccountStore {
         for (const user of this.tables.users) if (user.id === userId) user.name = name;
     }
 
-    async recentEvents(userId: number, limit: number): Promise<SecurityEvent[]> {
-        return this.tables.events
-            .filter((event) => event.userId === userId)
-            .map((event, index) => ({ event, index }))
-            .sort((a, b) => b.event.at.localeCompare(a.event.at) || b.index - a.index)
-            .slice(0, limit)
-            .map(({ event }) => ({ ...event }));
-    }
-
     async changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken"> {
         if (this.tables.users.some((user) => user.emailKey === emailKey && user.id !== userId)) return "taken";
         for (const user of this.tables.users) if (user.id === userId) Object.assign(user, { email, emailKey });
         return "ok";
-    }
-
-    async recordEvent(event: SecurityEvent): Promise<void> {
-        this.tables.events.push({ ...event });
     }
 }

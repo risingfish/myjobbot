@@ -15,7 +15,7 @@ export function requestSignInLink(ctx: AuthContext, input: { email: string; addr
 
 /** Signs in with a sign-in link, once, and only while the account still has email links usable. */
 export async function spendSignIn(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
-    const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "signin" }, ctx.now());
+    const spent = await ctx.stores.emailLinks.spend({ digest: tokenDigest(spend.token), purpose: "signin" }, ctx.now());
     if (spent === null || !(await wayUsable(ctx, spent.userId, "email_link"))) return EXPIRED;
     const cookies = await startSession(ctx, { userId: spent.userId, address: spend.address, heldDigest: spend.heldDigest, device: spend.device });
     await recordSecurityEvent(ctx, { userId: spent.userId, at: ctx.now(), address: spend.address, event: "signed_in", method: "email_link" });

@@ -51,6 +51,7 @@ export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHo
         await savesFirst(stores.searchSettings);
         await roundTripsExactly(stores.searchSettings);
         expect(await hooks.owners()).toEqual([OWNER_ID]);
+        expect(await stores.accounts.userIds()).toEqual([OWNER_ID]);
         await savesWholePerUser(stores, hooks);
         await stores.close();
     });

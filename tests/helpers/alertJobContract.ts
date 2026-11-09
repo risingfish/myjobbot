@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { nonBoardAts } from "../../src/sources/registry.js";
 import { makeJob } from "../../src/jobs/job.js";
 import { normalizeTitle } from "../../src/jobs/normalize.js";
 import type { MakeStores } from "./storeContract.js";
@@ -31,7 +32,7 @@ async function case3(make: MakeStores) {
     const { jobStore } = await make();
     await jobStore.upsertAll([job("linkedin", "li_3", "Gamma")], SEEN, "Gmail alerts");
     await jobStore.upsertAll([job("greenhouse", "g3", "Delta")], SEEN, "Delta");
-    expect(await jobStore.boardCompaniesWithTitle(normalizeTitle(TITLE))).toEqual(["Delta"]);
+    expect(await jobStore.boardCompaniesWithTitle(normalizeTitle(TITLE), nonBoardAts())).toEqual(["Delta"]);
 }
 
 const CASES: Array<[string, (make: MakeStores) => Promise<void>]> = [

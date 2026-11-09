@@ -6,6 +6,7 @@ import type { Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import type { ToolContext } from "../tools/context.js";
 import type { SourceContext, SourceModule, SourcePage } from "./module.js";
+import { nonBoardAts } from "./registry.js";
 
 interface IngestBatch {
     source: JobSource;
@@ -37,7 +38,7 @@ async function withoutBoardCopies(store: JobStore, jobs: Job[]): Promise<Job[]> 
 /** Reports whether a company board already supplied a job with this company and title. */
 async function hasBoardCopy(store: JobStore, job: Job): Promise<boolean> {
     const company = normalizeCompany(job.company);
-    const boardCompanies = await store.boardCompaniesWithTitle(normalizeTitle(job.title));
+    const boardCompanies = await store.boardCompaniesWithTitle(normalizeTitle(job.title), nonBoardAts());
     return boardCompanies.some((name) => normalizeCompany(name) === company);
 }
 

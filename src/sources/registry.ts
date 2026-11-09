@@ -9,6 +9,11 @@ import { workday } from "./modules/workday.js";
 
 export const MODULES: readonly SourceModule<unknown>[] = [greenhouse, lever, ashby, gem, workday, jsearch, gmailAlerts];
 
+/** Lists the ats values of the jobs that don't come from a company's own board, so a board's copy of a job can be told from theirs. */
+export function nonBoardAts(): string[] {
+    return MODULES.filter((module) => module.kind !== "ats").map((module) => module.jobAts ?? module.id);
+}
+
 /** Finds the source module shipped with the app under an id, or null when no module has it. */
 export function moduleFor(id: string): SourceModule<unknown> | null {
     return MODULES.find((module) => module.id === id) ?? null;

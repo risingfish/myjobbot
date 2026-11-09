@@ -69,6 +69,7 @@ export interface SourceModule<P> {
     readonly name: string;
     readonly description: string;
     readonly kind: "ats" | "api" | "email" | "web";
+    readonly jobAts?: string;
     readonly scope: "company" | "query" | "account";
     readonly params: z.ZodType<P>;
     readonly fields: readonly SourceField[];

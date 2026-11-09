@@ -15,8 +15,7 @@ const ACME = { module: "greenhouse", name: "Acme", params: { slug: "acme" }, tar
 
 async function twoUsers(): Promise<TestStores> {
     const stores = storesWithSettings(ONE_COMPANY);
-    await stores.accounts.initOwner({ email: "owner@example.com", emailKey: "owner@example.com", passwordDigest: "digest" }, NOW);
-    await stores.tokens.makeCode("code", 1, NOW);
+    await stores.accountCodes.makeCode("code", 1, NOW);
     await stores.accounts.createAccount({ email: "second@example.com", emailKey: "second@example.com", name: "Second", passwordDigest: "digest" }, "code", NOW);
     const second = stores.forUser(2);
     await second.sources.save(ACME, NOW);

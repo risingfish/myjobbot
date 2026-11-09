@@ -38,8 +38,8 @@ async function checkedForm(form: AccountForm): Promise<NewAccount | string> {
 async function overCodeLimit(ctx: AuthContext, address: string): Promise<boolean> {
     const limit = limitFor("codeAddress");
     const key = attemptKey(limit, address);
-    const reached = (await ctx.stores.sessions.countAttempts(key, windowStart(limit, ctx.now()))) >= limit.max;
-    await ctx.stores.sessions.recordAttempt(key, ctx.now());
+    const reached = (await ctx.stores.attempts.countAttempts(key, windowStart(limit, ctx.now()))) >= limit.max;
+    await ctx.stores.attempts.recordAttempt(key, ctx.now());
     return reached;
 }
 

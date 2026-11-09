@@ -9,11 +9,19 @@ async function newestFirst(make: MakeStores) {
     const stores = await make();
     const jobs = ["a", "b", "c", "d"].map((jobId) => makeJob({ ats: "greenhouse", jobId, company: "Acme", title: "Backend Engineer", url: `https://example.com/${jobId}` }, {}));
     await stores.jobStore.upsertAll(jobs, SEEN, "Acme");
-    const scores: Array<[string, string]> = [["a", "2026-10-02"], ["b", "2026-10-03"], ["c", "2026-10-04"], ["a", "2026-10-05"]];
+    const scores: Array<[string, string]> = [
+        ["a", "2026-10-02"],
+        ["b", "2026-10-03"],
+        ["c", "2026-10-04"],
+        ["a", "2026-10-05"],
+    ];
     for (const [id, day] of scores) await stores.jobStore.recordVerdict(verdict(id), { scoredAt: `${day}T00:00:00.000Z`, runId: `run-${day}` });
     await stores.jobViews.clearScore({ ats: "greenhouse", jobId: "c" });
     const keys = (limit: number) => stores.jobViews.recentlyScored(limit).then((found) => found.map((key) => `${key.ats}:${key.jobId}`));
-    expect([await keys(10), await keys(2)]).toEqual([["greenhouse:a", "greenhouse:c", "greenhouse:b"], ["greenhouse:a", "greenhouse:c"]]);
+    expect([await keys(10), await keys(2)]).toEqual([
+        ["greenhouse:a", "greenhouse:c", "greenhouse:b"],
+        ["greenhouse:a", "greenhouse:c"],
+    ]);
 }
 
 export function recentContract(make: MakeStores): void {

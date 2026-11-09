@@ -17,7 +17,7 @@ function record(ctx: AuthContext, input: { userId: number; address: string; even
 export async function spendReset(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
     const next = await newPasswordDigest(spend.password ?? "");
     if (!next.ok) return next;
-    const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "reset" }, ctx.now());
+    const spent = await ctx.stores.emailLinks.spend({ digest: tokenDigest(spend.token), purpose: "reset" }, ctx.now());
     if (spent === null) return EXPIRED;
     await ctx.stores.methods.setPassword(spent.userId, next.digest, ctx.now());
     await ctx.stores.sessions.endAllFor(spent.userId, ctx.now());
@@ -27,7 +27,7 @@ export async function spendReset(ctx: AuthContext, spend: LinkSpend): Promise<Sp
 
 /** Changes the email with the link sent to the new address, telling the old one, unless another account took the address meanwhile. */
 export async function spendEmailChange(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
-    const spent = await ctx.stores.tokens.spendEmailToken({ digest: tokenDigest(spend.token), purpose: "email_change" }, ctx.now());
+    const spent = await ctx.stores.emailLinks.spend({ digest: tokenDigest(spend.token), purpose: "email_change" }, ctx.now());
     const account = spent === null ? null : await ctx.stores.accounts.account(spent.userId);
     const email = checkEmail(spent?.newEmail ?? "");
     if (spent === null || account === null || !email.ok) return EXPIRED;
@@ -40,9 +40,9 @@ export async function spendEmailChange(ctx: AuthContext, spend: LinkSpend): Prom
 /** Renews the proof of identity of the sign-in that asked for a confirm link; opened anywhere else, it spends nothing. */
 export async function spendStepUp(ctx: AuthContext, spend: LinkSpend): Promise<SpendAnswer> {
     const digest = tokenDigest(spend.token);
-    const spent = spend.sessionDigest === null ? null : await ctx.stores.tokens.spendEmailToken({ digest, purpose: "step_up", sessionDigest: spend.sessionDigest }, ctx.now());
+    const spent = spend.sessionDigest === null ? null : await ctx.stores.emailLinks.spend({ digest, purpose: "step_up", sessionDigest: spend.sessionDigest }, ctx.now());
     if (spent === null || spend.sessionDigest === null) {
-        const found = await ctx.stores.tokens.emailTokenFor(digest, ctx.now());
+        const found = await ctx.stores.emailLinks.lookup(digest, ctx.now());
         return found?.live && found.purpose === "step_up" ? { ok: false, message: MESSAGES.step_up_other_browser } : EXPIRED;
     }
     await ctx.stores.sessions.setVerified(spend.sessionDigest, ctx.now());

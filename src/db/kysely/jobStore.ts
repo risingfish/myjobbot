@@ -49,8 +49,8 @@ export class KyselyJobStore implements JobStore {
     }
 
     /** Lists company names among the user's company-board postings with a title, so JSearch duplicates can be skipped; alert jobs don't count as board postings. */
-    async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        const rows = await userJobsOf(this.db, this.userId).select("j.company").distinct().where("j.ats", "not in", ["jsearch", "linkedin"]).where("j.normalized_title", "=", normalizedTitle).execute();
+    async boardCompaniesWithTitle(normalizedTitle: string, notBoards: readonly string[]): Promise<string[]> {
+        const rows = await userJobsOf(this.db, this.userId).select("j.company").distinct().where("j.ats", "not in", notBoards).where("j.normalized_title", "=", normalizedTitle).execute();
         return rows.map((row) => row.company);
     }
 
@@ -89,7 +89,11 @@ export class KyselyJobStore implements JobStore {
 
     /** Looks up one of the user's jobs by its id, or null if they have no such job. */
     async findJob(jobId: string): Promise<JobRow | null> {
-        const row = await userJobsOf(this.db, this.userId).select([...ROW_COLUMNS]).where("j.job_id", "=", jobId).limit(1).executeTakeFirst();
+        const row = await userJobsOf(this.db, this.userId)
+            .select([...ROW_COLUMNS])
+            .where("j.job_id", "=", jobId)
+            .limit(1)
+            .executeTakeFirst();
         return row === undefined ? null : jobRowSchema.parse(row);
     }
 
