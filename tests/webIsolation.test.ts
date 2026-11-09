@@ -3,7 +3,7 @@ import { makeJob } from "../src/jobs/job.js";
 import { makeDataDir } from "./helpers/dataDir.js";
 import { memoryStores, type TestStores } from "./helpers/memoryStore.js";
 
-const state = vi.hoisted(() => ({ stores: null as unknown, account: { id: 2, name: "Second", email: "second@example.com", isAdmin: false } }));
+const state = vi.hoisted(() => ({ stores: null as unknown, account: { id: 2, name: "Second", email: "second@example.com", isAdmin: false, deactivatedAt: null, deleteAfter: null } }));
 
 vi.mock("../web/lib/env.js", () => ({ loadRepoEnv: () => {} }));
 vi.mock("next/cache.js", () => ({ revalidatePath: () => {} }));
@@ -27,7 +27,7 @@ async function ownerData(): Promise<TestStores> {
 
 beforeEach(async () => {
     vi.stubEnv("MYJOBBOT_DATA_DIR", makeDataDir());
-    state.account = { id: 2, name: "Second", email: "second@example.com", isAdmin: false };
+    state.account = { id: 2, name: "Second", email: "second@example.com", isAdmin: false, deactivatedAt: null, deleteAfter: null };
     state.stores = await ownerData();
 });
 
@@ -71,7 +71,7 @@ test("following another user's re-score answers as for a run that doesn't exist"
 });
 
 test("an admin who isn't the owner sees none of the owner's data either", async () => {
-    state.account = { ...state.account, isAdmin: true };
+    state.account = { ...state.account, isAdmin: true, deactivatedAt: null, deleteAfter: null };
     const { getUiState } = await import("../web/lib/uiState.js");
     const ui = await getUiState();
     const { myStores } = await import("../web/lib/myStores.js");

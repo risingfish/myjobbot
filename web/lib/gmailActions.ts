@@ -6,11 +6,14 @@ import { connect, disconnect, type ConnectResult } from "../../src/gmail/connect
 import { gmailDeps } from "./gmailDeps.js";
 import { alertSenders } from "./fileConfig.js";
 import { guarded } from "./guard.js";
+import { scoringRefusal } from "./scoringRefusal.js";
 
 const KEY_NOT_SET = "Set MYJOBBOT_SECRET_KEY first.";
 
 /** Connects Gmail from the Settings form: signs in with the address and app password, then saves them sealed. */
 async function connectGmailAction(_previous: ConnectResult, form: FormData): Promise<ConnectResult> {
+    const refusal = await scoringRefusal();
+    if (refusal !== null) return { ok: false, error: refusal };
     const deps = await gmailDeps();
     if (deps === null) return { ok: false, error: KEY_NOT_SET };
     const input = { email: String(form.get("email") ?? ""), appPassword: String(form.get("app_password") ?? "") };

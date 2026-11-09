@@ -36,12 +36,18 @@ export async function runAll(environment: Environment, seams: RunSeams, only?: n
 async function userFacts(stores: Stores, loaded: LoadedConfig, only: number | undefined): Promise<UserFacts[]> {
     const ids = only === undefined ? await stores.accounts.userIds() : [only];
     const on = await stores.sourcePlans.sourcesOnForAll();
-    return Promise.all(ids.map(async (userId) => ({ userId, sourcesOn: on.filter((source) => source.userId === userId).length, uploadedResume: (await stores.forUser(userId).resume.currentResume()) !== null, resumeFile: loaded.resume !== null })));
+    return Promise.all(ids.map(async (userId) => ({ userId, sourcesOn: on.filter((source) => source.userId === userId).length, uploadedResume: (await stores.forUser(userId).resume.currentResume()) !== null, resumeFile: loaded.resume !== null, deactivated: await isDeactivated(stores, userId) })));
+}
+
+/** Says whether a user's account is deactivated now, so a run does no work for them. */
+async function isDeactivated(stores: Stores, userId: number): Promise<boolean> {
+    return ((await stores.accounts.account(userId))?.deactivatedAt ?? null) !== null;
 }
 
 /** Runs one planned user, reporting a skip as planned and a failure without stopping the users after them. */
 async function runPlanned({ loaded, seams, stores, key }: RunAllParts, user: PlannedUser): Promise<UserRun> {
     if ("skipped" in user) return user;
+    if (await isDeactivated(stores, user.userId)) return { userId: user.userId, skipped: "deactivated" };
     try {
         return { userId: user.userId, report: await runForUser(loaded, seams, { stores: stores.forUser(user.userId), key }) };
     } catch (error) {

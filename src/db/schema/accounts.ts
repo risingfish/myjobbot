@@ -49,7 +49,7 @@ export interface SessionsTable {
 
 export interface AccountCodesTable {
     digest: string;
-    created_by: number;
+    created_by: Optional<number>;
     created_at: string;
     expires_at: string;
     used_by: Optional<number>;

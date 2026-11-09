@@ -89,5 +89,5 @@ export class KyselyAccountStore implements AccountStore {
 
 /** Turns a stored user row into an account. */
 function fromRow(row: Selectable<UsersTable>): Account {
-    return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1 };
+    return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1, deactivatedAt: row.deactivated_at, deleteAfter: row.delete_after };
 }

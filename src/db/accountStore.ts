@@ -3,6 +3,8 @@ export interface Account {
     name: string;
     email: string | null;
     isAdmin: boolean;
+    deactivatedAt: string | null;
+    deleteAfter: string | null;
 }
 
 export interface OwnerLogin {

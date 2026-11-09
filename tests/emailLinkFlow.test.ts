@@ -86,6 +86,6 @@ test("a confirm link changes the email and tells the old address, unless another
     expect(mailer.sent.at(-1)).toMatchObject({ to: "owner@example.com", subject: "myjobbot: your email was changed" });
     expect(auth.events.at(-1)?.event).toBe("email_changed");
     await requestEmailChange(ctx, { ...actor, account: { ...actor.account, email: "new@example.com" } }, "later@example.com");
-    auth.tables.users.push({ id: 7, name: "Ada", createdAt: ctx.now(), email: "later@example.com", emailKey: "later@example.com", isAdmin: false });
+    auth.tables.users.push({ id: 7, name: "Ada", createdAt: ctx.now(), email: "later@example.com", emailKey: "later@example.com", isAdmin: false, deactivatedAt: null, deleteAfter: null });
     expect(await spendEmailLink(ctx, { ...SPEND, token: linkFrom(mailer, "email_change"), purpose: "email_change" })).toEqual({ ok: false, message: MESSAGES.email_taken });
 });

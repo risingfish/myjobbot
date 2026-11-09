@@ -66,3 +66,29 @@ test("one user's failure is reported, the next user still runs, and the exit is 
     expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([{ userId: 1, failed: "sources down" }, [2, "finished"]]);
     expect(runExitCode(runs, undefined)).toBe(1);
 });
+
+function deactivate(stores: TestStores, userId: number): void {
+    const user = stores.memory?.auth.users.find((row) => row.id === userId);
+    if (user) user.deactivatedAt = NOW;
+}
+
+test("a deactivated user is skipped and nothing is fetched or scored for them", async () => {
+    const stores = await twoUsers();
+    deactivate(stores, 2);
+    const { chat } = scriptedChat(scoring("Stripe", 10));
+    const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
+    expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([[1, "finished"], { userId: 2, skipped: "deactivated" }]);
+    expect(await stores.forUser(2).jobViews.countAllJobs()).toBe(0);
+});
+
+test("a user deactivated while an earlier user runs is skipped when their turn comes", async () => {
+    const stores = await twoUsers();
+    const list = stores.memory?.sources.list.bind(stores.memory.sources);
+    if (stores.memory && list) stores.memory.sources.list = (userId) => {
+            if (userId === 1) deactivate(stores, 2);
+            return list(userId);
+        };
+    const { chat } = scriptedChat(scoring("Stripe", 10));
+    const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
+    expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([[1, "finished"], { userId: 2, skipped: "deactivated" }]);
+});

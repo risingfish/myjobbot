@@ -35,7 +35,7 @@ test("a reset link checks the new password first, then sets it, ends every sign-
 
 test("an admin changes another account's email at once, telling the old address, keeping its sign-ins and recording it", async () => {
     const { ctx, actor, mailer, auth } = await signedInOwner();
-    auth.tables.users.push({ id: 2, name: "Ada", createdAt: ctx.now(), email: "ada@old.example", emailKey: "ada@old.example", isAdmin: false });
+    auth.tables.users.push({ id: 2, name: "Ada", createdAt: ctx.now(), email: "ada@old.example", emailKey: "ada@old.example", isAdmin: false, deactivatedAt: null, deleteAfter: null });
     await ctx.stores.sessions.create({ idDigest: "ada-session", userId: 2, csrfDigest: "c", createdAt: ctx.now(), lastUsedAt: ctx.now(), verifiedAt: ctx.now(), address: "direct", device: { ip: null, os: null, location: null } });
     expect(await adminChangeEmail(ctx, actor, { userId: 2, email: "owner@example.com" })).toEqual({ ok: false, message: MESSAGES.email_taken });
     expect(await adminChangeEmail(ctx, actor, { userId: 2, email: "Ada@New.example" })).toEqual({ ok: true });

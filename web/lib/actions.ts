@@ -8,6 +8,7 @@ import { startRescoreFor } from "./rescoreStart.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, type AppliedResult, type HideResult } from "./rows.js";
 import { getStores, getUiState } from "./uiState.js";
 import { guarded } from "./guard.js";
+import { scoringRefusal } from "./scoringRefusal.js";
 
 /** Loads the next rows of a page for the browser as the owner scrolls. */
 async function loadMoreRowsAction(name: PageName, offset: number): Promise<PageData> {
@@ -35,7 +36,7 @@ async function loadJobDetailsAction(ats: string, jobId: string): Promise<JobDeta
 async function startRescoreAction(ats: string, jobId: string): Promise<RescoreStart> {
     try {
         const { stores } = await getStores();
-        const started = await startRescoreFor(() => openRescore(process.env, stores), { ats, jobId });
+        const started = await startRescoreFor(() => openRescore(process.env, stores), { ats, jobId }, await scoringRefusal());
         if ("work" in started) after(() => started.work().catch((error: unknown) => console.error(`rescore failed: ${describeError(error)}`)));
         return "run" in started ? { run: started.run } : started;
     } catch (error) {

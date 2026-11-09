@@ -8,6 +8,8 @@ export interface UsersTable {
     email: ColumnType<string | null, string | null | undefined, string | null>;
     email_key: ColumnType<string | null, string | null | undefined, string | null>;
     is_admin: Generated<number>;
+    deactivated_at: ColumnType<string | null, string | null | undefined, string | null>;
+    delete_after: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 export interface UserSettingsTable {

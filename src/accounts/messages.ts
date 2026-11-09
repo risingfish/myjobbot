@@ -28,4 +28,5 @@ export const MESSAGES = {
     not_admin: "Only an admin can do that.",
     page_failed: "Something went wrong loading this page. Try again.",
     base_url: "myjobbot: MYJOBBOT_BASE_URL is missing or not allowed (see .env.example).",
+    reactivate_first: "Your account is deactivated. Reactivate it on the Account tab first.",
 } as const;
