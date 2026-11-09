@@ -68,7 +68,14 @@ export class MemoryAccountStore implements AccountStore {
         return "ok";
     }
 
-    async setStatus(userId: number, status: AccountStatus): Promise<void> {
-        for (const user of this.tables.users) if (user.id === userId) Object.assign(user, status);
+    async setStatus(userId: number, change: Partial<AccountStatus>): Promise<void> {
+        for (const user of this.tables.users) if (user.id === userId) Object.assign(user, change);
+    }
+
+    async reactivate(userId: number): Promise<"ok" | "deletion_pending"> {
+        const user = this.tables.users.find((row) => row.id === userId);
+        if (user !== undefined && user.deleteAfter !== null) return "deletion_pending";
+        if (user !== undefined) user.deactivatedAt = null;
+        return "ok";
     }
 }

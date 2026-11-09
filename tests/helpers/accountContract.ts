@@ -108,8 +108,14 @@ async function statusStored({ accounts, accountCodes }: TestStores): Promise<voi
     await accounts.setStatus(adaId, { deactivatedAt: NOW, deleteAfter: "2026-12-06T10:00:00.000Z" });
     expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: NOW, deleteAfter: "2026-12-06T10:00:00.000Z" });
     expect(await accounts.account(OWNER_ID)).toMatchObject({ deactivatedAt: null, deleteAfter: null });
-    await accounts.setStatus(adaId, { deactivatedAt: NOW, deleteAfter: null });
+    await accounts.setStatus(adaId, { deleteAfter: null });
     expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: NOW, deleteAfter: null });
+    await accounts.setStatus(adaId, { deleteAfter: "2026-12-06T10:00:00.000Z" });
+    expect(await accounts.reactivate(adaId)).toBe("deletion_pending");
+    expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: NOW, deleteAfter: "2026-12-06T10:00:00.000Z" });
+    await accounts.setStatus(adaId, { deleteAfter: null });
+    expect(await accounts.reactivate(adaId)).toBe("ok");
+    expect(await accounts.account(adaId)).toMatchObject({ deactivatedAt: null, deleteAfter: null });
 }
 
 export function accountContract(makeStores: MakeStores): void {
@@ -125,5 +131,5 @@ export function accountContract(makeStores: MakeStores): void {
 export function accountStrictCases(makeStores: MakeStores): void {
     test("the owner gets an email, the admin mark and a usable password once, and never again, and is the one user listed", withStores(makeStores, ownerInitOnce));
     test("two accounts made at once with one code: one is made and the other refused", withStores(makeStores, oneCodeOneAccount));
-    test("an account's deactivation and deletion dates are stored and read back, touching no other account", withStores(makeStores, statusStored));
+    test("an account's deactivation and deletion dates are stored and read back, each written only when given, touching no other account; reactivating clears the deactivation only while no deletion is pending", withStores(makeStores, statusStored));
 }

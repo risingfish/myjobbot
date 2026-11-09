@@ -34,5 +34,6 @@ export interface AccountStore {
     setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
     saveName(userId: number, name: string): Promise<void>;
     changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken">;
-    setStatus(userId: number, status: AccountStatus): Promise<void>;
+    setStatus(userId: number, change: Partial<AccountStatus>): Promise<void>;
+    reactivate(userId: number): Promise<"ok" | "deletion_pending">;
 }

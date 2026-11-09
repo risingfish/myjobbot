@@ -86,9 +86,17 @@ export class KyselyAccountStore implements AccountStore {
         }
     }
 
-    /** Sets when an account was deactivated and when its requested deletion is due, each null when not. */
-    async setStatus(userId: number, status: AccountStatus): Promise<void> {
-        await this.db.updateTable("users").set({ deactivated_at: status.deactivatedAt, delete_after: status.deleteAfter }).where("id", "=", userId).execute();
+    /** Sets when an account was deactivated or when its requested deletion is due, writing only the dates given. */
+    async setStatus(userId: number, change: Partial<AccountStatus>): Promise<void> {
+        const row = { ...(change.deactivatedAt !== undefined && { deactivated_at: change.deactivatedAt }), ...(change.deleteAfter !== undefined && { delete_after: change.deleteAfter }) };
+        if (Object.keys(row).length > 0) await this.db.updateTable("users").set(row).where("id", "=", userId).execute();
+    }
+
+    /** Clears an account's deactivation in one statement, unless a deletion is pending by then. */
+    async reactivate(userId: number): Promise<"ok" | "deletion_pending"> {
+        const result = await this.db.updateTable("users").set({ deactivated_at: null }).where("id", "=", userId).where("delete_after", "is", null).executeTakeFirst();
+        if (result.numUpdatedRows > 0n) return "ok";
+        return ((await this.account(userId))?.deleteAfter ?? null) === null ? "ok" : "deletion_pending";
     }
 }
 
