@@ -1,11 +1,16 @@
 import { careersDeps, soughtJob, type CareersParts } from "../careers/deps.js";
 import { lookUpCareers, type CareersSummary } from "../careers/lookUpJobs.js";
-import type { JobRow } from "../db/jobStore.js";
+import type { JobRow, JobStore } from "../db/jobStore.js";
 import type { ToolContext } from "./context.js";
-import { isWanted, unscoredJobs } from "./unscored.js";
+import { isWanted, unscoredJobs, type UnscoredContext } from "./unscored.js";
+
+type FreshContext = UnscoredContext & Pick<ToolContext, "saved" | "careers">;
+type RetryContext = Pick<ToolContext, "careers" | "config"> & { store: Pick<JobStore, "findJob"> };
+type PartsContext = Pick<ToolContext, "careers" | "config" | "chat" | "trace" | "postings" | "runId" | "now" | "http" | "markers">;
+export type AlertLookupContext = FreshContext & RetryContext & PartsContext;
 
 /** Looks up careers-page descriptions for the alert jobs that still lack one: new ones, and earlier unreadable ones owed a retry. */
-export async function lookUpAlertJobs(context: ToolContext): Promise<CareersSummary> {
+export async function lookUpAlertJobs(context: AlertLookupContext): Promise<CareersSummary> {
     const retried = await retriedJobs(context);
     const fresh = (await freshJobs(context)).filter((row) => !retried.some((other) => sameJob(other, row)));
     const rows = [...fresh.map((row) => ({ row, retry: false })), ...retried.map((row) => ({ row, retry: true }))];
@@ -14,7 +19,7 @@ export async function lookUpAlertJobs(context: ToolContext): Promise<CareersSumm
 }
 
 /** Lists the unscored alert jobs with no description that haven't been looked up before. */
-async function freshJobs(context: ToolContext): Promise<JobRow[]> {
+async function freshJobs(context: FreshContext): Promise<JobRow[]> {
     const alerts = context.saved.list.find((source) => source.module === "gmail_alerts");
     if (alerts === undefined) return [];
     const missing = (await unscoredJobs(context, alerts)).filter((row) => row.description === null);
@@ -23,7 +28,7 @@ async function freshJobs(context: ToolContext): Promise<JobRow[]> {
 }
 
 /** Lists the jobs still owed a retry that still lack a description, scored or not; only alert jobs are ever looked up, so only they are owed one. */
-async function retriedJobs(context: ToolContext): Promise<JobRow[]> {
+async function retriedJobs(context: RetryContext): Promise<JobRow[]> {
     const keys = await context.careers.store.retries();
     const rows = await Promise.all(keys.map(async (key) => ({ key, row: await context.store.findJob(key.jobId) })));
     return rows.flatMap(({ key, row }) => (row !== null && row.ats === key.ats && row.description === null && isWanted(row, context.config) ? [row] : []));
@@ -35,6 +40,6 @@ function sameJob(left: JobRow, right: JobRow): boolean {
 }
 
 /** Gathers the careers lookup's parts from the run's context. */
-function careersParts(context: ToolContext): CareersParts {
+function careersParts(context: PartsContext): CareersParts {
     return { careers: context.careers, settings: context.config.careers_lookup, chat: context.chat, trace: context.trace, postings: context.postings, runId: context.runId, now: context.now, http: context.http, markers: context.markers };
 }

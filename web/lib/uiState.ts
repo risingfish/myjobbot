@@ -17,7 +17,8 @@ import { requestsThisMonth } from "../../src/tools/searchBudget.js";
 import { sourceNames } from "../../src/web/pageData.js";
 import { resumeShown, type ResumeShown } from "../../src/web/resumeView.js";
 import { gmailSettings, settingsView, sourceSettings, type SettingsView } from "../../src/web/settingsView.js";
-import { sourceChoices, type Met } from "../../src/web/sourceChoices.js";
+import type { Met } from "../../src/sources/module.js";
+import { sourceChoices } from "../../src/web/sourceChoices.js";
 import { searchUsage, sourceRows, type SourcesView } from "../../src/web/sourceRows.js";
 
 interface UiState {

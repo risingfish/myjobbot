@@ -309,7 +309,7 @@ Two parts:
     `module.ts` and `fetchPhase.ts` once T032 removes `SourcePage.alerts` and `Read.alerts`.
   - nothing under `src/gmail/` imports from `src/sources/modules/`
   - A4: `src/agent/rubric.ts` does not import `AppConfig`
-- [ ] T026 [P] [US1] Write 1 unit test in `tests/toolContextScan.test.ts` (A1, A2, C3), its three bullets checks of one scan:
+- [X] T026 [P] [US1] Write 1 unit test in `tests/toolContextScan.test.ts` (A1, A2, C3), its three bullets checks of one scan:
   - no function in `src/tools/`, `src/sources/`, `src/companies/` or `src/app/beforeAgent.ts` takes
     a parameter typed `ToolContext`, or the full three-part intersection that replaces it, except
     the tool builders named in inventory A1's check
@@ -322,10 +322,10 @@ Two parts:
 
 **Implementation (S3)**
 
-- [ ] T028 [US1] A4: `rubricValues` and `scoringRubric` take
+- [X] T028 [US1] A4: `rubricValues` and `scoringRubric` take
   `Pick<Settings, "match_threshold" | "preferences">` (`src/agent/rubric.ts`). The prompt snapshot
   must not change.
-- [ ] T029 [US1] A1, then A2:
+- [X] T029 [US1] A1, then A2:
   - A1: give each `src/tools/` helper its narrow context type, after the `DetailsContext` pattern
   - A2: split `ToolContext` (`src/tools/context.ts`) into `RunStores`, `RunPorts` and
     `RunIdentity` (`run`, `runId`, `markers`, `config`, `jsearchApiKey`). The existing `RunState`
@@ -347,7 +347,7 @@ Two parts:
     - the fetch phase's `FetchFacts.met` with `gmail` meaning Gmail is usable (`gmail.usable`)
 
     Which sources count as on doesn't change. Recorded under A1 in inventory 01.
-- [ ] T030 [US1] C3: `searchCompanies` takes `CompanySearchDeps` (`src/companies/searchCompanies.ts`),
+- [X] T030 [US1] C3: `searchCompanies` takes `CompanySearchDeps` (`src/companies/searchCompanies.ts`),
   built in `afterAgent` (`src/app/run.ts`).
 - [ ] T031 [US1] S3 and S4 (`src/sources/`):
   - add `limits.spends` to `SourceLimits`, and move `recordCost` to `src/sources/cost.ts`, recording
@@ -719,6 +719,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S1 | 1142 + 9 (with UI: 1229) | 89 + 1 = 90 | 78 |
 | Actual after S2a | + 2 planned + 1 retry (with UI: 1232) | 90 | 78 |
 | Actual after S2b | + 4 (with UI: 1236) | 92 | 78 |
+| Actual after S3a | + 2 (with UI: 1238) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

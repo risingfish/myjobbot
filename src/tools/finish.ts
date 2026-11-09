@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ToolContext } from "./context.js";
-import { sourceProgress } from "./listSources.js";
+import { sourceProgress, type ProgressContext } from "./listSources.js";
 import { defineTool, type Tool } from "./tool.js";
 
 const schema = z.object({
@@ -19,7 +19,7 @@ export function finishTool(context: ToolContext): Tool {
 }
 
 /** Ends the run with the given summary, or refuses while any source has unscored jobs. */
-async function finish(context: ToolContext, summary: string) {
+async function finish(context: ProgressContext, summary: string) {
     const remaining = await remainingWork(context);
     if (remaining.length > 0) return { ok: false, not_done: remaining, next: "Keep going: call next_jobs for these sources, then finish." };
     context.run.finished = true;
@@ -28,7 +28,7 @@ async function finish(context: ToolContext, summary: string) {
 }
 
 /** Lists the sources that still have jobs to score before the run can finish. */
-async function remainingWork(context: ToolContext): Promise<string[]> {
+async function remainingWork(context: ProgressContext): Promise<string[]> {
     const progress = await sourceProgress(context);
     return progress.flatMap((source) => (source.total_unscored > 0 ? [`${source.name}: ${source.total_unscored} unscored`] : []));
 }

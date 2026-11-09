@@ -25,40 +25,48 @@ export interface SourceRun {
     careers?: CareersSummary;
 }
 
-interface RunState {
+export interface RunState {
     finished: boolean;
     summary: string | null;
     sources: Map<string, SourceRun>;
 }
 
-export interface ToolContext {
-    config: Settings;
-    run: RunState;
-    runId: string;
+interface RunStores {
     store: JobStore;
     postings: PostingStore;
     sourcePlans: SourcePlans;
     apiCalls: ApiCallLog;
+    companies: CompanyStore;
+    saved: SavedSources;
+}
+
+interface RunPorts {
     http: JsonGetter;
     sources: SourceHttp;
-    saved: SavedSources;
     now: () => Date;
     jobLog: Trace;
-    jsearchApiKey: string | null;
-    gmail: GmailAccess;
     trace: Trace;
     chat: ChatFn;
     careers: CareersAccess;
-    companies: CompanyStore;
-    markers: DataMarkers;
+    gmail: GmailAccess;
 }
 
-interface SavedSources {
+interface RunIdentity {
+    config: Settings;
+    run: RunState;
+    runId: string;
+    markers: DataMarkers;
+    jsearchApiKey: string | null;
+}
+
+export type ToolContext = RunStores & RunPorts & RunIdentity;
+
+export interface SavedSources {
     store: UserSourceStore;
     list: SavedSource[];
 }
 
-interface GmailAccess {
+export interface GmailAccess {
     store: GmailStore;
     alerts: AlertStore;
     key: SecretKeyStatus;

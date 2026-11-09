@@ -54,8 +54,8 @@ test("a re-score's first message gives the profile's skills too when the setting
 test("the run's prompt text is unchanged, and the re-score shares its rubric but names only its own tools", () => {
     expect(prompt().system).toMatchSnapshot();
     const [system = "", user = ""] = rescoreMessages(testAppConfig(), MARKERS).map((message) => String(message.content));
-    expect(system).toContain(scoringRubric(testAppConfig(), MARKERS));
-    expect(prompt().system).toContain(scoringRubric(testAppConfig(), MARKERS));
+    expect(system).toContain(scoringRubric(testAppConfig().settings, MARKERS));
+    expect(prompt().system).toContain(scoringRubric(testAppConfig().settings, MARKERS));
     const texts = [system, user, RESCORE_NUDGE, RESCORE_COMPACTION_NOTICE].join("\n");
     expect(["get_job", "record_matches"].every((name) => system.includes(name) && RESCORE_NUDGE.includes(name))).toBe(true);
     expect(["next_jobs", "get_job_details", "list_sources", "finish"].filter((name) => texts.includes(name))).toEqual([]);

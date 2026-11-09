@@ -44,6 +44,10 @@ interface CompanyHint {
 
 export type Requirement = "jsearch_key" | "gmail";
 
+export type Met = Record<Requirement, boolean>;
+
+export const OFF_WHILE_UNMET: Record<Requirement, boolean> = { gmail: true, jsearch_key: false };
+
 interface SourceLimits {
     maxJobsPerRun: number | null;
     refresh: "every_run" | "jsearch_refresh_hours";

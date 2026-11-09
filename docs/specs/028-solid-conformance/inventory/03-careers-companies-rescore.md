@@ -68,6 +68,7 @@ Reviewed: 39 modules, 7 findings.
 - **Decision**: fix
 - **Fix**: give it its own `CompanySearchDeps { settings: Pick<Settings, "company_search" | "careers_lookup">; companies: CompanyStore; searxngUrl: string | null; http: JsonGetter; trace: Trace; now: () => Date }` and pass that through its helpers; `afterAgent` in `src/app/run.ts` builds it from the context (`{ settings: context.config, companies: context.companies, searxngUrl: context.careers.searxngUrl, http: context.http, trace: context.trace, now: context.now }`). Touches `searchCompanies.ts`, `run.ts`, `tests/searchCompanies.test.ts`.
 - **Size**: M
+- **Done**: S3a
 
 ### C4 · OCP · `src/careers/boardPages.ts:86`
 - **Breach**: `boardName` branches on `link.kind === "workday"` to build the board's name for the audit and the cache key; it is a per-board branch in shared careers code, outside the source modules and `boardLink.ts`, which otherwise hold every per-board difference (`HOST_LINKS`, `workdayLink`).

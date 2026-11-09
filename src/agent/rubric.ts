@@ -1,4 +1,6 @@
-import type { AppConfig } from "../config/load.js";
+import type { Settings } from "../config/schema.js";
+
+type RubricSettings = Pick<Settings, "match_threshold" | "preferences">;
 import type { DataMarkers } from "./markers.js";
 
 const RUBRIC = `- {data}
@@ -29,8 +31,8 @@ export interface RubricValues {
 }
 
 /** Fills the scoring rules and rubric that a run and a re-score share with the data markers, the match threshold and the user's preferences. */
-export function scoringRubric(config: AppConfig, markers: DataMarkers): string {
-    return fillTemplate(RUBRIC, rubricValues(config, markers));
+export function scoringRubric(settings: RubricSettings, markers: DataMarkers): string {
+    return fillTemplate(RUBRIC, rubricValues(settings, markers));
 }
 
 /** Gives the rubric template itself, its markers unfilled, for the re-score's template to build on. */
@@ -39,8 +41,8 @@ export function rubricTemplate(): string {
 }
 
 /** Gives the values a prompt template's markers are filled with: the data sentence, the threshold, and the preferences or "(none given)". */
-export function rubricValues(config: AppConfig, markers: DataMarkers): RubricValues {
-    return { data: dataSentence(markers), threshold: String(config.settings.match_threshold), preferences: config.settings.preferences.trim() || "(none given)" };
+export function rubricValues(settings: RubricSettings, markers: DataMarkers): RubricValues {
+    return { data: dataSentence(markers), threshold: String(settings.match_threshold), preferences: settings.preferences.trim() || "(none given)" };
 }
 
 /** Fills every marker of a prompt template in one pass, so a filled-in value is never read as a marker itself. */

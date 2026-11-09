@@ -79,7 +79,7 @@ async function runWithStores(config: AppConfig, seams: RunSeams, parts: RunParts
 /** Finishes the user's part after the agent: searches for the companies' missing addresses, tracing an unexpected failure without failing the run. */
 async function afterAgent(context: ToolContext): Promise<void> {
     try {
-        await searchCompanies(context);
+        await searchCompanies({ settings: context.config, companies: context.companies, searxngUrl: context.careers.searxngUrl, http: context.http, trace: context.trace, now: context.now });
     } catch (error) {
         context.trace.write({ type: "company_search_failed", error: describeError(error) });
     }

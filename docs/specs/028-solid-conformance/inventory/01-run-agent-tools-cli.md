@@ -69,6 +69,7 @@ Reviewed: 53 modules, 5 findings.
 - **Fix**: Give each helper a narrow type, following the `DetailsContext`/`SummaryContext` pattern already in `getJobDetails.ts` and `jobSummary.ts`. For example, `type OnContext = { saved: Pick<SavedSources, "list">; gmail: Pick<GmailAccess, "connected"> }` for `sourcesOn`/`findSource` (export `SavedSources`/`GmailAccess` or Pick through `ToolContext["saved"]`); `type UnscoredContext = Pick<ToolContext, "run" | "config"> & { store: Pick<JobStore, "unscoredForSource" | "unscoredSince"> }` for `unscoredJobs`; then intersect these for `sourceProgress`, `finish` and `jobPage`. Leave the builders in `registry.ts` taking `ToolContext`, which is fine at that composition point. Callers keep passing the full context, so no call sites change. `tests/helpers/context.ts` keeps working, and new tests can pass small literals.
 - **Size**: M
 - **Added by the analysis (2026-11-08), rule OCP, fixed with A1 and not counted separately**: `sourcesOn`'s `readsGmail` (`src/tools/sources.ts:13`) checks the `"gmail"` requirement by name. It is fixed with A1 by an `OFF_WHILE_UNMET: Record<Requirement, boolean>` table beside `Requirement`, with `Met` moved to `src/sources/module.ts` (tasks T029). Each place builds its own `Met`: `sourcesOn` from `gmail.connected`, the fetch phase from `gmail.usable`.
+- **Done**: S3a
 
 ### A2 · ISP · `src/tools/context.ts:32`
 - **Breach**: `ToolContext` is the container the project rule says not to build ("a container holds stores, not operations"). It mixes stores (`store`, `postings`, `sourcePlans`, `apiCalls`, `companies`, `saved.store`, `gmail.store`/`alerts`, `careers.store`) with operations (`chat`, `now`, `http`, `sources`, `trace`, `jobLog`, `careers.renderer`/`lookup`/`pages`) and with mutable per-run state (`run`: `finished`, `summary` and the `sources` map, written by `finish.ts` and `fetchPhase.ts` and read by `app/run.ts`). `beforeAgent` (`app/beforeAgent.ts:8`) and, outside this area, `fetchSources`, `searchCompanies` and `alertAccess` take it whole.
@@ -76,6 +77,7 @@ Reviewed: 53 modules, 5 findings.
 - **Decision**: fix
 - **Fix**: Split the type into three named parts and make `ToolContext` their intersection, assembled only in `app/run.ts#buildContext` and `tests/helpers/context.ts`: `RunStores` (stores only), `RunPorts` (`chat`, `now`, `http`, `sources`, `trace`, `jobLog`, the careers access and Gmail key/IMAP), and `RunIdentity` (`run`, `runId`, `markers`, `config`, `jsearchApiKey`; the existing `RunState` type of `run` keeps its name). Consumers then name the part they use: after A1, the tool helpers mostly need `RunStores` and `RunState`. `beforeAgent`, `fetchSources`, `searchCompanies` and `alertAccess` move to the intersections they actually read. This changes no runtime shape (the same object is passed), only types. Do A1 first. The out-of-area callers (`src/sources/fetchPhase.ts`, `src/sources/alertAccess.ts`, `src/companies/searchCompanies.ts`) should be coordinated with their area's review.
 - **Size**: L
+- **Done**: S3a
 
 ### A3 · OCP · `src/tools/careersStep.ts:18`
 - **Breach**: Two scoring-side modules branch on one source variant by name. `freshJobs` selects the jobs owed a careers lookup with `source.module === "gmail_alerts"`. `record` in `recordMatches.ts:47` adds the "scored from the alert only" gap when `job?.ats === "linkedin" && job.description === null`. The knowledge that "alert jobs come from the `gmail_alerts` module and are stored as ats `linkedin`" is spread across `src/tools/`, instead of being declared by the module (`src/sources/modules/gmailAlerts.ts`). `src/sources/alertAccess.ts:9` repeats the module-id comparison outside this area.
@@ -90,6 +92,7 @@ Reviewed: 53 modules, 5 findings.
 - **Decision**: fix
 - **Fix**: Change the parameter to `settings: Pick<Settings, "match_threshold" | "preferences">` in `rubricValues` and `scoringRubric`. The callers `agent/prompt.ts#systemPrompt` and `rescore/prompt.ts` pass `config.settings`. The output is unchanged, and the prompt snapshot (`tests/__snapshots__/prompt.test.ts.snap`) pins that.
 - **Size**: S
+- **Done**: S3a
 
 ### A5 · OCP · `src/agent/ownerMessage.ts:9`
 - **Breach**: `ownerMessage` branches on each `resume_view` value (`"resume"`, `"resume_and_profile"`, otherwise `profile`) with `if` statements rather than a per-view table.
