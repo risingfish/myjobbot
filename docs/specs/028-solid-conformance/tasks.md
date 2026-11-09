@@ -496,11 +496,11 @@ Two parts:
 - **S6a**, the web rules (U1–U7): T054's U1/U2 and U5 cases, T055, T057, T058
 - **S6b**, the web server side (W1–W10): T054's W7, W9, W4 and W1 cases, T056, T059–T061
 
-- [ ] T053 Create `.specify/sitting-in-progress` naming S6.
+- [X] T053 Create `.specify/sitting-in-progress` naming S6.
 
 **Tests first (S6)**
 
-- [ ] T054 [P] [US1] Write unit tests (6, one per bullet) in `tests/webScan.test.ts`:
+- [X] T054 [P] [US1] Write unit tests (6, one per bullet) in `tests/webScan.test.ts`:
   - U1, U2: no bare `JobViews`, `UserSourceStore`, `SourceStore` or `Stores` parameter in
     `src/web/`
   - U5: no string comparison or `includes(...)` with a requirement literal (`"jsearch_key"`,
@@ -520,7 +520,7 @@ Two parts:
   - U7: every Settings field is in exactly one section, and `settingsView(null).fields` has exactly
     the `SECTIONS` names. Both halves pass today, so these are regression guards. The real guard is
     the type derivation in T058, which makes a field outside `SECTIONS` fail to compile.
-- [ ] T056 [P] [US1] Write unit tests (4):
+- [X] T056 [P] [US1] Write unit tests (4):
   - `tests/switchSource.test.ts` (W6), on memory stores: `switchSourceOn` refuses turning a search
     on past the budget, and `deleteSaved` refuses deleting the account source
   - `tests/rescoreFollow.test.ts` (W10), with a fake clock and sleep: a finished run ends the feed,
@@ -545,7 +545,7 @@ Two parts:
     in the declaration, so `FieldName` can be derived from `SECTIONS` without a circular type.
   - (moved to S7a with K5, 2026-11-09: exporting `FilterField` before K5 uses it would leave an
     unused export)
-- [ ] T059 [US1] W1–W3:
+- [X] T059 [US1] W1–W3:
   - split `web/lib/uiState.ts` into `web/lib/fileConfig.ts` and `web/lib/settingsState.ts`, with
     `uiState.ts` keeping `getStores` and `getUiState`
   - `metNeeds` reads the Gmail store and the environment, a job of its own, so it goes to its own
@@ -561,13 +561,13 @@ Two parts:
   - in `tests/webIsolation.test.ts`, the case "a second user's Gmail is their own" connects and
     disconnects through the second user's `myStores()` Gmail store rather than through
     `getSettingsState()`, and keeps its assertion that the owner's connection is untouched
-- [ ] T060 [US1] W4–W6:
+- [X] T060 [US1] W4–W6:
   - `now: Date` parameters in `web/lib/rows.ts`, passed from `actions.ts`
   - move `startRescoreFor` to `web/lib/rescoreStart.ts`, and its CLAUDE.md mention
   - the enable and delete rules move to `src/web/switchSource.ts` as `switchSourceOn` and
     `deleteSaved`, which avoids clashing with the action names. `web/lib/sourceActions.ts` builds
     their deps.
-- [ ] T061 [US1] W7–W10:
+- [X] T061 [US1] W7–W10:
   - `LISTS: Record<PageName, …>` and one `changed(...)` in `web/lib/pageRows.ts`, with
     `usePageRows` using it
   - `web/lib/signInActions.ts` passes the flow itself
@@ -577,7 +577,7 @@ Two parts:
     clock and `Date.now`
 
   Every refusal text and answer stays the same.
-- [ ] T062 [US1] Run both checks until green, record the ledger, review S6 against Principle VI, mark
+- [X] T062 [US1] Run both checks until green, record the ledger, review S6 against Principle VI, mark
   U1–U7 and W1–W10 done (inventories 05, 07), and delete the marker.
 
 ### Sitting S7: web components (K1–K5)
@@ -726,6 +726,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S4 | + 5 (with UI: 1249) | 92 | 78 |
 | Actual after S5 | + 5 (with UI: 1254) | 92 | 78 |
 | Actual after S6a | + 4 (with UI: 1258) | 92 | 78 |
+| Actual after S6b | + 8 (with UI: 1266) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

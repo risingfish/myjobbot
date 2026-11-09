@@ -3,14 +3,13 @@
 import { revalidatePath } from "next/cache.js";
 import { z } from "zod";
 import { describeError } from "../../src/errors.js";
-import { moduleFor, recognizeLink, type RecognizedLink } from "../../src/sources/registry.js";
+import { recognizeLink, type RecognizedLink } from "../../src/sources/registry.js";
 import { saveSource as storeSource, sourceRequest, type SourceSaveResult } from "../../src/web/saveSource.js";
-import { enableProblem, scheduledElsewhere } from "../../src/web/sourceRules.js";
+import { deleteSaved, switchSourceOn, type SwitchResult } from "../../src/web/switchSource.js";
 import { sourceDeps } from "./sourceDeps.js";
-import { getStores, sourceConfig } from "./uiState.js";
+import { sourceConfig } from "./fileConfig.js";
+import { getStores } from "./uiState.js";
 import { guarded } from "./guard.js";
-
-export type SwitchResult = { ok: true } | { ok: false; problem: string };
 
 const sourceId = z.number().int().positive();
 
@@ -21,11 +20,10 @@ async function setSourceEnabledAction(id: unknown, on: unknown): Promise<SwitchR
     const request = z.object({ id: sourceId, on: z.boolean() }).safeParse({ id, on });
     if (!request.success) return NOT_A_SOURCE;
     const { stores } = await getStores();
-    const problem = request.data.on ? enableProblem(await stores.sources.list(), request.data.id, sourceConfig().jsearch, scheduledElsewhere(await stores.sourcePlans.sourcesOnForAll(), stores.userId)) : null;
-    if (problem !== null) return { ok: false, problem };
-    await stores.sources.setEnabled(request.data.id, request.data.on, new Date().toISOString());
-    revalidatePath("/settings");
-    return { ok: true };
+    const deps = { sources: stores.sources, onForAll: () => stores.sourcePlans.sourcesOnForAll(), userId: stores.userId, jsearch: sourceConfig().jsearch, now: () => new Date() };
+    const result = await switchSourceOn(deps, request.data);
+    if (result.ok) revalidatePath("/settings");
+    return result;
 }
 
 /** Deletes one of the owner's saved sources from its Delete button; its jobs keep their label, and an account source such as Gmail alerts can't be deleted. */
@@ -33,11 +31,9 @@ async function deleteSourceAction(id: unknown): Promise<{ ok: boolean }> {
     const request = sourceId.safeParse(id);
     if (!request.success) return { ok: false };
     const { stores } = await getStores();
-    const source = (await stores.sources.list()).find((saved) => saved.id === request.data);
-    if (source === undefined || moduleFor(source.module)?.scope === "account") return { ok: false };
-    await stores.sources.remove(request.data);
-    revalidatePath("/settings");
-    return { ok: true };
+    const result = await deleteSaved({ sources: stores.sources }, request.data);
+    if (result.ok) revalidatePath("/settings");
+    return result;
 }
 
 /** Finds the source type a pasted jobs page link belongs to, with its fields filled in and a name to offer, for the link box. */

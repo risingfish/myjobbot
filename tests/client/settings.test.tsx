@@ -1,13 +1,12 @@
-import { randomBytes } from "node:crypto";
 import { screen } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import SettingsPage, { metadata } from "../../web/app/(app)/settings/page.js";
-import { memoryStores } from "../helpers/memoryStore.js";
 
-vi.mock("../../web/lib/uiState.js", async () => {
+vi.mock("../../web/lib/settingsState.js", async () => {
     const { settingsView } = await import("../../src/web/settingsView.js");
-    return { getSettingsState: async () => ({ gmail: memoryStores().gmail, alerts: memoryStores().alerts, key: { status: "ok", key: randomBytes(32) }, notices: [], view: settingsView(null), sources: { rows: [], usage: "JSearch requests this month: 0 of 190", choices: [] }, resume: { kind: "none" }, profile: null, admin: null }) };
+    const { gmailPanelView } = await import("../../src/web/gmailPanel.js");
+    return { getSettingsState: async () => ({ gmail: gmailPanelView(null, { keyStatus: "ok", keyChanged: false, alertState: null }), notices: [], view: settingsView(null), sources: { rows: [], usage: "JSearch requests this month: 0 of 190", choices: [] }, resume: { kind: "none" }, profile: null, admin: null }) };
 });
 vi.mock("../../web/lib/gmailActions.js", () => ({ connectGmail: vi.fn(), checkGmail: vi.fn(), disconnectGmail: vi.fn() }));
 vi.mock("../../web/lib/settingsActions.js", () => ({ saveSettingsSection: vi.fn() }));

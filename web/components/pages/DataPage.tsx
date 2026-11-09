@@ -6,7 +6,7 @@ import { RowsList } from "./RowsList.js";
 /** Reads a data page's first rows on the server and renders them, so they arrive in the HTML. */
 export async function DataPage({ name, label }: { name: PageName; label: string }) {
     const { views, config, sourceNames } = await getUiState();
-    const initial = await loadRows(views, { config, sourceNames }, { name, offset: 0 });
+    const initial = await loadRows(views, { config, sourceNames }, { name, offset: 0 }, new Date());
     return (
         <main className="container-fluid" aria-label={label}>
             <RowsList name={name} initial={initial} />

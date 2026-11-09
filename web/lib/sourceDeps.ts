@@ -4,7 +4,9 @@ import { HttpClient } from "../../src/http/client.js";
 import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import type { SaveSourceDeps } from "../../src/web/saveSource.js";
 import { scheduledElsewhere } from "../../src/web/sourceRules.js";
-import { getStores, metNeeds, sourceConfig } from "./uiState.js";
+import { sourceConfig } from "./fileConfig.js";
+import { metNeeds } from "./sourceNeeds.js";
+import { getStores } from "./uiState.js";
 
 /** Gives saving a source what it needs: the owner's sources, what the rules check against, and a test fetch through the same network-checked client a run uses. */
 export async function sourceDeps(): Promise<SaveSourceDeps> {

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { needsStepUp } from "../../src/accounts/stepUp.js";
 import { signInFromReferer } from "../../src/web/signedOut.js";
-import { webSettings } from "./authDeps.js";
+import { webSettings } from "./webSettings.js";
 import { currentSession } from "./currentSession.js";
 
 export interface GuardOptions {

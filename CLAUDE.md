@@ -186,7 +186,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   (owner decision, 2026-11-03).
 - Re-score (feature 018) lives in `src/rescore/`, knows nothing about Next.js, and has two entry
   points: `npm start -- rescore <ats> <job_id>` and the panel's `startRescore` server action
-  (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rows.ts`, input checked before any
+  (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rescoreStart.ts`, input checked before any
   model call), which records the run, hands the work to `after()` and answers with the run's id. A filtered job loses its score through `JobViews.clearScore`, which keeps the marks
   and verdict history; a job with no description is looked up first, with the careers lookup built
   from `CareersParts` (`src/careers/deps.ts`) and capped at 2 minutes. Scoring is a one-job

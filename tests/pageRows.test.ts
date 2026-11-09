@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { PageData } from "../src/web/api.js";
-import { appliedChange, jobKey, rescoredChange, withJobHidden, withMore, withoutJob, type RowsState } from "../web/lib/pageRows.js";
+import { appliedChange, hiddenChange, rescoredChange, withMore, type RowsState } from "../web/lib/pageRows.js";
 import { jobPage, jobRowView, verdictPage, verdictRowView } from "./helpers/rowFixtures.js";
 
 function jobs(from: number, count: number) {
@@ -29,14 +29,14 @@ test("rows that shift onto the next page are shown once, and the newer totals ar
 
 test("a page that started loading before a job was removed is dropped, so no job is skipped", () => {
     const loaded = state(jobPage(jobs(0, 3), { total: 5, nextOffset: 3 }));
-    const afterHide = { ...loaded, data: withoutJob(jobKey(jobRowView({ jobId: "0" })))(loaded.data ?? jobPage([])), version: 1 };
+    const afterHide = { ...loaded, data: hiddenChange(jobRowView({ jobId: "0" }), true, "recommended").change(loaded.data ?? jobPage([])), version: 1 };
     expect([afterHide.data?.nextOffset, afterHide.data?.total]).toEqual([2, 4]);
     expect(withMore(afterHide, { data: jobPage(jobs(4, 1), { total: 4, nextOffset: null }), error: null }, 0)).toBe(afterHide);
 });
 
 test("hiding on All jobs marks the row instead of removing it", () => {
     const data = jobPage(jobs(0, 2));
-    const marked = withJobHidden(jobKey(jobRowView({ jobId: "1" })), true)(data);
+    const marked = hiddenChange(jobRowView({ jobId: "1" }), true, "jobs").change(data);
     expect(marked.kind === "jobs" ? marked.rows.map((row) => row.hidden) : []).toEqual([false, true]);
 });
 

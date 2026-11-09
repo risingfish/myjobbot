@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import type { SourceRowView } from "../../../src/web/sourceRows.js";
-import { deleteSource, setSourceEnabled, type SwitchResult } from "../../lib/sourceActions.js";
+import type { SwitchResult } from "../../../src/web/switchSource.js";
+import { deleteSource, setSourceEnabled } from "../../lib/sourceActions.js";
 
 const FAILED = "Couldn't save — try again";
 

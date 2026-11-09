@@ -12,6 +12,13 @@ export interface RowsState extends LoadedPage {
 
 export type RowsChange = (data: PageData) => PageData;
 
+const LISTS: Record<PageName, (row: JobRowView) => boolean> = {
+    recommended: (row) => !row.hidden && !row.applied && row.score !== null,
+    applied: (row) => row.applied,
+    jobs: () => true,
+    reasoning: () => true,
+};
+
 /** Returns the key that identifies a job row across pages and reloads. */
 export function jobKey(job: JobRowView): string {
     return `${job.ats}:${job.jobId}`;
@@ -25,7 +32,7 @@ export function withMore(current: RowsState, more: LoadedPage, requestedAt: numb
 }
 
 /** Builds the change that drops a job from the rows shown, so later pages still start at the right row. */
-export function withoutJob(key: string): RowsChange {
+function withoutJob(key: string): RowsChange {
     return (data) => {
         if (data.kind !== "jobs") return data;
         const nextOffset = data.nextOffset === null ? null : data.nextOffset - 1;
@@ -33,26 +40,25 @@ export function withoutJob(key: string): RowsChange {
     };
 }
 
-/** Builds the change that marks a job as hidden or shown again. */
-export function withJobHidden(key: string, hidden: boolean): RowsChange {
-    return withJobFields(key, { hidden });
+/** Builds the change for a job's hidden mark: it updates the row, except on a page the job no longer belongs on, such as Recommended once hidden. */
+export function hiddenChange(job: JobRowView, hidden: boolean, page: PageName): { change: RowsChange; removing: boolean } {
+    return changed(page, job, { hidden });
 }
 
-/** Builds the change that marks a job applied at a time, or clears its mark when the time is null. */
-function withJobApplied(key: string, appliedOn: string | null): RowsChange {
-    return withJobFields(key, { applied: appliedOn !== null, appliedOn });
-}
-
-/** Builds the change for a re-scored job: its new row replaces the listed one, except on Recommended, where a job left with no score is dropped. */
+/** Builds the change for a re-scored job: its new row replaces the listed one, except on a page it no longer belongs on, such as Recommended when left with no score. */
 export function rescoredChange(row: JobRowView, page: PageName): { change: RowsChange; removing: boolean } {
-    const removing = page === "recommended" && row.score === null;
-    return { change: removing ? withoutJob(jobKey(row)) : withJobFields(jobKey(row), row), removing };
+    return changed(page, row, row);
 }
 
 /** Builds the change for a job's applied mark: it updates the row, except where the job no longer belongs, dropping it from Recommended once marked and from Applied once cleared. */
 export function appliedChange(job: JobRowView, appliedOn: string | null, page: PageName): { change: RowsChange; removing: boolean } {
-    const removing = (page === "recommended" && appliedOn !== null) || (page === "applied" && appliedOn === null);
-    return { change: removing ? withoutJob(jobKey(job)) : withJobApplied(jobKey(job), appliedOn), removing };
+    return changed(page, job, { applied: appliedOn !== null, appliedOn });
+}
+
+/** Applies some of a job's fields to its row, or drops the row when the page's list no longer takes the changed job. */
+function changed(page: PageName, job: JobRowView, fields: Partial<JobRowView>): { change: RowsChange; removing: boolean } {
+    const removing = !LISTS[page]({ ...job, ...fields });
+    return { change: removing ? withoutJob(jobKey(job)) : withJobFields(jobKey(job), fields), removing };
 }
 
 /** Builds the change that updates some of one job's fields in the rows shown. */

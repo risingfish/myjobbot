@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { JobRowView, PageData, PageName } from "../../src/web/api.js";
 import { loadMoreRows } from "./actions.js";
-import { appliedChange, jobKey, rescoredChange, withJobHidden, withMore, withoutJob, type LoadedPage, type RowsChange, type RowsState } from "./pageRows.js";
+import { appliedChange, hiddenChange, rescoredChange, withMore, type LoadedPage, type RowsChange, type RowsState } from "./pageRows.js";
 
 export interface PageRows extends RowsState {
     loadMore: () => void;
@@ -24,8 +24,8 @@ export function usePageRows(name: PageName, initial: PageData): PageRows {
     const loadMore = useLoadMore({ name, offset: state.data?.nextOffset ?? null, version: state.version }, setState);
     const markHidden = useCallback(
         (job: JobRowView, hidden: boolean) => {
-            const removing = hidden && name === "recommended";
-            changeRows(setState, removing ? withoutJob(jobKey(job)) : withJobHidden(jobKey(job), hidden), removing);
+            const { change, removing } = hiddenChange(job, hidden, name);
+            changeRows(setState, change, removing);
         },
         [name],
     );

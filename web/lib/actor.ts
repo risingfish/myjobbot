@@ -1,5 +1,5 @@
 import type { Actor } from "../../src/accounts/flows/context.js";
-import { webSettings, type WebSettings } from "./authDeps.js";
+import { webSettings, type WebSettings } from "./webSettings.js";
 import { requestAddress } from "./requestAuth.js";
 import { requireSession } from "./session.js";
 

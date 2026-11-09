@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache.js";
 import { check, type CheckResult } from "../../src/gmail/check.js";
 import { connect, disconnect, type ConnectResult } from "../../src/gmail/connection.js";
 import { gmailDeps } from "./gmailDeps.js";
-import { alertSenders } from "./uiState.js";
+import { alertSenders } from "./fileConfig.js";
 import { guarded } from "./guard.js";
 
 const KEY_NOT_SET = "Set MYJOBBOT_SECRET_KEY first.";
