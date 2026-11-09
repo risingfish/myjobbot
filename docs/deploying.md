@@ -228,6 +228,6 @@ before, the backup, the deploy, creating the first user with `account init`, the
 every job moved, and the rollback.
 
 The release after it (feature 028) adds step `024_jobs_without_digest_mark`, which drops the
-always-empty `jobs.emailed_at` and can't be undone, so back up first as in
-[the runbook's step 4](upgrade-to-accounts.md#4-back-up-the-database). The step refuses to start,
-changing nothing, if any posting holds a digest mark.
+always-empty `jobs.emailed_at` and can't be undone, and `v0.2.0` won't start on a database that has
+run it. [Upgrading from 0.2.0 to the 028 release](upgrade-028.md) is its runbook: the check
+before, the backup, the deploy, the counts, and a rollback that restores the backup.
