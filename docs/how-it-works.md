@@ -316,6 +316,11 @@ name ends with it, so one user's files sort together:
 
 Set `MYJOBBOT_LOG_DIR` to move the `log/` folder.
 
+With `MYJOBBOT_LOG_STDOUT=1` each run also prints its trace and job log lines to stdout, one JSON
+line per event with a `stream` field (`trace` or `jobs`), still writing the files. The dev stack
+(`compose.yaml`) sets it, so `docker compose logs -f myjobbot web` follows runs and re-scores as
+they happen. The model log stays in its file only, since it holds every model response.
+
 To learn how a run went, read its trace in `data/runs/*.jsonl` top to bottom: it shows exactly
 what the model saw and decided.
 
