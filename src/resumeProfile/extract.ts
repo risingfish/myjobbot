@@ -17,6 +17,7 @@ export interface ExtractDeps {
     trace: Trace;
     markers: DataMarkers;
     limits: Settings["agent"];
+    clock: () => number;
 }
 
 export type Extracted = { ok: true; profile: ProfileContent } | { ok: false; error: string };
@@ -39,7 +40,7 @@ export async function extractProfile(resume: Pick<Resume, "text">, deps: Extract
 function agentDeps(deps: ExtractDeps, tools: Tool[], isFinished: () => boolean): AgentDeps {
     const limits = { ...deps.limits, max_steps: MAX_STEPS, max_wall_clock_min: MAX_MINUTES };
     const onLookalike = () => deps.trace.write({ type: "resume_lookalike" });
-    return { chat: deps.chat, tools, limits, trace: deps.trace, clock: Date.now, isFinished, nudge: PROFILE_NUDGE, compactionNotice: PROFILE_COMPACTION_NOTICE, markers: deps.markers, onLookalike };
+    return { chat: deps.chat, tools, limits, trace: deps.trace, clock: deps.clock, isFinished, nudge: PROFILE_NUDGE, compactionNotice: PROFILE_COMPACTION_NOTICE, markers: deps.markers, onLookalike };
 }
 
 /** Gives the extraction's model its two tools: get_resume for the resume as data, and record_profile to save the profile it read. */

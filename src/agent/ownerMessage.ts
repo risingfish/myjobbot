@@ -1,4 +1,5 @@
 import type { AppConfig } from "../config/load.js";
+import { READS_PROFILE } from "../config/schema.js";
 import { SKILL_GROUPS, type ProfileContent } from "../db/resumeStore.js";
 import { scrubText, type DataMarkers } from "./markers.js";
 
@@ -7,7 +8,7 @@ const GROUP_NAMES = { engineering: "Engineering", people: "People", project: "Pr
 /** Builds the first user message of every scoring path: what the model reads about the owner, chosen by resume_view, inside the data markers, then the closing request. */
 export function ownerMessage(config: Pick<AppConfig, "resume" | "profile" | "settings">, markers: DataMarkers, closing: string): string {
     const view = config.profile === null ? "resume" : config.settings.resume_view;
-    if (view === "resume" || config.profile === null) return framed("My resume, between the data markers:", config.resume, { markers, closing });
+    if (!READS_PROFILE[view] || config.profile === null) return framed("My resume, between the data markers:", config.resume, { markers, closing });
     if (view === "resume_and_profile") return framed("My resume, between the data markers:", `${config.resume}\n\n${lookFor(config.profile)}`, { markers, closing });
     return framed("My resume isn't included; judge fit with it from this profile, between the data markers:", `${config.profile.summary}\n\n${lookFor(config.profile)}`, { markers, closing });
 }

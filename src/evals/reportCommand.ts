@@ -2,13 +2,14 @@ import { parseArgs } from "node:util";
 import type { EvalCase, Result, Run } from "./format.js";
 import type { EvalFiles } from "./files.js";
 import { againstObserved, againstRun, summarize, type Context } from "./report.js";
+import { contextOf, type ContextFiles } from "./reportContext.js";
 import { reportLines } from "./reportText.js";
 import { observedNote, runsNote } from "./userNote.js";
 
 const USAGE = "usage: myjobbot eval report <run-id> [--against <run-id> | --against observed] [--reasons]";
 
 export interface ReportDeps {
-    files: EvalFiles;
+    files: ContextFiles & Pick<EvalFiles, "runs" | "results">;
     print: (line: string) => void;
 }
 
@@ -39,20 +40,13 @@ function readArgs(args: string[]) {
     }
 }
 
-/** Reads the cases, answer keys and profiles a report judges against. */
-export async function contextOf(files: EvalFiles): Promise<Context> {
-    const [cases, keys, profiles] = await Promise.all([files.cases(), files.answerKeys(), files.profiles()]);
-    const map = <T>(items: Array<{ id: string; value: T }>) => new Map(items.map((each) => [each.id, each.value]));
-    return { cases: map(cases.items), keys: map(keys.items), profiles: map(profiles.items) };
-}
-
 /** Gives the stored cases a run scored, leaving out any no longer stored. */
 function casesOf(run: Run, context: Context): EvalCase[] {
     return run.cases.flatMap((id) => context.cases.get(id) ?? []);
 }
 
 /** Reads a run's results, keeping the good lines. */
-async function resultsOf(files: EvalFiles, run: Run): Promise<Result[]> {
+async function resultsOf(files: Pick<EvalFiles, "results">, run: Run): Promise<Result[]> {
     return (await files.results(run.id)).items;
 }
 

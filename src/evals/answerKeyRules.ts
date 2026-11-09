@@ -1,9 +1,9 @@
 import { parseArgs } from "node:util";
 import { parseFile, type AnswerKey } from "./format.js";
+import { passingBand } from "./judge.js";
 
 const RANGE = /^(\d+)-(\d+)$/;
 const MAX_HISTORY = 50;
-const BORDERLINE_BAND = 10;
 const FLAGS: Record<string, string> = { score: "--score", base: "--base", bonus: "--bonus", mustMention: "--mention", note: "--note" };
 
 export type Entry = Omit<AnswerKey, "schema" | "history">;
@@ -68,12 +68,4 @@ function named(problem: string): string {
     const [path = "", code = ""] = problem.split(": ");
     const field = path.split(".")[0] ?? "";
     return `${FLAGS[field] ?? field}: ${code}`;
-}
-
-/** Gives the scores at which a verdict passes, from the pass rules. */
-function passingBand(verdict: Entry["verdict"], threshold: number): [number, number] {
-    if (verdict === "recommend") return [threshold, 100];
-    if (verdict === "reject") return [0, threshold - 1];
-    if (verdict === "zero") return [0, 0];
-    return [Math.max(0, threshold - BORDERLINE_BAND), Math.min(100, threshold + BORDERLINE_BAND)];
 }

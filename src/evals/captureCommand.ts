@@ -17,7 +17,7 @@ const MAX_RECENT = 200;
 
 export interface CaptureDeps {
     stores: Pick<UserStores, "userId" | "jobStore" | "jobViews" | "careers" | "postings">;
-    files: EvalFiles;
+    files: Pick<EvalFiles, "hasCase" | "writeProfile" | "writeCase">;
     port: FilePort;
     config: AppConfig;
     now: () => Date;

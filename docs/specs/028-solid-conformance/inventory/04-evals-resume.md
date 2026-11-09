@@ -64,6 +64,7 @@ the right place.
   `passingBand` and drops its own copy and constant. The `Record` makes a new verdict a compile
   error until its band is given. Callers: none change.
 - **Size**: M
+- **Done**: S5
 
 ### E2 · OCP · `src/evals/series.ts:9`
 - **Breach**: The `TEST` regex spells out the resume views `(resume|resume_and_profile|profile)`
@@ -75,6 +76,7 @@ the right place.
 - **Fix**: Build the pattern from the list: `new RegExp(`^([a-z0-9][a-z0-9-]{0,39})=([^@+]+)(?:\\+(${RESUME_VIEWS.join("|")}))?(?:@(.+))?$`)`.
   Same matches today. Callers: none.
 - **Size**: S
+- **Done**: S5
 
 ### E3 · OCP · `src/evals/runCases.ts:90`
 - **Breach**: `viewRefusal` decides which views need a resume profile by comparing `view ===
@@ -88,6 +90,7 @@ the right place.
   `viewReadsProfile(view)`) and use it in `viewRefusal` and in `ownerMessage`'s first branch.
   Callers: `runCases.ts`, `ownerMessage.ts`.
 - **Size**: M
+- **Done**: S5
 
 ### E4 · OCP · `src/resume/read.ts:16`
 - **Breach**: `plainText` picks the reader with an `if` per file type (`pdf`, `docx`, else UTF-8),
@@ -100,6 +103,7 @@ the right place.
   `read.ts` (`md` and `txt` share the UTF-8 reader), and `plainText` becomes `READERS[type](bytes)`.
   The `Record` turns a missing reader into a compile error. Callers: none.
 - **Size**: S
+- **Done**: S5
 
 ### E5 · DIP · `src/evals/session.ts:28`
 - **Breach**: `scoreCase` takes `SessionDeps` but reaches for `randomUUID()` (line 28),
@@ -117,6 +121,7 @@ the right place.
   `runCases.ts`, `command.ts`, `rescore/session.ts` and its re-score caller, test helpers that build
   `RunDeps`/`SessionDeps`.
 - **Size**: M
+- **Done**: S5
 
 ### E6 · DIP · `src/resumeProfile/extract.ts:42`
 - **Breach**: `agentDeps` hard-wires `clock: Date.now` into the extraction session although
@@ -129,6 +134,7 @@ the right place.
   `Date.now`, tests pass a fake. Callers: `extract.ts`, `open.ts`, `tests/resumeExtract.test.ts`,
   `tests/toolDeclarations.test.ts`.
 - **Size**: S
+- **Done**: S5
 
 ### E7 · DIP · `src/evals/failure.ts:4`
 - **Breach**: `failureOf` classifies a session's end by copies of the agent loop's reason texts
@@ -142,6 +148,7 @@ the right place.
   them where the reasons are built, and import them in `failure.ts`. Same strings, no output change.
   Callers: `budget.ts`, `loop.ts`, `failure.ts`.
 - **Size**: M
+- **Done**: S5
 
 ### E8 · ISP · `src/evals/reportCommand.ts:10`
 - **Breach**: Every eval command takes the whole `EvalFiles` class (18 readers and writers over
@@ -161,6 +168,7 @@ the right place.
   | "writeCase">`. `command.ts` still passes the full instance. Callers: `answerKey.ts`,
   `captureCommand.ts`, `reportCommand.ts`, `seriesReport.ts`.
 - **Size**: M
+- **Done**: S5
 
 ### E9 · SRP · `src/evals/reportCommand.ts:42`
 - **Breach**: `contextOf`, which loads the cases, answer keys and profiles a report judges against,
@@ -173,6 +181,7 @@ the right place.
   `Pick<EvalFiles, "cases" | "answerKeys" | "profiles">`; `reportCommand.ts` and `seriesReport.ts`
   import it from there. Callers: those two and any test importing `contextOf`.
 - **Size**: S
+- **Done**: S5
 
 ## Mechanical checks
 

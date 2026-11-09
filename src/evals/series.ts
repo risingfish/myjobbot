@@ -6,7 +6,7 @@ import { executeRun, type RunDeps } from "./runCases.js";
 import type { Series, SeriesRun } from "./seriesFormat.js";
 import { loadVariant } from "./variantCheck.js";
 
-const TEST = /^([a-z0-9][a-z0-9-]{0,39})=([^@+]+)(?:\+(resume|resume_and_profile|profile))?(?:@(.+))?$/;
+const TEST = new RegExp(`^([a-z0-9][a-z0-9-]{0,39})=([^@+]+)(?:\\+(${RESUME_VIEWS.join("|")}))?(?:@(.+))?$`);
 const NAME = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const CODE = "code";
 

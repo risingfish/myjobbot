@@ -446,11 +446,11 @@ Two parts:
 
 ### Sitting S5: evals, resume, profile (E1–E9)
 
-- [ ] T045 Create `.specify/sitting-in-progress` naming S5.
+- [X] T045 Create `.specify/sitting-in-progress` naming S5.
 
 **Tests first (S5)**
 
-- [ ] T046 [P] [US1] Write unit tests (3, one per bullet) in `tests/evalsScan.test.ts`:
+- [X] T046 [P] [US1] Write unit tests (3, one per bullet) in `tests/evalsScan.test.ts`:
   - E5, E6: no `Date.now`, argument-less `new Date()`, `randomUUID`, `Math.random`, `process.env`,
     `node:fs` import or `execFileSync` in `src/evals/`, `src/resume/` or `src/resumeProfile/`. The
     exceptions are `src/evals/command.ts` and `src/resumeProfile/open.ts` (the composition roots),
@@ -459,7 +459,7 @@ Two parts:
   - E2, E3: no `src/` file outside `src/config/schema.ts` holds the literal `resume_and_profile`,
     except `src/agent/ownerMessage.ts`, whose branch stays (A5, accepted). `view === "resume"`
     comparisons are not part of this scan.
-- [ ] T047 [P] [US1] Write unit tests (2) in `tests/judgeBands.test.ts`:
+- [X] T047 [P] [US1] Write unit tests (2) in `tests/judgeBands.test.ts`:
   - `passingBand` gives each verdict's band at thresholds 0, 10, 70 and 100, and `judge()`, with a
     minimal answer key per verdict, passes a score at each band's edges and fails one just outside.
     It tests through the exported `judge`, so nothing is exported only for a test (knip).
@@ -468,16 +468,16 @@ Two parts:
 
 **Implementation (S5)**
 
-- [ ] T048 [US1] E1: one `PASS_BANDS` table and `passingBand` in `src/evals/judge.ts`, used by
+- [X] T048 [US1] E1: one `PASS_BANDS` table and `passingBand` in `src/evals/judge.ts`, used by
   `src/evals/answerKeyRules.ts`.
-- [ ] T049 [US1] E2, E3 and E4:
+- [X] T049 [US1] E2, E3 and E4:
   - build the series pattern from `RESUME_VIEWS` (`src/evals/series.ts`)
   - add `READS_PROFILE: Record<ResumeView, boolean>` beside `RESUME_VIEWS`, used in `viewRefusal`
     and in `ownerMessage`'s first branch
   - add a `READERS: Record<ResumeFileType, …>` in `src/resume/read.ts`
   - build the `eval run` USAGE string's view list in `src/evals/runCases.ts` from
     `RESUME_VIEWS.join("|")`, so the printed text is identical
-- [ ] T050 [US1] E5, E6 and E7:
+- [X] T050 [US1] E5, E6 and E7:
   - `clock` and `markerTag` on the eval `SessionDeps`, and `RunDeps.uuid`, set in `withRunDeps`.
     `scoreCase`'s `now` for `reportLookalike` (`src/evals/session.ts:33`) becomes
     `() => new Date(deps.clock())`. `oneJobAgentDeps` takes the clock from the session it is given,
@@ -485,9 +485,9 @@ Two parts:
   - `clock` on `ExtractDeps` (`src/resumeProfile/extract.ts`, passed in `open.ts`)
   - export `WALL_CLOCK_REASON` (`src/agent/budget.ts`) and `MODEL_ERROR_PREFIX`
     (`src/agent/loop.ts`), and import them in `src/evals/failure.ts`
-- [ ] T051 [US1] E8 and E9: each eval command's deps take the `Pick` of `EvalFiles` it uses, and
+- [X] T051 [US1] E8 and E9: each eval command's deps take the `Pick` of `EvalFiles` it uses, and
   `contextOf` moves to `src/evals/reportContext.ts`.
-- [ ] T052 [US1] Run both checks until green, record the ledger, review S5 against Principle VI, mark
+- [X] T052 [US1] Run both checks until green, record the ledger, review S5 against Principle VI, mark
   E1–E9 done (inventory 04), and delete the marker.
 
 ### Sitting S6: web rules and the web server side (U1–U7, W1–W10)
@@ -722,6 +722,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S3a | + 2 (with UI: 1238) | 92 | 78 |
 | Actual after S3b | + 6 (with UI: 1244) | 92 | 78 |
 | Actual after S4 | + 5 (with UI: 1249) | 92 | 78 |
+| Actual after S5 | + 5 (with UI: 1254) | 92 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%
