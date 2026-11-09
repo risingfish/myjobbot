@@ -8,7 +8,7 @@ import { runExitCode, runLine, type UserRun } from "./app/runLines.js";
 import type { Environment } from "./config/load.js";
 import { openStores } from "./db/connect.js";
 import { parseDbSettings } from "./db/settings.js";
-import { OWNER_ID } from "./db/searchSettingsStore.js";
+import { OWNER_ID } from "./db/owner.js";
 import type { JobKey, Stores } from "./db/store.js";
 import type { UserStores } from "./db/userStores.js";
 import { storesFor, userOption, type Refused } from "./cliUser.js";

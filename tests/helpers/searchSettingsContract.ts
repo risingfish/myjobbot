@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { OWNER_ID, type UserSearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
+import { type UserSearchSettingsStore } from "../../src/db/searchSettingsStore.js";
 import type { TestStores } from "./memoryStore.js";
 import type { MakeStores } from "./storeContract.js";
 

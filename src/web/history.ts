@@ -1,5 +1,5 @@
 import { runEnd, type RescoreRun } from "../db/rescoreLogStore.js";
-import type { VerdictView } from "../db/store.js";
+import type { VerdictView } from "../db/jobViews.js";
 import type { HistoryEntry } from "./api.js";
 import { minutes, shortRun } from "./rowViews.js";
 

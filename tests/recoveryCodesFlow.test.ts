@@ -4,7 +4,7 @@ import { confirmIdentity } from "../src/accounts/flows/confirmIdentity.js";
 import { makeRecoveryCodes } from "../src/accounts/ways/recoveryCode.js";
 import { signInWithRecoveryCode } from "./helpers/signInWays.js";
 import { MESSAGES } from "../src/accounts/messages.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { appCode } from "./helpers/appCode.js";
 import { signedInOwner } from "./helpers/signedIn.js";
 

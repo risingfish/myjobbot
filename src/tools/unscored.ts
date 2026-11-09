@@ -1,7 +1,7 @@
 import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import type { ToolContext } from "./context.js";
 import { sourceRef } from "./sources.js";
 

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { accountCommand, type AccountIo } from "../src/accounts/cli.js";
 import { digestPassword } from "../src/accounts/passwordDigest.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { authContext } from "./helpers/authContext.js";
 
 const PASSWORD = "Abcdefgh1!";

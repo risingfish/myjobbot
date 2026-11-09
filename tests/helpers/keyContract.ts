@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./memoryStore.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-07T10:00:00.000Z";

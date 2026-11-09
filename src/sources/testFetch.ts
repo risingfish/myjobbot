@@ -1,5 +1,5 @@
 import type { SavedSource } from "../db/sourceStore.js";
-import type { ApiCallLog } from "../db/store.js";
+import type { ApiCallLog } from "../db/apiCallLog.js";
 import { failureReason, NotSetUp } from "./failure.js";
 import type { SourceContext, SourcePage } from "./module.js";
 import { moduleFor } from "./registry.js";

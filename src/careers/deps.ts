@@ -3,7 +3,7 @@ import type { ChatFn } from "../agent/llm.js";
 import type { DataMarkers } from "../agent/markers.js";
 import type { Trace } from "../agent/trace.js";
 import type { Settings } from "../config/schema.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import type { CareersStore } from "../db/careersStore.js";
 import type { JsonGetter, JsonPoster, TextGetter } from "../http/client.js";
 import type { HostLookup } from "./fetchPage.js";

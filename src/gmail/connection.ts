@@ -1,4 +1,4 @@
-import type { AlertStore, GmailConnectionRow, GmailStore } from "../db/store.js";
+import type { AlertStore, GmailConnectionRow, GmailStore } from "../db/gmailStore.js";
 import type { UserSourceStore } from "../db/sourceStore.js";
 import { ALERTS_SOURCE } from "./alertJobs/source.js";
 import { imapApi, type ImapFactory } from "./imap.js";

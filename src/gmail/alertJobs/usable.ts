@@ -1,4 +1,4 @@
-import type { GmailConnectionRow } from "../../db/store.js";
+import type { GmailConnectionRow } from "../../db/gmailStore.js";
 import type { SecretKeyStatus } from "../secretKey.js";
 import { openOrNull } from "../seal.js";
 

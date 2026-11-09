@@ -1,4 +1,4 @@
-import type { JobView, VerdictView } from "../db/store.js";
+import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
 import { appliedBoosts, boostedScore, type Boost, type BoostLists } from "../jobs/boosts.js";
 import { FILTER_NOTES, filterMatch, type FilterSet } from "../jobs/filterMatch.js";

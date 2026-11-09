@@ -1,5 +1,6 @@
 import type { JobSource } from "../db/jobSource.js";
-import type { JobKey, JobStore } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { makeJob, type Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";

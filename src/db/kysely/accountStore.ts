@@ -4,8 +4,8 @@ import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, Secur
 import { createAccountIn, createAccountSafely } from "./accountCreation.js";
 import type { Database } from "../schema.js";
 import type { UsersTable } from "../schema/users.js";
-import { OWNER_ID } from "../searchSettingsStore.js";
-import { ensureOwner } from "./searchSettingsStore.js";
+import { OWNER_ID } from "../owner.js";
+import { ensureOwnerFor } from "./owner.js";
 
 export class KyselyAccountStore implements AccountStore {
     constructor(private readonly db: Kysely<Database>) {}
@@ -13,7 +13,7 @@ export class KyselyAccountStore implements AccountStore {
     /** Gives the owner an email, the admin mark and a usable password, only while the owner has no email. */
     async initOwner(owner: OwnerLogin, now: string): Promise<boolean> {
         return this.db.transaction().execute(async (trx) => {
-            await ensureOwner(trx, now);
+            await ensureOwnerFor(trx, OWNER_ID, now);
             const result = await trx.updateTable("users").set({ email: owner.email, email_key: owner.emailKey, is_admin: 1 }).where("id", "=", OWNER_ID).where("email", "is", null).executeTakeFirst();
             if (result.numUpdatedRows === 0n) return false;
             const row = { enabled: 1, ready: 1, password_digest: owner.passwordDigest, updated_at: now };

@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./memoryStore.js";
-import type { JobKey, JobViews } from "../../src/db/store.js";
+import type { JobKey } from "../../src/db/store.js";
+import type { JobViews } from "../../src/db/jobViews.js";
 import { makeJob } from "../../src/jobs/job.js";
 import type { MakeStores } from "./storeContract.js";
 

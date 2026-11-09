@@ -3,7 +3,7 @@ import { within } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
-import type { GmailConnectionRow } from "../../src/db/store.js";
+import type { GmailConnectionRow } from "../../src/db/gmailStore.js";
 import { seal } from "../../src/gmail/seal.js";
 import { gmailPanelView } from "../../src/web/gmailPanel.js";
 import { GmailPanel } from "../../web/components/settings/GmailPanel.js";

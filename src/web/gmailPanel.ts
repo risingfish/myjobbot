@@ -1,4 +1,4 @@
-import type { AlertStateRow, GmailConnectionRow, GmailStatus } from "../db/store.js";
+import type { AlertStateRow, GmailConnectionRow, GmailStatus } from "../db/gmailStore.js";
 
 type GmailOffer = "connect" | "check" | "disconnect" | "replace";
 type KeyStatus = "missing" | "invalid" | "ok";

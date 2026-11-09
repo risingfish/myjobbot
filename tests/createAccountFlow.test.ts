@@ -3,7 +3,7 @@ import { makeAccountCode } from "../src/accounts/flows/admin.js";
 import { createAccount } from "../src/accounts/flows/createAccount.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { authContext } from "./helpers/authContext.js";
 
 const FORM = { email: "Ada@Example.com", name: "Ada Lovelace", password: "Abcdefgh1!", address: "direct", heldDigest: null };

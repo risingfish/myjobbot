@@ -2,7 +2,8 @@ import { sql, type Kysely } from "kysely";
 import { z } from "zod";
 import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../rows.js";
 import type { Database } from "../schema.js";
-import type { AppliedChange, HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../store.js";
+import type { AppliedChange, HiddenFlag, JobDetailRow, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../jobViews.js";
+import type { JobKey } from "../store.js";
 import { userJobsOf, VIEW_COLUMNS } from "./userJobsQuery.js";
 
 const DETAIL_COLUMNS = ["j.description_source", "j.description_url", "j.requirements", "j.skills", "j.preferred_skills"] as const;

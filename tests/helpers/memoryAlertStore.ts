@@ -1,4 +1,4 @@
-import type { AlertRead, AlertStateRow, AlertStore } from "../../src/db/store.js";
+import type { AlertRead, AlertStateRow, AlertStore } from "../../src/db/gmailStore.js";
 
 export class MemoryAlertStore implements AlertStore {
     private row: AlertStateRow | null = null;

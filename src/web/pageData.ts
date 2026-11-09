@@ -1,6 +1,6 @@
 import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
-import type { JobView, JobViews, Page } from "../db/store.js";
+import type { JobView, JobViews, Page } from "../db/jobViews.js";
 import { appliedBoosts, boostedScore, boostLists, maxBoost } from "../jobs/boosts.js";
 import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 import type { PageData, PageName } from "./api.js";

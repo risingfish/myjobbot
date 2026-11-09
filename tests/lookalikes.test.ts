@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { reportLookalike } from "../src/app/lookalikes.js";
-import type { JobViews } from "../src/db/store.js";
+import type { JobViews } from "../src/db/jobViews.js";
 import { makeJob } from "../src/jobs/job.js";
 import { TEST_NOW, testContext } from "./helpers/context.js";
 import { memoryStores } from "./helpers/memoryStore.js";

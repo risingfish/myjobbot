@@ -4,7 +4,7 @@ import { z } from "zod";
 import { resumeFileType, skillSchema, type Resume, type ResumeProfile, type ResumeStore, type ResumeUpload } from "../resumeStore.js";
 import type { Database } from "../schema.js";
 import type { ResumeProfilesTable, ResumesTable } from "../schema/resume.js";
-import { ensureOwner } from "./searchSettingsStore.js";
+import { ensureOwnerFor } from "./owner.js";
 
 export class KyselyResumeStore implements ResumeStore {
     constructor(private readonly db: Kysely<Database>) {}
@@ -20,7 +20,7 @@ export class KyselyResumeStore implements ResumeStore {
         const resume = { ...upload, contentId: sha16(upload.text) };
         const row = { text: resume.text, file_name: resume.fileName, file_type: resume.fileType, uploaded_at: resume.uploadedAt, content_id: resume.contentId };
         await this.db.transaction().execute(async (trx) => {
-            await ensureOwner(trx, upload.uploadedAt);
+            await ensureOwnerFor(trx, userId, upload.uploadedAt);
             await trx
                 .insertInto("resumes")
                 .values({ user_id: userId, ...row })
@@ -40,7 +40,7 @@ export class KyselyResumeStore implements ResumeStore {
     async saveProfile(userId: number, profile: ResumeProfile): Promise<void> {
         const row = { resume_id: profile.resumeId, summary: profile.summary, skills: JSON.stringify(profile.skills), extracted_at: profile.extractedAt, edited_at: profile.editedAt };
         await this.db.transaction().execute(async (trx) => {
-            await ensureOwner(trx, profile.extractedAt);
+            await ensureOwnerFor(trx, userId, profile.extractedAt);
             await trx
                 .insertInto("resume_profiles")
                 .values({ user_id: userId, ...row })

@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./helpers/memoryStore.js";
 import type { BeginResult, RescoreEnd } from "../src/db/rescoreLogStore.js";
-import type { JobStore, JobViews } from "../src/db/store.js";
+import type { JobStore } from "../src/db/jobStore.js";
+import type { JobViews } from "../src/db/jobViews.js";
 import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, startRescoreFor } from "../web/lib/rows.js";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JobRow, JobStore, Verdict } from "../db/store.js";
+import type { JobRow, JobStore, Verdict } from "../db/jobStore.js";
 import { recordMatchesTool } from "../tools/recordMatches.js";
 import { defineTool, type Tool } from "../tools/tool.js";
 import type { EvalCase } from "./format.js";

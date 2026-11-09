@@ -1,6 +1,6 @@
 import { digestPassword } from "../../src/accounts/passwordDigest.js";
 import { tokenDigest } from "../../src/accounts/tokens.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import { authContext } from "./authContext.js";
 
 export const PASSWORD = "Abcdefgh1!";

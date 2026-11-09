@@ -4,7 +4,7 @@ import type { JsonGetter } from "../../src/http/client.js";
 import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testAppSettings } from "./config.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import { publicDns } from "./fakeDns.js";
 import { savedSources, STRIPE_BOARD } from "./savedSources.js";
 import { memoryStores, type TestStores } from "./memoryStore.js";

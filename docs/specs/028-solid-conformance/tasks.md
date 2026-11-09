@@ -197,11 +197,18 @@ Two parts:
 - **S2a**, moving the types (D9, D6): T013, T014's D6 case, T016, T017
 - **S2b**, the store splits and one user list (D1–D5, D7): T014's D4 and D5 cases, T015, T018–T022
 
+S2a also fixed a deadlock that was already on `main` (found 2026-11-09): two users storing the same
+new posting at once deadlocked in `upsertAll` (`plainPostings` reads the keys `FOR UPDATE`, and
+both transactions then insert into the same gap), failing the race contract case 4 times in 5 when
+run alone. `withRetry` (`src/db/retry.ts`) takes a `retryable` test, and `upsertAll` runs its
+transaction again on a deadlock only (`isDeadlock`, error 1213), as MariaDB advises. One unit test
+in `tests/retry.test.ts` covers it (+1 unit beyond the plan).
+
 - [ ] T012 Create `.specify/sitting-in-progress` naming S2.
 
 **Tests first (S2)**
 
-- [ ] T013 [P] [US1] Write 1 unit test in `tests/storesShape.test.ts`: the `Stores` and `UserStores`
+- [X] T013 [P] [US1] Write 1 unit test in `tests/storesShape.test.ts`: the `Stores` and `UserStores`
   objects from `memoryStores()` and `storesOver(db)` have no function members other than `forUser`
   and `close`. The research R7 guard: a container holds stores, not operations. It passes today, so it
   is a regression guard rather than a failing-first test.
@@ -226,7 +233,7 @@ Two parts:
 
 **Implementation (S2)**
 
-- [ ] T016 [US1] D9: move the types out of `src/db/store.ts`, members unchanged:
+- [X] T016 [US1] D9: move the types out of `src/db/store.ts`, members unchanged:
   - `JobStore`, `JobRow`, `Verdict` and `VerdictStamp` to `src/db/jobStore.ts`
   - `JobViews` and its view types to `src/db/jobViews.ts`
   - `ApiCallLog` to `src/db/apiCallLog.ts`
@@ -234,7 +241,7 @@ Two parts:
 
   `store.ts` keeps `JobKey`, `CompanyPage`, `FoundDescription` and the containers. Update the
   importers.
-- [ ] T017 [US1] D6: move `OWNER_ID` to `src/db/owner.ts` and `ensureOwner` to
+- [X] T017 [US1] D6: move `OWNER_ID` to `src/db/owner.ts` and `ensureOwner` to
   `src/db/kysely/owner.ts` as `ensureOwnerFor(trx, userId, at)`. The settings, source, resume and
   account stores call it, and so does the SQLite import, whose own insert of the owner's row
   (`src/app/importSqlite.ts:84`) is a fourth copy of the rule. Update every `OWNER_ID` importer
@@ -710,6 +717,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | S7 planned | +3 (T064, in S7a) | +0 | +0 |
 | **Planned after** | **+48** | **+3** | **+0** |
 | Actual after S1 | 1142 + 9 (with UI: 1229) | 89 + 1 = 90 | 78 |
+| Actual after S2a | + 2 planned + 1 retry (with UI: 1232) | 90 | 78 |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%

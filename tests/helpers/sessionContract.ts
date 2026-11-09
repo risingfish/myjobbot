@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./memoryStore.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import type { AttemptKey } from "../../src/db/sessionStore.js";
 import type { MakeStores } from "./storeContract.js";
 

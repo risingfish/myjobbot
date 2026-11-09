@@ -1,5 +1,5 @@
 import type { JobSource } from "../db/jobSource.js";
-import type { JobStore } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { isExcludedPublisher } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";

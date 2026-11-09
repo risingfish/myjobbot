@@ -1,5 +1,6 @@
 import type { AppConfig } from "../config/load.js";
-import type { JobKey, VerdictView } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
 import { parseFile, type EvalCase, type Parsed, type Profile } from "./format.js";
 import { caseId, contentId } from "./ids.js";

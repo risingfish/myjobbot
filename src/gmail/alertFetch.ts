@@ -1,7 +1,9 @@
 import type { Trace } from "../agent/trace.js";
 import type { JobSource } from "../db/jobSource.js";
 import type { PostingStore } from "../db/postingStore.js";
-import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore, JobKey, JobStore } from "../db/store.js";
+import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore } from "../db/gmailStore.js";
+import type { JobKey } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import type { Job } from "../jobs/job.js";
 import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type AlertJob, type ParsedAlert } from "./alertJobs/parse.js";

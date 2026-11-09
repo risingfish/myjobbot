@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { PostingStore } from "../db/postingStore.js";
-import type { JobRow, JobStore } from "../db/store.js";
+import type { JobRow, JobStore } from "../db/jobStore.js";
 import { readableDescription } from "../descriptions/readable.js";
 import type { ToolContext } from "./context.js";
 import { summarizeJob } from "./jobSummary.js";

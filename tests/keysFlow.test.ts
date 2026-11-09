@@ -3,7 +3,7 @@ import { finishKeyRegistration, removeKey, startKeyRegistration, startKeySignIn 
 import { finishKeySignIn } from "./helpers/signInWays.js";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
 import { MESSAGES } from "../src/accounts/messages.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { fakeWebAuthn } from "./helpers/fakeWebAuthn.js";
 import { signedInOwner } from "./helpers/signedIn.js";
 

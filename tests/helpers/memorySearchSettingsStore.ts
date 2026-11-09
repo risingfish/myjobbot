@@ -1,4 +1,5 @@
-import { OWNER_ID, rawSearchSettings, type RawSearchSettings, type SearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
+import { rawSearchSettings, type RawSearchSettings, type SearchSettingsStore } from "../../src/db/searchSettingsStore.js";
 
 export class MemorySearchSettingsStore implements SearchSettingsStore {
     readonly users: number[] = [];

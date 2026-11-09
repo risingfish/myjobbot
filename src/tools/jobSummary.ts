@@ -1,5 +1,5 @@
 import type { PostingStore } from "../db/postingStore.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import { daysBetween } from "../jobs/age.js";
 import type { ToolContext } from "./context.js";
 

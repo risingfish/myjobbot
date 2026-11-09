@@ -1,5 +1,5 @@
 import type { Settings } from "../config/schema.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 
 export type RescoreStep = { kind: "filtered"; by: "company" | "title" | "body" } | { kind: "lookup" } | { kind: "score" };

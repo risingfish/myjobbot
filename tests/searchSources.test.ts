@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { type SavedSource, userSourceStore } from "../src/db/sourceStore.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { newRunState, type ToolContext } from "../src/tools/context.js";
 import { greenhouseBoard } from "./helpers/boards.js";
 import { TEST_SEARCH, testAppSettings } from "./helpers/config.js";

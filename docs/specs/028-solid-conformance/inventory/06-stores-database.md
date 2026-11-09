@@ -220,6 +220,7 @@ Not findings, checked on purpose:
   user. Update the six importers of `OWNER_ID`, plus the tests that import it from
   `searchSettingsStore.js`.
 - **Size**: M
+- **Done**: S2a
 
 ### D7 · LSP · `tests/helpers/memorySearchSettingsStore.ts:4`
 - **Breach**: the memory stores have no shared notion of which users exist, so they break the
@@ -290,6 +291,7 @@ Not findings, checked on purpose:
   `store.ts` keeps `JobKey`, `CompanyPage`, `FoundDescription` and the containers. Update the
   import paths in the importers, which is a type-only change.
 - **Size**: L
+- **Done**: S2a
 
 ### D10 · ISP · `src/db/accountStore.ts:37`
 - **Breach**: `AccountStore.isAdmin(id)` is called by nothing outside `src/db/`. Only its two

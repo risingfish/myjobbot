@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JobStore } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import type { ToolContext } from "./context.js";
 import { defineTool, type Tool } from "./tool.js";
 

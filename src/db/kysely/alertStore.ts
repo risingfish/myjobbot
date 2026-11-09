@@ -1,7 +1,7 @@
 import type { Kysely } from "kysely";
 import { z } from "zod";
 import type { Database } from "../schema.js";
-import type { AlertRead, AlertStateRow, AlertStore } from "../store.js";
+import type { AlertRead, AlertStateRow, AlertStore } from "../gmailStore.js";
 
 const COLUMNS = ["uid_validity", "last_uid", "last_run_at", "emails_read", "jobs_found", "not_understood"] as const;
 const count = z.coerce.number();

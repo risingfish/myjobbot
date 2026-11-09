@@ -1,5 +1,5 @@
 import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin, SecurityEvent } from "../../src/db/accountStore.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import { upsertMethod, type AuthTables, type MemoryUser } from "./memoryAuthTables.js";
 
 function toAccount(user: MemoryUser): Account {

@@ -1,7 +1,7 @@
 import type { Kysely } from "kysely";
 import { z } from "zod";
 import type { Database } from "../schema.js";
-import type { GmailConnectionRow, GmailLogin, GmailStore } from "../store.js";
+import type { GmailConnectionRow, GmailLogin, GmailStore } from "../gmailStore.js";
 
 const COLUMNS = ["email", "app_password", "connected_at", "status", "reason"] as const;
 

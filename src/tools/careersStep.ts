@@ -1,6 +1,6 @@
 import { careersDeps, soughtJob, type CareersParts } from "../careers/deps.js";
 import { lookUpCareers, type CareersSummary } from "../careers/lookUpJobs.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import type { ToolContext } from "./context.js";
 import { isWanted, unscoredJobs } from "./unscored.js";
 

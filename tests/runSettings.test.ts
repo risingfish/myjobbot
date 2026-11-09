@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { userResumeStore } from "../src/db/resumeStore.js";
-import { OWNER_ID, userSearchSettingsStore } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
+import { userSearchSettingsStore } from "../src/db/searchSettingsStore.js";
 import { settingsForRun } from "../src/app/runSettings.js";
 import type { LoadedConfig } from "../src/config/load.js";
 import { envSchema } from "../src/config/schema.js";

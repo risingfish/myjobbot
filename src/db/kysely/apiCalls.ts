@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../schema.js";
-import type { ApiCallLog } from "../store.js";
+import type { ApiCallLog } from "../apiCallLog.js";
 
 export class KyselyApiCallLog implements ApiCallLog {
     constructor(private readonly db: Kysely<Database>) {}

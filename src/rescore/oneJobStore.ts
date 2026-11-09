@@ -1,4 +1,5 @@
-import type { JobKey, JobStore } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 
 export type OneJobStore = Pick<JobStore, "findJob" | "recordVerdict"> & { recorded(): boolean };
 

@@ -1,5 +1,5 @@
 import { checkEmail } from "./accounts/emails.js";
-import { OWNER_ID } from "./db/searchSettingsStore.js";
+import { OWNER_ID } from "./db/owner.js";
 import type { Stores } from "./db/store.js";
 import type { UserStores } from "./db/userStores.js";
 

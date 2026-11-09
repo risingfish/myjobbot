@@ -1,6 +1,7 @@
 import { sourceParts, type JobSource } from "../../src/db/jobSource.js";
 import { jobRowSchema, toParams } from "../../src/db/rows.js";
-import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../../src/db/store.js";
+import type { JobKey } from "../../src/db/store.js";
+import type { JobRow, JobStore, Verdict, VerdictStamp } from "../../src/db/jobStore.js";
 import { companyKeys } from "../../src/companies/keys.js";
 import { normalizeCompany } from "../../src/jobs/company.js";
 import type { Job } from "../../src/jobs/job.js";

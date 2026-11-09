@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { Settings } from "../../src/config/schema.js";
 import type { RescoreLogStore } from "../../src/db/rescoreLogStore.js";
-import type { JobKey, JobViews } from "../../src/db/store.js";
+import type { JobKey } from "../../src/db/store.js";
+import type { JobViews } from "../../src/db/jobViews.js";
 import type { OpenedRescore } from "../../src/rescore/open.js";
 import { rescore } from "../../src/rescore/rescore.js";
 import type { JobDetailView, PageData, RescoreStart } from "../../src/web/api.js";

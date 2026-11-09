@@ -4,13 +4,17 @@ import { companyKeys } from "../../companies/keys.js";
 import type { Job } from "../../jobs/job.js";
 import { sourceParts, type JobSource } from "../jobSource.js";
 import { jobRowSchema } from "../rows.js";
+import { isDeadlock, withRetry } from "../retry.js";
 import type { Database } from "../schema.js";
 import { recordCompanies, touchCompanyOf } from "./companyRows.js";
 import { keyOf, plainPostings, upsertPostings, type PostingBatch } from "./postingWrites.js";
 import { fromSource, outsideSource, ROW_COLUMNS, userJobsOf } from "./userJobsQuery.js";
-import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
+import type { JobKey } from "../store.js";
+import type { JobRow, JobStore, Verdict, VerdictStamp } from "../jobStore.js";
 
 const jobRows = z.array(jobRowSchema);
+
+const DEADLOCK_RETRY = { tries: 3, delayMs: 25, retryable: isDeadlock };
 
 export class KyselyJobStore implements JobStore {
     constructor(
@@ -22,13 +26,15 @@ export class KyselyJobStore implements JobStore {
     async upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void> {
         if (jobs.length === 0) return;
         const companyIds = await recordCompanies(this.db, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
-        await this.db.transaction().execute(async (trx) => {
-            const plain = await plainPostings(trx, jobs);
-            await upsertPostings(trx, { jobs, seen, source, companyIds });
-            await this.upsertViews(trx, { jobs, seen, source, companyIds });
-            const turned = jobs.filter((job) => job.description !== null && job.descriptionFormat === "markdown" && plain.has(keyOf({ ats: job.ats, jobId: job.jobId })));
-            for (const job of turned) await trx.updateTable("user_jobs").set({ scored_at: null }).where("ats", "=", job.ats).where("job_id", "=", job.jobId).execute();
-        });
+        const write = () =>
+            this.db.transaction().execute(async (trx) => {
+                const plain = await plainPostings(trx, jobs);
+                await upsertPostings(trx, { jobs, seen, source, companyIds });
+                await this.upsertViews(trx, { jobs, seen, source, companyIds });
+                const turned = jobs.filter((job) => job.description !== null && job.descriptionFormat === "markdown" && plain.has(keyOf({ ats: job.ats, jobId: job.jobId })));
+                for (const job of turned) await trx.updateTable("user_jobs").set({ scored_at: null }).where("ats", "=", job.ats).where("job_id", "=", job.jobId).execute();
+            });
+        await withRetry(write, DEADLOCK_RETRY);
     }
 
     /** Returns the user's jobs from a source that were last seen in a given fetch and still need scoring. */
