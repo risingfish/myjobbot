@@ -47,8 +47,8 @@ async function isDeactivated(stores: Stores, userId: number): Promise<boolean> {
 /** Runs one planned user, reporting a skip as planned and a failure without stopping the users after them. */
 async function runPlanned({ loaded, seams, stores, key }: RunAllParts, user: PlannedUser): Promise<UserRun> {
     if ("skipped" in user) return user;
-    if (await isDeactivated(stores, user.userId)) return { userId: user.userId, skipped: "deactivated" };
     try {
+        if (await isDeactivated(stores, user.userId)) return { userId: user.userId, skipped: "deactivated" };
         return { userId: user.userId, report: await runForUser(loaded, seams, { stores: stores.forUser(user.userId), key }) };
     } catch (error) {
         return { userId: user.userId, failed: describeError(error) };

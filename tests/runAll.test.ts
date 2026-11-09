@@ -92,3 +92,13 @@ test("a user deactivated while an earlier user runs is skipped when their turn c
     const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
     expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([[1, "finished"], { userId: 2, skipped: "deactivated" }]);
 });
+
+test("a failure checking whether a user is deactivated fails only that user, and the users after them still run", async () => {
+    const stores = await twoUsers();
+    const account = stores.accounts.account.bind(stores.accounts);
+    let checks = 0;
+    stores.accounts.account = (userId) => (userId === 1 && ++checks === 2 ? Promise.reject(new Error("lock timeout")) : account(userId));
+    const { chat } = scriptedChat(scoring("Acme", 40));
+    const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
+    expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([{ userId: 1, failed: "lock timeout" }, [2, "finished"]]);
+});
