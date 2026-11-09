@@ -57,6 +57,15 @@ The largest themes:
 - **The one LSP breach** (D7): the memory stores have no shared list of users, so they accept
   writes MariaDB refuses.
 
+**Closed (2026-11-09, S8)**: 61 findings fixed, each marked `Done` with its sitting in its inventory
+file; 3 accepted (A5, U8, K6); 0 open, 0 follow-ups. The feature added 37 app modules and removed 4
+(`tokenStore.ts` twice, `alertAccess.ts`, `boardLink.ts`); every one sits in an area: `src/db/` in
+06, `src/sources/` (with `hooks/`) in 02, `src/careers/` in 03, `src/evals/` in 04, `src/config/`
+in 01, `src/web/` in 05, `web/lib/` in 07. Two new folders are assigned too: `src/secrets/`
+(sealing and the server key, moved out of `src/gmail/` by S7) to 05 with the accounts it serves, and
+`src/time/` (`minutes.ts`, K4) to 01 with the shared helpers. Beyond the inventory, S2a fixed a
+deadlock already on `main` (two users storing one new posting at once; `withRetry`'s `retryable`).
+
 ## R3. Findings accepted (owner approved)
 
 FR-003 needs the owner's approval for each acceptance. The reviewers proposed three:

@@ -627,8 +627,8 @@ Two parts:
 
 ## Phase 4: Polish — Sitting S8
 
-- [ ] T068 Create `.specify/sitting-in-progress` naming S8.
-- [ ] T069 [P] FR-007: update CLAUDE.md and the docs pages wherever S2–S7 moved or renamed something
+- [X] T068 Create `.specify/sitting-in-progress` naming S8.
+- [X] T069 [P] FR-007: update CLAUDE.md and the docs pages wherever S2–S7 moved or renamed something
   they name:
   - the store names (`TokenStore` → three stores, `attempts`, `events`)
   - `src/secrets/`
@@ -647,12 +647,12 @@ Two parts:
   - `src/time/minutes.ts`
 
   Grep CLAUDE.md, `docs/*.md` and `.specify/memory/constitution.md` for each old name.
-- [ ] T070 [P] Close the inventory:
+- [X] T070 [P] Close the inventory:
   - every finding is marked `Done` with its sitting, or accepted (A5, U8, K6)
   - add a closing line to `research.md` R2 with the final counts
   - confirm, with the coverage script from research R1, that no module was added outside an area
     during the feature
-- [ ] T071 Quickstart "At the end":
+- [X] T071 Quickstart "At the end":
   - a dev-stack run compared with one on `main` (time within 10%, same trace event types, same
     lines)
   - the web UI, every sign-in way and Re-score walked once
@@ -667,7 +667,20 @@ Two parts:
     user a challenge is for, by design (024).
 
   Record the result here.
-- [ ] T072 Run both checks until green, record the final ledger, check SC-008
+  - 2026-11-09 result:
+    - SC-006: on the test database, `jobs`, `companies`, `careers_audit`, `api_calls` and
+      `auth_attempts` hold no per-user column, and `jobs.emailed_at` is gone.
+    - `eval check` and `eval report` (alone, `--against observed`, `--against <run>`) on this branch
+      and on `main`, over the same `data/`: identical apart from FR-009's `· user …` header and its
+      notes. `main`'s strict parser refuses the run S1 made (its new `userId`), which this branch
+      reads; old runs read on both.
+    - Not walked here, for the owner before merging: a dev-stack scheduled run compared with
+      `main` (SC-005) and a `rescore` CLI run, both of which need data in `myjobbot_dev`, which is
+      empty since `scripts/copy-prod.sh` was refused the `myjobbot_copy` login (T010); and the
+      web UI, every sign-in way and Re-score walked in a browser. The suites that pin them pass
+      unchanged: the run's trace and prompt snapshot, the re-score step lines, the 78 UI tests
+      and the `next build` test.
+- [X] T072 Run both checks until green, record the final ledger, check SC-008
   (`git diff main -- package.json` adds no dependency), review the whole feature against Principle VI,
   and delete the marker.
 
@@ -729,6 +742,7 @@ S6b: T054's W cases and T056 together, then T059 → T060 → T061
 | Actual after S6b | + 8 (with UI: 1266) | 92 | 78 |
 | Actual after S7a | + 3 (with UI: 1269) | 92 | 78 |
 | Actual after S7b | + 0 (with UI: 1269) | 92 | 78 |
+| **Final (S8)** | **1191 (+49: 48 planned, 1 for the deadlock retry)** | **92 (+3)** | **78** |
 
 That is 94% unit and 6% integration among the new tests. All three shares move toward the target:
 unit from 87.24% (1142 of 1309) to 87.50% (1190 of 1360), integration from 6.80% (89) to 6.76%
