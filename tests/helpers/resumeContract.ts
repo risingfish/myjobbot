@@ -54,8 +54,14 @@ function withStores(makeStores: MakeStores, check: (stores: TestStores) => Promi
     };
 }
 
+async function unknownUserRefused(stores: TestStores): Promise<void> {
+    await expect(stores.forUser(99).resume.saveResume(FIRST)).rejects.toThrow();
+    expect(await stores.forUser(99).resume.currentResume()).toBeNull();
+}
+
 export function resumeContract(makeStores: MakeStores): void {
     test("the resume is empty until one is saved, and a new upload replaces it with its own content id", withStores(makeStores, replacedOnUpload));
     test("a profile reads back as saved, an edit included, and survives a new resume upload unchanged", withStores(makeStores, profileKeptAcrossUploads));
     test("a resume of 100,000 characters, emoji included, reads back exactly", withStores(makeStores, longTextRoundTrips));
+    test("a resume saved for a user that doesn't exist is refused", withStores(makeStores, unknownUserRefused));
 }

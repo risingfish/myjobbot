@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { VerdictView } from "../src/db/store.js";
+import type { VerdictView } from "../src/db/jobViews.js";
 import { captureCases } from "../src/evals/captureCommand.js";
 import { EvalFiles } from "../src/evals/files.js";
 import { makeJob } from "../src/jobs/job.js";

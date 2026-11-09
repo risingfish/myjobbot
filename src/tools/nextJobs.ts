@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { SavedSource } from "../db/sourceStore.js";
 import type { ToolContext } from "./context.js";
-import { summarizeJob } from "./jobSummary.js";
+import { summarizeJob, type SummaryContext } from "./jobSummary.js";
+import type { ProgressContext } from "./listSources.js";
 import { findSource } from "./sources.js";
 import { defineTool, type Tool } from "./tool.js";
 import { unscoredJobs } from "./unscored.js";
@@ -21,7 +22,7 @@ export function nextJobsTool(context: ToolContext): Tool {
 }
 
 /** Builds one page of a source's unscored jobs, as summaries the model scores from. */
-async function jobPage(context: ToolContext, source: SavedSource) {
+async function jobPage(context: ProgressContext & SummaryContext, source: SavedSource) {
     const unscored = await unscoredJobs(context, source);
     const jobs = await Promise.all(unscored.slice(0, PAGE_SIZE).map((row) => summarizeJob(context, row)));
     return { source: source.name, total_unscored: unscored.length, jobs };

@@ -3,9 +3,12 @@ import { z } from "zod";
 import { capDescription } from "../../descriptions/cap.js";
 import { htmlToMarkdown } from "../../descriptions/toMarkdown.js";
 import { makeJob, type Job } from "../../jobs/job.js";
-import { parseBoardLink, WORKDAY_HOST } from "../boardLink.js";
+import { linkParts } from "../linkParts.js";
 import { optionalText } from "../fields.js";
-import type { BoardPosting, SourceContext, SourceHttp, SourceModule, SourcePage } from "../module.js";
+import type { BoardLink, BoardPosting, SourceContext, SourceHttp, SourceModule, SourcePage } from "../module.js";
+
+const WORKDAY_HOST = /^([a-z0-9-]+)\.wd\d+\.myworkdayjobs\.com$/;
+const LOCALE = /^[a-z]{2}-[A-Z]{2}$/;
 
 interface WorkdaySite {
     host: string;
@@ -27,6 +30,7 @@ export const workday: SourceModule<WorkdaySite> = {
     name: "Workday",
     description: "A company's jobs site on Workday.",
     kind: "ats",
+    descriptions: "included",
     scope: "company",
     params,
     fields: [
@@ -35,8 +39,9 @@ export const workday: SourceModule<WorkdaySite> = {
         { name: "site", label: "Site", input: "text" },
     ],
     requires: [],
-    limits: { maxJobsPerRun: 100, refresh: "every_run" },
+    limits: { maxJobsPerRun: 100, refresh: "every_run", spends: null, skipWhenBudgetUsed: false },
     fromUrl: (url) => siteParams(url),
+    boardLink: (url) => workdayLink(url),
     suggestName: ({ tenant }) => tenant.charAt(0).toUpperCase() + tenant.slice(1),
     target: ({ host, site }) => `workday:${host}/${site}`.toLowerCase(),
     company: (site, name) => ({ name, careersPage: pageUrl(site, "") }),
@@ -49,9 +54,21 @@ export const workday: SourceModule<WorkdaySite> = {
 
 /** Gives the jobs site a pasted Workday link names, or null when it isn't a Workday link. */
 function siteParams(url: URL): WorkdaySite | null {
-    const link = parseBoardLink(url.href);
-    if (link?.kind !== "workday" || link.host === undefined || link.site === undefined) return null;
+    const link = workdayLink(url);
+    if (link?.host === undefined || link.site === undefined) return null;
     return { host: link.host, tenant: link.slug, site: link.site };
+}
+
+/** Reads a Workday address shaped [/<locale>]/<site>[/job/...], keeping the job path Workday's data uses, or gives null for any other address. */
+function workdayLink(url: URL): BoardLink | null {
+    const tenant = WORKDAY_HOST.exec(url.hostname)?.[1];
+    const parts = linkParts(url);
+    if (tenant === undefined || parts === null) return null;
+    const rest = LOCALE.test(parts[0] ?? "") ? parts.slice(1) : parts;
+    const [site, marker] = rest;
+    if (site === undefined) return null;
+    const postingId = marker === "job" && rest.length > 2 ? `/${rest.slice(1).join("/")}` : null;
+    return { kind: "workday", board: `workday:${tenant}/${site}`, slug: tenant, postingId, host: url.hostname, site };
 }
 
 /** Yields a jobs site's postings 20 to a page from an offset, each page saying where the next one starts; a preview reads the listing alone, without each posting's details. */

@@ -1,11 +1,11 @@
 import type { SavedSource } from "../db/sourceStore.js";
 import { normalizeCompany } from "../jobs/company.js";
-import { fetchSources } from "../sources/fetchPhase.js";
+import { fetchSources, type FetchContext } from "../sources/fetchPhase.js";
 import { moduleFor } from "../sources/registry.js";
 import type { ToolContext } from "../tools/context.js";
 
 /** Prepares the run before the agent starts: links any job not yet linked to its company's record, gives each company source's company its board as careers page, then fetches every source that is on. */
-export async function beforeAgent(context: ToolContext): Promise<void> {
+export async function beforeAgent(context: FetchContext & Pick<ToolContext, "postings" | "companies">): Promise<void> {
     const linked = await context.postings.linkUnlinkedJobs();
     if (linked > 0) context.trace.write({ type: "companies_linked", jobs: linked });
     const at = context.now().toISOString();
@@ -14,7 +14,7 @@ export async function beforeAgent(context: ToolContext): Promise<void> {
 }
 
 /** Makes a company source's board its company's careers page, and links the source to that company's record. */
-async function linkBoardPage(context: ToolContext, source: SavedSource, at: string): Promise<void> {
+async function linkBoardPage(context: Pick<ToolContext, "companies" | "saved">, source: SavedSource, at: string): Promise<void> {
     const module = moduleFor(source.module);
     const params = module?.params.safeParse(source.params);
     if (module?.company === undefined || params?.success !== true) return;

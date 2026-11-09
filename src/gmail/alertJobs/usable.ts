@@ -1,6 +1,7 @@
-import type { GmailConnectionRow } from "../../db/store.js";
-import type { SecretKeyStatus } from "../secretKey.js";
-import { openOrNull } from "../seal.js";
+import type { GmailConnectionRow } from "../../db/gmailStore.js";
+import { SourceFailure, type FailureReason } from "../../sources/failure.js";
+import type { SecretKeyStatus } from "../../secrets/secretKey.js";
+import { openOrNull } from "../../secrets/seal.js";
 
 export const ALERT_NOTES = {
     notConnected: "Gmail not connected",
@@ -12,12 +13,24 @@ export const ALERT_NOTES = {
     error: "Gmail error",
 } as const;
 
-export type AlertsUsability = { usable: true; email: string; password: string } | { usable: false; note: string };
+type AlertNote = (typeof ALERT_NOTES)[keyof typeof ALERT_NOTES];
 
-export class AlertsUnavailable extends Error {
-    /** Reports why the Gmail alerts source can't be read this run, by a fixed note. */
-    constructor(readonly note: string) {
-        super(note);
+const NOTE_REASONS: Record<AlertNote, FailureReason> = {
+    [ALERT_NOTES.notConnected]: "not set up",
+    [ALERT_NOTES.needsReconnect]: "not set up",
+    [ALERT_NOTES.keyMissing]: "not set up",
+    [ALERT_NOTES.keyInvalid]: "not set up",
+    [ALERT_NOTES.keyChanged]: "not set up",
+    [ALERT_NOTES.unreachable]: "unreachable",
+    [ALERT_NOTES.error]: "unexpected answer",
+};
+
+export type AlertsUsability = { usable: true; email: string; password: string } | { usable: false; note: AlertNote };
+
+export class AlertsUnavailable extends SourceFailure {
+    /** Reports why the Gmail alerts source can't be read this run, by a fixed note and the reason it gives. */
+    constructor(readonly note: AlertNote) {
+        super(NOTE_REASONS[note], note);
         this.name = "AlertsUnavailable";
     }
 }

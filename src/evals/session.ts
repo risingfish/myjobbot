@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { ChatFn } from "../agent/llm.js";
 import { runAgent } from "../agent/loop.js";
 import { dataMarkers, type DataMarkers } from "../agent/markers.js";
@@ -20,23 +19,25 @@ export interface SessionDeps {
     makeChat: (responseLog: Trace) => ChatFn;
     trace: Trace;
     template?: string;
+    clock: () => number;
+    markerTag: () => string;
 }
 
 /** Scores one case once, as a re-score scores one job, with its frozen job inside fresh data markers, and reports the score or why there is none. */
 export async function scoreCase(evalCase: EvalCase, profile: Profile, deps: SessionDeps): Promise<Attempt> {
     const config = configFor(deps.config, profile);
-    const markers = dataMarkers(randomUUID());
+    const markers = dataMarkers(deps.markerTag());
     const responses: TraceEvent[] = [];
     const store = caseStore(evalCase);
     const tally: Tally = { recorded: false, calls: 0, failures: 0 };
-    const started = Date.now();
-    const onLookalike = (hit: Parameters<typeof reportLookalike>[1]) => reportLookalike({ postings: { flagInjection: async () => {} }, trace: deps.trace, now: () => new Date() }, hit);
-    const session = { chat: deps.makeChat({ write: (event) => void responses.push(event) }), trace: deps.trace, tools: caseTools(evalCase, store, tally), settings: config.settings, isFinished: () => store.recorded() !== null, markers, onLookalike };
+    const started = deps.clock();
+    const onLookalike = (hit: Parameters<typeof reportLookalike>[1]) => reportLookalike({ postings: { flagInjection: async () => {} }, trace: deps.trace, now: () => new Date(deps.clock()) }, hit);
+    const session = { chat: deps.makeChat({ write: (event) => void responses.push(event) }), trace: deps.trace, tools: caseTools(evalCase, store, tally), settings: config.settings, isFinished: () => store.recorded() !== null, markers, onLookalike, clock: deps.clock };
     const result = await runAgent(oneJobAgentDeps(session), rescoreMessages(config, markers, deps.template));
     const verdict = store.recorded();
     const failure = failureOf(result, { ...tally, recorded: verdict !== null });
     const scored = verdict === null ? { base: null, bonus: null, score: null, reasons: [], gaps: [] } : { base: verdict.base ?? null, bonus: verdict.bonus ?? null, score: verdict.score, reasons: verdict.reasons, gaps: verdict.gaps };
-    return { ...scored, failure, ...usageOf(responses), ms: Date.now() - started };
+    return { ...scored, failure, ...usageOf(responses), ms: deps.clock() - started };
 }
 
 /** Gives the system prompt a profile's cases are scored under, from the code's template or a variant's, with the data markers left as placeholders, so equal prompts read the same. */

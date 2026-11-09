@@ -4,14 +4,15 @@ import { after } from "next/server.js";
 import { describeError } from "../../src/errors.js";
 import { openRescore } from "../../src/rescore/open.js";
 import type { JobDetailView, PageData, PageName, RescoreStart } from "../../src/web/api.js";
-import { loadDetailsFor, loadRows, setAppliedFor, startRescoreFor, setHiddenFor, type AppliedResult, type HideResult } from "./rows.js";
+import { startRescoreFor } from "./rescoreStart.js";
+import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, type AppliedResult, type HideResult } from "./rows.js";
 import { getStores, getUiState } from "./uiState.js";
 import { guarded } from "./guard.js";
 
 /** Loads the next rows of a page for the browser as the owner scrolls. */
 async function loadMoreRowsAction(name: PageName, offset: number): Promise<PageData> {
     const { views, config, sourceNames } = await getUiState();
-    return loadRows(views, { config, sourceNames }, { name, offset });
+    return loadRows(views, { config, sourceNames }, { name, offset }, new Date());
 }
 
 /** Saves the owner hiding or unhiding a job from the browser. */
@@ -27,7 +28,7 @@ async function setJobAppliedAction(ats: string, jobId: string, applied: boolean)
 /** Loads one job's details for the browser when its panel opens. */
 async function loadJobDetailsAction(ats: string, jobId: string): Promise<JobDetailView | null> {
     const { views, rescoreLog, config } = await getUiState();
-    return loadDetailsFor({ views, rescoreLog }, config, { ats, jobId });
+    return loadDetailsFor({ views, rescoreLog }, config, { ats, jobId }, new Date());
 }
 
 /** Starts one job's re-score from its panel and answers with its run at once, the re-score carrying on after the answer; failed, with the detail in the server log only, when it can't start. */

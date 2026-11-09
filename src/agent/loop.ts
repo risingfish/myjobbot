@@ -9,6 +9,8 @@ import type { DataMarkers, Lookalike } from "./markers.js";
 import type { Trace, TraceEvent } from "./trace.js";
 import { wrapOutcome } from "./wrapped.js";
 
+export const MODEL_ERROR_PREFIX = "LLM error:";
+
 export interface AgentDeps {
     chat: ChatFn;
     tools: Tool[];
@@ -62,7 +64,7 @@ class AgentSession {
             await this.step();
             return null;
         } catch (error) {
-            return `LLM error: ${describeError(error)}`;
+            return `${MODEL_ERROR_PREFIX} ${describeError(error)}`;
         }
     }
 

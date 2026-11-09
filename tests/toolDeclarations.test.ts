@@ -24,7 +24,7 @@ async function profileTools(): Promise<Tool[]> {
         offered = tools;
         return textReply("no");
     };
-    await extractProfile({ text: "" }, { chat, trace: memoryTrace(), markers: dataMarkers("profile-1"), limits: testAppSettings().agent });
+    await extractProfile({ text: "" }, { chat, trace: memoryTrace(), markers: dataMarkers("profile-1"), limits: testAppSettings().agent, clock: Date.now });
     return offered;
 }
 

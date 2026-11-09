@@ -1,4 +1,4 @@
-import type { AttemptKey, AttemptKind } from "../db/sessionStore.js";
+import type { AttemptKey, AttemptKind } from "../db/attemptStore.js";
 import { tokenDigest } from "./tokens.js";
 
 export interface Limit {

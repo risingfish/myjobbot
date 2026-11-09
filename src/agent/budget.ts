@@ -1,5 +1,7 @@
 import type { Settings } from "../config/schema.js";
 
+export const WALL_CLOCK_REASON = "wall-clock budget exhausted";
+
 const MS_PER_MINUTE = 60_000;
 
 export class Budget {
@@ -34,7 +36,7 @@ export class Budget {
     exhaustedReason(): string | null {
         const { max_steps, max_wall_clock_min, max_consecutive_tool_errors } = this.limits;
         if (this.stepCount >= max_steps) return `step limit of ${max_steps} reached`;
-        if (this.clock() - this.startedAt >= max_wall_clock_min * MS_PER_MINUTE) return "wall-clock budget exhausted";
+        if (this.clock() - this.startedAt >= max_wall_clock_min * MS_PER_MINUTE) return WALL_CLOCK_REASON;
         if (this.consecutiveErrors >= max_consecutive_tool_errors) return `${this.consecutiveErrors} consecutive tool errors`;
         return null;
     }

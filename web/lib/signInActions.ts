@@ -11,7 +11,8 @@ import { CHOICE_KINDS, choiceOf, type ChoiceKind } from "../../src/accounts/ways
 import { requestSignInLink } from "../../src/accounts/ways/emailLink.js";
 import { refusedField, type AccountField } from "../../src/web/accountForms.js";
 import { parseLinkFragment } from "../../src/web/linkFragment.js";
-import { authContext, webSettings } from "./authDeps.js";
+import { authContext } from "./authDeps.js";
+import { webSettings } from "./webSettings.js";
 import { guarded } from "./guard.js";
 import { heldDigest, requestAddress, requestDevice, setSessionCookies } from "./requestAuth.js";
 
@@ -62,23 +63,22 @@ async function createAccountAction(_previous: CreateAccountState, form: FormData
 
 export type LinkAnswer = { ok: true; kind: "signin" | "reset" | "email_change" | "step_up"; next: string } | { ok: false; message: string };
 
-/** Mails a sign-in link, or a password reset link, for the email typed on the sign-in form; every email gets the same answer. */
-async function requestLinkAction(form: FormData, which: "signin" | "reset"): Promise<SignInState> {
+/** Mails a link through the flow given, a sign-in link or a password reset link, for the email typed on the sign-in form; every email gets the same answer. */
+async function requestLinkAction(form: FormData, request: typeof requestSignInLink): Promise<SignInState> {
     const settings = webSettings();
     if (settings === null) return { message: MESSAGES.mail_off };
-    const input = { email: field(form, "email"), address: await requestAddress(settings) };
-    const answer = which === "signin" ? await requestSignInLink(await authContext(), input) : await requestPasswordReset(await authContext(), input);
+    const answer = await request(await authContext(), { email: field(form, "email"), address: await requestAddress(settings) });
     return { message: answer.message ?? null };
 }
 
 /** Mails a sign-in link for the email on the sign-in form. */
 async function requestSignInLinkAction(_previous: SignInState, form: FormData): Promise<SignInState> {
-    return requestLinkAction(form, "signin");
+    return requestLinkAction(form, requestSignInLink);
 }
 
 /** Mails a password reset link for the email on the sign-in form. */
 async function requestPasswordResetAction(_previous: SignInState, form: FormData): Promise<SignInState> {
-    return requestLinkAction(form, "reset");
+    return requestLinkAction(form, requestPasswordReset);
 }
 
 /** Uses an emailed link the browser read from its address's fragment, signing this browser in for a sign-in link. */
@@ -90,8 +90,8 @@ async function spendEmailLinkAction(hash: unknown, password: unknown): Promise<L
     const spend = { ...link, password: typeof password === "string" ? password : undefined, sessionDigest: held, address: await requestAddress(settings), heldDigest: held, device: await requestDevice(settings, new FormData()) };
     const answer = await spendEmailLink(await authContext(), spend);
     if (!answer.ok) return answer;
-    if (answer.kind === "signin") await setSessionCookies(settings, answer.cookies);
-    return { ok: true, kind: answer.kind, next: answer.kind === "step_up" ? answer.next : "/" };
+    if ("cookies" in answer) await setSessionCookies(settings, answer.cookies);
+    return { ok: true, kind: answer.kind, next: "next" in answer ? answer.next : "/" };
 }
 
 /** Ends this browser's sign-in on the server, forgets its cookies and goes to the sign-in page. */

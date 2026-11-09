@@ -4,13 +4,17 @@ import { companyKeys } from "../../companies/keys.js";
 import type { Job } from "../../jobs/job.js";
 import { sourceParts, type JobSource } from "../jobSource.js";
 import { jobRowSchema } from "../rows.js";
+import { isDeadlock, withRetry } from "../retry.js";
 import type { Database } from "../schema.js";
 import { recordCompanies, touchCompanyOf } from "./companyRows.js";
 import { keyOf, plainPostings, upsertPostings, type PostingBatch } from "./postingWrites.js";
 import { fromSource, outsideSource, ROW_COLUMNS, userJobsOf } from "./userJobsQuery.js";
-import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../store.js";
+import type { JobKey } from "../store.js";
+import type { JobRow, JobStore, Verdict, VerdictStamp } from "../jobStore.js";
 
 const jobRows = z.array(jobRowSchema);
+
+const DEADLOCK_RETRY = { tries: 3, delayMs: 25, retryable: isDeadlock };
 
 export class KyselyJobStore implements JobStore {
     constructor(
@@ -22,13 +26,15 @@ export class KyselyJobStore implements JobStore {
     async upsertAll(jobs: Job[], seen: string, source: JobSource): Promise<void> {
         if (jobs.length === 0) return;
         const companyIds = await recordCompanies(this.db, companyKeys(jobs.map((job) => ({ name: job.company, firstSeen: seen, lastSeen: seen }))));
-        await this.db.transaction().execute(async (trx) => {
-            const plain = await plainPostings(trx, jobs);
-            await upsertPostings(trx, { jobs, seen, source, companyIds });
-            await this.upsertViews(trx, { jobs, seen, source, companyIds });
-            const turned = jobs.filter((job) => job.description !== null && job.descriptionFormat === "markdown" && plain.has(keyOf({ ats: job.ats, jobId: job.jobId })));
-            for (const job of turned) await trx.updateTable("user_jobs").set({ scored_at: null }).where("ats", "=", job.ats).where("job_id", "=", job.jobId).execute();
-        });
+        const write = () =>
+            this.db.transaction().execute(async (trx) => {
+                const plain = await plainPostings(trx, jobs);
+                await upsertPostings(trx, { jobs, seen, source, companyIds });
+                await this.upsertViews(trx, { jobs, seen, source, companyIds });
+                const turned = jobs.filter((job) => job.description !== null && job.descriptionFormat === "markdown" && plain.has(keyOf({ ats: job.ats, jobId: job.jobId })));
+                for (const job of turned) await trx.updateTable("user_jobs").set({ scored_at: null }).where("ats", "=", job.ats).where("job_id", "=", job.jobId).execute();
+            });
+        await withRetry(write, DEADLOCK_RETRY);
     }
 
     /** Returns the user's jobs from a source that were last seen in a given fetch and still need scoring. */
@@ -43,8 +49,8 @@ export class KyselyJobStore implements JobStore {
     }
 
     /** Lists company names among the user's company-board postings with a title, so JSearch duplicates can be skipped; alert jobs don't count as board postings. */
-    async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        const rows = await userJobsOf(this.db, this.userId).select("j.company").distinct().where("j.ats", "not in", ["jsearch", "linkedin"]).where("j.normalized_title", "=", normalizedTitle).execute();
+    async boardCompaniesWithTitle(normalizedTitle: string, notBoards: readonly string[]): Promise<string[]> {
+        const rows = await userJobsOf(this.db, this.userId).select("j.company").distinct().where("j.ats", "not in", notBoards).where("j.normalized_title", "=", normalizedTitle).execute();
         return rows.map((row) => row.company);
     }
 
@@ -83,7 +89,11 @@ export class KyselyJobStore implements JobStore {
 
     /** Looks up one of the user's jobs by its id, or null if they have no such job. */
     async findJob(jobId: string): Promise<JobRow | null> {
-        const row = await userJobsOf(this.db, this.userId).select([...ROW_COLUMNS]).where("j.job_id", "=", jobId).limit(1).executeTakeFirst();
+        const row = await userJobsOf(this.db, this.userId)
+            .select([...ROW_COLUMNS])
+            .where("j.job_id", "=", jobId)
+            .limit(1)
+            .executeTakeFirst();
         return row === undefined ? null : jobRowSchema.parse(row);
     }
 

@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { addTerm, removeRow } from "../../../src/web/settingsForm.js";
 import type { SaveResult } from "../../../src/web/settingsSave.js";
+import { FILTER_FIELDS, type FilterField } from "../../../src/web/settingsSections.js";
 import type { FieldView, SettingsView } from "../../../src/web/settingsView.js";
 import { useAutoSave } from "../../lib/useAutoSave.js";
 import { Panel } from "../sections/Panel.js";
 import { Problems, SaveStatus, Setting, SettingCard } from "./SettingParts.js";
 import { AddTerm, Tag, TagButton, TagCloud } from "./Tags.js";
 
-type TermName = "include" | "exclude" | "extra_exclude" | "body_include" | "body_exclude" | "exclude_companies" | "exclude_publishers";
 type Terms = FieldView<string[]>;
 
-const LABELS: Record<TermName, string> = {
+const GROUP_TITLES = ["Title", "Description", "Other"] as const;
+
+const LABELS: Record<FilterField, string> = {
     include: "Title must include one of",
     exclude: "Title must not include",
     extra_exclude: "Also excluded",
@@ -22,14 +24,20 @@ const LABELS: Record<TermName, string> = {
     exclude_publishers: "Excluded publishers",
 };
 
-const GROUPS: Array<[string, TermName[]]> = [
-    ["Title", ["include", "exclude", "extra_exclude"]],
-    ["Description", ["body_include", "body_exclude"]],
-    ["Other", ["exclude_companies", "exclude_publishers"]],
-];
+const GROUP_OF: Record<FilterField, (typeof GROUP_TITLES)[number]> = {
+    include: "Title",
+    exclude: "Title",
+    extra_exclude: "Title",
+    body_include: "Description",
+    body_exclude: "Description",
+    exclude_companies: "Other",
+    exclude_publishers: "Other",
+};
+
+const GROUPS = GROUP_TITLES.map((title) => [title, FILTER_FIELDS.filter((name) => GROUP_OF[name] === title)] as const);
 
 interface TermListProps {
-    name: TermName;
+    name: FilterField;
     label: string;
     terms: Terms;
     result: SaveResult | null;
@@ -40,7 +48,7 @@ interface TermListProps {
 export function FiltersSection({ view }: { view: SettingsView }) {
     const [lists, setLists] = useState(() => listsOf(view));
     const { result, saving, autosave } = useAutoSave("filters");
-    const change = (name: TermName) => (terms: Terms) => {
+    const change = (name: FilterField) => (terms: Terms) => {
         const next = { ...lists, [name]: terms };
         setLists(next);
         autosave(next);
@@ -69,9 +77,8 @@ function FilterGroup({ title, lists }: { title: string; lists: TermListProps[] }
 }
 
 /** Picks the Filters section's seven lists out of the settings view. */
-function listsOf({ fields }: SettingsView): Record<TermName, Terms> {
-    const { include, exclude, extra_exclude, body_include, body_exclude, exclude_companies, exclude_publishers } = fields;
-    return { include, exclude, extra_exclude, body_include, body_exclude, exclude_companies, exclude_publishers };
+function listsOf({ fields }: SettingsView): Record<FilterField, Terms> {
+    return Object.fromEntries(FILTER_FIELDS.map((name) => [name, fields[name]])) as Record<FilterField, Terms>;
 }
 
 /** Renders one list of terms as a cloud of tags, each removable from the button that shows when it is hovered or focused, then one field for adding a term. */

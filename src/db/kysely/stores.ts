@@ -6,6 +6,7 @@ import { userSourceStore } from "../sourceStore.js";
 import type { SharedStores, Stores } from "../store.js";
 import type { UserStores } from "../userStores.js";
 import { KyselyAccountStore } from "./accountStore.js";
+import { KyselyAttemptStore } from "./attemptStore.js";
 import { KyselyAlertStore } from "./alertStore.js";
 import { KyselyAuthenticatorStore } from "./authenticatorStore.js";
 import { KyselyApiCallLog } from "./apiCalls.js";
@@ -20,14 +21,17 @@ import { KyselyResumeStore } from "./resumeStore.js";
 import { KyselySearchSettingsStore } from "./searchSettingsStore.js";
 import { KyselyKeyStore } from "./keyStore.js";
 import { KyselyMethodStore } from "./methodStore.js";
+import { KyselySecurityEventLog } from "./securityEventLog.js";
 import { KyselySessionStore } from "./sessionStore.js";
 import { KyselySourcePlans } from "./sourcePlans.js";
 import { KyselySourceStore } from "./sourceStore.js";
-import { KyselyTokenStore } from "./tokenStore.js";
+import { KyselyAccountCodeStore } from "./accountCodeStore.js";
+import { KyselyEmailLinkStore } from "./emailLinkStore.js";
+import { KyselyRecoveryCodeStore } from "./recoveryCodeStore.js";
 
 /** Returns the stores everyone shares over a connected database. */
 function sharedStores(db: Kysely<Database>): SharedStores {
-    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sourcePlans: new KyselySourcePlans(db), sessions: new KyselySessionStore(db), accounts: new KyselyAccountStore(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), tokens: new KyselyTokenStore(db), keys: new KyselyKeyStore(db) };
+    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sourcePlans: new KyselySourcePlans(db), sessions: new KyselySessionStore(db), attempts: new KyselyAttemptStore(db), accounts: new KyselyAccountStore(db), events: new KyselySecurityEventLog(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), accountCodes: new KyselyAccountCodeStore(db), emailLinks: new KyselyEmailLinkStore(db), recoveryCodes: new KyselyRecoveryCodeStore(db), keys: new KyselyKeyStore(db) };
 }
 
 /** Returns one user's stores over a connected database, each bound to that user, with the shared stores alongside. */

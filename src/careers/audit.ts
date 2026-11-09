@@ -4,7 +4,7 @@ import type { SoughtJob } from "./session.js";
 export type StepRecord = Omit<AuditEntry, "runId" | "at" | "ats" | "jobId" | "company">;
 
 export interface AuditDeps {
-    careers: CareersStore;
+    careers: Pick<CareersStore, "audit">;
     runId: string;
     now: () => Date;
 }

@@ -1,9 +1,10 @@
 import type { RescoreRun } from "../db/rescoreLogStore.js";
-import type { JobDetailRow, VerdictView } from "../db/store.js";
+import type { JobDetailRow, VerdictView } from "../db/jobViews.js";
 import type { DescriptionDetail, DescriptionOrigin, JobDetailView, JobRowView, ScoreDetail } from "./api.js";
 import { historyRows } from "./history.js";
 import { boostDetail } from "./boostViews.js";
-import { minutes, scoreBoost, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
+import { minutes } from "../time/minutes.js";
+import { scoreBoost, toJobRowView, webUrl, type RowContext } from "./rowViews.js";
 
 interface Recorded {
     verdicts: VerdictView[];

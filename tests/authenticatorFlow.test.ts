@@ -4,7 +4,7 @@ import { confirmAuthenticator, removeAuthenticator, startAuthenticatorSetup } fr
 import { signInWithAuthenticator } from "./helpers/signInWays.js";
 import { setMethodEnabled } from "../src/accounts/flows/accountChanges.js";
 import { MESSAGES } from "../src/accounts/messages.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { appCode } from "./helpers/appCode.js";
 import { signedInOwner } from "./helpers/signedIn.js";
 
@@ -35,7 +35,7 @@ test("a right code sets the app up and, the first time, gives ten recovery codes
     expect(codes).toHaveLength(10);
     expect((await ctx.stores.methods.methods(OWNER_ID))[3]).toEqual({ kind: "authenticator", enabled: true, ready: true });
     expect(auth.events.map((event) => event.event)).toEqual(expect.arrayContaining(["app_added", "recovery_codes_made"]));
-    expect(await ctx.stores.tokens.recoveryCodesLeft(OWNER_ID)).toBe(10);
+    expect(await ctx.stores.recoveryCodes.left(OWNER_ID)).toBe(10);
 });
 
 test("an app code signs in once per step, and a reused one or a turned-off app is refused like any failure", async () => {

@@ -1,8 +1,6 @@
-import type { Requirement, SourceModule } from "../sources/module.js";
+import type { Met, Requirement, SourceModule } from "../sources/module.js";
 import { MODULES } from "../sources/registry.js";
 import type { SourceChoice } from "./sourceForm.js";
-
-export type Met = Record<Requirement, boolean>;
 
 const NEEDS: Record<Requirement, string> = { jsearch_key: "Needs JSEARCH_API_KEY in .env", gmail: "Needs Gmail connected" };
 

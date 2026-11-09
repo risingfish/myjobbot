@@ -1,5 +1,4 @@
-import type { BoardLink } from "../sources/boardLink.js";
-import type { BoardPosting, SourceHttp, SourceModule } from "../sources/module.js";
+import type { BoardLink, BoardPosting, SourceHttp, SourceModule } from "../sources/module.js";
 import { moduleFor } from "../sources/registry.js";
 import { sourceHttp } from "../sources/sourceHttp.js";
 import type { HostLookup } from "./fetchPage.js";
@@ -39,7 +38,7 @@ export async function boardPage(deps: BoardDeps, request: BoardRequest): Promise
     const board = { ...boardFor(request), http: sourceHttp({ http: deps.boards.http, lookup: deps.lookup }) };
     const page = request.kind === "careers_page" ? listing(board, request, await postings(board, deps.boards.cache, request)) : postingPage(await findPosting(board, deps.boards.cache, request));
     const fitted = fitPage(page, { maxChars: deps.maxChars, sought: request.sought });
-    const read = { url: request.url, ...fitted, morePages: false, source: "board" as const, fallback: null, board: boardName(request.link), description: page.description };
+    const read = { url: request.url, ...fitted, morePages: false, source: "board" as const, fallback: null, board: request.link.board, description: page.description };
     return page.note === undefined ? read : { ...read, note: page.note };
 }
 
@@ -47,14 +46,14 @@ export async function boardPage(deps: BoardDeps, request: BoardRequest): Promise
 function boardFor(request: BoardRequest): Omit<Board, "http"> {
     const module = moduleFor(request.link.kind);
     const params = module?.fromUrl?.(new URL(request.url)) ?? null;
-    if (module === null || params === null) throw new Error(`no source module reads ${boardName(request.link)}`);
+    if (module === null || params === null) throw new Error(`no source module reads ${request.link.board}`);
     return { module, params };
 }
 
 /** Lists a board's postings, once per board (and per search, for a board that searches) per run. */
 function postings(board: Board, cache: BoardCache, request: BoardRequest): Promise<BoardPosting[]> {
     const searches = board.module.postings?.search !== undefined;
-    const key = searches ? `${boardName(request.link)}:${request.sought}` : boardName(request.link);
+    const key = searches ? `${request.link.board}:${request.sought}` : request.link.board;
     const cached = cache.get(key) ?? readPostings(board, request.sought);
     cache.set(key, cached);
     return cached;
@@ -79,9 +78,4 @@ async function findPosting(board: Board, cache: BoardCache, request: BoardReques
 function listing(board: Board, request: BoardRequest, found: BoardPosting[]): Shown {
     const links = found.map((each) => ({ text: each.location === null ? each.title : `${each.title} — ${each.location}`, url: each.url }));
     return { text: `${found.length} open jobs at ${request.link.slug} on ${board.module.name}`, links, description: null };
-}
-
-/** Names a board for the audit log, as kind:slug (kind:tenant/site for Workday). */
-function boardName(link: BoardLink): string {
-    return link.kind === "workday" ? `workday:${link.slug}/${link.site ?? ""}` : `${link.kind}:${link.slug}`;
 }

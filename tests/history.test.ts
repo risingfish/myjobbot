@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { RescoreRun } from "../src/db/rescoreLogStore.js";
-import type { VerdictView } from "../src/db/store.js";
+import type { VerdictView } from "../src/db/jobViews.js";
 import { historyRows } from "../src/web/history.js";
 
 const NOW = new Date("2026-11-03T12:00:00.000Z");

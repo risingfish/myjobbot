@@ -43,7 +43,8 @@ GET /jobs ─► web/proxy.ts (Host, sign-in) ─► web/app/(app)/layout.tsx
     - `forms/`: anything you submit (`HideButton`)
     - `common/`: small pieces used in several places (`ExternalLink`, `BulletList`)
   - `lib/`: hooks (`use….ts`), the server functions (`actions.ts` over `rows.ts`), the row-state
-    helpers (`pageRows.ts`), the menu list (`pages.ts`) and the server's state (`uiState.ts`)
+    helpers (`pageRows.ts`), the menu list (`pages.ts`) and the server's state (`uiState.ts` for
+    the data pages, `settingsState.ts` for Settings)
 
 ## 1. Components and JSX
 
@@ -261,11 +262,11 @@ the typed text.
 
 **Goal:** the Scoring panel shows your configured `match_threshold` instead of the fixed "70".
 
-- **Files:** only `web/app/(app)/settings/page.tsx`. It already calls `getUiState()` from
-  `web/lib/uiState.ts` (for the Gmail panel); read `config.match_threshold` from the same call
-  and render it in the Scoring panel.
-- **Test:** `tests/client/settings.test.tsx` already mocks `web/lib/uiState.js`. Add a `config`
-  with a threshold of 55 to the mocked state, and expect "Match threshold: 55".
+- **Files:** `web/lib/settingsState.ts` and `web/app/(app)/settings/page.tsx`. The page already
+  calls `getSettingsState()` (which builds the Gmail panel's view); add the resolved
+  `match_threshold` to what it returns and render it in the Scoring panel.
+- **Test:** `tests/client/settings.test.tsx` already mocks `web/lib/settingsState.js`. Add the
+  threshold of 55 to the mocked state, and expect "Match threshold: 55".
 - **Check:** compare this with feature 002, where the same change needed a new API field, a
   server change and a fetch. A server component reads the value directly.
 

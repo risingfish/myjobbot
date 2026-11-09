@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../schema.js";
-import type { ApiCallLog } from "../store.js";
+import type { ApiCallLog } from "../apiCallLog.js";
 
 export class KyselyApiCallLog implements ApiCallLog {
     constructor(private readonly db: Kysely<Database>) {}
@@ -8,17 +8,6 @@ export class KyselyApiCallLog implements ApiCallLog {
     /** Logs that an external API was called, so budget and refresh checks can see it later. */
     async record(api: string, source: string, calledAt: string): Promise<void> {
         await this.db.insertInto("api_calls").values({ api, source, called_at: calledAt }).execute();
-    }
-
-    /** Returns when a source was last fetched from an API, or null if it never was. */
-    async lastCallAt(api: string, source: string): Promise<string | null> {
-        const row = await this.db
-            .selectFrom("api_calls")
-            .select((eb) => eb.fn.max("called_at").as("last"))
-            .where("api", "=", api)
-            .where("source", "=", source)
-            .executeTakeFirst();
-        return row?.last ?? null;
     }
 
     /** Counts calls to an API since a timestamp, to enforce a monthly request budget. */

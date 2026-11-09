@@ -1,11 +1,12 @@
 import type { JobSource } from "../db/jobSource.js";
-import type { JobStore } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import { normalizeCompany } from "../jobs/company.js";
 import { isExcludedPublisher } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
 import { normalizeTitle } from "../jobs/normalize.js";
 import type { ToolContext } from "../tools/context.js";
-import type { SourceContext, SourceModule, SourcePage } from "./module.js";
+import type { SourceModule, SourcePage } from "./module.js";
+import { nonBoardAts } from "./registry.js";
 
 interface IngestBatch {
     source: JobSource;
@@ -37,12 +38,6 @@ async function withoutBoardCopies(store: JobStore, jobs: Job[]): Promise<Job[]> 
 /** Reports whether a company board already supplied a job with this company and title. */
 async function hasBoardCopy(store: JobStore, job: Job): Promise<boolean> {
     const company = normalizeCompany(job.company);
-    const boardCompanies = await store.boardCompaniesWithTitle(normalizeTitle(job.title));
+    const boardCompanies = await store.boardCompaniesWithTitle(normalizeTitle(job.title), nonBoardAts());
     return boardCompanies.some((name) => normalizeCompany(name) === company);
-}
-
-/** Gives a module what it may use for one source: the run's checked client, the source's name, and the JSearch key and settings when the key is set. */
-export function sourceContext(context: Pick<ToolContext, "config" | "sources" | "jsearchApiKey">, sourceName: string): SourceContext {
-    const jsearch = context.jsearchApiKey === null ? {} : { jsearch: { apiKey: context.jsearchApiKey, settings: context.config.jsearch } };
-    return { http: context.sources, sourceName, ...jsearch };
 }

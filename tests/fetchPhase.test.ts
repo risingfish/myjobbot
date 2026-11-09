@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { type SavedSource, userSourceStore } from "../src/db/sourceStore.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { HttpStatusError } from "../src/http/errors.js";
 import { fetchSources } from "../src/sources/fetchPhase.js";
 import type { SourceHttp } from "../src/sources/module.js";

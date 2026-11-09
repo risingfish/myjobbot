@@ -1,6 +1,7 @@
 import { sourceParts, type JobSource } from "../../src/db/jobSource.js";
 import { jobRowSchema, toParams } from "../../src/db/rows.js";
-import type { JobKey, JobRow, JobStore, Verdict, VerdictStamp } from "../../src/db/store.js";
+import type { JobKey } from "../../src/db/store.js";
+import type { JobRow, JobStore, Verdict, VerdictStamp } from "../../src/db/jobStore.js";
 import { companyKeys } from "../../src/companies/keys.js";
 import { normalizeCompany } from "../../src/jobs/company.js";
 import type { Job } from "../../src/jobs/job.js";
@@ -9,7 +10,7 @@ import { asc, userRows, viewOf, type Row, type Tables } from "./memoryJobViews.j
 
 const UNSCORED_VIEW = { scored_at: null, score: null, base_score: null, bonus_score: null, reasons: null, gaps: null, hidden: 0, applied: 0, applied_on: null };
 
-const NEW_POSTING = { company_id: null, emailed_at: null, injection_seen_at: null };
+const NEW_POSTING = { company_id: null, injection_seen_at: null };
 
 const DESCRIBED = ["description", "description_format", "description_source", "description_url"];
 
@@ -46,8 +47,8 @@ export class MemoryJobStore implements JobStore {
         return this.unscored(source);
     }
 
-    async boardCompaniesWithTitle(normalizedTitle: string): Promise<string[]> {
-        return companies(this.rows().filter((job) => job.ats !== "jsearch" && job.ats !== "linkedin" && job.normalized_title === normalizedTitle));
+    async boardCompaniesWithTitle(normalizedTitle: string, notBoards: readonly string[]): Promise<string[]> {
+        return companies(this.rows().filter((job) => !notBoards.includes(String(job.ats)) && job.normalized_title === normalizedTitle));
     }
 
     async companiesWithTitleOutside(source: JobSource, normalizedTitle: string): Promise<string[]> {

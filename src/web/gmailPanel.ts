@@ -1,4 +1,5 @@
-import type { AlertStateRow, GmailConnectionRow, GmailStatus } from "../db/store.js";
+import { localTime } from "./localTime.js";
+import type { AlertStateRow, GmailConnectionRow, GmailStatus } from "../db/gmailStore.js";
 
 type GmailOffer = "connect" | "check" | "disconnect" | "replace";
 type KeyStatus = "missing" | "invalid" | "ok";
@@ -42,11 +43,6 @@ export function gmailPanelView(row: GmailConnectionRow | null, context: PanelCon
     if (context.keyStatus !== "ok") return { ...view, message: KEY_MESSAGES[context.keyStatus], offers: [] };
     if (context.keyChanged) return { ...view, state: "key_changed", message: KEY_CHANGED, offers: ["connect"] };
     return state === "none" ? { ...view, message: NOT_CONNECTED } : view;
-}
-
-/** Shows a stored UTC time as YYYY-MM-DD HH:mm in the server's time zone, or null when there is none. */
-export function localTime(iso: string | null): string | null {
-    return iso === null ? null : new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
 }
 
 /** Describes the last run's alert reading for the panel, or null before any run read alerts. */

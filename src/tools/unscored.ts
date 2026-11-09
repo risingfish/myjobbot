@@ -1,12 +1,14 @@
 import { filterMatch, filterSet } from "../jobs/filterMatch.js";
 import type { Settings } from "../config/schema.js";
 import type { SavedSource } from "../db/sourceStore.js";
-import type { JobRow } from "../db/store.js";
+import type { JobRow, JobStore } from "../db/jobStore.js";
 import type { ToolContext } from "./context.js";
 import { sourceRef } from "./sources.js";
 
+export type UnscoredContext = Pick<ToolContext, "run" | "config"> & { store: Pick<JobStore, "unscoredForSource" | "unscoredSince"> };
+
 /** Returns a source's jobs that still need scoring, left out when an excluded company, the title filter or the body filter hides them: those seen in this run's fetch when it read the whole source, and otherwise every unscored one, so nothing waits forever. */
-export async function unscoredJobs(context: ToolContext, source: Pick<SavedSource, "id" | "name">) {
+export async function unscoredJobs(context: UnscoredContext, source: Pick<SavedSource, "id" | "name">) {
     const seen = context.run.sources.get(source.name)?.seen ?? null;
     const ref = sourceRef(source);
     const rows = seen === null ? await context.store.unscoredForSource(ref) : await context.store.unscoredSince(ref, seen);

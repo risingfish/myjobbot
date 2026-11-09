@@ -8,7 +8,8 @@ import * as keys from "../../src/accounts/ways/hardwareKey.js";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { safeReturnPath } from "../../src/accounts/returnPath.js";
 import { parsedWith, signedInAction } from "./accountAction.js";
-import { authContext, webSettings } from "./authDeps.js";
+import { authContext } from "./authDeps.js";
+import { webSettings } from "./webSettings.js";
 import { guarded } from "./guard.js";
 import { heldDigest, requestAddress, requestDevice, setSessionCookies } from "./requestAuth.js";
 

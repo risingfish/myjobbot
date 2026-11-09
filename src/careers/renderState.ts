@@ -1,6 +1,4 @@
-import type { Trace } from "../agent/trace.js";
 import type { Settings } from "../config/schema.js";
-import type { CareersStore } from "../db/careersStore.js";
 import type { TextPage } from "../http/client.js";
 import type { BrowserPort } from "./browser.js";
 import { assertPublic, FetchRefused, type HostLookup } from "./fetchPage.js";
@@ -8,11 +6,9 @@ import { renderPage } from "./render.js";
 
 interface RendererDeps {
     connect: (() => Promise<BrowserPort>) | null;
-    settings: Pick<Settings["careers_lookup"], "render_seconds" | "max_download_kb" | "lan_probe_url">;
+    settings: Pick<Settings["careers_lookup"], "render_seconds" | "max_download_kb">;
     lookup: HostLookup;
-    careers: CareersStore;
-    trace: Trace;
-    runId: string;
+    checkLan: (port: BrowserPort) => Promise<string | null>;
     now: () => Date;
 }
 
@@ -20,8 +16,6 @@ type Rendered = { page: TextPage } | { fallback: "render_off" | "render_failed" 
 
 const NOT_CONFIGURED = "page rendering not configured";
 const TURNED_OFF = "page rendering turned off: browser service failed";
-const LAN_UNCHECKED = "LAN check not configured";
-const PROBE_MS = 3000;
 const BYTES_PER_KB = 1024;
 
 export class PageRenderer {
@@ -41,7 +35,7 @@ export class PageRenderer {
         try {
             const port = await this.connected();
             await this.checkLan(port);
-            return { page: await renderPage(port, { url, check: (address) => assertPublic(this.deps.lookup, address), seconds: this.deps.settings.render_seconds, maxBytes: this.deps.settings.max_download_kb * BYTES_PER_KB }) };
+            return { page: await renderPage(port, { url, check: (address) => assertPublic(this.deps.lookup, address), seconds: this.deps.settings.render_seconds, maxBytes: this.deps.settings.max_download_kb * BYTES_PER_KB, clock: () => this.deps.now().getTime() }) };
         } catch (error) {
             if (error instanceof FetchRefused) throw error;
             this.off = TURNED_OFF;
@@ -73,15 +67,11 @@ export class PageRenderer {
         return this.port;
     }
 
-    /** Checks once per run whether the browser can reach the configured LAN address, warning without blocking when it can. */
+    /** Checks once per run whether the browser can reach the LAN, warning without blocking when it can, and keeps any note for the summary. */
     private async checkLan(port: BrowserPort): Promise<void> {
         if (this.checked) return;
         this.checked = true;
-        const probe = this.deps.settings.lan_probe_url;
-        if (probe === undefined) return void this.said.add(LAN_UNCHECKED);
-        const session = await port.session({});
-        const reachable = await session.probe(probe, PROBE_MS).finally(() => session.close());
-        this.deps.trace.write({ type: "render_check", url: probe, warning: reachable });
-        await this.deps.careers.audit({ runId: this.deps.runId, at: this.deps.now().toISOString(), ats: "", jobId: "", company: "", step: "render_check", url: probe, outcome: reachable ? "failed" : "ok", reason: null, warning: reachable });
+        const note = await this.deps.checkLan(port);
+        if (note !== null) this.said.add(note);
     }
 }

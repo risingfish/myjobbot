@@ -2,7 +2,7 @@ import { z } from "zod";
 import { markdownDescription } from "../../descriptions/toMarkdown.js";
 import { makeJob, type Job } from "../../jobs/job.js";
 import { optionalDate, optionalText } from "../fields.js";
-import { slugBoard } from "./slugBoard.js";
+import { slugAndPosting, slugBoard } from "./slugBoard.js";
 
 const categories = z.object({ location: optionalText, team: optionalText, department: optionalText }).nullish();
 
@@ -27,6 +27,7 @@ export const lever = slugBoard({
     url: (slug) => `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}?mode=json`,
     postings,
     toJob,
+    link: (url, parts) => (url.hostname === "jobs.lever.co" ? slugAndPosting(parts) : null),
 });
 
 type Posting = z.infer<typeof posting>;

@@ -1,5 +1,5 @@
 import type { Account } from "../../db/accountStore.js";
-import { CODE_DAYS, daysAfter } from "../../db/tokenStore.js";
+import { CODE_DAYS, daysAfter } from "../../db/accountCodeStore.js";
 import { emailChanged } from "../../mail/messages.js";
 import { checkEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";
@@ -16,7 +16,7 @@ export async function makeAccountCode(ctx: AuthContext, admin: Account): Promise
     if (!admin.isAdmin) return NOT_ADMIN;
     const code = newToken(ctx.random);
     const now = ctx.now();
-    await ctx.stores.tokens.makeCode(tokenDigest(code), admin.id, now);
+    await ctx.stores.accountCodes.makeCode(tokenDigest(code), admin.id, now);
     await recordSecurityEvent(ctx, { userId: admin.id, at: now, address: null, event: "code_made", method: null });
     return { ok: true, code, expiresAt: daysAfter(now, CODE_DAYS) };
 }

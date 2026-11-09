@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
 import { resolveSettings, settingsNotices } from "../src/config/resolve.js";
 import { splitSettings } from "../src/config/searchSettings.js";
-import { OWNER_ID, userSearchSettingsStore, type UserSearchSettingsStore } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
+import { userSearchSettingsStore, type UserSearchSettingsStore } from "../src/db/searchSettingsStore.js";
 import { FULL_CONFIG } from "./helpers/config.js";
 import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
 

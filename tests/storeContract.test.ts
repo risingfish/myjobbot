@@ -5,22 +5,23 @@ import { userJobContract } from "./helpers/userJobContract.js";
 import { keyContract } from "./helpers/keyContract.js";
 import { methodContract } from "./helpers/methodContract.js";
 import { sessionContract } from "./helpers/sessionContract.js";
-import { tokenContract } from "./helpers/tokenContract.js";
+import { attemptContract } from "./helpers/attemptContract.js";
+import { accountCodeContract } from "./helpers/accountCodeContract.js";
+import { emailLinkContract } from "./helpers/emailLinkContract.js";
+import { recoveryCodeContract } from "./helpers/recoveryCodeContract.js";
 import { alertJobContract } from "./helpers/alertJobContract.js";
 import { appliedContract } from "./helpers/appliedContract.js";
 import { careersStoreContract } from "./helpers/careersStoreContract.js";
 import { companyContract } from "./helpers/companyContract.js";
 import { memoryCompanyHooks } from "./helpers/memoryCompanies.js";
 import { newTables } from "./helpers/memoryJobViews.js";
-import { MemoryResumeStore } from "./helpers/memoryResumeStore.js";
-import { MemorySourceStore } from "./helpers/memorySourceStore.js";
 import { alertStoreContract } from "./helpers/alertStoreContract.js";
 import { descriptionContract } from "./helpers/descriptionContract.js";
 import { gmailStoreContract } from "./helpers/gmailStoreContract.js";
 import { jobDetailContract } from "./helpers/jobDetailContract.js";
 import { MemoryCareersStore } from "./helpers/memoryCareersStore.js";
-import { memoryStores } from "./helpers/memoryStore.js";
-import { MemorySearchSettingsStore } from "./helpers/memorySearchSettingsStore.js";
+import { memoryStores, type TestStores } from "./helpers/memoryStore.js";
+import { memoryUser, type MemoryUser } from "./helpers/memoryAuthTables.js";
 import { resumeContract } from "./helpers/resumeContract.js";
 import { rescoreContract } from "./helpers/rescoreContract.js";
 import { recentContract } from "./helpers/recentContract.js";
@@ -29,14 +30,29 @@ import { searchSettingsContract } from "./helpers/searchSettingsContract.js";
 import { sourceContract } from "./helpers/sourceContract.js";
 import { storeContract } from "./helpers/storeContract.js";
 
+let users: MemoryUser[] = [];
+
+async function withUsers(): Promise<TestStores> {
+    const stores = memoryStores();
+    users = stores.memory?.auth.users ?? [];
+    return stores;
+}
+
+async function seedUsers(ids: number[]): Promise<void> {
+    for (const id of ids) users.push(memoryUser(id));
+}
+
 storeContract(async () => memoryStores());
 sessionContract(async () => memoryStores());
+attemptContract(async () => memoryStores());
 accountContract(async () => memoryStores());
 methodContract(async () => memoryStores());
 authenticatorContract(async () => memoryStores());
-userJobContract(async () => memoryStores(), { seedUsers: async () => {} });
-userDataContract(async () => memoryStores(), { seedUsers: async () => {} });
-tokenContract(async () => memoryStores());
+userJobContract(withUsers, { seedUsers });
+userDataContract(withUsers, { seedUsers });
+accountCodeContract(async () => memoryStores());
+emailLinkContract(async () => memoryStores());
+recoveryCodeContract(async () => memoryStores());
 keyContract(async () => memoryStores());
 gmailStoreContract(async () => memoryStores());
 alertStoreContract(async () => memoryStores());
@@ -64,15 +80,7 @@ sourceContract(
     },
     { seedCompany: async () => 7, jobLinks: async () => sourceTables.userJobs.map((job) => ({ job_id: String(job.job_id), source: String(job.source), source_id: job.source_id === null ? null : Number(job.source_id) })) },
 );
-let searchSettings = new MemorySearchSettingsStore();
-searchSettingsContract(
-    async () => {
-        searchSettings = new MemorySearchSettingsStore();
-        const tables = newTables();
-        return memoryStores(tables, { sources: new MemorySourceStore(tables), searchSettings, resume: new MemoryResumeStore() });
-    },
-    { owners: async () => searchSettings.users, seedUser: async (id) => void searchSettings.users.push(id) },
-);
+searchSettingsContract(withUsers, { owners: async () => users.map((user) => user.id), seedUser: async (id) => void users.push(memoryUser(id)) });
 let careersTables = newTables();
 let careers = new MemoryCareersStore(careersTables);
 

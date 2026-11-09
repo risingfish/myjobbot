@@ -5,7 +5,7 @@ import { digestPassword } from "../src/accounts/passwordDigest.js";
 import { signOut } from "../src/accounts/flows/signIn.js";
 import { signInWithPassword } from "./helpers/signInWays.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { authContext } from "./helpers/authContext.js";
 
 const PASSWORD = "Abcdefgh1!";

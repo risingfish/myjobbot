@@ -7,9 +7,11 @@ import type { Settings } from "../config/schema.js";
 import type { PostingStore } from "../db/postingStore.js";
 import type { SourcePlans } from "../db/sourcePlans.js";
 import type { SavedSource, UserSourceStore } from "../db/sourceStore.js";
-import type { AlertStore, ApiCallLog, GmailStore, JobStore } from "../db/store.js";
+import type { AlertStore, GmailStore } from "../db/gmailStore.js";
+import type { ApiCallLog } from "../db/apiCallLog.js";
+import type { JobStore } from "../db/jobStore.js";
 import type { ImapFactory } from "../gmail/imap.js";
-import type { SecretKeyStatus } from "../gmail/secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 import type { JsonGetter } from "../http/client.js";
 import type { SourceHttp } from "../sources/module.js";
 import type { CareersSummary } from "../careers/lookUpJobs.js";
@@ -23,44 +25,52 @@ export interface SourceRun {
     careers?: CareersSummary;
 }
 
-interface RunState {
+export interface RunState {
     finished: boolean;
     summary: string | null;
     sources: Map<string, SourceRun>;
 }
 
-export interface ToolContext {
-    config: Settings;
-    run: RunState;
-    runId: string;
+interface RunStores {
     store: JobStore;
     postings: PostingStore;
     sourcePlans: SourcePlans;
     apiCalls: ApiCallLog;
+    companies: CompanyStore;
+    saved: SavedSources;
+}
+
+interface RunPorts {
     http: JsonGetter;
     sources: SourceHttp;
-    saved: SavedSources;
     now: () => Date;
     jobLog: Trace;
-    jsearchApiKey: string | null;
-    gmail: GmailAccess;
     trace: Trace;
     chat: ChatFn;
     careers: CareersAccess;
-    companies: CompanyStore;
-    markers: DataMarkers;
+    gmail: GmailAccess;
 }
 
-interface SavedSources {
+interface RunIdentity {
+    config: Settings;
+    run: RunState;
+    runId: string;
+    markers: DataMarkers;
+    jsearchApiKey: string | null;
+}
+
+export type ToolContext = RunStores & RunPorts & RunIdentity;
+
+export interface SavedSources {
     store: UserSourceStore;
     list: SavedSource[];
 }
 
-interface GmailAccess {
+export interface GmailAccess {
     store: GmailStore;
     alerts: AlertStore;
     key: SecretKeyStatus;
-    imap?: ImapFactory;
+    imap: ImapFactory;
     usable: true | string;
     connected: boolean;
 }

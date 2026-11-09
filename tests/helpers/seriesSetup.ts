@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { AssistantMessage } from "../../src/agent/llm.js";
 import type { Trace } from "../../src/agent/trace.js";
 import { ExperimentFiles } from "../../src/evals/experimentFiles.js";
@@ -20,7 +21,7 @@ export function scoring(base: number): AssistantMessage[] {
     return [toolCallReply("get_job", {}), toolCallReply("record_matches", { verdicts: [{ job_id: "4012345", base, bonus: 30, reasons: [], gaps: [] }] })];
 }
 
-export function seriesSetup(scripts: AssistantMessage[][], extra: Record<string, string> = {}) {
+export function seriesSetup(scripts: AssistantMessage[][], extra: Record<string, string> = {}, userId = 1) {
     const seed = { "evals/profiles/p1.json": JSON.stringify(profile()), "evals/cases/greenhouse-4012345.json": JSON.stringify(evalCase()), "evals/answer_keys/greenhouse-4012345.json": JSON.stringify(answerKey()), "evals/variants/strict.md": variantFile(STRICT), ...extra };
     const { port, files } = memoryFilePort(seed);
     const queue = [...scripts];
@@ -28,6 +29,6 @@ export function seriesSetup(scripts: AssistantMessage[][], extra: Record<string,
     const lines: string[] = [];
     let draws = 0;
     const chatFor = (model: string) => (log: Trace) => (models.push(model), usageChat(queue.shift() ?? [], { prompt_tokens: 1000, completion_tokens: 50 }).makeChat(log));
-    const deps = { files: new EvalFiles(port), experiments: new ExperimentFiles(port), config: testAppConfig(), chatFor, now: () => new Date(AT), random: () => (draws += 0.1) % 1, gitCommit: () => null, print: (line: string) => void lines.push(line) };
+    const deps = { files: new EvalFiles(port), experiments: new ExperimentFiles(port), config: testAppConfig(), chatFor, now: () => new Date(AT), random: () => (draws += 0.1) % 1, gitCommit: () => null, print: (line: string) => void lines.push(line), userId, uuid: randomUUID };
     return { files, lines, models, deps };
 }

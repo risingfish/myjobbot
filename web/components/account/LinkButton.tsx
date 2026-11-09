@@ -2,13 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MESSAGES } from "../../../src/accounts/messages.js";
-import type { LinkPurpose } from "../../../src/db/tokenStore.js";
+import type { LinkPurpose } from "../../../src/db/emailLinkStore.js";
 import { parseLinkFragment } from "../../../src/web/linkFragment.js";
 import { spendEmailLinkNow, type LinkAnswer } from "../../lib/signInActions.js";
 import { Field } from "./Field.js";
 
-const BUTTONS: Record<LinkPurpose, string> = { signin: "Sign in", reset: "Set new password", email_change: "Confirm new email", step_up: "Confirm it's you" };
-const DONE: Record<Exclude<LinkPurpose, "signin" | "step_up">, string> = { reset: "Your password is set, and every sign-in has ended.", email_change: "Your email is changed." };
+interface PurposeShown {
+    button: string;
+    asksPassword: boolean;
+    after: "follow" | { text: string; href: string; label: string };
+}
+
+const PURPOSES: Record<LinkPurpose, PurposeShown> = {
+    signin: { button: "Sign in", asksPassword: false, after: "follow" },
+    reset: { button: "Set new password", asksPassword: true, after: { text: "Your password is set, and every sign-in has ended.", href: "/sign-in", label: "Sign in" } },
+    email_change: { button: "Confirm new email", asksPassword: false, after: { text: "Your email is changed.", href: "/account", label: "Back to your account" } },
+    step_up: { button: "Confirm it's you", asksPassword: false, after: "follow" },
+};
 
 /** Reads the link from the address's fragment once, then clears it from the address bar so it isn't kept in history or shared; a second run of the effect, as in development, reuses what the first one read. */
 function useLinkFromFragment(): { hash: string; purpose: LinkPurpose } | null | undefined {
@@ -34,10 +44,11 @@ function Outcome({ answer }: { answer: LinkAnswer }) {
             </p>
         );
     }
-    if (answer.kind === "signin" || answer.kind === "step_up") return <p role="status">Done.</p>;
+    const { after } = PURPOSES[answer.kind];
+    if (after === "follow") return <p role="status">Done.</p>;
     return (
         <p role="status">
-            {DONE[answer.kind]} <a href={answer.kind === "reset" ? "/sign-in" : "/account"}>{answer.kind === "reset" ? "Sign in" : "Back to your account"}</a>
+            {after.text} <a href={after.href}>{after.label}</a>
         </p>
     );
 }
@@ -47,15 +58,15 @@ function LinkForm({ link, onAnswer }: { link: { hash: string; purpose: LinkPurpo
     const [refusal, setRefusal] = useState<LinkAnswer | null>(null);
     const use = async (form: FormData) => {
         const result = await spendEmailLinkNow(link.hash, form.get("password"));
-        if (result.ok && (result.kind === "signin" || result.kind === "step_up")) window.location.assign(result.next);
+        if (result.ok && PURPOSES[result.kind].after === "follow") window.location.assign(result.next);
         if (result.ok) return onAnswer(result);
         setRefusal(result);
     };
     const weak = refusal !== null && !refusal.ok && refusal.message === MESSAGES.password_rule;
     return (
         <form action={use}>
-            {link.purpose === "reset" && <Field name="password" label="New password" type="password" autoComplete="new-password" required invalid={weak} note={MESSAGES.password_rule} />}
-            <button type="submit">{BUTTONS[link.purpose]}</button>
+            {PURPOSES[link.purpose].asksPassword && <Field name="password" label="New password" type="password" autoComplete="new-password" required invalid={weak} note={MESSAGES.password_rule} />}
+            <button type="submit">{PURPOSES[link.purpose].button}</button>
             {refusal !== null && !weak && <Outcome answer={refusal} />}
         </form>
     );

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { wayUsable } from "../src/accounts/ways/usable.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { signedInOwner } from "./helpers/signedIn.js";
 
 test("a way is usable only when switched on and set up, and an email link only while mail is set up", async () => {

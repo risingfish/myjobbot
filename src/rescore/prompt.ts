@@ -24,7 +24,7 @@ export function rescoreSystemTemplate(): string {
 /** Builds the system and user messages that seed a re-score with the shared scoring rubric and the resume, from the code's template or another one. */
 export function rescoreMessages(config: AppConfig, markers: DataMarkers, template = rescoreSystemTemplate()): Message[] {
     return [
-        { role: "system", content: fillTemplate(template, rubricValues(config, markers)) },
+        { role: "system", content: fillTemplate(template, rubricValues(config.settings, markers)) },
         { role: "user", content: ownerMessage(config, markers, "Re-score the job now.") },
     ];
 }

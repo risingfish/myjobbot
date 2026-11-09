@@ -1,4 +1,5 @@
-import type { JobView, VerdictView } from "../db/store.js";
+import { minutes } from "../time/minutes.js";
+import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
 import { appliedBoosts, boostedScore, type Boost, type BoostLists } from "../jobs/boosts.js";
 import { FILTER_NOTES, filterMatch, type FilterSet } from "../jobs/filterMatch.js";
@@ -64,11 +65,6 @@ export function toVerdictRowView(verdict: VerdictView): VerdictRowView {
 /** Shortens a run's id to the first eight characters the trace file names use, or null when the run isn't known. */
 export function shortRun(runId: string | null): string | null {
     return runId ? runId.slice(0, 8) : null;
-}
-
-/** Shows an ISO timestamp to the minute, as "2026-10-02 09:30". */
-export function minutes(iso: string): string {
-    return iso.slice(0, 16).replace("T", " ");
 }
 
 /** Returns the date-only portion of an ISO timestamp, or an empty string when null. */

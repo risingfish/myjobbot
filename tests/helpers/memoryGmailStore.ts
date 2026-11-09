@@ -1,4 +1,4 @@
-import type { GmailConnectionRow, GmailLogin, GmailStore } from "../../src/db/store.js";
+import type { GmailConnectionRow, GmailLogin, GmailStore } from "../../src/db/gmailStore.js";
 
 export class MemoryGmailStore implements GmailStore {
     private row: GmailConnectionRow | null = null;

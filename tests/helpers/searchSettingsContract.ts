@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { OWNER_ID, type UserSearchSettingsStore } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
+import { type UserSearchSettingsStore } from "../../src/db/searchSettingsStore.js";
 import type { TestStores } from "./memoryStore.js";
 import type { MakeStores } from "./storeContract.js";
 
@@ -50,6 +51,7 @@ export function searchSettingsContract(make: MakeStores, hooks: SearchSettingsHo
         await savesFirst(stores.searchSettings);
         await roundTripsExactly(stores.searchSettings);
         expect(await hooks.owners()).toEqual([OWNER_ID]);
+        expect(await stores.accounts.userIds()).toEqual([OWNER_ID]);
         await savesWholePerUser(stores, hooks);
         await stores.close();
     });

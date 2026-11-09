@@ -6,7 +6,7 @@ import { signInWithPassword } from "./helpers/signInWays.js";
 import { noticeFor } from "../src/accounts/events.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { PASSWORD, signedInOwner } from "./helpers/signedIn.js";
 
 test("a name is saved trimmed, and an empty, long or control-character name is refused", async () => {

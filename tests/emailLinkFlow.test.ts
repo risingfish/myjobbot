@@ -4,7 +4,7 @@ import { requestEmailChange, sendTestEmail, spendEmailLink } from "../src/accoun
 import { requestSignInLink } from "../src/accounts/ways/emailLink.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { linkFrom } from "./helpers/linkFrom.js";
 import { signedInOwner } from "./helpers/signedIn.js";
 

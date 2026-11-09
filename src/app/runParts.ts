@@ -1,3 +1,4 @@
+import { checkBrowserLan } from "../careers/lanCheck.js";
 import { connectBrowser, type BrowserPort } from "../careers/browser.js";
 import { systemLookup, type HostLookup } from "../careers/fetchPage.js";
 import { PageRenderer } from "../careers/renderState.js";
@@ -23,5 +24,7 @@ export function runClients(config: AppConfig, seams: { lookup?: HostLookup }): R
 export function pageRenderer(config: AppConfig, seams: { browser?: (url: string) => Promise<BrowserPort> }, { logs, stores }: { logs: RunLogs; stores: Pick<SharedStores, "careers"> }): PageRenderer {
     const url = config.env.MYJOBBOT_BROWSER_URL;
     const connect = url === undefined ? null : () => (seams.browser ?? connectBrowser)(url);
-    return new PageRenderer({ connect, settings: config.settings.careers_lookup, lookup: systemLookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now: () => new Date() });
+    const now = () => new Date();
+    const checkLan = checkBrowserLan({ settings: config.settings.careers_lookup, careers: stores.careers, trace: logs.trace, runId: logs.runId, now });
+    return new PageRenderer({ connect, settings: config.settings.careers_lookup, lookup: systemLookup, checkLan, now });
 }

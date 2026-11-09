@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { gmailSettings, settingsView } from "../src/web/settingsView.js";
+import { settingsView } from "../src/web/settingsView.js";
 
 test("stored values are shown as stored and not marked default", () => {
     const { fields } = settingsView({ exclude_companies: ["acme"], match_threshold: 60, preferences: "Remote" });
@@ -59,11 +59,6 @@ test("title boosts come as rows in the stored order, and excluded publishers fro
         { value: ["jobmesh.io"], isDefault: false },
     ]);
     expect(settingsView(null).fields.exclude_publishers).toEqual({ value: [], isDefault: true });
-});
-
-test("the Gmail alert senders come from config.json's runtime settings, with their default, when no source is set", () => {
-    expect(gmailSettings({ gmail: { alert_senders: ["alerts@example.com"] } }).alert_senders).toEqual(["alerts@example.com"]);
-    expect(gmailSettings({}).alert_senders.length).toBeGreaterThan(0);
 });
 
 test("description boosts show as rows when stored, and as an empty default otherwise", () => {

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "vitest";
-import { openOrNull, seal } from "../src/gmail/seal.js";
+import { openOrNull, seal } from "../src/secrets/seal.js";
 
 const KEY = randomBytes(32);
 

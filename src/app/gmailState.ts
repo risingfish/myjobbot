@@ -1,6 +1,6 @@
-import type { GmailStore } from "../db/store.js";
+import type { GmailStore } from "../db/gmailStore.js";
 import { alertsUsability, gmailConnected } from "../gmail/alertJobs/usable.js";
-import type { SecretKeyStatus } from "../gmail/secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 
 export interface GmailState {
     usable: true | string;

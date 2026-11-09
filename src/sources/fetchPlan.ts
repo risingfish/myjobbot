@@ -32,7 +32,7 @@ export function fetchPlan(saved: SavedSource, facts: FetchFacts): FetchPlan {
     if (!params.success) return { skip: "invalid fields" };
     if (!module.requires.every((requirement) => facts.met[requirement])) return { skip: "not set up" };
     if (module.limits.refresh === "jsearch_refresh_hours" && !isDue(saved, facts)) return { skip: "not due" };
-    if (module.requires.includes("jsearch_key") && facts.requestsLeft < 1) return { skip: "budget used" };
+    if (module.limits.skipWhenBudgetUsed && facts.requestsLeft < 1) return { skip: "budget used" };
     return { module, params: params.data, cursor: cursorOf(saved.cursor) };
 }
 

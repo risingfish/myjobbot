@@ -6,7 +6,9 @@ import type { SoughtJob } from "../careers/session.js";
 import type { PostingStore } from "../db/postingStore.js";
 import type { AppConfig } from "../config/load.js";
 import type { RescoreEnd } from "../db/rescoreLogStore.js";
-import type { JobKey, JobRow, JobStore, JobViews } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { JobRow, JobStore } from "../db/jobStore.js";
+import type { JobViews } from "../db/jobViews.js";
 import { describeError } from "../errors.js";
 import { FILTER_NOTES } from "../jobs/filterMatch.js";
 import type { RescoreLog } from "./log.js";
@@ -15,9 +17,9 @@ import { scoreOne } from "./session.js";
 
 export interface RescoreDeps {
     config: AppConfig;
-    store: JobStore;
-    postings: PostingStore;
-    views: JobViews;
+    store: Pick<JobStore, "findJob" | "recordVerdict">;
+    postings: Pick<PostingStore, "earliestSeen" | "flagInjection">;
+    views: Pick<JobViews, "clearScore">;
     chat: ChatFn;
     trace: Trace;
     runId: string;

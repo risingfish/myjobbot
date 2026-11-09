@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { HttpClient } from "../src/http/client.js";
-import { parseBoardLink } from "../src/sources/boardLink.js";
+import { parseBoardLink } from "../src/sources/boardLinks.js";
 import { jsearch } from "../src/sources/modules/jsearch.js";
 import { readAll } from "./helpers/readAll.js";
 import { moduleFor } from "../src/sources/registry.js";

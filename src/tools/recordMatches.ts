@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { JobStore } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
+import { isAlertJob } from "../gmail/alertStore.js";
 import type { ToolContext } from "./context.js";
 import { defineTool, type Tool } from "./tool.js";
 
@@ -44,5 +45,5 @@ async function record(context: RecordContext, verdicts: Array<z.infer<typeof ver
 /** Adds a note to the gaps of a Gmail alert job scored without a description, so its reasoning says what it was scored on. */
 async function withAlertNote(context: RecordContext, entry: z.infer<typeof verdict>): Promise<string[]> {
     const job = await context.store.findJob(entry.job_id);
-    return job?.ats === "linkedin" && job.description === null ? [...entry.gaps, ALERT_ONLY] : entry.gaps;
+    return job !== null && isAlertJob(job) && job.description === null ? [...entry.gaps, ALERT_ONLY] : entry.gaps;
 }

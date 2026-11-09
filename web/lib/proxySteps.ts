@@ -5,7 +5,7 @@ import { newToken, tokenDigest } from "../../src/accounts/tokens.js";
 import type { Session } from "../../src/db/sessionStore.js";
 import type { CsrfDecision } from "../../src/web/security/csrf.js";
 import type { GateDecision, GateRequest } from "../../src/web/security/gate.js";
-import type { WebSettings } from "./authDeps.js";
+import type { WebSettings } from "./webSettings.js";
 import { openedStores } from "./database.js";
 
 const logged = globalThis as typeof globalThis & { __myjobbotBaseUrlLogged?: boolean };

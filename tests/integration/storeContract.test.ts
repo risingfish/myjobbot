@@ -10,7 +10,7 @@ import { userDataStrictCases } from "../helpers/userDataContract.js";
 import { userJobStrictCases } from "../helpers/userJobContract.js";
 import { keyStrictCases } from "../helpers/keyContract.js";
 import { methodStrictCases } from "../helpers/methodContract.js";
-import { tokenStrictCases } from "../helpers/tokenContract.js";
+import { emailLinkStrictCases } from "../helpers/emailLinkContract.js";
 import { alertJobContract } from "../helpers/alertJobContract.js";
 import { appliedContract } from "../helpers/appliedContract.js";
 import { careersStoreContract } from "../helpers/careersStoreContract.js";
@@ -49,10 +49,17 @@ storeContract(emptyStores);
 accountStrictCases(emptyStores);
 methodStrictCases(emptyStores);
 authenticatorStrictCases(emptyStores);
-const twoUsers = { seedUsers: async (ids: number[]) => void (await db.insertInto("users").values(ids.map((id) => ({ id, name: `user ${id}`, created_at: "2026-11-08T00:00:00.000Z" }))).onDuplicateKeyUpdate({ name: (eb) => eb.ref("name") }).execute()) };
+const twoUsers = {
+    seedUsers: async (ids: number[]) =>
+        void (await db
+            .insertInto("users")
+            .values(ids.map((id) => ({ id, name: `user ${id}`, created_at: "2026-11-08T00:00:00.000Z" })))
+            .onDuplicateKeyUpdate({ name: (eb) => eb.ref("name") })
+            .execute()),
+};
 userJobStrictCases(emptyStores, twoUsers);
 userDataStrictCases(emptyStores, twoUsers);
-tokenStrictCases(emptyStores);
+emailLinkStrictCases(emptyStores);
 keyStrictCases(emptyStores);
 gmailStoreContract(emptyStores);
 alertStoreContract(emptyStores);

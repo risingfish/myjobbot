@@ -22,14 +22,6 @@ export interface Device {
 
 export type NewSession = Omit<Session, "endedAt">;
 
-export type AttemptKind = "signin_fail" | "mail_request" | "code_attempt";
-
-export interface AttemptKey {
-    kind: AttemptKind;
-    scope: "email" | "address";
-    keyDigest: string;
-}
-
 export interface SessionStore {
     create(session: NewSession): Promise<void>;
     find(idDigest: string, now: string): Promise<Session | null>;
@@ -38,8 +30,6 @@ export interface SessionStore {
     endAllFor(userId: number, now: string, exceptDigest?: string): Promise<void>;
     rebindCsrf(idDigest: string, csrfDigest: string): Promise<void>;
     pruneEnded(now: string): Promise<void>;
-    recordAttempt(key: AttemptKey, at: string): Promise<void>;
-    countAttempts(key: AttemptKey, since: string): Promise<number>;
     setVerified(idDigest: string, now: string): Promise<void>;
     activeFor(userId: number, now: string): Promise<Session[]>;
 }

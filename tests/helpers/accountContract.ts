@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./memoryStore.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
@@ -29,8 +29,8 @@ async function foundByKey({ accounts }: TestStores): Promise<void> {
     await accounts.initOwner(LOGIN, NOW);
     expect((await accounts.byEmailKey("owner@example.com"))?.id).toBe(OWNER_ID);
     expect(await accounts.byEmailKey("Owner@Example.com")).toBeNull();
-    expect(await accounts.isAdmin(OWNER_ID)).toBe(true);
-    expect([await accounts.account(99), await accounts.isAdmin(99)]).toEqual([null, false]);
+    expect((await accounts.account(OWNER_ID))?.isAdmin).toBe(true);
+    expect(await accounts.account(99)).toBeNull();
 }
 
 const LATER = "2026-11-06T11:00:00.000Z";
@@ -38,7 +38,7 @@ const ADA = { email: "Ada@Example.com", emailKey: "ada@example.com", name: "Ada 
 
 async function codedOwner(stores: TestStores, ...codes: string[]): Promise<void> {
     await stores.accounts.initOwner(LOGIN, NOW);
-    for (const code of codes) await stores.tokens.makeCode(code, OWNER_ID, NOW);
+    for (const code of codes) await stores.accountCodes.makeCode(code, OWNER_ID, NOW);
 }
 
 async function createdOnceWithAFreshCode(stores: TestStores): Promise<void> {
@@ -83,11 +83,21 @@ async function renamed(stores: TestStores): Promise<void> {
 
 async function eventsListed(stores: TestStores): Promise<void> {
     await stores.accounts.initOwner(LOGIN, NOW);
-    for (let minute = 0; minute < 22; minute += 1) await stores.accounts.recordEvent({ userId: OWNER_ID, at: `2026-11-06T10:${String(minute).padStart(2, "0")}:00.000Z`, address: minute === 0 ? null : "direct", event: "signed_in", method: "password" });
-    const recent = await stores.accounts.recentEvents(OWNER_ID, 20);
+    for (let minute = 0; minute < 22; minute += 1) await stores.events.record({ userId: OWNER_ID, at: `2026-11-06T10:${String(minute).padStart(2, "0")}:00.000Z`, address: minute === 0 ? null : "direct", event: "signed_in", method: "password" });
+    const recent = await stores.events.recent(OWNER_ID, 20);
     expect(recent).toHaveLength(20);
     expect([recent[0]?.at, recent[19]?.at]).toEqual(["2026-11-06T10:21:00.000Z", "2026-11-06T10:02:00.000Z"]);
     expect(recent[0]).toEqual({ userId: OWNER_ID, at: "2026-11-06T10:21:00.000Z", address: "direct", event: "signed_in", method: "password" });
+}
+
+async function emailChangedUnlessTaken({ accounts, accountCodes }: TestStores): Promise<void> {
+    await accounts.initOwner({ email: "o@example.com", emailKey: "o@example.com", passwordDigest: "d" }, NOW);
+    await accountCodes.makeCode("c", OWNER_ID, NOW);
+    await accounts.createAccount({ email: "ada@example.com", emailKey: "ada@example.com", name: "Ada", passwordDigest: "d" }, "c", NOW);
+    expect(await accounts.changeEmail(OWNER_ID, "Zac@Example.com", "zac@example.com")).toBe("ok");
+    expect((await accounts.account(OWNER_ID))?.email).toBe("Zac@Example.com");
+    expect((await accounts.byEmailKey("zac@example.com"))?.id).toBe(OWNER_ID);
+    expect(await accounts.changeEmail(OWNER_ID, "ADA@example.com", "ada@example.com")).toBe("taken");
 }
 
 export function accountContract(makeStores: MakeStores): void {
@@ -97,6 +107,7 @@ export function accountContract(makeStores: MakeStores): void {
     test("an account is found by its normalised email key alone, and only its own admin mark counts", withStores(makeStores, foundByKey));
     test("an account is made with an unspent code and a free email, spending the code; a spent or unknown code is refused and a taken email leaves the code unspent", withStores(makeStores, createdOnceWithAFreshCode));
     test("accounts are listed with their admin marks, and the last admin's mark can't be removed, by anyone", withStores(makeStores, lastAdminKept));
+    test("an email changes to a free address and is refused when another account holds it", withStores(makeStores, emailChangedUnlessTaken));
 }
 
 export function accountStrictCases(makeStores: MakeStores): void {

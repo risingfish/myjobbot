@@ -1,5 +1,6 @@
+import type { LookupCareers } from "../careers/lookUpJob.js";
 import type { Trace, TraceEvent } from "../agent/trace.js";
-import type { AuditEntry, CareersStore } from "../db/careersStore.js";
+import type { AuditEntry } from "../db/careersStore.js";
 import { parseStep, type Step } from "./steps.js";
 
 type StepLog = { step(entry: Step): void };
@@ -30,7 +31,7 @@ export function stepsFromTrace(trace: Trace, log: StepLog): Trace {
 }
 
 /** Wraps the careers store so each audit row the lookup writes is also logged as a step. */
-export function loggedCareers(store: CareersStore, log: StepLog): CareersStore {
+export function loggedCareers(store: LookupCareers, log: StepLog): LookupCareers {
     return {
         careersPage: (companyKey) => store.careersPage(companyKey),
         setLookupPage: (page, at) => store.setLookupPage(page, at),
@@ -40,10 +41,6 @@ export function loggedCareers(store: CareersStore, log: StepLog): CareersStore {
             const step = stepFromAudit(entry);
             if (step !== null) log.step(step);
         },
-        attempted: (keys) => store.attempted(keys),
-        retries: () => store.retries(),
-        pruneAuditBefore: (cutoff) => store.pruneAuditBefore(cutoff),
-        descriptionFoundAt: (key) => store.descriptionFoundAt(key),
     };
 }
 

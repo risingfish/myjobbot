@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
-import { fetchJsearch, jsearch } from "../src/sources/modules/jsearch.js";
+import type { JsonGetter } from "../src/http/client.js";
+import type { Job } from "../src/jobs/job.js";
+import { jsearch } from "../src/sources/modules/jsearch.js";
 import { TEST_SEARCH, testAppSettings } from "./helpers/config.js";
 import { loadFixture } from "./helpers/fixtures.js";
 import { routedHttp } from "./helpers/http.js";
@@ -10,6 +12,12 @@ const HOST = "api.openwebninja.com";
 function request(overrides: object = {}) {
     const { name: _name, ...params } = TEST_SEARCH;
     return { search: jsearch.params.parse({ ...params, ...overrides }), settings: testAppSettings().jsearch, apiKey: "secret-key" };
+}
+
+async function fetchJsearch(given: ReturnType<typeof request>, http: JsonGetter): Promise<Job[]> {
+    const pages = jsearch.fetch(given.search, { http: { ...http, postJson: () => Promise.reject(new Error("no POST")) }, sourceName: "search", access: { apiKey: given.apiKey, settings: given.settings } }, null);
+    for await (const page of pages) return page.jobs;
+    return [];
 }
 
 test("fetchJsearch requests the search with the API key header", async () => {

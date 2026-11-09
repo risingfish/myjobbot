@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import type { AppConfig } from "../config/load.js";
-import type { JobKey, JobRow } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { JobRow } from "../db/jobStore.js";
 import type { UserStores } from "../db/userStores.js";
 import { jobDetails } from "../tools/getJobDetails.js";
 import { asScoredDates, buildCase, profileOf } from "./capture.js";
@@ -16,7 +17,7 @@ const MAX_RECENT = 200;
 
 export interface CaptureDeps {
     stores: Pick<UserStores, "userId" | "jobStore" | "jobViews" | "careers" | "postings">;
-    files: EvalFiles;
+    files: Pick<EvalFiles, "hasCase" | "writeProfile" | "writeCase">;
     port: FilePort;
     config: AppConfig;
     now: () => Date;

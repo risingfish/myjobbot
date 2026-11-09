@@ -1,10 +1,12 @@
+import { checkBrowserLan } from "../../src/careers/lanCheck.js";
+import { fakeImap } from "./fakeImap.js";
 import { dataMarkers } from "../../src/agent/markers.js";
 import { PageRenderer } from "../../src/careers/renderState.js";
 import type { JsonGetter } from "../../src/http/client.js";
 import { sourceHttp } from "../../src/sources/sourceHttp.js";
 import { newRunState, type ToolContext } from "../../src/tools/context.js";
 import { testAppSettings } from "./config.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import { publicDns } from "./fakeDns.js";
 import { savedSources, STRIPE_BOARD } from "./savedSources.js";
 import { memoryStores, type TestStores } from "./memoryStore.js";
@@ -28,7 +30,7 @@ export function testContext(overrides: Partial<ToolContext> = {}, stores: TestSt
         now: () => TEST_NOW,
         jobLog: memoryTrace(),
         jsearchApiKey: "test-jsearch-key",
-        gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, usable: "Gmail not connected", connected: false },
+        gmail: { store: stores.gmail, alerts: stores.alerts, key: { status: "missing" }, imap: fakeImap().factory, usable: "Gmail not connected", connected: false },
         trace: memoryTrace(),
         chat: () => Promise.reject(new Error("unexpected LLM call in test")),
         careers: { store: stores.careers, searxngUrl: null, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), pages: { getText: () => Promise.reject(new Error("unexpected page fetch in test")) }, boards: { getJson: () => Promise.reject(new Error("unexpected board request in test")), postJson: () => Promise.reject(new Error("unexpected board request in test")) }, renderer: offRenderer(stores) },
@@ -52,7 +54,8 @@ function testSources(http: JsonGetter) {
 }
 
 function offRenderer(stores: TestStores): PageRenderer {
-    return new PageRenderer({ connect: null, settings: testAppSettings().careers_lookup, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW });
+    const settings = testAppSettings().careers_lookup;
+    return new PageRenderer({ connect: null, settings, lookup: () => Promise.reject(new Error("unexpected DNS lookup in test")), checkLan: checkBrowserLan({ settings, careers: stores.careers, trace: memoryTrace(), runId: "test-run", now: () => TEST_NOW }), now: () => TEST_NOW });
 }
 
 export function doneContext(): ToolContext {

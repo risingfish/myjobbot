@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "vitest";
 import { scoreCase } from "../src/evals/session.js";
 import { testAppConfig } from "./helpers/config.js";
@@ -9,7 +10,7 @@ import { usageChat } from "./helpers/usageChat.js";
 const record = (job_id: string) => toolCallReply("record_matches", { verdicts: [{ job_id, base: 40, bonus: 32, reasons: ["stack"], gaps: ["kafka"] }] });
 
 function run(caseFile: Record<string, unknown>, chat: ReturnType<typeof usageChat>) {
-    return scoreCase(parsed("case", caseFile), parsed("profile", profile()), { config: testAppConfig(), makeChat: chat.makeChat, trace: memoryTrace() });
+    return scoreCase(parsed("case", caseFile), parsed("profile", profile()), { config: testAppConfig(), makeChat: chat.makeChat, trace: memoryTrace(), clock: Date.now, markerTag: randomUUID });
 }
 
 test("a model that reads the job and saves a score gives its parts, reasons and gaps, having read the frozen job inside fresh markers", async () => {

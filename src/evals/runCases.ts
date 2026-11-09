@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import type { ChatFn } from "../agent/llm.js";
 import type { Trace, TraceEvent } from "../agent/trace.js";
 import type { AppConfig } from "../config/load.js";
-import { RESUME_VIEWS, type ResumeView } from "../config/schema.js";
+import { READS_PROFILE, RESUME_VIEWS, type ResumeView } from "../config/schema.js";
 import type { AnswerKey, EvalCase, Profile, Result, Run } from "./format.js";
 import type { EvalFiles, Named } from "./files.js";
 import { contentId, runId } from "./ids.js";
@@ -12,7 +12,7 @@ import { promptFor, scoreCase } from "./session.js";
 import type { ExperimentFiles } from "./experimentFiles.js";
 import { loadVariant } from "./variantCheck.js";
 
-const USAGE = "usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name] [--variant name] [--view resume|resume_and_profile|profile]";
+const USAGE = `usage: myjobbot eval run [--tag t]... [--case id]... [--repeats N] [--model name] [--variant name] [--view ${RESUME_VIEWS.join("|")}]`;
 const MAX_REPEATS = 20;
 
 export interface RunDeps {
@@ -24,6 +24,8 @@ export interface RunDeps {
     random: () => number;
     gitCommit: () => string | null;
     print: (line: string) => void;
+    userId: number;
+    uuid: () => string;
 }
 
 interface Selection {
@@ -87,7 +89,7 @@ export async function executeRun(options: RunOptions, given: RunDeps): Promise<{
 
 /** Says why a view that reads the resume profile can't run, naming the first case whose profile was captured without one, or null when it can. */
 function viewRefusal(selection: Selection, view: ResumeView): string | null {
-    if (view === "resume") return null;
+    if (!READS_PROFILE[view]) return null;
     const missing = selection.cases.find((each) => selection.profiles.get(each.value.profile)?.resumeProfile === undefined);
     return missing === undefined ? null : `refused view ${view}: case ${missing.id} was captured without a resume profile`;
 }
@@ -138,7 +140,7 @@ async function started({ deps, selection, prompt: chosen }: Starting, options: {
         await deps.files.writePrompt(prompts[id], prompt);
     }
     const now = deps.now();
-    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted, view: options.view };
+    const run: Run = { schema: 1, id: runId(now, deps.random), model: options.model, prompts, repeats: options.repeats, cases: selection.cases.map((each) => each.id), tags: options.tags, gitCommit: deps.gitCommit(), startedAt: now.toISOString(), endedAt: null, variant: chosen.variant, promptChanged: chosen.drifted, view: options.view, userId: deps.userId };
     await deps.files.writeRun(run);
     return run;
 }
@@ -162,7 +164,7 @@ async function attempts(running: Running): Promise<Result[]> {
 async function oneAttempt({ deps, run, selection, makeChat, template }: Running, each: Named<EvalCase>, attempt: number): Promise<Result> {
     const profile = selection.profiles.get(each.value.profile) as Profile;
     const events: TraceEvent[] = [];
-    const scored = await scoreCase(each.value, profile, { config: deps.config, makeChat, template, trace: { write: (event) => void events.push(event) } });
+    const scored = await scoreCase(each.value, profile, { config: deps.config, makeChat, template, trace: { write: (event) => void events.push(event) }, clock: () => deps.now().getTime(), markerTag: deps.uuid });
     const passed = judge(selection.keys.get(each.id) ?? null, scored, profile.matchThreshold);
     const result: Result = { schema: 1, case: each.id, attempt, ...scored, passed };
     await deps.files.appendResult(run.id, result);

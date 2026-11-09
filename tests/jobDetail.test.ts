@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import type { Verdict, VerdictView } from "../src/db/store.js";
+import type { Verdict } from "../src/db/jobStore.js";
+import type { VerdictView } from "../src/db/jobViews.js";
 import { makeJob } from "../src/jobs/job.js";
 import { toJobDetailView } from "../src/web/jobDetail.js";
 import { rowContext } from "../src/web/pageData.js";

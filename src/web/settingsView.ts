@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { bodyFilterTerms, RESUME_VIEWS, settingsSchema, titleFilterTerms, type ResumeView, type Settings } from "../config/schema.js";
-import { isRawObject, sanitizeSearchSettings, splitSettings } from "../config/searchSettings.js";
+import { bodyFilterTerms, RESUME_VIEWS, settingsSchema, titleFilterTerms, type ResumeView } from "../config/schema.js";
+import { isRawObject, sanitizeSearchSettings } from "../config/searchSettings.js";
 import type { RawSearchSettings } from "../db/searchSettingsStore.js";
-import { SECTIONS, type FieldName } from "./settingsSections.js";
+import { SECTIONS, type FieldName, type FieldSpec } from "./settingsSections.js";
 
 interface FieldValues {
     preferences: string;
@@ -70,48 +70,18 @@ export function settingsView(stored: RawSearchSettings | null): SettingsView {
     return { fields: shownFields(settings) };
 }
 
-/** Reads config.json's Gmail settings from its runtime part alone, so they can be used before any search settings are stored. */
-export function gmailSettings(fileRaw: unknown): z.infer<typeof settingsSchema.shape.gmail> {
-    return settingsSchema.shape.gmail.parse(runtimePart(fileRaw, "gmail"));
-}
-
-/** Reads config.json's HTTP and JSearch settings from its runtime part alone, so the Sources section works before any search settings are stored. */
-export function sourceSettings(fileRaw: unknown): Pick<Settings, "http" | "jsearch"> {
-    return { http: settingsSchema.shape.http.parse(runtimePart(fileRaw, "http")), jsearch: settingsSchema.shape.jsearch.parse(runtimePart(fileRaw, "jsearch")) };
-}
-
-/** Picks one key of config.json's runtime part, or undefined so its defaults apply. */
-function runtimePart(fileRaw: unknown, key: string): unknown {
-    const { runtime } = splitSettings(fileRaw);
-    return isRawObject(runtime) ? runtime[key] : undefined;
-}
-
-/** Shows each field of the sanitized settings. */
+/** Shows each field of the sanitized settings, one for every field the sections list. */
 function shownFields(settings: RawSearchSettings): SettingsFields {
-    return {
-        preferences: shownField("preferences", settings),
-        match_threshold: shownField("match_threshold", settings),
-        resume_view: shownField("resume_view", settings),
-        title_boosts: shownField("title_boosts", settings),
-        description_boosts: shownField("description_boosts", settings),
-        include: shownField("include", settings),
-        exclude: shownField("exclude", settings),
-        extra_exclude: shownField("extra_exclude", settings),
-        body_include: shownField("body_include", settings),
-        body_exclude: shownField("body_exclude", settings),
-        exclude_companies: shownField("exclude_companies", settings),
-        exclude_publishers: shownField("exclude_publishers", settings),
-    };
+    return Object.fromEntries(SECTIONS.map((spec) => [spec.name, shownField(spec, settings)])) as SettingsFields;
 }
 
 /** Shows one field: its stored value, or its default when it isn't stored. */
-function shownField<K extends FieldName>(name: K, settings: RawSearchSettings): FieldView<FieldValues[K]> {
-    const stored = storedValue(settings, name);
-    return { value: SHOWN[name].parse(stored ?? DEFAULTS[name]()), isDefault: stored === undefined };
+function shownField<K extends FieldName>(spec: FieldSpec & { name: K }, settings: RawSearchSettings): FieldView<FieldValues[K]> {
+    const stored = storedValue(settings, spec);
+    return { value: SHOWN[spec.name].parse(stored ?? DEFAULTS[spec.name]()), isDefault: stored === undefined };
 }
 
 /** Finds a field's value in a settings document by the field's stored path. */
-function storedValue(settings: RawSearchSettings, name: FieldName): unknown {
-    const path = SECTIONS.find((field) => field.name === name)?.stored ?? [];
-    return path.reduce<unknown>((value, key) => (isRawObject(value) ? value[key] : undefined), settings);
+function storedValue(settings: RawSearchSettings, spec: FieldSpec): unknown {
+    return spec.stored.reduce<unknown>((value, key) => (isRawObject(value) ? value[key] : undefined), settings);
 }

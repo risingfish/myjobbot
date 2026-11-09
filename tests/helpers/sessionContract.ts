@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./memoryStore.js";
-import { OWNER_ID } from "../../src/db/searchSettingsStore.js";
-import type { AttemptKey } from "../../src/db/sessionStore.js";
+import { OWNER_ID } from "../../src/db/owner.js";
 import type { MakeStores } from "./storeContract.js";
 
 const NOW = "2026-11-06T10:00:00.000Z";
@@ -48,17 +47,6 @@ async function csrfRebound({ sessions }: TestStores): Promise<void> {
     expect((await sessions.find("a", NOW))?.csrfDigest).toBe("fresh");
 }
 
-async function attemptsCountedWithinADay({ sessions }: TestStores): Promise<void> {
-    const key: AttemptKey = { kind: "signin_fail", scope: "email", keyDigest: "k" };
-    await sessions.recordAttempt(key, "2026-11-04T10:00:00.000Z");
-    await sessions.recordAttempt(key, "2026-11-06T09:50:00.000Z");
-    await sessions.recordAttempt({ ...key, scope: "address" }, "2026-11-06T09:55:00.000Z");
-    await sessions.recordAttempt(key, NOW);
-    expect(await sessions.countAttempts(key, "2026-11-06T09:45:00.000Z")).toBe(2);
-    expect(await sessions.countAttempts(key, "2026-11-01T00:00:00.000Z")).toBe(2);
-    expect(await sessions.countAttempts({ ...key, kind: "mail_request" }, "2026-11-01T00:00:00.000Z")).toBe(0);
-}
-
 async function oldSessionsPruned({ sessions }: TestStores): Promise<void> {
     await sessions.create(session("ended-long-ago", "2026-09-01T00:00:00.000Z"));
     await sessions.end("ended-long-ago", "2026-09-02T00:00:00.000Z");
@@ -97,6 +85,5 @@ export function sessionContract(makeStores: MakeStores): void {
     test("a sign-in is found until it is ended or goes 30 days unused, and using it keeps it alive", withStores(makeStores, foundUntilExpiredOrEnded));
     test("one sign-in ends alone, and ending all of an account's sign-ins can spare one", withStores(makeStores, endedOneOrAll));
     test("a sign-in can be tied to a new forgery cookie", withStores(makeStores, csrfRebound));
-    test("attempts are counted per kind, scope and key since a time, and those over a day old are dropped", withStores(makeStores, attemptsCountedWithinADay));
     test("pruning drops sign-ins that ended or expired long ago and keeps live ones", withStores(makeStores, oldSessionsPruned));
 }

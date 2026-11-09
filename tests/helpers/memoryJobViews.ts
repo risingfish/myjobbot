@@ -1,6 +1,7 @@
 import { jobDetailSchema, jobViewSchema, verdictViewSchema } from "../../src/db/rows.js";
 import type { RescoreRun, StoredStep } from "../../src/db/rescoreLogStore.js";
-import type { AppliedChange, HiddenFlag, JobDetailRow, JobKey, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../../src/db/store.js";
+import type { AppliedChange, HiddenFlag, JobDetailRow, JobView, JobViews, Page, ScoreFilter, VerdictView } from "../../src/db/jobViews.js";
+import type { JobKey } from "../../src/db/store.js";
 
 export type Row = Record<string, string | number | null>;
 

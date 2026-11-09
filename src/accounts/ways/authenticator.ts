@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { openOrNull, seal } from "../../gmail/seal.js";
+import { openOrNull, seal } from "../../secrets/seal.js";
 import { MESSAGES } from "../messages.js";
 import { checkCode, newAuthenticator } from "../totp.js";
 import type { Actor, AuthContext, Refused } from "../flows/context.js";

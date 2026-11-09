@@ -13,7 +13,7 @@ export interface PasswordTry {
 
 /** Says whether an email or address has reached a limit's failures within its window. */
 async function reached(ctx: AuthContext, limit: Limit, value: string): Promise<boolean> {
-    return (await ctx.stores.sessions.countAttempts(attemptKey(limit, value), windowStart(limit, ctx.now()))) >= limit.max;
+    return (await ctx.stores.attempts.countAttempts(attemptKey(limit, value), windowStart(limit, ctx.now()))) >= limit.max;
 }
 
 /** Says whether sign-in is locked for this email or address by too many recent failures. */
@@ -25,12 +25,12 @@ export async function signInLocked(ctx: AuthContext, attempt: PasswordTry): Prom
 export async function recordFailure(ctx: AuthContext, attempt: PasswordTry): Promise<void> {
     const at = ctx.now();
     const emailLimit = limitFor("signinEmail");
-    await ctx.stores.sessions.recordAttempt(attemptKey(emailLimit, attempt.emailKey), at);
-    await ctx.stores.sessions.recordAttempt(attemptKey(limitFor("signinAddress"), attempt.address), at);
+    await ctx.stores.attempts.recordAttempt(attemptKey(emailLimit, attempt.emailKey), at);
+    await ctx.stores.attempts.recordAttempt(attemptKey(limitFor("signinAddress"), attempt.address), at);
     if (attempt.account === null) return;
     const event = { userId: attempt.account.id, at, address: attempt.address, method: attempt.method ?? "password" };
     await recordSecurityEvent(ctx, { ...event, event: "signin_failed" });
-    const count = await ctx.stores.sessions.countAttempts(attemptKey(emailLimit, attempt.emailKey), windowStart(emailLimit, at));
+    const count = await ctx.stores.attempts.countAttempts(attemptKey(emailLimit, attempt.emailKey), windowStart(emailLimit, at));
     if (count === emailLimit.max) await recordSecurityEvent(ctx, { ...event, event: "locked" });
 }
 

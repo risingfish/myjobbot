@@ -3,10 +3,10 @@ import { REFRESH_GRACE_HOURS } from "../config/schema.js";
 import type { PlannedSource } from "../db/sourcePlans.js";
 import type { NewSource, SavedSource } from "../db/sourceStore.js";
 import { ALERTS_SOURCE } from "../gmail/alertJobs/source.js";
-import type { SourceModule } from "../sources/module.js";
+import type { Met, SourceModule } from "../sources/module.js";
 import { moduleFor } from "../sources/registry.js";
 import type { Problem } from "./settingsProblems.js";
-import { unmetNeed, type Met } from "./sourceChoices.js";
+import { unmetNeed } from "./sourceChoices.js";
 import { fieldParams, NAME_FIELD, type SourceDraft } from "./sourceForm.js";
 
 export interface SearchLimits {

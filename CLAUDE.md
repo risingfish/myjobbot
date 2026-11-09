@@ -108,17 +108,19 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   password, through imapflow created with `logger: false` and mailboxes opened read-only. Runs read
   LinkedIn alert emails into jobs (feature 007): the pure logic is in `src/gmail/alertJobs/`, only
   each email's HTML part is downloaded, and only job fields are stored, never email text. The app
-  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/gmail/seal.ts`) before it reaches the
+  password is sealed with `MYJOBBOT_SECRET_KEY` (`src/secrets/seal.ts`) before it reaches the
   database. Every IMAP call goes through `guarded()`, so only a fixed error code ever leaves it.
   Never print `.env`, sealed columns or app passwords.
 - The careers lookup lives in `src/careers/` (feature 008) and knows nothing about alerts; only
-  `src/tools/careersStep.ts` decides which jobs use it, and the fetch phase calls it after reading
-  the Gmail alerts source. Pages reach the model only through
+  `src/tools/careersStep.ts` decides which jobs use it (sources whose module declares
+  `descriptions: "careers_lookup"`), and the Gmail alerts run hook (`src/sources/hooks/gmailAlerts.ts`)
+  calls it after reading the alerts. Pages reach the model only through
   `trimPage`, with numbered links (the model never types an address), addresses must be public
   `http(s)` and are checked again on every redirect (`fetchPage.ts`), and `careers_audit` holds
   addresses and sizes only, never page text. Check compose changes with `docker compose config
   --quiet`; plain `docker compose config` prints `.env`. Pages are read in order (feature 010,
-  `readPage.ts`): a job board's own data (`src/sources/boardLink.ts`, then the module's `postings`
+  `readPage.ts`): a job board's own data (each board module's `boardLink` reader, through `parseBoardLink` in
+  `src/sources/boardLinks.ts`, which asks `BOARD_MODULES`; then the module's `postings`
   through `src/careers/boardPages.ts`; a downloaded careers page that names exactly one board only
   in its HTML is read from it too, `embeddedBoard.ts`),
   then the download, then rendering in the owner's Playwright browser when the download is
@@ -160,8 +162,13 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `user_sources` written only through `SourceStore`, and every job points at its source
   (`user_jobs.source_id`). A module makes requests only through the `SourceHttp` it is given (built by
   `sourceHttp`, address-checked), stores nothing itself, and fails with fixed reasons
-  (`failureReason`), never answer text. The fetch phase (`src/sources/fetchPhase.ts`) fetches every
-  source that is on before the agent, and shared code (`ingest.ts`) stores the pages; the model only
+  (`failureReason`; a module's own failures extend `SourceFailure` with their reason), never answer
+  text. A module declares what it needs and does as data: its `access` type (supplied by its run
+  hook in `src/sources/runHooks.ts`, or by test-on-save), what its pages' cost is spent against
+  (`limits.spends`), whether the budget skips it (`limits.skipWhenBudgetUsed`), and where its
+  descriptions come from (`descriptions`). The fetch phase (`src/sources/fetchPhase.ts`) fetches every
+  source that is on before the agent, calling each module's run hook generically and knowing nothing
+  of Gmail, and shared code (`ingest.ts`) stores the pages; the model only
   scores, through `next_jobs`. Rules across sources (names, duplicates, the JSearch budget) are plain
   functions in `src/web/sourceRules.ts`; a test on save (`testFetch.ts`) stores no jobs. Scraping
   (kind `web`) isn't a module yet.
@@ -186,7 +193,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   (owner decision, 2026-11-03).
 - Re-score (feature 018) lives in `src/rescore/`, knows nothing about Next.js, and has two entry
   points: `npm start -- rescore <ats> <job_id>` and the panel's `startRescore` server action
-  (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rows.ts`, input checked before any
+  (`web/lib/actions.ts`, work in `startRescoreFor` in `web/lib/rescoreStart.ts`, input checked before any
   model call), which records the run, hands the work to `after()` and answers with the run's id. A filtered job loses its score through `JobViews.clearScore`, which keeps the marks
   and verdict history; a job with no description is looked up first, with the careers lookup built
   from `CareersParts` (`src/careers/deps.ts`) and capped at 2 minutes. Scoring is a one-job
@@ -204,7 +211,8 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   that doesn't parse is never shown. A job has one open run at a time (`begin` locks the job row);
   a run not ended within 10 minutes counts as failed (`openSince`, `runEnd`). The panel follows a
   run over server-sent events from `web/app/api/rescores/[id]/route.ts` (`streamEvents` in
-  `src/web/rescoreStream.ts`, polling the stored log, a named `ping` heartbeat), shown by
+  `src/web/rescoreStream.ts`; `follow` in `src/web/rescoreFollow.ts` polls the stored log and sends
+  a named `ping` heartbeat, with its timers and clock handed in by the route), shown by
   `RescoreTerminal` (`useRescoreLog`, `useRescoreTerminal`); History merges verdicts and runs in
   `historyRows` (`src/web/history.ts`), each re-score with its Log.
 - Evals (feature 020) live in `src/evals/` and know nothing about Next.js. Their data is JSON files
@@ -256,12 +264,14 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   `--view` (series `<label>=<variant|code>[+view][@model]`), never the stored setting. The resume
   and profile are shown as text only and never logged.
 
-- Accounts (feature 024) live in `src/accounts/` (rules and flows, no Next.js) and six stores:
-  `AccountStore` (users with `email`, `email_key`, `is_admin`, and `security_events`),
-  `MethodStore` (each way's switch and set-up state in `sign_in_methods`, and the password),
-  `AuthenticatorStore` (the authenticator's secret and last step, same table), `TokenStore`
-  (creation codes, emailed links, recovery codes), `KeyStore` (hardware keys and challenges),
-  `SessionStore` (sessions and attempts). Each way of signing in has one module in
+- Accounts (feature 024) live in `src/accounts/` (rules and flows, no Next.js) and ten stores
+  (split by 028): `AccountStore` (users with `email`, `email_key`, `is_admin`),
+  `SecurityEventLog` (`security_events`), `MethodStore` (each way's switch and set-up state in
+  `sign_in_methods`, and the password), `AuthenticatorStore` (the authenticator's secret and last
+  step, same table), `AccountCodeStore` (creation codes), `EmailLinkStore` (emailed links; a
+  purpose's lifetime and session binding are tables beside `LINK_PURPOSES`), `RecoveryCodeStore`,
+  `KeyStore` (hardware keys and challenges), `SessionStore` (sessions) and `AttemptStore` (the
+  sign-in attempt counters). Each way of signing in has one module in
   `src/accounts/ways/` (feature 025: `password`, `emailLink`, `authenticator`, `hardwareKey`,
   `recoveryCode`); `catalog.ts` is the one list of ways (card and choice order, names, fields,
   mail rules) and is safe for client components; `registry.ts` (`PROOF_WAYS`) maps each way you
@@ -269,8 +279,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   Nothing outside the way modules, their controls and the stores compares a way's kind by name
   (`tests/wayBranches.test.ts`). A change that could leave no usable way goes through
   `changeKeepingAWay` (`src/db/kysely/wayLock.ts`, locked), whether a way is usable through
-  `wayUsable`, a new password through `newPasswordDigest`, and every signed-in server action
-  opens with `signedInAction` (`web/lib/accountAction.ts`). Their contracts
+  `wayUsable`, a new password through `newPasswordDigest`; the account and admin server actions
+  open with `signedInAction` (`web/lib/accountAction.ts`), and every other action is gated by
+  `guarded`. Their contracts
   run every case on the memory stores and only the strict (transaction, race, constraint) cases on
   MariaDB. `web/proxy.ts` gates every request through `src/web/security/` (host, origin,
   a `SameSite=Strict` forgery cookie tied to the session, the session, `private, no-store`, a
@@ -284,7 +295,7 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   security event through `recordSecurityEvent`, which queues its notice. One-time values (codes,
   links, recovery codes, key challenges, TOTP steps) are stored as digests and spent in the
   statement that checks them; passwords are Argon2id (`node:crypto`); authenticator secrets are
-  sealed with `MYJOBBOT_SECRET_KEY` (`seal.ts` field `totp_secret`). Mail goes through
+  sealed with `MYJOBBOT_SECRET_KEY` (`src/secrets/seal.ts` field `totp_secret`). Mail goes through
   `src/mail/` (nodemailer, queued, failures logged by fixed reason). Emailed links carry their
   token in the URL fragment, read once by `/link`. Device details (IP, OS, location: browser
   position rounded, else geoip-lite, kept out of the Next bundle) are stored per session. Never
@@ -313,7 +324,8 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   posting). The JSearch budget counts every user's searches. `data/resume.md` is user 1's only
   (`ownsResumeFile`). `run`, `rescore`, `eval capture` and `eval run` take `--user <email>`
   (`src/cliUser.ts`: `userOption`, `storesFor`), else user 1; captured cases record `userId`.
-  `OWNER_ID` remains only where user 1 is meant: the account and settings stores making user 1,
+  `OWNER_ID` (declared once, in `src/db/owner.ts`) remains only where user 1 is meant: the stores
+  making user 1 on an owner write (`ensureOwnerFor` in `src/db/kysely/owner.ts`),
   `ownsResumeFile`, `import-sqlite` and the `--user` default (`tests/ownerIdScan.test.ts` keeps it
   out of `web/` and `src/app/`). Tests use `withOwner`/`memoryStores` (user 1 merged in) and
   `forUser(2)` for a second user.

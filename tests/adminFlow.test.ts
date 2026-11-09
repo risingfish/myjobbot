@@ -3,7 +3,7 @@ import { makeAccountCode, setAdmin } from "../src/accounts/flows/admin.js";
 import { createAccount } from "../src/accounts/flows/createAccount.js";
 import { MESSAGES } from "../src/accounts/messages.js";
 import { tokenDigest } from "../src/accounts/tokens.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { authContext } from "./helpers/authContext.js";
 
 async function ownerAndAda() {
@@ -31,7 +31,7 @@ test("an admin grants and removes another account's mark, ending that account's 
     const { ctx, owner, adaId, adaSession, auth } = await ownerAndAda();
     expect(await setAdmin(ctx, { account: owner, session: { idDigest: "owner-session", userId: OWNER_ID, csrfDigest: "c", createdAt: "", lastUsedAt: "", verifiedAt: "", endedAt: null, address: "direct", device: { ip: null, os: null, location: null } }, address: "direct" }, { userId: adaId, admin: true })).toEqual({ ok: true, cookies: null });
     expect(await ctx.stores.sessions.find(adaSession, ctx.now())).toBeNull();
-    expect(await ctx.stores.accounts.isAdmin(adaId)).toBe(true);
+    expect((await ctx.stores.accounts.account(adaId))?.isAdmin).toBe(true);
     expect((await setAdmin(ctx, { account: owner, session: { idDigest: "owner-session", userId: OWNER_ID, csrfDigest: "c", createdAt: "", lastUsedAt: "", verifiedAt: "", endedAt: null, address: "direct", device: { ip: null, os: null, location: null } }, address: "direct" }, { userId: adaId, admin: false })).ok).toBe(true);
     expect(auth.events.filter((event) => event.userId === adaId).map((event) => event.event)).toEqual(["signed_in", "admin_granted", "admin_removed"]);
 });
@@ -44,5 +44,5 @@ test("an admin can remove their own mark while another admin remains, getting a 
     const own = await setAdmin(ctx, actor, { userId: OWNER_ID, admin: false });
     if (!own.ok || own.cookies === null) throw new Error("no new sign-in");
     expect(await ctx.stores.sessions.find(tokenDigest(own.cookies.session), ctx.now())).toMatchObject({ userId: OWNER_ID });
-    expect(await ctx.stores.accounts.isAdmin(OWNER_ID)).toBe(false);
+    expect((await ctx.stores.accounts.account(OWNER_ID))?.isAdmin).toBe(false);
 });

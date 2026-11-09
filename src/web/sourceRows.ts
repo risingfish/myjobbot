@@ -1,6 +1,7 @@
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
 import { moduleFor } from "../sources/registry.js";
-import { localTime } from "./gmailPanel.js";
+import type { Met, Requirement } from "../sources/module.js";
+import { localTime } from "./localTime.js";
 import { paramValues, type SourceChoice, type SourceDraft } from "./sourceForm.js";
 
 export interface SourceRowView {
@@ -20,12 +21,7 @@ export interface SourcesView {
     choices: SourceChoice[];
 }
 
-interface RowFacts {
-    hasSearchKey: boolean;
-    gmailConnected: boolean;
-}
-
-const NEEDS_SEARCH_KEY = "needs JSEARCH_API_KEY in .env";
+const ROW_NEEDS: Record<Requirement, string> = { jsearch_key: "needs JSEARCH_API_KEY in .env", gmail: "needs Gmail connected" };
 
 const UNAVAILABLE = "unavailable";
 
@@ -34,8 +30,8 @@ const NEEDS_FIXING = "needs fixing";
 const OUTCOME_TEXT: Record<SourceOutcome["outcome"], string> = { ok: "ok", partial: "stopped at the limit (continues next run)", failing: "failing" };
 
 /** Lists the owner's saved sources as the Settings page shows them: each one's module, whether it is on, its last fetch, and what stops it being fetched, with Gmail alerts only once Gmail is connected. */
-export function sourceRows(saved: SavedSource[], facts: RowFacts): SourceRowView[] {
-    return saved.filter((source) => facts.gmailConnected || !isAccount(source)).map((source) => sourceRow(source, facts));
+export function sourceRows(saved: SavedSource[], met: Met): SourceRowView[] {
+    return saved.filter((source) => met.gmail || !isAccount(source)).map((source) => sourceRow(source, met));
 }
 
 /** Says how many JSearch requests this month has used out of the cap, for the line above the list. */
@@ -44,9 +40,9 @@ export function searchUsage(used: number, cap: number): string {
 }
 
 /** Shows one saved source as a row. */
-function sourceRow(source: SavedSource, facts: RowFacts): SourceRowView {
+function sourceRow(source: SavedSource, met: Met): SourceRowView {
     const module = moduleFor(source.module)?.name ?? source.module;
-    return { id: source.id, name: source.name, module, on: source.enabled, note: rowNote(source, facts.hasSearchKey), last: lastFetch(source.last), account: isAccount(source), edit: editDraft(source) };
+    return { id: source.id, name: source.name, module, on: source.enabled, note: rowNote(source, met), last: lastFetch(source.last), account: isAccount(source), edit: editDraft(source) };
 }
 
 /** Gives the draft a source's Edit opens, or null for a source that can't be edited here: an account source, or one whose module is gone. */
@@ -62,11 +58,12 @@ function isAccount(source: SavedSource): boolean {
 }
 
 /** Says what stops a source being fetched, or null when nothing does. */
-function rowNote(source: SavedSource, hasSearchKey: boolean): string | null {
+function rowNote(source: SavedSource, met: Met): string | null {
     const found = moduleFor(source.module);
     if (found === null) return UNAVAILABLE;
     if (!found.params.safeParse(source.params).success) return NEEDS_FIXING;
-    return found.requires.includes("jsearch_key") && !hasSearchKey ? NEEDS_SEARCH_KEY : null;
+    const unmet = found.requires.find((need) => !met[need]);
+    return unmet === undefined ? null : ROW_NEEDS[unmet];
 }
 
 /** Describes a source's last fetch: when, how many jobs it read, and how it went, or null before its first fetch. */

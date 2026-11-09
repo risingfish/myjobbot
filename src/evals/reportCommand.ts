@@ -1,13 +1,15 @@
 import { parseArgs } from "node:util";
-import type { Result, Run } from "./format.js";
+import type { EvalCase, Result, Run } from "./format.js";
 import type { EvalFiles } from "./files.js";
 import { againstObserved, againstRun, summarize, type Context } from "./report.js";
+import { contextOf, type ContextFiles } from "./reportContext.js";
 import { reportLines } from "./reportText.js";
+import { observedNote, runsNote } from "./userNote.js";
 
 const USAGE = "usage: myjobbot eval report <run-id> [--against <run-id> | --against observed] [--reasons]";
 
 export interface ReportDeps {
-    files: EvalFiles;
+    files: ContextFiles & Pick<EvalFiles, "runs" | "results">;
     print: (line: string) => void;
 }
 
@@ -21,10 +23,10 @@ export async function reportCommand(args: string[], deps: ReportDeps): Promise<n
     if (run === undefined) return printed(deps, [`no run ${options.runId}`], 1);
     const report = summarize(run, await resultsOf(deps.files, run), context);
     if (options.against === undefined) return printed(deps, reportLines(report, null, options.reasons), 0);
-    if (options.against === "observed") return printed(deps, reportLines(report, againstObserved(report, context), options.reasons), 0);
+    if (options.against === "observed") return printed(deps, reportLines(report, againstObserved(report, context), options.reasons, observedNote(run, casesOf(run, context))), 0);
     const other = find(options.against);
     if (other === undefined) return printed(deps, [`no run ${options.against}`], 1);
-    return printed(deps, reportLines(report, againstRun(report, summarize(other, await resultsOf(deps.files, other), context)), options.reasons), 0);
+    return printed(deps, reportLines(report, againstRun(report, summarize(other, await resultsOf(deps.files, other), context)), options.reasons, runsNote(run, other)), 0);
 }
 
 /** Reads the run id and flags, or null when they don't fit the command's form. */
@@ -38,15 +40,13 @@ function readArgs(args: string[]) {
     }
 }
 
-/** Reads the cases, answer keys and profiles a report judges against. */
-export async function contextOf(files: EvalFiles): Promise<Context> {
-    const [cases, keys, profiles] = await Promise.all([files.cases(), files.answerKeys(), files.profiles()]);
-    const map = <T>(items: Array<{ id: string; value: T }>) => new Map(items.map((each) => [each.id, each.value]));
-    return { cases: map(cases.items), keys: map(keys.items), profiles: map(profiles.items) };
+/** Gives the stored cases a run scored, leaving out any no longer stored. */
+function casesOf(run: Run, context: Context): EvalCase[] {
+    return run.cases.flatMap((id) => context.cases.get(id) ?? []);
 }
 
 /** Reads a run's results, keeping the good lines. */
-async function resultsOf(files: EvalFiles, run: Run): Promise<Result[]> {
+async function resultsOf(files: Pick<EvalFiles, "results">, run: Run): Promise<Result[]> {
     return (await files.results(run.id)).items;
 }
 

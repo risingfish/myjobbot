@@ -1,5 +1,6 @@
 "use client";
 
+import { utcMinutes } from "../../../src/time/minutes.js";
 import { useState } from "react";
 import type { MethodKind } from "../../../src/db/methodStore.js";
 import { saveName, setMethodEnabled } from "../../lib/accountActions.js";
@@ -68,7 +69,7 @@ function ActivityPanel({ events }: { events: EventView[] }) {
                     {events.map((event, index) => (
                         <tr key={`${event.at}-${index}`}>
                             <td>
-                                <time dateTime={event.at}>{event.at.slice(0, 16).replace("T", " ")} UTC</time>
+                                <time dateTime={event.at}>{utcMinutes(event.at)}</time>
                             </td>
                             <td>{event.label}</td>
                         </tr>

@@ -20,7 +20,7 @@ function deps(replies: Parameters<typeof usageChat>[0]) {
     const chat = usageChat(replies);
     const trace = memoryTrace();
     const markers = dataMarkers(randomUUID());
-    return { chat, trace, markers, deps: { chat: chat.makeChat(memoryTrace()), trace, markers, limits: testAppSettings().agent } };
+    return { chat, trace, markers, deps: { chat: chat.makeChat(memoryTrace()), trace, markers, limits: testAppSettings().agent, clock: Date.now } };
 }
 
 test("the model reads the resume only inside this session's markers, and its profile comes back with each skill once", async () => {

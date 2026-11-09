@@ -3,6 +3,7 @@ import type { Insertable, Kysely, Transaction } from "kysely";
 import { connectDatabase } from "../db/connect.js";
 import type { Database } from "../db/schema.js";
 import type { DbSettings } from "../db/settings.js";
+import { ensureOwnerFor } from "../db/kysely/owner.js";
 import { batches, compareCounts, oversizedValues, sampleIndexes, splitJob } from "./importPlan.js";
 
 type Table = keyof Pick<Database, "jobs" | "verdicts" | "api_calls">;
@@ -81,7 +82,7 @@ function copyFor(source: Source, userId: number): Copy {
 
 /** Inserts every row in batches for a user, made if missing, then checks counts and a sample, throwing (and so rolling back) on any mismatch. */
 async function copyAll(trx: Transaction<Database>, source: Copy, userId: number): Promise<void> {
-    await trx.insertInto("users").values({ id: userId, name: "owner", created_at: new Date().toISOString() }).onDuplicateKeyUpdate({ id: userId }).execute();
+    await ensureOwnerFor(trx, userId, new Date().toISOString());
     for (const table of TARGETS) {
         for (const batch of batches(source[table], 500))
             await trx

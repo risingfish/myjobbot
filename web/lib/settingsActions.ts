@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache.js";
 import { describeError } from "../../src/errors.js";
 import { saveRequest, type SaveRequest } from "../../src/web/settingsForm.js";
 import { saveSection, type SaveResult } from "../../src/web/settingsSave.js";
-import { getStores, runtimeSettings } from "./uiState.js";
+import { runtimeSettings } from "./fileConfig.js";
+import { getStores } from "./uiState.js";
 import { guarded } from "./guard.js";
 
 const NOT_A_SECTION: SaveResult = { ok: false, problems: [{ field: null, entry: null, message: "not a settings section" }] };

@@ -3,9 +3,10 @@ import { randomBytes } from "node:crypto";
 import { readAlerts, recordAlertRead, type AlertDeps, type AlertSummary } from "../../src/gmail/alertFetch.js";
 import type { LookupDeps } from "../../src/gmail/alertLookupStep.js";
 import type { JsonGetter } from "../../src/http/client.js";
+import { alertSearch } from "../../src/sources/modules/jsearch.js";
 import { testAppSettings } from "./config.js";
 import type { AlertEmail } from "../../src/gmail/alertJobs/parse.js";
-import { seal } from "../../src/gmail/seal.js";
+import { seal } from "../../src/secrets/seal.js";
 import { fakeImap, type FakeImap, type FakeImapScript } from "./fakeImap.js";
 import { memoryStores, type TestStores } from "./memoryStore.js";
 import { memoryTrace } from "./trace.js";
@@ -45,5 +46,5 @@ export async function fetchAlerts(setup: Pick<AlertSetup, "stores" | "trace">, d
 
 export function lookupDeps(http: JsonGetter): LookupDeps {
     const config = testAppSettings();
-    return { http, apiKey: "test-key", settings: config.jsearch, filters: { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies }, searches: 0, usedThisMonth: 0 };
+    return { search: alertSearch(http, { apiKey: "test-key", settings: config.jsearch }), settings: config.jsearch, filters: { titleFilter: config.title_filter, excludeCompanies: config.exclude_companies }, searches: 0, usedThisMonth: 0 };
 }

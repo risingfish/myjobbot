@@ -15,5 +15,5 @@ export async function extractWithModel(environment: Environment, stores: UserSto
     const config = await settingsForRun(loaded, stores, logs.trace);
     const chat = createChat(config.env, usageOnlyLog(logs.llm));
     logs.trace.write({ type: "resume_profile" });
-    return extractProfile(resume, { chat, trace: logs.trace, markers: dataMarkers(logs.runId), limits: config.settings.agent });
+    return extractProfile(resume, { chat, trace: logs.trace, markers: dataMarkers(logs.runId), limits: config.settings.agent, clock: Date.now });
 }

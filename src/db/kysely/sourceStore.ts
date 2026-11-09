@@ -1,9 +1,8 @@
 import { z } from "zod";
 import type { Kysely, Selectable, Transaction } from "kysely";
 import type { Database } from "../schema.js";
-import { OWNER_ID } from "../searchSettingsStore.js";
 import { SOURCE_OUTCOMES, type AccountSource, type NewSource, type SavedSource, type SourceKey, type SourceOutcome, type SourceStore } from "../sourceStore.js";
-import { ensureOwner } from "./searchSettingsStore.js";
+import { ensureOwnerFor } from "./owner.js";
 
 type SourceRow = Selectable<Database["user_sources"]>;
 
@@ -22,7 +21,7 @@ export class KyselySourceStore implements SourceStore {
     async save(userId: number, source: NewSource | SavedSource, at: string): Promise<SavedSource> {
         const fields = sourceFields(source, at);
         const id = await this.db.transaction().execute(async (trx) => {
-            if (userId === OWNER_ID) await ensureOwner(trx, at);
+            await ensureOwnerFor(trx, userId, at);
             return "id" in source ? replaceSource(trx, { userId, id: source.id }, fields) : insertSource(trx, { ...fields, user_id: userId, created_at: at });
         });
         const saved = (await this.list(userId)).find((each) => each.id === id);
@@ -64,7 +63,7 @@ export class KyselySourceStore implements SourceStore {
     async ensureAccountSource(userId: number, { module, name }: AccountSource, at: string): Promise<void> {
         const row = { user_id: userId, module, name, params: "{}", target: module, enabled: 1, created_at: at, updated_at: at };
         await this.db.transaction().execute(async (trx) => {
-            if (userId === OWNER_ID) await ensureOwner(trx, at);
+            await ensureOwnerFor(trx, userId, at);
             await trx
                 .insertInto("user_sources")
                 .values(row)

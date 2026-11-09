@@ -6,7 +6,8 @@ import { reportLookalike } from "../app/lookalikes.js";
 import type { AppConfig } from "../config/load.js";
 import type { Settings } from "../config/schema.js";
 import type { PostingStore } from "../db/postingStore.js";
-import type { JobKey, JobStore } from "../db/store.js";
+import type { JobKey } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import type { RescoreLog } from "./log.js";
 import { oneJobStore } from "./oneJobStore.js";
 import { RESCORE_COMPACTION_NOTICE, RESCORE_NUDGE, rescoreMessages } from "./prompt.js";
@@ -17,8 +18,8 @@ const RESCORE_MAX_MINUTES = 3;
 
 interface SessionDeps {
     config: AppConfig;
-    store: JobStore;
-    postings: PostingStore;
+    store: Pick<JobStore, "findJob" | "recordVerdict">;
+    postings: Pick<PostingStore, "earliestSeen" | "flagInjection">;
     key: JobKey;
     chat: ChatFn;
     trace: Trace;
@@ -50,13 +51,14 @@ function agentDeps(deps: SessionDeps, context: RescoreToolContext): AgentDeps {
         isFinished: () => context.store.recorded(),
         markers: deps.markers,
         onLookalike: (hit) => reportLookalike({ postings: deps.postings, trace: deps.trace, now: deps.now }, hit),
+        clock: () => deps.now().getTime(),
     });
 }
 
-export type OneJobSession = Pick<AgentDeps, "chat" | "trace" | "tools" | "isFinished" | "markers" | "onLookalike"> & { settings: Settings };
+export type OneJobSession = Pick<AgentDeps, "chat" | "trace" | "tools" | "isFinished" | "markers" | "onLookalike" | "clock"> & { settings: Settings };
 
 /** Gives a session that scores one job, a re-score's or an eval case's, the re-score's tight limits, nudge and compaction notice. */
 export function oneJobAgentDeps({ settings, ...session }: OneJobSession): AgentDeps {
     const limits = { ...settings.agent, max_steps: RESCORE_MAX_STEPS, max_wall_clock_min: RESCORE_MAX_MINUTES };
-    return { ...session, limits, clock: Date.now, nudge: RESCORE_NUDGE, compactionNotice: RESCORE_COMPACTION_NOTICE };
+    return { ...session, limits, nudge: RESCORE_NUDGE, compactionNotice: RESCORE_COMPACTION_NOTICE };
 }

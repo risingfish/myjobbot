@@ -1,10 +1,12 @@
 import { expect, test } from "vitest";
 import type { TestStores } from "./helpers/memoryStore.js";
 import type { BeginResult, RescoreEnd } from "../src/db/rescoreLogStore.js";
-import type { JobStore, JobViews } from "../src/db/store.js";
+import type { JobStore } from "../src/db/jobStore.js";
+import type { JobViews } from "../src/db/jobViews.js";
 import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
-import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor, startRescoreFor } from "../web/lib/rows.js";
+import { startRescoreFor } from "../web/lib/rescoreStart.js";
+import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor } from "../web/lib/rows.js";
 import { testAppSettings } from "./helpers/config.js";
 import { memoryTrace } from "./helpers/trace.js";
 import { seededStores } from "./helpers/views.js";
@@ -23,7 +25,7 @@ async function seededViews(entries: Parameters<typeof seededStores>[0]): Promise
 
 test("loadRows returns the requested slice of a page", async () => {
     const views = await seededViews(Array.from({ length: 150 }, (_, index) => ({ id: String(index).padStart(3, "0") })));
-    const data = await loadRows(views, settings, { name: "jobs", offset: 100 });
+    const data = await loadRows(views, settings, { name: "jobs", offset: 100 }, new Date());
     expect([data.rows.length, data.nextOffset, data.total]).toEqual([50, null, 150]);
 });
 
@@ -36,21 +38,21 @@ test("loadRows refuses an unknown page or a bad offset", async () => {
         { name: "jobs", offset: 2_000_000 },
         { name: "jobs", offset: "abc" },
     ];
-    for (const request of requests) await expect(loadRows(views, settings, request)).rejects.toThrow("Invalid page request");
+    for (const request of requests) await expect(loadRows(views, settings, request, new Date())).rejects.toThrow("Invalid page request");
 });
 
 test("loadRows passes on the reason a load failed", async () => {
     const broken = { countAllJobs: () => Promise.reject(new Error("broken <db>")) } as unknown as JobViews;
-    await expect(loadRows(broken, settings, { name: "jobs", offset: 0 })).rejects.toThrow("broken <db>");
+    await expect(loadRows(broken, settings, { name: "jobs", offset: 0 }, new Date())).rejects.toThrow("broken <db>");
 });
 
 test("hiding a job removes it from recommended and marks it in all jobs, and unhiding brings it back", async () => {
     const views = await seededViews([{ id: "a", score: 90 }]);
     expect(await setHiddenFor(views, { ...JOB_A, hidden: true })).toEqual({ ok: true });
-    expect((await loadRows(views, settings, { name: "recommended", offset: 0 })).rows).toEqual([]);
-    expect(jobRows(await loadRows(views, settings, { name: "jobs", offset: 0 })).map((job) => [job.jobId, job.hidden])).toEqual([["a", true]]);
+    expect((await loadRows(views, settings, { name: "recommended", offset: 0 }, new Date())).rows).toEqual([]);
+    expect(jobRows(await loadRows(views, settings, { name: "jobs", offset: 0 }, new Date())).map((job) => [job.jobId, job.hidden])).toEqual([["a", true]]);
     await setHiddenFor(views, { ...JOB_A, hidden: false });
-    expect(jobRows(await loadRows(views, settings, { name: "recommended", offset: 0 })).map((job) => job.jobId)).toEqual(["a"]);
+    expect(jobRows(await loadRows(views, settings, { name: "recommended", offset: 0 }, new Date())).map((job) => job.jobId)).toEqual(["a"]);
 });
 
 test("hiding an unknown job reports that there is no such job", async () => {
@@ -63,13 +65,13 @@ test("a malformed hide request is refused and changes nothing", async () => {
     for (const change of [{ ...JOB_A, hidden: "yes" }, { ...JOB_A, ats: "", hidden: true }, null]) {
         await expect(setHiddenFor(views, change)).rejects.toThrow("Invalid hide request");
     }
-    expect(jobRows(await loadRows(views, settings, { name: "recommended", offset: 0 })).map((job) => job.jobId)).toEqual(["a"]);
+    expect(jobRows(await loadRows(views, settings, { name: "recommended", offset: 0 }, new Date())).map((job) => job.jobId)).toEqual(["a"]);
 });
 
 test("a job whose text tried to escape the data markers is marked on its row", async () => {
     const stores = await seededStores([{ id: "a" }, { id: "b" }]);
     await stores.postings.flagInjection("a", "2026-10-02T00:00:00.000Z");
-    const data = await loadRows(stores.jobViews, settings, { name: "jobs", offset: 0 });
+    const data = await loadRows(stores.jobViews, settings, { name: "jobs", offset: 0 }, new Date());
     expect(Object.fromEntries(jobRows(data).map((row) => [row.jobId, row.injection]))).toEqual({ a: true, b: false });
 });
 
@@ -80,13 +82,13 @@ function detailStores(stores: TestStores) {
 test("loadDetailsFor refuses a malformed job request", async () => {
     const views = detailStores(await seededStores([{ id: "a" }]));
     const requests = [{ ats: "", jobId: "a" }, { ats: "x".repeat(33), jobId: "a" }, { ats: "greenhouse", jobId: "" }, { ats: "greenhouse", jobId: "x".repeat(256) }, { ats: "greenhouse" }, "greenhouse:a"];
-    for (const request of requests) await expect(loadDetailsFor(views, config, request)).rejects.toThrow("Invalid job request");
+    for (const request of requests) await expect(loadDetailsFor(views, config, request, new Date())).rejects.toThrow("Invalid job request");
 });
 
 test("loadDetailsFor returns a known job's details and null for an unknown one", async () => {
     const views = detailStores(await seededStores([{ id: "a" }]));
-    expect((await loadDetailsFor(views, config, JOB_A))?.job).toMatchObject({ jobId: "a", title: "Software Engineer a", pay: null });
-    expect(await loadDetailsFor(views, config, { ats: "greenhouse", jobId: "nope" })).toBeNull();
+    expect((await loadDetailsFor(views, config, JOB_A, new Date()))?.job).toMatchObject({ jobId: "a", title: "Software Engineer a", pay: null });
+    expect(await loadDetailsFor(views, config, { ats: "greenhouse", jobId: "nope" }, new Date())).toBeNull();
 });
 
 test("loadDetailsFor includes the job's score history and its re-scores, newest first", async () => {
@@ -94,7 +96,7 @@ test("loadDetailsFor includes the job's score history and its re-scores, newest 
     await stores.jobStore.recordVerdict({ job_id: "a", score: 80, reasons: [], gaps: [] }, { scoredAt: "2026-10-03T00:00:00.000Z", runId: "run-2" });
     await stores.rescoreLog.begin(JOB_A, "run-3", "2026-10-04T00:00:00.000Z");
     await stores.rescoreLog.end("run-3", { outcome: "filtered", filter: "title", score: null }, "2026-10-04T00:00:01.000Z");
-    expect((await loadDetailsFor(detailStores(stores), config, JOB_A))?.history.map((entry) => [entry.total, entry.run, entry.rescore?.state ?? null])).toEqual([
+    expect((await loadDetailsFor(detailStores(stores), config, JOB_A, new Date()))?.history.map((entry) => [entry.total, entry.run, entry.rescore?.state ?? null])).toEqual([
         [null, "run-3", "filtered"],
         [80, "run-2", null],
         [70, "run-1", null],

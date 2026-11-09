@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { userSourceStore } from "../src/db/sourceStore.js";
-import { OWNER_ID } from "../src/db/searchSettingsStore.js";
+import { OWNER_ID } from "../src/db/owner.js";
 import { HttpStatusError } from "../src/http/errors.js";
 import type { SourceHttp } from "../src/sources/module.js";
 import { saveSource } from "../src/web/saveSource.js";
@@ -19,7 +19,7 @@ function setup(http: SourceHttp) {
     const tables = newTables();
     const store = new MemorySourceStore(tables);
     const apiCalls = memoryStores(tables).apiCalls;
-    const deps = { store: userSourceStore(store, OWNER_ID), facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true }, elsewhere: 0 }, test: { access: { http, jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
+    const deps = { store: userSourceStore(store, OWNER_ID), facts: { limits: JSEARCH, met: { jsearch_key: true, gmail: true }, elsewhere: 0 }, test: { http, access: { jsearch: { apiKey: "key", settings: JSEARCH } }, apiCalls }, now: () => NOW };
     return { store, apiCalls, deps };
 }
 

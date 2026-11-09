@@ -47,7 +47,7 @@ function signInView(session: Session, currentDigest: string): SignInView {
 export async function getAccountState(): Promise<AccountState> {
     const { account, session } = await requireSession();
     const ctx = await authContext();
-    const [rows, live, events, left, keys] = await Promise.all([ctx.stores.methods.methods(account.id), ctx.stores.sessions.activeFor(account.id, ctx.now()), ctx.stores.accounts.recentEvents(account.id, 20), ctx.stores.tokens.recoveryCodesLeft(account.id), ctx.stores.keys.keys(account.id)]);
+    const [rows, live, events, left, keys] = await Promise.all([ctx.stores.methods.methods(account.id), ctx.stores.sessions.activeFor(account.id, ctx.now()), ctx.stores.events.recent(account.id, 20), ctx.stores.recoveryCodes.left(account.id), ctx.stores.keys.keys(account.id)]);
     const ways = rows.map((row) => ({ ...row, usable: usable(row, { mailOn: ctx.mail !== null }) }));
     const signIns = live.map((row) => signInView(row, session.idDigest));
     return { name: account.name, email: account.email ?? "", ways, signIns, recoveryCodesLeft: left, keys, events: events.map((event) => ({ at: event.at, label: eventLabel(event.event), method: event.method })) };

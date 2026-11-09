@@ -31,5 +31,5 @@ export function initialMessages(config: AppConfig, markers: DataMarkers): Messag
 
 /** Builds the run's system prompt: its steps and run-only scoring rule, then the shared scoring rubric. */
 function systemPrompt(config: AppConfig, markers: DataMarkers): string {
-    return SYSTEM_PROMPT + scoringRubric(config, markers);
+    return SYSTEM_PROMPT + scoringRubric(config.settings, markers);
 }

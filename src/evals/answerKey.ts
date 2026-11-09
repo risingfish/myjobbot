@@ -4,7 +4,7 @@ import { parseAnswerKeyArgs, rangeWarning, rewritten, type Entry } from "./answe
 const USAGE = "usage: myjobbot eval answer-key <case-id> <recommend|borderline|reject|zero> [--score a-b] [--base a-b] [--bonus a-b] [--mention word]... [--note text]";
 
 export interface AnswerKeyDeps {
-    files: EvalFiles;
+    files: Pick<EvalFiles, "cases" | "profiles" | "answerKeys" | "writeAnswerKey">;
     now: () => Date;
     print: (line: string) => void;
 }

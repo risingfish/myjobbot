@@ -125,7 +125,7 @@ test("lookups stop at the allowance, and a JSearch failure or missing key leaves
     const down = { getJson: () => Promise.reject(new Error("HTTP 500")) };
     expect(await fetchAlerts(failing, { ...failing.deps, lookup: lookupDeps(down) })).toMatchObject({ stored: 2, with_description: 0, alert_only: 2 });
     const keyless = await alertSetup(emails);
-    expect(await fetchAlerts(keyless, { ...keyless.deps, lookup: { ...lookupDeps(http), apiKey: null } })).toMatchObject({ searches: 0, alert_only: 2 });
+    expect(await fetchAlerts(keyless, { ...keyless.deps, lookup: { ...lookupDeps(http), search: null } })).toMatchObject({ searches: 0, alert_only: 2 });
 });
 
 test("an alert for a posting another user already has with a description gives this user their own view without a second lookup", async () => {

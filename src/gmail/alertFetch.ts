@@ -1,17 +1,19 @@
 import type { Trace } from "../agent/trace.js";
 import type { JobSource } from "../db/jobSource.js";
 import type { PostingStore } from "../db/postingStore.js";
-import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore, JobKey, JobStore } from "../db/store.js";
+import type { AlertRead as MailState, AlertStateRow, AlertStore, GmailStore } from "../db/gmailStore.js";
+import type { JobKey } from "../db/store.js";
+import type { JobStore } from "../db/jobStore.js";
 import type { Job } from "../jobs/job.js";
 import type { MatchStats } from "./alertJobs/lookup.js";
 import { parseAlert, type AlertEmail, type AlertJob, type ParsedAlert } from "./alertJobs/parse.js";
 import { ALERT_NOTES, AlertsUnavailable, alertsUsability } from "./alertJobs/usable.js";
 import { lookUpDescriptions, type LookupDeps, type ReadEmail } from "./alertLookupStep.js";
-import { alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
-import { imapApi, type ImapFactory } from "./imap.js";
+import { ALERT_ATS, alertJobId, alertJobRecord, sortAlertJobs } from "./alertStore.js";
+import type { ImapFactory } from "./imap.js";
 import type { AlertMail } from "./imapAlerts.js";
 import { GmailError } from "./imapErrors.js";
-import type { SecretKeyStatus } from "./secretKey.js";
+import type { SecretKeyStatus } from "../secrets/secretKey.js";
 
 export interface AlertDeps {
     gmail: GmailStore;
@@ -19,7 +21,7 @@ export interface AlertDeps {
     known: Pick<JobStore, "findJob" | "companiesWithTitleOutside">;
     postings: Pick<PostingStore, "known">;
     key: SecretKeyStatus;
-    imap?: ImapFactory;
+    imap: ImapFactory;
     senders: string[];
     now: Date;
     source: JobSource;
@@ -91,7 +93,7 @@ export async function readAlerts(deps: AlertDeps): Promise<AlertRead> {
 
 /** Leaves out the new alert jobs whose posting another user already has with a description, so it is never looked up twice; storing it keeps that description. */
 async function undescribed(postings: Pick<PostingStore, "known">, fresh: AlertJob[]): Promise<AlertJob[]> {
-    const known = await postings.known(fresh.map((job) => ({ ats: "linkedin", jobId: alertJobId(job.linkedinId) })));
+    const known = await postings.known(fresh.map((job) => ({ ats: ALERT_ATS, jobId: alertJobId(job.linkedinId) })));
     const described = new Set(known.filter((posting) => posting.described).map((posting) => posting.jobId));
     return fresh.filter((job) => !described.has(alertJobId(job.linkedinId)));
 }
@@ -109,7 +111,7 @@ async function readMail(deps: AlertDeps, marker: AlertStateRow | null): Promise<
     const access = alertsUsability(await deps.gmail.connection(), deps.key);
     if (!access.usable) throw new AlertsUnavailable(access.note);
     try {
-        return await (deps.imap ?? imapApi)({ email: access.email, password: access.password }).readAlerts({ senders: deps.senders, marker, max: MAX_EMAILS });
+        return await deps.imap({ email: access.email, password: access.password }).readAlerts({ senders: deps.senders, marker, max: MAX_EMAILS });
     } catch (error) {
         if (!(error instanceof GmailError)) throw error;
         if (error.code === "bad_login") await deps.gmail.needsReconnect("app password rejected; create a new one");

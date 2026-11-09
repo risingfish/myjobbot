@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { nonBoardAts } from "../../src/sources/registry.js";
 import type { TestStores } from "./memoryStore.js";
 import { makeJob, type Job } from "../../src/jobs/job.js";
 
@@ -69,7 +70,7 @@ async function case03(make: MakeStores): Promise<void> {
     const { jobStore } = await make();
     await jobStore.upsertAll([sample({ id: "1" }), sample({ id: "2" })], DAY_ONE, "Stripe");
     await jobStore.upsertAll([sample({ id: "js", ats: "jsearch", company: "Acme" })], DAY_ONE, "Search");
-    expect(await jobStore.boardCompaniesWithTitle("backend engineer")).toEqual(["Stripe"]);
+    expect(await jobStore.boardCompaniesWithTitle("backend engineer", nonBoardAts())).toEqual(["Stripe"]);
 }
 
 async function case04(make: MakeStores): Promise<void> {
@@ -161,7 +162,7 @@ async function case13(make: MakeStores): Promise<void> {
     await apiCalls.record("jsearch", "A", "2026-09-30T23:00:00.000Z");
     await apiCalls.record("jsearch", "A", "2026-10-02T10:00:00.000Z");
     await apiCalls.record("jsearch", "B", "2026-10-03T10:00:00.000Z");
-    expect([await apiCalls.countSince("jsearch", DAY_ONE), await apiCalls.lastCallAt("jsearch", "A"), await apiCalls.lastCallAt("jsearch", "C")]).toEqual([2, "2026-10-02T10:00:00.000Z", null]);
+    expect(await apiCalls.countSince("jsearch", DAY_ONE)).toBe(2);
     await apiCalls.pruneBefore(DAY_ONE);
     expect(await apiCalls.countSince("jsearch", "2000-01-01T00:00:00.000Z")).toBe(2);
 }

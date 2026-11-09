@@ -1,4 +1,4 @@
-import type { LinkPurpose } from "../../db/tokenStore.js";
+import type { LinkPurpose } from "../../db/emailLinkStore.js";
 import { confirmItsYou, confirmNewEmail, passwordReset, testMail } from "../../mail/messages.js";
 import { checkEmail, normalizeEmail } from "../emails.js";
 import { MESSAGES } from "../messages.js";

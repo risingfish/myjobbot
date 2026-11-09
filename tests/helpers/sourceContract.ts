@@ -85,4 +85,10 @@ export function sourceContract(make: MakeStores, hooks: SourceHooks): void {
         expect((await stores.sources.list()).map((source) => source.id)).toContain(search.id);
         await stores.close();
     });
+    test("a source saved for a user that doesn't exist is refused", async () => {
+        const stores = await make();
+        await expect(stores.forUser(99).sources.save(BOARD, AT)).rejects.toThrow();
+        expect(await stores.forUser(99).sources.list()).toEqual([]);
+        await stores.close();
+    });
 }

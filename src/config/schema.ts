@@ -20,6 +20,8 @@ export const RESUME_VIEWS = ["resume", "resume_and_profile", "profile"] as const
 
 export type ResumeView = (typeof RESUME_VIEWS)[number];
 
+export const READS_PROFILE: Record<ResumeView, boolean> = { resume: false, resume_and_profile: true, profile: true };
+
 const jsearch = z.object({
     monthly_request_cap: z.number().int().min(1).default(190),
     refresh_hours: z.number().min(1).default(24),

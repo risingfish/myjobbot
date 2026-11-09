@@ -118,6 +118,11 @@ with that user's resume and profile.
   and broke and lists those that moved; with `--against observed` it compares with production's own
   scores, leaving out cases scored from the summary or before their description arrived. It never
   prints a description; `--reasons` adds the failing attempts' reasons and gaps.
+- **Whose scores**: a run records the user it scored for (`--user`, else user 1), and its report's
+  header names that user by account id (`user 2`), or `user not recorded` for a run saved before
+  028. A comparison says first when the two runs were scored for different users, or when either
+  run's user wasn't recorded; `--against observed` says so when a case was captured from another
+  user's scores. A series report names each test's user.
 - **What the model reads**: a profile captured while a resume profile is stored keeps it too.
   `eval run --view resume|resume_and_profile|profile` scores with that choice (default `resume`,
   whatever the Settings page says), the run records it and its report names it. A view that reads

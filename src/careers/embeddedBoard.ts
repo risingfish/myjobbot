@@ -1,4 +1,4 @@
-import { parseBoardLink } from "../sources/boardLink.js";
+import { parseBoardLink } from "../sources/boardLinks.js";
 import { moduleFor } from "../sources/registry.js";
 import type { PageLink } from "./fitPage.js";
 

@@ -38,9 +38,9 @@ test("the pages show a second user none of the owner's jobs and their own defaul
 });
 
 test("a second user's Settings shows no resume, not even the owner's resume file, and none of the owner's Gmail or sources", async () => {
-    const { getSettingsState } = await import("../web/lib/uiState.js");
+    const { getSettingsState } = await import("../web/lib/settingsState.js");
     const settings = await getSettingsState();
-    expect([settings.resume, await settings.gmail.connection(), settings.sources.rows]).toEqual([{ kind: "none" }, null, []]);
+    expect([settings.resume, settings.gmail.email, settings.sources.rows]).toEqual([{ kind: "none" }, null, []]);
 });
 
 test("hiding, marking applied and opening another user's job answer as for a job that doesn't exist", async () => {
@@ -57,8 +57,8 @@ test("switching or deleting the owner's source as a second user changes nothing 
 });
 
 test("a second user's Gmail is their own: connecting and disconnecting it leaves the owner's", async () => {
-    const { getSettingsState } = await import("../web/lib/uiState.js");
-    const { gmail } = await getSettingsState();
+    const { myStores } = await import("../web/lib/myStores.js");
+    const { gmail } = await myStores();
     await gmail.connected({ email: "second@example.com", sealedPassword: "sealed-2" }, SEEN);
     await gmail.disconnect();
     expect([(await (state.stores as TestStores).gmail.connection())?.email, (await gmail.connection())?.status]).toEqual(["owner@example.com", "none"]);
@@ -74,5 +74,6 @@ test("an admin who isn't the owner sees none of the owner's data either", async 
     state.account = { ...state.account, isAdmin: true };
     const { getUiState } = await import("../web/lib/uiState.js");
     const ui = await getUiState();
-    expect([await ui.views.countAllJobs(), await ui.gmail.connection(), await ui.rescoreLog.run(RUN)]).toEqual([0, null, null]);
+    const { myStores } = await import("../web/lib/myStores.js");
+    expect([await ui.views.countAllJobs(), await (await myStores()).gmail.connection(), await ui.rescoreLog.run(RUN)]).toEqual([0, null, null]);
 });

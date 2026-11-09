@@ -1,16 +1,13 @@
 import type { Settings } from "../config/schema.js";
-import type { JsonGetter } from "../http/client.js";
 import { isExcludedCompany } from "../jobs/companyFilter.js";
 import type { Job } from "../jobs/job.js";
 import { passesTitleFilter } from "../jobs/titleFilter.js";
-import { fetchJsearch } from "../sources/modules/jsearch.js";
 import { lookupAllowance } from "./alertJobs/budget.js";
 import { matchResults, planQuery, type MatchStats } from "./alertJobs/lookup.js";
 import type { AlertEmail, AlertJob, ParsedAlert } from "./alertJobs/parse.js";
 
 export interface LookupDeps {
-    http: JsonGetter;
-    apiKey: string | null;
+    search: ((query: string) => Promise<Job[]>) | null;
     settings: Settings["jsearch"];
     filters: { titleFilter: Settings["title_filter"]; excludeCompanies: string[] };
     searches: number;
@@ -37,10 +34,10 @@ interface Planned {
 /** Looks up descriptions for new alert jobs with at most one JSearch search per email, within the month's allowance. */
 export async function lookUpDescriptions(deps: LookupDeps | undefined, work: { read: ReadEmail[]; fresh: AlertJob[]; now: Date }): Promise<Looked> {
     const looked: Looked = { matches: new Map(), searches: 0, lookedUp: 0, stats: [] };
-    if (deps === undefined || deps.apiKey === null) return looked;
+    if (deps === undefined || deps.search === null) return looked;
     const allowance = lookupAllowance({ cap: deps.settings.monthly_request_cap, usedThisMonth: deps.usedThisMonth, searches: deps.searches, refreshHours: deps.settings.refresh_hours, now: work.now });
     for (const plan of plans(deps, work).slice(0, allowance)) {
-        const results = await search(deps, { query: plan.query, apiKey: deps.apiKey, now: work.now });
+        const results = await deps.search(plan.query).catch(failedSearch);
         const matched = matchResults(plan.pending, results);
         for (const [id, match] of matched.matches) looked.matches.set(id, match);
         looked.stats.push(matched.stats);
@@ -61,12 +58,6 @@ function plans(deps: LookupDeps, work: { read: ReadEmail[]; fresh: AlertJob[] })
             const query = planQuery({ alert, pending });
             return query === null ? [] : [{ query, pending }];
         });
-}
-
-/** Runs one JSearch search for an email, which the fetch phase counts against the budget as the page's cost; a failed search finds nothing. */
-async function search(deps: LookupDeps, request: { query: string; apiKey: string; now: Date }): Promise<Job[]> {
-    const query = { search: { query: request.query, remote_only: false, country: "us" }, settings: { ...deps.settings, date_posted: "7days" as const }, apiKey: request.apiKey };
-    return fetchJsearch(query, deps.http).catch((error: unknown) => failedSearch(error));
 }
 
 /** Treats a failed lookup as finding nothing, so those jobs are scored from the alert alone; programming errors still surface. */

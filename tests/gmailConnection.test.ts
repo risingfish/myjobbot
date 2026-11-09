@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { check } from "../src/gmail/check.js";
 import { connect, disconnect, keyChanged, type GmailDeps } from "../src/gmail/connection.js";
 import { GmailError } from "../src/gmail/imapErrors.js";
-import { openOrNull, seal } from "../src/gmail/seal.js";
+import { openOrNull, seal } from "../src/secrets/seal.js";
 import { fakeImap, type FakeImap, type FakeImapScript } from "./helpers/fakeImap.js";
 import { gmailRow } from "./helpers/gmailRows.js";
 import { memoryStores } from "./helpers/memoryStore.js";

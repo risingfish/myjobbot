@@ -5,7 +5,7 @@ import { locationLabel, osFrom, roundedPosition } from "../../src/accounts/devic
 import { lookUpPlace } from "../../src/accounts/geo.js";
 import type { Device } from "../../src/db/sessionStore.js";
 import { clientAddress, displayIp } from "../../src/web/security/clientAddress.js";
-import type { WebSettings } from "./authDeps.js";
+import type { WebSettings } from "./webSettings.js";
 
 /** Returns the key this request's client is counted by, through the trusted proxies only. */
 export async function requestAddress(settings: WebSettings): Promise<string> {

@@ -7,6 +7,7 @@ interface RenderRequest {
     check: (url: string) => Promise<void>;
     seconds: number;
     maxBytes: number;
+    clock: () => number;
 }
 
 const BLOCKED_KINDS = new Set(["image", "font", "media"]);
@@ -15,7 +16,7 @@ const REFUSED = "refused: the page led to an address that is not on the public i
 
 /** Renders a page in the owner's browser, letting through only requests to public addresses, and returns its HTML capped in size. */
 export async function renderPage(port: BrowserPort, request: RenderRequest): Promise<TextPage> {
-    const deadline = Date.now() + request.seconds * MS_PER_SECOND;
+    const deadline = request.clock() + request.seconds * MS_PER_SECOND;
     const session = await port.session({ serviceWorkers: "block", acceptDownloads: false });
     try {
         const refused = { main: false };
@@ -56,7 +57,7 @@ function keepOnTimeout(error: unknown, refusedMain: boolean): void {
 
 /** Waits for the page to settle within the time left, checks where it ended up, and reads its HTML. */
 async function finish(tab: BrowserTab, request: RenderRequest, deadline: number): Promise<TextPage> {
-    await tab.settle(Math.max(0, deadline - Date.now()));
+    await tab.settle(Math.max(0, deadline - request.clock()));
     const url = tab.url();
     await request.check(url).catch((error: unknown) => {
         throw new FetchRefused(REFUSED, { cause: error });

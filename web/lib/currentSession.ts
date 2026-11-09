@@ -3,7 +3,7 @@ import { cache } from "react";
 import { tokenDigest } from "../../src/accounts/tokens.js";
 import type { Account } from "../../src/db/accountStore.js";
 import type { Session } from "../../src/db/sessionStore.js";
-import { webSettings } from "./authDeps.js";
+import { webSettings } from "./webSettings.js";
 import { openedStores } from "./database.js";
 
 export interface SignedIn {

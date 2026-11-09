@@ -4,7 +4,7 @@ import { allowedHosts } from "../src/web/security/baseUrl.js";
 import { csrfDecision } from "../src/web/security/csrf.js";
 import { gateDecision, originDecision, skipsGate } from "../src/web/security/gate.js";
 import { contentSecurityPolicy, forwardedHeaders, securityHeaders } from "../src/web/security/headers.js";
-import { webSettings, type WebSettings } from "./lib/authDeps.js";
+import { webSettings, type WebSettings } from "./lib/webSettings.js";
 import { loadRepoEnv } from "./lib/env.js";
 import { baseUrlMissing, gateRequest, lookUpSession, renewCsrf, stopped, touchIfDue, withHeaders } from "./lib/proxySteps.js";
 

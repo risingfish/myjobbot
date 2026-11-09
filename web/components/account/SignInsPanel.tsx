@@ -1,5 +1,6 @@
 "use client";
 
+import { utcMinutes } from "../../../src/time/minutes.js";
 import { useState } from "react";
 import { signOutDevice, signOutEverywhereElse } from "../../lib/accountActions.js";
 import type { SignInView } from "../../lib/accountState.js";
@@ -24,7 +25,7 @@ function SignInRow({ signIn, onSignOut }: { signIn: SignInView; onSignOut: (ref:
             <td>{signIn.ip}</td>
             <td>{signIn.location}</td>
             <td>
-                <time dateTime={signIn.lastUsedAt}>{signIn.lastUsedAt.slice(0, 16).replace("T", " ")} UTC</time>
+                <time dateTime={signIn.lastUsedAt}>{utcMinutes(signIn.lastUsedAt)}</time>
             </td>
             <td>
                 <SignOutCell signIn={signIn} onSignOut={onSignOut} />

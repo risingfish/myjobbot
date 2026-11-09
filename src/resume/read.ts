@@ -12,9 +12,19 @@ export async function readResume(bytes: Uint8Array, type: ResumeFileType): Promi
     }
 }
 
-/** Gives a file's text alone: Markdown and plain text as UTF-8, PDF through unpdf and Word through mammoth, never any markup. */
-async function plainText(bytes: Uint8Array, type: ResumeFileType): Promise<string> {
-    if (type === "pdf") return (await extractText(bytes.slice(), { mergePages: true })).text;
-    if (type === "docx") return (await mammoth.extractRawText({ buffer: Buffer.from(bytes) })).value;
+/** Reads a Markdown or plain-text file as UTF-8. */
+async function utf8(bytes: Uint8Array): Promise<string> {
     return new TextDecoder("utf-8").decode(bytes);
+}
+
+const READERS: Record<ResumeFileType, (bytes: Uint8Array) => Promise<string>> = {
+    md: utf8,
+    txt: utf8,
+    pdf: async (bytes) => (await extractText(bytes.slice(), { mergePages: true })).text,
+    docx: async (bytes) => (await mammoth.extractRawText({ buffer: Buffer.from(bytes) })).value,
+};
+
+/** Gives a file's text alone: Markdown and plain text as UTF-8, PDF through unpdf and Word through mammoth, never any markup. */
+function plainText(bytes: Uint8Array, type: ResumeFileType): Promise<string> {
+    return READERS[type](bytes);
 }
