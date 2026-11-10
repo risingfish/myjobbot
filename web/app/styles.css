@@ -391,9 +391,13 @@ dialog.details-panel[open] {
     gap: 1rem;
 }
 .status-actions form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin: 0;
 }
 .status-actions .delete-account {
+    display: block;
     flex-basis: 100%;
 }
 .setting .row {
