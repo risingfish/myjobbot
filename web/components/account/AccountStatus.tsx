@@ -11,8 +11,6 @@ import { shownRefusal, useStepUp } from "./StepUp.js";
 
 type Change = (action: () => Promise<{ ok: boolean; message?: string; stepUp?: true }>) => Promise<void>;
 
-const CONFIRM_DEACTIVATE = "Deactivate your account? Runs will stop fetching and scoring jobs for you, and Gmail will be disconnected.";
-
 /** Says where the account stands, in words. */
 function statusText(view: AccountStatusView): string {
     if (view.status === "active") return "Active: runs fetch and score jobs for you.";
@@ -21,16 +19,16 @@ function statusText(view: AccountStatusView): string {
     return `Will be deleted on ${minutes(view.deleteAfter ?? "")} UTC.`;
 }
 
-/** Gives the label and action of the button that moves the account on from where it stands: Deactivate, asking first, Reactivate, or Cancel deletion. */
-function statusButton(status: AccountStatusView["status"], change: Change): { label: string; onClick: () => void } {
-    if (status === "active") return { label: "Deactivate account", onClick: () => window.confirm(CONFIRM_DEACTIVATE) && void change(deactivateAccount) };
+/** Gives the label and action of the button that moves the account on from where it stands: Deactivate, asking on the page first, Reactivate, or Cancel deletion. */
+function statusButton(status: AccountStatusView["status"], change: Change, ask: () => void): { label: string; onClick: () => void } {
+    if (status === "active") return { label: "Deactivate account", onClick: ask };
     if (status === "deactivated") return { label: "Reactivate", onClick: () => void change(reactivateAccount) };
     return { label: "Cancel deletion", onClick: () => void change(cancelAccountDeletion) };
 }
 
 /** Renders the button that moves the account on from where it stands, full size as a form's own submit button. */
-function StatusButton({ view, change }: { view: AccountStatusView; change: Change }) {
-    const button = statusButton(view.status, change);
+function StatusButton({ view, change, ask }: { view: AccountStatusView; change: Change; ask: () => void }) {
+    const button = statusButton(view.status, change, ask);
     return (
         <form action={button.onClick}>
             <button>{button.label}</button>
@@ -53,19 +51,47 @@ function DeleteControls({ view, change }: { view: AccountStatusView; change: Cha
     );
 }
 
-/** Renders the Account status section: where the account stands and the button that changes it, with why a change was refused. */
+/** Asks on the page before deactivating, saying what deactivating does. */
+function DeactivateDialog({ open, onDeactivate, onCancel }: { open: boolean; onDeactivate: () => void; onCancel: () => void }) {
+    return (
+        <dialog open={open} aria-labelledby="deactivate-title">
+            <article>
+                <h3 id="deactivate-title">Deactivate your account?</h3>
+                <p>Runs will stop fetching and scoring jobs for you, and Gmail will be disconnected. You can still sign in, and reactivate at any time.</p>
+                <footer>
+                    <button type="button" className="secondary" onClick={onCancel}>
+                        Cancel
+                    </button>
+                    <button type="button" onClick={onDeactivate}>
+                        Deactivate
+                    </button>
+                </footer>
+            </article>
+        </dialog>
+    );
+}
+
+/** Renders the Account status section: where the account stands and the button that changes it, with why a change was refused, and the dialog that asks before deactivating. */
 export function AccountStatus({ status }: { status: AccountStatusView }) {
     const run = useStepUp();
     const [refusal, setRefusal] = useState<string | null>(null);
+    const [asking, setAsking] = useState(false);
     const change: Change = async (action) => setRefusal(shownRefusal(await run(action)));
+    const deactivateNow = () => {
+        setAsking(false);
+        void change(deactivateAccount);
+    };
     return (
-        <Panel title="Account status">
-            <p>{statusText(status)}</p>
-            <div className="status-actions">
-                <StatusButton view={status} change={change} />
-                <DeleteControls key={status.status} view={status} change={change} />
-            </div>
-            {refusal !== null && <small role="alert">{refusal}</small>}
-        </Panel>
+        <>
+            <Panel title="Account status">
+                <p>{statusText(status)}</p>
+                <div className="status-actions">
+                    <StatusButton view={status} change={change} ask={() => setAsking(true)} />
+                    <DeleteControls key={status.status} view={status} change={change} />
+                </div>
+                {refusal !== null && <small role="alert">{refusal}</small>}
+            </Panel>
+            <DeactivateDialog open={asking} onDeactivate={deactivateNow} onCancel={() => setAsking(false)} />
+        </>
     );
 }

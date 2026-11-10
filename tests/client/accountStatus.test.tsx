@@ -1,7 +1,7 @@
-import { screen } from "@testing-library/dom";
+import { screen, within } from "@testing-library/dom";
 import { render } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { afterEach, expect, test, vi } from "vitest";
+import { expect, test, vi } from "vitest";
 import { MESSAGES } from "../../src/accounts/messages.js";
 import { AccountStatus } from "../../web/components/account/AccountStatus.js";
 import { AccountBanner } from "../../web/components/sections/AccountBanner.js";
@@ -17,15 +17,15 @@ vi.mock("../../web/lib/accountStatusActions.js", () => actions);
 
 const SINCE = "2026-11-09T10:00:00.000Z";
 
-afterEach(() => vi.unstubAllGlobals());
-
-test("an active account shows Deactivate account, which asks first and does nothing when declined", async () => {
+test("an active account shows Deactivate account, which asks on the page first and does nothing when cancelled", async () => {
     render(<AccountStatus status={{ status: "active", deactivatedAt: null, deleteAfter: null, onlyAdmin: false }} />);
     expect(screen.getByText(/Active/)).toBeTruthy();
-    vi.stubGlobal("confirm", vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true));
     await userEvent.click(screen.getByRole("button", { name: "Deactivate account" }));
-    expect(actions.deactivateAccount).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog", { name: "Deactivate your account?" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect([actions.deactivateAccount.mock.calls.length, screen.queryByRole("dialog")]).toEqual([0, null]);
     await userEvent.click(screen.getByRole("button", { name: "Deactivate account" }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Deactivate" }));
     expect(actions.deactivateAccount).toHaveBeenCalledTimes(1);
 });
 
