@@ -16,7 +16,9 @@ npm start -- run --user you@example.com     # one user only
 ```
 
 One agent run for each user, in id order: fetch every source that user has on, then score with
-their own settings and resume. A user with no source on, or no resume, is skipped. It prints one
+their own settings and resume. A user with no source on, no resume, or a deactivated account is
+skipped. Before any user runs, accounts whose deletion is due are deleted (`user N: deleted`; the
+only admin's is held: `user N: deletion held (last admin)`), `--user` runs included. It prints one
 line per user, then that user's summary:
 
 ```text
@@ -34,7 +36,9 @@ starts one now, besides the scheduled ones.
 
 ## rescore
 
-To score one job again at once, from its current description and your current resume and settings:
+To score one job again at once, from its current description and your current resume and settings
+(refused, exit 1, for a deactivated account; with no `--user` it acts for user 1, and says to name
+an email if user 1 has been deleted; `account init` and `import-sqlite` make user 1 again):
 
 ```bash
 npm start -- rescore <ats> <job_id>     # e.g. rescore greenhouse 4012345

@@ -109,10 +109,10 @@ goes in `accountStrictCases` only.
 
 ### Sitting S4: Docs and validation
 
-- [ ] T037 Create `.specify/sitting-in-progress` containing `029 S4`.
-- [ ] T038 [P] Docs: `docs/how-it-works.md` "Accounts and signing in" gains "Deactivating and deleting"; `docs/database.md` Tables notes the two columns and `account_codes` keys; `docs/cli.md` notes the run lines, the rescore refusal and the user-1 refusal; `docs/cli.md` also says `account init` and `import-sqlite` make user 1 again if missing; `CLAUDE.md`'s re-score note names `web/lib/rescoreStart.ts`, and it gains "Account status (feature 029)": the columns, `accountLifecycle.ts`, the two flows, `AccountRemoval` and its type-checked table list, the run's skip and `accountDeletions.ts`.
+- [X] T037 Create `.specify/sitting-in-progress` containing `029 S4`.
+- [X] T038 [P] Docs: `docs/how-it-works.md` "Accounts and signing in" gains "Deactivating and deleting"; `docs/database.md` Tables notes the two columns and `account_codes` keys; `docs/cli.md` notes the run lines, the rescore refusal and the user-1 refusal; `docs/cli.md` also says `account init` and `import-sqlite` make user 1 again if missing; `CLAUDE.md`'s re-score note names `web/lib/rescoreStart.ts`, and it gains "Account status (feature 029)": the columns, `accountLifecycle.ts`, the two flows, `AccountRemoval` and its type-checked table list, the run's skip and `accountDeletions.ts`.
 - [ ] T039 Run [quickstart.md](quickstart.md) steps 1-7 against `myjobbot_dev_alt` with a second account; record outcomes below.
-- [ ] T040 Run `npm run check` and `npm run check:db`; when green, delete the marker. End of S4.
+- [X] T040 Run `npm run check` and `npm run check:db`; when green, delete the marker. End of S4.
 
 ---
 
@@ -139,3 +139,18 @@ goes in `accountStrictCases` only.
 
 - **MVP**: S1-S2 (deactivate, reactivate, runs skip, refusals).
 - S3 adds deletion; S4 documents and validates.
+
+## Sitting notes (2026-11-09)
+
+- T039 is left for the owner: the quickstart's browser steps (sign in as a second account,
+  Deactivate, Delete with the email, Cancel) and real runs against `myjobbot_dev_alt` (which call
+  the LLM and fetch boards) weren't run unattended. Automated coverage of the same ground: the
+  removal contract on MariaDB (every per-user row gone, shared and other users' rows unchanged,
+  codes kept with null references, the only admin held, a cancel racing the run, two removals at
+  once), `tests/runAll.test.ts` (deactivated users skipped, also mid-run; due deletions carried out
+  first, also with `--user`), the flows' unit tests, and the Account status UI tests.
+- This checkout's `.env` had `MYJOBBOT_DB_NAME`/`MYJOBBOT_TEST_DB_NAME` pointing at the main
+  checkout's `myjobbot_dev`/`myjobbot_test`; they were changed to `myjobbot_dev_alt` and
+  `myjobbot_test_alt`, as CLAUDE.md names them.
+- `tests/integration/companyMigrations.test.ts` (steps 012 and 013) timed out once at 30 s on this
+  database server and passed on rerun; it runs close to its limit here.
