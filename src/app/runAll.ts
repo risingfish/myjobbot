@@ -29,7 +29,9 @@ export async function runAll(environment: Environment, seams: RunSeams, only?: n
     try {
         const parts = { loaded, seams, stores, key: secretKeyStatus(environment) };
         const runs: UserRun[] = await carryOutDeletions({ removal: stores.removal, accounts: stores.accounts, send: deletionMail(environment) }, new Date().toISOString());
-        for (const user of usersToRun(await userFacts(stores, loaded, only))) runs.push(await runPlanned(parts, user));
+        const deleted = new Set(runs.map((run) => run.userId));
+        const facts = (await userFacts(stores, loaded, only)).filter((user) => !deleted.has(user.userId));
+        for (const user of usersToRun(facts)) runs.push(await runPlanned(parts, user));
         await pruneOldJobs(stores, loaded);
         return runs;
     } finally {

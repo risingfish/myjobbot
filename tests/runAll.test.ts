@@ -113,3 +113,11 @@ test("a due deletion is carried out before the users are run, also when one user
         expect(await stores.accounts.account(2)).toBeNull();
     }
 });
+
+test("a run asked for one user whose deletion is due deletes them and reports nothing else for them", async () => {
+    const stores = await twoUsers();
+    await stores.accounts.setStatus(2, { deactivatedAt: "2026-10-01T00:00:00.000Z", deleteAfter: "2026-10-31T00:00:00.000Z" });
+    const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat: scriptedChat([]).chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores }, 2);
+    expect(runs).toEqual([{ userId: 2, deleted: true }]);
+    expect(runExitCode(runs, 2)).toBe(0);
+});
