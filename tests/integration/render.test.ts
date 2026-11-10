@@ -23,6 +23,8 @@ function base(server: Server): string {
 
 const SCRIPT = (forbiddenBase: string) => `document.getElementById("root").textContent = "Built by script"; fetch("${forbiddenBase}/leak").catch(() => {}); fetch("/leak-bounce").catch(() => {}); fetch("/bounce").then((answer) => answer.text()).then((text) => document.body.append(text));`;
 
+const SOCKETS = (allowedBase: string) => ["allow", "refuse"].map((name) => `new WebSocket("${allowedBase.replace("http", "ws")}/${name}");`).join(" ");
+
 function page(script: string): string {
     return `<html><body><div id="root"></div><script>${script}</script></body></html>`;
 }
@@ -33,6 +35,9 @@ beforeAll(async () => {
     cdn = await serve((_request, response) => response.writeHead(200, { "access-control-allow-origin": "*" }).end("Loaded through a redirect"));
     allowed = await serve((request, response) => {
         const redirects: Record<string, string> = { "/redirect": `${base(forbidden)}/redirected`, "/leak-bounce": `${base(forbidden)}/bounced`, "/bounce": `${base(cdn)}/data` };
+        if (request.url === "/hang") return;
+        if (request.url === "/sockets") return void response.writeHead(200, { "content-type": "text/html" }).end(page(SOCKETS(base(allowed))));
+        if (request.url === "/late") return void response.writeHead(200, { "content-type": "text/html" }).end(page(`fetch("/hang").catch(() => {});`));
         const target = redirects[request.url ?? ""];
         if (target !== undefined) return void response.writeHead(302, { location: target }).end();
         response.writeHead(200, { "content-type": "text/html" }).end(page(SCRIPT(base(forbidden))));
@@ -42,6 +47,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
     await port?.close();
+    allowed?.closeAllConnections();
     allowed?.close();
     forbidden?.close();
     cdn?.close();
@@ -57,4 +63,35 @@ test.skipIf(BROWSER_URL === undefined)("a real browser renders a script-built pa
     expect(rendered.html).toContain("Loaded through a redirect");
     await expect(renderPage(port, { url: `${base(allowed)}/redirect`, check: onlyAllowed, seconds: 10, maxBytes: 100_000, clock: Date.now })).rejects.toBeInstanceOf(FetchRefused);
     expect(hits).toEqual([]);
+});
+
+test.skipIf(BROWSER_URL === undefined)("a request still in flight when the render ends doesn't crash the process", async () => {
+    const unhandled: unknown[] = [];
+    const note = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", note);
+    try {
+        await renderPage(port, { url: `${base(allowed)}/late`, check: onlyAllowed, seconds: 2, maxBytes: 100_000, clock: Date.now });
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+    } finally {
+        process.off("unhandledRejection", note);
+    }
+    expect(unhandled).toEqual([]);
+});
+
+test.skipIf(BROWSER_URL === undefined)("a WebSocket whose check ends after the render doesn't crash the process, whether it is let through or refused", async () => {
+    const unhandled: unknown[] = [];
+    const note = (reason: unknown) => unhandled.push(reason);
+    const late = async (url: string) => {
+        if (!url.startsWith("ws:")) return onlyAllowed(url);
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+        if (url.endsWith("/refuse")) throw new FetchRefused(`refused: ${url}`);
+    };
+    process.on("unhandledRejection", note);
+    try {
+        await renderPage(port, { url: `${base(allowed)}/sockets`, check: late, seconds: 1, maxBytes: 100_000, clock: Date.now });
+        await new Promise((resolve) => setTimeout(resolve, 3_000));
+    } finally {
+        process.off("unhandledRejection", note);
+    }
+    expect(unhandled).toEqual([]);
 });

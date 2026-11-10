@@ -53,8 +53,14 @@ function playwrightSession(context: BrowserContext): BrowserSession {
         routeWebSockets: (decide) => context.routeWebSocket(/.*/, (socket) => socketRouted(socket, decide)),
         open: async () => playwrightTab(await context.newPage()),
         probe: (url, timeoutMs) => context.request.get(url, { timeout: timeoutMs, maxRedirects: 0 }).then(() => true, () => false),
-        close: () => context.close(),
+        close: () => closeContext(context),
     };
+}
+
+/** Closes a browser context, first detaching its request handlers so a request still in flight can't fail after it.  Might eventually be worth adding a metric here to see how often this happens. */
+async function closeContext(context: BrowserContext): Promise<void> {
+    await context.unrouteAll({ behavior: "ignoreErrors" });
+    await context.close();
 }
 
 /** Lets one request through, or aborts it, as the caller decides, never handing Chromium a redirect it would follow unchecked. */
