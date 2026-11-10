@@ -57,7 +57,7 @@ function playwrightSession(context: BrowserContext): BrowserSession {
     };
 }
 
-/** Closes a browser context, first detaching its request handlers so a request still in flight can't fail after it. */
+/** Closes a browser context, first detaching its request handlers so a request still in flight can't fail after it.  Might eventually be worth adding a metric here to see how often this happens. */
 async function closeContext(context: BrowserContext): Promise<void> {
     await context.unrouteAll({ behavior: "ignoreErrors" });
     await context.close();
