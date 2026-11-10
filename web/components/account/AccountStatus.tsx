@@ -28,13 +28,13 @@ function statusButton(status: AccountStatusView["status"], change: Change): { la
     return { label: "Cancel deletion", onClick: () => void change(cancelAccountDeletion) };
 }
 
-/** Renders the button that moves the account on from where it stands. */
+/** Renders the button that moves the account on from where it stands, full size as a form's own submit button. */
 function StatusButton({ view, change }: { view: AccountStatusView; change: Change }) {
     const button = statusButton(view.status, change);
     return (
-        <button type="button" onClick={button.onClick}>
-            {button.label}
-        </button>
+        <form action={button.onClick}>
+            <button>{button.label}</button>
+        </form>
     );
 }
 
@@ -44,12 +44,12 @@ function DeleteControls({ view, change }: { view: AccountStatusView; change: Cha
     if (view.status === "pending_deletion" || view.status === "held") return null;
     if (open) return <DeleteAccountForm change={change} />;
     return (
-        <>
-            <button type="button" className="secondary" disabled={view.onlyAdmin} onClick={() => setOpen(true)}>
+        <form action={() => setOpen(true)}>
+            <button className="secondary" disabled={view.onlyAdmin}>
                 Delete account
             </button>
             {view.onlyAdmin && <small>{MESSAGES.last_admin_delete}</small>}
-        </>
+        </form>
     );
 }
 
