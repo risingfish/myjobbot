@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from "kysely";
-import type { Account, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../accountStore.js";
+import type { Account, AccountStatus, AccountStore, CreateResult, NewAccount, OwnerLogin } from "../accountStore.js";
 import { createAccountIn, createAccountSafely } from "./accountCreation.js";
 import type { Database } from "../schema.js";
 import type { UsersTable } from "../schema/users.js";
@@ -85,9 +85,22 @@ export class KyselyAccountStore implements AccountStore {
             throw error;
         }
     }
+
+    /** Sets when an account was deactivated or when its requested deletion is due, writing only the dates given. */
+    async setStatus(userId: number, change: Partial<AccountStatus>): Promise<void> {
+        const row = { ...(change.deactivatedAt !== undefined && { deactivated_at: change.deactivatedAt }), ...(change.deleteAfter !== undefined && { delete_after: change.deleteAfter }) };
+        if (Object.keys(row).length > 0) await this.db.updateTable("users").set(row).where("id", "=", userId).execute();
+    }
+
+    /** Clears an account's deactivation in one statement, unless a deletion is pending by then. */
+    async reactivate(userId: number): Promise<"ok" | "deletion_pending"> {
+        const result = await this.db.updateTable("users").set({ deactivated_at: null }).where("id", "=", userId).where("delete_after", "is", null).executeTakeFirst();
+        if (result.numUpdatedRows > 0n) return "ok";
+        return ((await this.account(userId))?.deleteAfter ?? null) === null ? "ok" : "deletion_pending";
+    }
 }
 
 /** Turns a stored user row into an account. */
 function fromRow(row: Selectable<UsersTable>): Account {
-    return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1 };
+    return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1, deactivatedAt: row.deactivated_at, deleteAfter: row.delete_after };
 }

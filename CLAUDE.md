@@ -302,6 +302,19 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   log a password, code, token, secret or typed email. New pages use Pico first (research R18); a
   primary button inside a `.panel` is a form's submit button with no `type`, since
   `.panel button[type="button"]` is styled small.
+- Account status (feature 029): `users.deactivated_at` and `delete_after` (step
+  `025_account_status`, which also makes the `account_codes` keys to users `set null`), read as
+  `Account.deactivatedAt`/`deleteAfter` and written through `AccountStore.setStatus` (only the
+  dates given) and `reactivate` (one conditional statement). Rules are plain functions in
+  `src/accounts/accountLifecycle.ts` (`reactivateFirst`, `statusOf`, `deletionDate`,
+  `mayRequestDeletion`); flows are `src/accounts/flows/accountStatus.ts` (deactivate, reactivate)
+  and `flows/accountDeletion.ts` (request, cancel), each handed the Gmail removal as a step, never
+  importing `src/gmail/`. Runs skip a deactivated user (`usersToRun`, re-checked in `runPlanned`)
+  and first carry out due deletions (`src/app/accountDeletions.ts`), through `AccountRemoval`
+  (`Stores.removal`, one locked transaction, never the only admin, re-checking the date), whose
+  per-user table list is checked against every `user_id` table of `Database` at compile time;
+  the notice is mailed only after the delete, with `sendMail` (awaited). Re-score, the rescore CLI
+  and connecting Gmail refuse a deactivated account (`reactivateFirst`, `web/lib/scoringRefusal.ts`).
 - Each account's own data (feature 027): `jobs` is the posting, stored once and shared; `user_jobs`
   is each user's view of it (`source_id`, `source`, `first_seen`, `last_seen`, the scores, `reasons`,
   `gaps`, `hidden`, `applied`, `applied_on`), keyed `(user_id, ats, job_id)`. `verdicts`,

@@ -1,3 +1,4 @@
+import type { AccountRemoval } from "./accountRemoval.js";
 import type { AccountStore } from "./accountStore.js";
 import type { AttemptStore } from "./attemptStore.js";
 import type { AuthenticatorStore } from "./authenticatorStore.js";
@@ -53,6 +54,7 @@ export interface SharedStores {
 }
 
 export interface Stores extends SharedStores {
+    removal: AccountRemoval;
     forUser(userId: number): UserStores;
     close(): Promise<void>;
 }

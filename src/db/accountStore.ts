@@ -3,7 +3,11 @@ export interface Account {
     name: string;
     email: string | null;
     isAdmin: boolean;
+    deactivatedAt: string | null;
+    deleteAfter: string | null;
 }
+
+export type AccountStatus = Pick<Account, "deactivatedAt" | "deleteAfter">;
 
 export interface OwnerLogin {
     email: string;
@@ -30,4 +34,6 @@ export interface AccountStore {
     setAdmin(userId: number, admin: boolean): Promise<"ok" | "last_admin">;
     saveName(userId: number, name: string): Promise<void>;
     changeEmail(userId: number, email: string, emailKey: string): Promise<"ok" | "taken">;
+    setStatus(userId: number, change: Partial<AccountStatus>): Promise<void>;
+    reactivate(userId: number): Promise<"ok" | "deletion_pending">;
 }

@@ -14,6 +14,7 @@ import { emailLinkStrictCases } from "../helpers/emailLinkContract.js";
 import { alertJobContract } from "../helpers/alertJobContract.js";
 import { appliedContract } from "../helpers/appliedContract.js";
 import { careersStoreContract } from "../helpers/careersStoreContract.js";
+import { accountRemovalContract, type RemovalHooks } from "../helpers/accountRemovalContract.js";
 import { companyContract, type CompanyHooks } from "../helpers/companyContract.js";
 import { alertStoreContract } from "../helpers/alertStoreContract.js";
 import { descriptionContract } from "../helpers/descriptionContract.js";
@@ -67,6 +68,7 @@ alertJobContract(emptyStores);
 descriptionContract(emptyStores);
 jobDetailContract(emptyStores);
 companyContract(emptyStores, companyHooks());
+accountRemovalContract(emptyStores, removalHooks, { strict: true });
 appliedContract(emptyStores);
 rescoreContract(emptyStores);
 rescoreLogContract(emptyStores);
@@ -137,5 +139,22 @@ function companyHooks(): CompanyHooks {
             const at = "2026-10-01T00:00:00.000Z";
             await db.insertInto("companies").values({ company_key: key, name: key, created_date: at, last_found_date: at, careers_url: url, careers_source: "board" }).execute();
         },
+    };
+}
+
+const USER_TABLES = ["user_jobs", "verdicts", "rescore_runs", "gmail_alert_state", "gmail_connection", "resume_profiles", "resumes", "user_sources", "user_settings", "sign_in_methods", "hardware_keys", "recovery_codes", "sessions", "email_tokens", "auth_challenges", "security_events"] as const;
+const SHARED_TABLES = ["jobs", "companies", "careers_audit", "api_calls", "auth_attempts", "account_codes"] as const;
+
+async function rowCount(table: (typeof USER_TABLES)[number] | (typeof SHARED_TABLES)[number], userId?: number): Promise<number> {
+    const query = db.selectFrom(table).select((eb) => eb.fn.countAll<number>().as("n"));
+    const row = await (userId === undefined ? query : query.where("user_id" as never, "=", userId as never)).executeTakeFirstOrThrow();
+    return Number(row.n);
+}
+
+function removalHooks(): RemovalHooks {
+    return {
+        userRows: async (userId) => Object.fromEntries(await Promise.all(USER_TABLES.map(async (table) => [table, await rowCount(table, userId)]))),
+        sharedCounts: async () => Object.fromEntries(await Promise.all(SHARED_TABLES.map(async (table) => [table, await rowCount(table)]))),
+        codes: async () => (await db.selectFrom("account_codes").select(["created_by", "used_by"]).execute()).map((row) => ({ createdBy: row.created_by, usedBy: row.used_by })),
     };
 }

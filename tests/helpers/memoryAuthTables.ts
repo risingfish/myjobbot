@@ -12,6 +12,8 @@ export interface MemoryUser {
     email: string | null;
     emailKey: string | null;
     isAdmin: boolean;
+    deactivatedAt: string | null;
+    deleteAfter: string | null;
 }
 
 export interface MemoryMethod {
@@ -27,7 +29,7 @@ export interface MemoryMethod {
 
 export interface MemoryCode {
     digest: string;
-    createdBy: number;
+    createdBy: number | null;
     expiresAt: string;
     usedBy: number | null;
 }
@@ -59,7 +61,7 @@ export function newAuthTables(): AuthTables {
 }
 
 export function memoryUser(id: number, at = "2026-11-01T00:00:00.000Z"): MemoryUser {
-    return { id, name: id === OWNER_ID ? "owner" : `user ${id}`, createdAt: at, email: null, emailKey: null, isAdmin: false };
+    return { id, name: id === OWNER_ID ? "owner" : `user ${id}`, createdAt: at, email: null, emailKey: null, isAdmin: false, deactivatedAt: null, deleteAfter: null };
 }
 
 export function ownerOrRefuse(users: MemoryUser[], userId: number, at: string): void {

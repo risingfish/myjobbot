@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AccountBanner } from "../../components/sections/AccountBanner.js";
 import { Footer } from "../../components/sections/Footer.js";
 import { Nav } from "../../components/menus/Nav.js";
 import { Header } from "../../components/sections/Header.js";
@@ -12,6 +13,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <>
             <Header name={account.name} />
             <Nav />
+            <AccountBanner account={account} />
             {children}
             <Footer database={dbLabel()} renderedAt={new Date().toISOString()} />
         </>

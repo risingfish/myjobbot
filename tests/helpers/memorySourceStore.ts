@@ -9,6 +9,10 @@ interface Row extends SavedSource {
 export class MemorySourceStore implements SourceStore {
     private readonly rows: Row[] = [];
 
+    dropUser(userId: number): void {
+        for (let index = this.rows.length - 1; index >= 0; index -= 1) if (this.rows[index]?.userId === userId) this.rows.splice(index, 1);
+    }
+
     onForAll(): Array<{ userId: number; module: string }> {
         return this.rows.filter((row) => row.enabled).map((row) => ({ userId: row.userId, module: row.module }));
     }

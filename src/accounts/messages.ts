@@ -28,4 +28,8 @@ export const MESSAGES = {
     not_admin: "Only an admin can do that.",
     page_failed: "Something went wrong loading this page. Try again.",
     base_url: "myjobbot: MYJOBBOT_BASE_URL is missing or not allowed (see .env.example).",
+    reactivate_first: "Your account is deactivated. Reactivate it on the Account tab first.",
+    deletion_pending: "Cancel the deletion first.",
+    email_mismatch: "Type your account's email to confirm.",
+    last_admin_delete: "Make another admin before deleting your account.",
 } as const;

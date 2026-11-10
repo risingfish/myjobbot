@@ -32,3 +32,7 @@ test("the stores given are the named user's, found by the email as typed at sign
     const callers = ["src/cli.ts", "src/evals/command.ts"].map((path) => readFileSync(path, "utf8").split("storesFor(").length - 1);
     expect(callers).toEqual([2, 2]);
 });
+
+test("with no --user and no user 1, a command is refused and told to name an email", async () => {
+    expect(await storesFor(memoryStores(), undefined)).toEqual({ refused: "user 1 no longer exists; name an email with --user" });
+});

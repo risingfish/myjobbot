@@ -475,6 +475,28 @@ Passwords are Argon2id digests, one-time values are stored only as digests and s
 statement that checks them, and authenticator secrets are sealed. Answers never say whether an
 email has an account, and error pages show a fixed message (the detail stays in the server log).
 
+### Deactivating and deleting
+
+The Account tab's **Account status** section changes your own account only:
+
+- **Deactivate account** (asks once) stops runs fetching, looking up and scoring jobs for you and
+  removes your Gmail connection. You still sign in and see, hide and mark your jobs, and change
+  settings, sources and resume; Re-score and connecting Gmail say to reactivate first.
+  **Reactivate** starts the runs again (connect Gmail again yourself). Every page shows a banner
+  while you are deactivated.
+- **Delete account** asks you to confirm it's you, says what will be removed and when, and asks
+  for your email. The account is deactivated at once and deleted 30 days later; until then every
+  page shows the date and the Account tab has **Cancel deletion**, which leaves you deactivated.
+  The run that comes after the date deletes everything that is only yours (your jobs' scores and
+  marks, history, re-score logs, sources, settings, resume and profile, Gmail connection and ways
+  of signing in) in one step, then mails a notice; shared postings, companies and other accounts
+  are untouched. Run traces and logs in `data/` stay, naming you by id only. Your email can make a
+  new account afterwards, which starts empty.
+- **The only admin** can deactivate but not delete; make another admin first. A deletion that
+  comes due while you are the only admin is held until another admin exists or you cancel it.
+
+With account mail set up, each of these changes is mailed as a notice.
+
 ## Resume and profile
 
 The **Resume** section of the Settings page, under Preferences, holds the resume the model scores

@@ -14,8 +14,8 @@ const actions = vi.hoisted(() => ({
 vi.mock("../../web/lib/adminActions.js", () => actions);
 
 const ACCOUNTS = [
-    { id: 1, name: "Zac", email: "zac@forthebrew.com", isAdmin: true },
-    { id: 2, name: "Ada", email: "ada@example.com", isAdmin: false },
+    { id: 1, name: "Zac", email: "zac@forthebrew.com", isAdmin: true, deactivatedAt: null, deleteAfter: null },
+    { id: 2, name: "Ada", email: "ada@example.com", isAdmin: false, deactivatedAt: null, deleteAfter: null },
 ];
 
 test("the admin section shows a new code once with its expiry, lists accounts with their admin controls, and shows a refusal", async () => {

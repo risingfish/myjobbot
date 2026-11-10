@@ -384,6 +384,22 @@ dialog.details-panel[open] {
     --pico-border-color: var(--pico-secondary-hover-border);
     --pico-color: var(--pico-secondary-hover);
 }
+.status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.status-actions form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0;
+}
+.status-actions .delete-account {
+    display: block;
+    flex-basis: 100%;
+}
 .setting .row {
     display: flex;
     flex-wrap: wrap;

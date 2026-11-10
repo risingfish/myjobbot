@@ -6,8 +6,9 @@ import { jobRequest } from "./rows.js";
 
 type StartedRescore = RescoreStart | { run: string; work: () => Promise<void> };
 
-/** Starts one job's re-score for its panel: refuses a malformed request before any work, gives the run already open for the job, or records a new run and gives the work that carries it out. */
-export async function startRescoreFor(open: () => Promise<OpenedRescore>, request: unknown): Promise<StartedRescore> {
+/** Starts one job's re-score for its panel: refuses a malformed request, or an account that may not score, before any work, gives the run already open for the job, or records a new run and gives the work that carries it out. */
+export async function startRescoreFor(open: () => Promise<OpenedRescore>, request: unknown, refusal: string | null): Promise<StartedRescore> {
+    if (refusal !== null) return { refused: refusal };
     const parsed = jobRequest.safeParse(request);
     if (!parsed.success) return { failed: true };
     const opened = await open();

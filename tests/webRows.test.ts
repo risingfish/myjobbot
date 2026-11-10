@@ -5,6 +5,7 @@ import type { JobStore } from "../src/db/jobStore.js";
 import type { JobViews } from "../src/db/jobViews.js";
 import type { RescoreDeps } from "../src/rescore/rescore.js";
 import type { JobRowView, PageData } from "../src/web/api.js";
+import { MESSAGES } from "../src/accounts/messages.js";
 import { startRescoreFor } from "../web/lib/rescoreStart.js";
 import { loadDetailsFor, loadRows, setAppliedFor, setHiddenFor } from "../web/lib/rows.js";
 import { testAppSettings } from "./helpers/config.js";
@@ -151,7 +152,7 @@ function fakeOpener(begun: BeginResult) {
 test("a re-score asked for while one is open gives that run, does no work and closes, and a malformed request opens nothing", async () => {
     const running = fakeOpener({ running: "run-1" });
     const missing = fakeOpener({ missing: true });
-    expect([await startRescoreFor(running.open, JOB_A), await startRescoreFor(missing.open, { ats: "greenhouse", jobId: "gone" }), await startRescoreFor(running.open, { ats: "", jobId: "a" })]).toEqual([{ run: "run-1" }, { failed: true }, { failed: true }]);
+    expect([await startRescoreFor(running.open, JOB_A, null), await startRescoreFor(missing.open, { ats: "greenhouse", jobId: "gone" }, null), await startRescoreFor(running.open, { ats: "", jobId: "a" }, null)]).toEqual([{ run: "run-1" }, { failed: true }, { failed: true }]);
     expect([running.calls, missing.calls]).toEqual([
         ["open", "begin", "close"],
         ["open", "begin", "close"],
@@ -160,8 +161,14 @@ test("a re-score asked for while one is open gives that run, does no work and cl
 
 test("a started re-score gives its run and the work, which runs the re-score to its end and then closes", async () => {
     const started = fakeOpener({ started: "run-2" });
-    const result = await startRescoreFor(started.open, JOB_A);
+    const result = await startRescoreFor(started.open, JOB_A, null);
     expect([result, started.calls]).toEqual([{ run: "run-2", work: expect.any(Function) }, ["open", "begin"]]);
     if ("work" in result) await result.work();
     expect(started.calls).toEqual(["open", "begin", "end failed", "close"]);
+});
+
+test("a deactivated account's re-score is refused with its message before anything is opened", async () => {
+    const started = fakeOpener({ started: "run-3" });
+    expect(await startRescoreFor(started.open, JOB_A, MESSAGES.reactivate_first)).toEqual({ refused: MESSAGES.reactivate_first });
+    expect(started.calls).toEqual([]);
 });

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { reactivateFirst } from "./accounts/accountLifecycle.js";
 import { runAccountCommand } from "./accounts/terminal.js";
 import { importSqlite } from "./app/importSqlite.js";
 import type { RunSeams } from "./app/run.js";
@@ -95,7 +96,10 @@ async function rescoreCommand(environment: Environment, [ats, jobId]: string[], 
     const stores = await openStores(parseDbSettings(environment));
     try {
         const mine = await storesFor(stores, email);
-        return "refused" in mine ? refused(mine) : await rescoreWith(environment, mine, { ats, jobId });
+        if ("refused" in mine) return refused(mine);
+        const account = await stores.accounts.account(mine.userId);
+        const refusal = account === null ? null : reactivateFirst(account);
+        return refusal === null ? await rescoreWith(environment, mine, { ats, jobId }) : refused({ refused: refusal });
     } finally {
         await stores.close();
     }

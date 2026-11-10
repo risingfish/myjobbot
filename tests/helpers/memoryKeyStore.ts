@@ -7,6 +7,14 @@ export class MemoryKeyStore implements KeyStore {
 
     constructor(private readonly tables: AuthTables) {}
 
+    dropUser(userId: number): void {
+        for (const rows of [this.stored, this.challenges]) for (let index = rows.length - 1; index >= 0; index -= 1) if (rows[index]?.userId === userId) rows.splice(index, 1);
+    }
+
+    heldFor(userId: number): { keys: number; challenges: number } {
+        return { keys: this.stored.filter((row) => row.userId === userId).length, challenges: this.challenges.filter((row) => row.userId === userId).length };
+    }
+
     async addKey(userId: number, key: NewKey, now: string): Promise<"ok" | "name_taken" | "credential_taken"> {
         if (this.stored.some((row) => row.userId === userId && row.name === key.name)) return "name_taken";
         if (this.stored.some((row) => row.credentialId === key.credentialId)) return "credential_taken";

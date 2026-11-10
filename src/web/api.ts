@@ -27,7 +27,7 @@ export interface JobRowView {
     gaps: string[];
 }
 
-export type RescoreStart = { run: string } | { failed: true };
+export type RescoreStart = { run: string } | { failed: true } | { refused: string };
 
 export interface BoostDetail {
     total: number;

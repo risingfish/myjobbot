@@ -6,6 +6,11 @@ import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../secrets/secretKey.js";
 import { MS_PER_DAY } from "../jobs/age.js";
+import type { MailMessage } from "../mail/mailer.js";
+import { mailSlot } from "../mail/fromEnv.js";
+import { sendMail } from "../mail/queue.js";
+import { parseBaseUrl } from "../web/security/baseUrl.js";
+import { carryOutDeletions } from "./accountDeletions.js";
 import { runForUser, type RunSeams } from "./run.js";
 import type { UserRun } from "./runLines.js";
 import { usersToRun, type PlannedUser, type UserFacts } from "./usersToRun.js";
@@ -17,14 +22,16 @@ interface RunAllParts {
     key: SecretKeyStatus;
 }
 
-/** Runs every user, or only the one asked for, one after another in id order, then prunes stale postings once, reporting each user's part. */
+/** Carries out the deletions that are due, then runs every user, or only the one asked for, one after another in id order, then prunes stale postings once, reporting each part. */
 export async function runAll(environment: Environment, seams: RunSeams, only?: number): Promise<UserRun[]> {
     const loaded = loadConfig(environment);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
         const parts = { loaded, seams, stores, key: secretKeyStatus(environment) };
-        const runs: UserRun[] = [];
-        for (const user of usersToRun(await userFacts(stores, loaded, only))) runs.push(await runPlanned(parts, user));
+        const runs: UserRun[] = await carryOutDeletions({ removal: stores.removal, accounts: stores.accounts, send: deletionMail(environment) }, new Date().toISOString());
+        const deleted = new Set(runs.map((run) => run.userId));
+        const facts = (await userFacts(stores, loaded, only)).filter((user) => !deleted.has(user.userId));
+        for (const user of usersToRun(facts)) runs.push(await runPlanned(parts, user));
         await pruneOldJobs(stores, loaded);
         return runs;
     } finally {
@@ -32,17 +39,30 @@ export async function runAll(environment: Environment, seams: RunSeams, only?: n
     }
 }
 
+/** Gives how a run tells a deleted account it is gone: through account mail, waited for, or not at all when mail is off. */
+function deletionMail(environment: Environment): (message: MailMessage) => Promise<void> {
+    const base = parseBaseUrl(environment);
+    const slot = mailSlot(environment, base.ok ? base.url.origin : null);
+    return slot === null ? async () => {} : (message) => sendMail(slot.mailer, message);
+}
+
 /** Gathers what deciding whether to run each user needs: their sources that are on and the resume they can use. */
 async function userFacts(stores: Stores, loaded: LoadedConfig, only: number | undefined): Promise<UserFacts[]> {
     const ids = only === undefined ? await stores.accounts.userIds() : [only];
     const on = await stores.sourcePlans.sourcesOnForAll();
-    return Promise.all(ids.map(async (userId) => ({ userId, sourcesOn: on.filter((source) => source.userId === userId).length, uploadedResume: (await stores.forUser(userId).resume.currentResume()) !== null, resumeFile: loaded.resume !== null })));
+    return Promise.all(ids.map(async (userId) => ({ userId, sourcesOn: on.filter((source) => source.userId === userId).length, uploadedResume: (await stores.forUser(userId).resume.currentResume()) !== null, resumeFile: loaded.resume !== null, deactivated: await isDeactivated(stores, userId) })));
+}
+
+/** Says whether a user's account is deactivated now, so a run does no work for them. */
+async function isDeactivated(stores: Stores, userId: number): Promise<boolean> {
+    return ((await stores.accounts.account(userId))?.deactivatedAt ?? null) !== null;
 }
 
 /** Runs one planned user, reporting a skip as planned and a failure without stopping the users after them. */
 async function runPlanned({ loaded, seams, stores, key }: RunAllParts, user: PlannedUser): Promise<UserRun> {
     if ("skipped" in user) return user;
     try {
+        if (await isDeactivated(stores, user.userId)) return { userId: user.userId, skipped: "deactivated" };
         return { userId: user.userId, report: await runForUser(loaded, seams, { stores: stores.forUser(user.userId), key }) };
     } catch (error) {
         return { userId: user.userId, failed: describeError(error) };

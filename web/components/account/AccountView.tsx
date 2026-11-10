@@ -7,6 +7,7 @@ import { saveName, setMethodEnabled } from "../../lib/accountActions.js";
 import type { AccountState, EventView, WayView } from "../../lib/accountState.js";
 import { Panel } from "../sections/Panel.js";
 import { SettingCard } from "../settings/SettingParts.js";
+import { AccountStatus } from "./AccountStatus.js";
 import { EmailChange } from "./EmailChange.js";
 import { RecoveryCodesPanel } from "./RecoveryCodes.js";
 import { SignInsPanel } from "./SignInsPanel.js";
@@ -80,7 +81,7 @@ function ActivityPanel({ events }: { events: EventView[] }) {
     );
 }
 
-/** Renders the Account tab in the Settings layout: User Profile, Ways of signing in, Recovery codes, Sign-ins and Recent activity, sensitive changes asking to confirm it's you. */
+/** Renders the Account tab in the Settings layout: User Profile, Ways of signing in, Recovery codes, Sign-ins, Recent activity and Account status, sensitive changes asking to confirm it's you. */
 export function AccountView({ state }: { state: AccountState }) {
     return (
         <StepUpProvider>
@@ -89,6 +90,7 @@ export function AccountView({ state }: { state: AccountState }) {
             <RecoveryCodesPanel left={state.recoveryCodesLeft} />
             <SignInsPanel signIns={state.signIns} />
             <ActivityPanel events={state.events} />
+            <AccountStatus status={state.status} />
         </StepUpProvider>
     );
 }
