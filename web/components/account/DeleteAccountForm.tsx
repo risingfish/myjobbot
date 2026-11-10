@@ -10,7 +10,7 @@ type Change = (action: () => Promise<{ ok: boolean; message?: string; stepUp?: t
 export function DeleteAccountForm({ change }: { change: Change }) {
     const submit = async (form: FormData) => change(() => requestAccountDeletion(String(form.get("email") ?? "")));
     return (
-        <form action={submit}>
+        <form action={submit} className="delete-account">
             <p>Deleting removes your jobs and their scores, your history and re-score logs, your sources, settings, resume and profile, your Gmail connection and your ways of signing in, on {utcMinutes(deletionDate(new Date().toISOString()))}. Until then you can sign in and cancel. Shared postings stay.</p>
             <label htmlFor="delete-email">Your account&apos;s email</label>
             <fieldset role="group">

@@ -61,8 +61,10 @@ export function AccountStatus({ status }: { status: AccountStatusView }) {
     return (
         <Panel title="Account status">
             <p>{statusText(status)}</p>
-            <StatusButton view={status} change={change} />
-            <DeleteControls key={status.status} view={status} change={change} />
+            <div className="status-actions">
+                <StatusButton view={status} change={change} />
+                <DeleteControls key={status.status} view={status} change={change} />
+            </div>
             {refusal !== null && <small role="alert">{refusal}</small>}
         </Panel>
     );
