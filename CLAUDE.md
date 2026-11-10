@@ -35,6 +35,10 @@ Enforcement in this repo:
   except during a sitting: while `.specify/sitting-in-progress` (gitignored) exists, naming the
   sitting, it reports the findings instead. Create the marker at a sitting's start and delete it
   once `npm run check` is green; never leave it behind.
+- `.claude/hooks/solid-review-stop.sh` (Stop) blocks a turn's end once for each `src/`/`web/` file
+  that differs from `main` and wasn't reviewed in its current content, asking the session itself to
+  review it for SOLID (no separate model call; owner decision, 2026-11-10). What was asked is kept
+  in the checkout's git directory (`solid-reviewed`), so each file is asked about once per content.
 - `.githooks/pre-commit` blocks commits with enforced findings (`git config core.hooksPath .githooks`).
 - `knip.json` replaces habit-hooks' shipped knip config (copied 2026-10-13). It adds `web/` to
   `project` and gives knip's `next` plugin the Next.js entry files (`web/next.config.ts`,
