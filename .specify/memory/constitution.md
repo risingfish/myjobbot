@@ -99,7 +99,8 @@ All code MUST follow the SOLID principles at all times (owner decision, 2026-11-
   clocks, HTTP, mail), so they can be unit-tested with in-memory implementations.
 
 SOLID is part of every review: every spec, plan and task list (`/speckit-specify`, `/speckit-plan`,
-`/speckit-tasks`, `/speckit-analyze`), and every code review of a change. A plan's Constitution
+`/speckit-tasks`, `/speckit-analyze`), every code review of a change, and the end of every turn
+that changed `src/` or `web/` (the SOLID Stop hook, Quality Gates). A plan's Constitution
 Check names how its design meets each principle, and an analysis reports a breach as it would any
 other principle.
 
@@ -112,6 +113,8 @@ grouping unrelated jobs makes every later change touch code it has nothing to do
 - `.claude/hooks/habit-hooks-stop.sh` (Stop) blocks finishing a turn while the project is not
   clean. While a sitting is in progress (`.specify/sitting-in-progress` exists), it reports instead;
   the marker is removed when the sitting ends green.
+- `.claude/hooks/solid-review-stop.sh` (Stop) has the session review, for SOLID (Principle VI),
+  each `src/` and `web/` file changed since `main`, once per content, before a turn ends.
 - `.githooks/pre-commit` blocks commits with enforced findings
   (`git config core.hooksPath .githooks`).
 - `knip.json` and `eslint.config.mjs` replace habit-hooks' shipped configs (the ESLint copy raises
@@ -179,4 +182,4 @@ or materially extending one, PATCH for wording. `CLAUDE.md` remains the day-to-d
 agree with this constitution; when they differ, both are brought back in line in the same change.
 Every plan's Constitution Check cites the version it was checked against.
 
-**Version**: 2.7.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-08
+**Version**: 2.8.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-10
