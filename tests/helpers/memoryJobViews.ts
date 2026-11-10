@@ -26,10 +26,12 @@ export function viewOf(tables: Tables, userId: number, key: { ats: unknown; jobI
 }
 
 export function userRows(tables: Tables, userId: number): Row[] {
-    return tables.userJobs.filter((view) => view.user_id === userId).flatMap((view) => {
-        const posting = tables.jobs.find((job) => job.ats === view.ats && job.job_id === view.job_id);
-        return posting === undefined ? [] : [{ ...posting, ...view }];
-    });
+    return tables.userJobs
+        .filter((view) => view.user_id === userId)
+        .flatMap((view) => {
+            const posting = tables.jobs.find((job) => job.ats === view.ats && job.job_id === view.job_id);
+            return posting === undefined ? [] : [{ ...posting, ...view }];
+        });
 }
 
 function newestFirst(a: Row, b: Row): number {

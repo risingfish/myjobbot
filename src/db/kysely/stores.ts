@@ -1,3 +1,4 @@
+import { KyselyAccountRemoval } from "./accountRemoval.js";
 import type { Kysely } from "kysely";
 import { userResumeStore } from "../resumeStore.js";
 import type { Database } from "../schema.js";
@@ -44,5 +45,5 @@ function userStoresOver(db: Kysely<Database>, shared: SharedStores, userId: numb
 /** Returns the stores that read and write a connected database: the shared ones, and each user's through `forUser`; closing it when the caller is done. */
 export function storesOver(db: Kysely<Database>): Stores {
     const shared = sharedStores(db);
-    return { ...shared, forUser: (userId) => userStoresOver(db, shared, userId), close: () => db.destroy() };
+    return { ...shared, removal: new KyselyAccountRemoval(db), forUser: (userId) => userStoresOver(db, shared, userId), close: () => db.destroy() };
 }

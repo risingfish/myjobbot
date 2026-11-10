@@ -6,6 +6,11 @@ import { parseDbSettings } from "../db/settings.js";
 import type { Stores } from "../db/store.js";
 import { secretKeyStatus, type SecretKeyStatus } from "../secrets/secretKey.js";
 import { MS_PER_DAY } from "../jobs/age.js";
+import type { MailMessage } from "../mail/mailer.js";
+import { mailSlot } from "../mail/fromEnv.js";
+import { sendMail } from "../mail/queue.js";
+import { parseBaseUrl } from "../web/security/baseUrl.js";
+import { carryOutDeletions } from "./accountDeletions.js";
 import { runForUser, type RunSeams } from "./run.js";
 import type { UserRun } from "./runLines.js";
 import { usersToRun, type PlannedUser, type UserFacts } from "./usersToRun.js";
@@ -17,19 +22,26 @@ interface RunAllParts {
     key: SecretKeyStatus;
 }
 
-/** Runs every user, or only the one asked for, one after another in id order, then prunes stale postings once, reporting each user's part. */
+/** Carries out the deletions that are due, then runs every user, or only the one asked for, one after another in id order, then prunes stale postings once, reporting each part. */
 export async function runAll(environment: Environment, seams: RunSeams, only?: number): Promise<UserRun[]> {
     const loaded = loadConfig(environment);
     const stores = await (seams.openStores ?? (() => openStores(parseDbSettings(environment))))();
     try {
         const parts = { loaded, seams, stores, key: secretKeyStatus(environment) };
-        const runs: UserRun[] = [];
+        const runs: UserRun[] = await carryOutDeletions({ removal: stores.removal, accounts: stores.accounts, send: deletionMail(environment) }, new Date().toISOString());
         for (const user of usersToRun(await userFacts(stores, loaded, only))) runs.push(await runPlanned(parts, user));
         await pruneOldJobs(stores, loaded);
         return runs;
     } finally {
         await stores.close();
     }
+}
+
+/** Gives how a run tells a deleted account it is gone: through account mail, waited for, or not at all when mail is off. */
+function deletionMail(environment: Environment): (message: MailMessage) => Promise<void> {
+    const base = parseBaseUrl(environment);
+    const slot = mailSlot(environment, base.ok ? base.url.origin : null);
+    return slot === null ? async () => {} : (message) => sendMail(slot.mailer, message);
 }
 
 /** Gathers what deciding whether to run each user needs: their sources that are on and the resume they can use. */

@@ -11,6 +11,7 @@ import { MemoryAccountStore } from "./memoryAccountStore.js";
 import { MemoryAlertStore } from "./memoryAlertStore.js";
 import { memoryUser, newAuthTables, type AuthTables } from "./memoryAuthTables.js";
 import { MemoryAuthenticatorStore } from "./memoryAuthenticatorStore.js";
+import { MemoryAccountRemoval } from "./memoryAccountRemoval.js";
 import { MemoryKeyStore } from "./memoryKeyStore.js";
 import { MemoryMethodStore } from "./memoryMethodStore.js";
 import { MemoryAttemptStore } from "./memoryAttemptStore.js";
@@ -53,12 +54,12 @@ export function withOwner(stores: Stores): TestStores {
     return { ...stores, ...stores.forUser(OWNER_ID), forUser: stores.forUser, close: stores.close };
 }
 
-function sharedMemoryStores(tables: Tables, { auth, sources }: PerCallStores): SharedStores {
-    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys: new MemoryKeyStore(auth), apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources) };
+function sharedMemoryStores(tables: Tables, { auth, sources, keys }: PerCallStores): SharedStores {
+    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys, apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources) };
 }
 
 export function perCallStores(tables: Tables, auth: AuthTables = newAuthTables()): PerCallStores {
-    return { auth, sources: new MemorySourceStore(tables, auth.users), searchSettings: new MemorySearchSettingsStore(auth.users), resume: new MemoryResumeStore(auth.users) };
+    return { auth, sources: new MemorySourceStore(tables, auth.users), searchSettings: new MemorySearchSettingsStore(auth.users), resume: new MemoryResumeStore(auth.users), keys: new MemoryKeyStore(auth) };
 }
 
 export function memoryStores(tables: Tables = newTables(), perCall: PerCallStores = perCallStores(tables)): TestStores {
@@ -70,7 +71,8 @@ export function memoryStores(tables: Tables = newTables(), perCall: PerCallStore
         return found;
     };
     const forUser = (userId: number): UserStores => ({ ...shared, userId, ...mailbox(userId), jobStore: new MemoryJobStore(tables, userId), jobViews: new MemoryJobViews(tables, userId), rescoreLog: new MemoryRescoreLog(tables, userId), sources: userSourceStore(perCall.sources, userId), searchSettings: userSearchSettingsStore(perCall.searchSettings, userId), resume: userResumeStore(perCall.resume, userId) });
-    return { ...withOwner({ ...shared, forUser, close: async () => {} }), memory: perCall };
+    const removal = new MemoryAccountRemoval(perCall.auth, tables, [(userId) => mailboxes.delete(userId), (userId) => perCall.sources.dropUser(userId), (userId) => perCall.searchSettings.dropUser(userId), (userId) => perCall.resume.dropUser(userId), (userId) => perCall.keys.dropUser(userId)]);
+    return { ...withOwner({ ...shared, removal, forUser, close: async () => {} }), memory: perCall };
 }
 
 interface PerCallStores {
@@ -78,6 +80,7 @@ interface PerCallStores {
     sources: MemorySourceStore;
     searchSettings: MemorySearchSettingsStore;
     resume: MemoryResumeStore;
+    keys: MemoryKeyStore;
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): TestStores {

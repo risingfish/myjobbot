@@ -16,3 +16,15 @@ export function statusOf(account: Status, now: string, onlyAdmin: boolean): Acco
     if (account.deleteAfter === null) return "deactivated";
     return account.deleteAfter <= now && onlyAdmin ? "held" : "pending_deletion";
 }
+
+const DELETION_DAYS = 30;
+
+/** Gives when a deletion asked for now is carried out: 30 days on. */
+export function deletionDate(now: string): string {
+    return new Date(Date.parse(now) + DELETION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
+
+/** Says whether an account may ask to be deleted: never while it holds the only admin mark. */
+export function mayRequestDeletion(onlyAdmin: boolean): boolean {
+    return !onlyAdmin;
+}

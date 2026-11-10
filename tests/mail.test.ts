@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { transportOptions } from "../src/mail/mailer.js";
 import { accountCreated, someoneTried } from "../src/mail/messages.js";
-import { queueMail } from "../src/mail/queue.js";
+import { queueMail, sendMail } from "../src/mail/queue.js";
 import { parseMailSettings } from "../src/mail/settings.js";
 
 const FULL = { MYJOBBOT_SMTP_HOST: "smtp.example.com", MYJOBBOT_SMTP_PORT: "587", MYJOBBOT_SMTP_USER: "bot@example.com", MYJOBBOT_SMTP_PASSWORD: "hunter2-secret", MYJOBBOT_MAIL_FROM: "myjobbot <bot@example.com>" };
@@ -39,4 +39,13 @@ test("queuing a mail returns before it is sent, and a failure is logged by a fix
     queueMail(failing, { to: "a@example.com", subject: "s", text: "t" }, log);
     await vi.waitFor(() => expect(log).toHaveBeenCalledWith("mail_failed auth"));
     expect(JSON.stringify(log.mock.calls)).not.toContain("bot@example.com");
+});
+
+test("a mail that must go out before the process ends is waited for, and a failure is logged by its reason alone", async () => {
+    const log = vi.fn();
+    const sent = vi.fn(async () => {});
+    await sendMail({ send: sent }, { to: "a@example.com", subject: "s", text: "t" }, log);
+    expect(sent).toHaveBeenCalledOnce();
+    await sendMail({ send: vi.fn(async () => Promise.reject(Object.assign(new Error("535 bad login for bot@example.com"), { code: "EAUTH" }))) }, { to: "a@example.com", subject: "s", text: "t" }, log);
+    expect(log.mock.calls).toEqual([["mail_failed auth"]]);
 });

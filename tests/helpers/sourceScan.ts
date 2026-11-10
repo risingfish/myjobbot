@@ -10,7 +10,11 @@ export function sourceFiles(dir: string): string[] {
 }
 
 export function matchingLines(paths: string[], pattern: RegExp): string[] {
-    return paths.flatMap((path) => readFileSync(path, "utf8").split("\n").flatMap((line, index) => (pattern.test(line) ? [`${path}:${index + 1}`] : [])));
+    return paths.flatMap((path) =>
+        readFileSync(path, "utf8")
+            .split("\n")
+            .flatMap((line, index) => (pattern.test(line) ? [`${path}:${index + 1}`] : [])),
+    );
 }
 
 export function read(path: string): string {

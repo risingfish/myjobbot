@@ -20,6 +20,11 @@ export function securityNotice(input: { name: string; what: string; at: string }
     return { subject: "myjobbot: security notice", text: `Hello ${input.name},\n\n${input.what} on your myjobbot account at ${when}.\n\nIf this wasn't you, sign in at ${baseUrl}/sign-in and change your password, or ask an admin for help.\n` };
 }
 
+/** Builds the mail telling an account's owner it has been deleted, as they asked 30 days before. */
+export function accountDeleted(name: string): MailContent {
+    return { subject: "myjobbot: your account was deleted", text: `Hello ${name},\n\nYour myjobbot account has been deleted, as you asked 30 days ago. Everything that was only yours is gone; shared job postings stay.\n` };
+}
+
 /** Builds the mail holding a one-time sign-in link. */
 export function signInLink(name: string, link: string): MailContent {
     return { subject: "myjobbot: your sign-in link", text: `Hello ${name},\n\nOpen this link to sign in to myjobbot. It works once and expires in 15 minutes:\n\n${link}\n\nIf you didn't ask for it, you can ignore this mail.\n` };

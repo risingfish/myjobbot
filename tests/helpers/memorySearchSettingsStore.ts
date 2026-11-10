@@ -6,6 +6,10 @@ export class MemorySearchSettingsStore implements SearchSettingsStore {
 
     constructor(private readonly users: MemoryUser[] = []) {}
 
+    dropUser(userId: number): void {
+        this.rows.delete(userId);
+    }
+
     async load(userId: number): Promise<RawSearchSettings | null> {
         const row = this.rows.get(userId);
         return row === undefined ? null : rawSearchSettings.parse(JSON.parse(row));

@@ -102,3 +102,14 @@ test("a failure checking whether a user is deactivated fails only that user, and
     const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
     expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([{ userId: 1, failed: "lock timeout" }, [2, "finished"]]);
 });
+
+test("a due deletion is carried out before the users are run, also when one user is asked for", async () => {
+    for (const only of [undefined, 1]) {
+        const stores = await twoUsers();
+        await stores.accounts.setStatus(2, { deactivatedAt: "2026-10-01T00:00:00.000Z", deleteAfter: "2026-10-31T00:00:00.000Z" });
+        const { chat } = scriptedChat(scoring("Stripe", 10));
+        const runs = await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores }, only);
+        expect(runs.map((run) => ("report" in run ? [run.userId, run.report.status] : run))).toEqual([{ userId: 2, deleted: true }, [1, "finished"]]);
+        expect(await stores.accounts.account(2)).toBeNull();
+    }
+});

@@ -49,7 +49,7 @@ export class MemoryCareersStore implements CareersStore {
 
     async descriptionFoundAt(key: JobKey): Promise<string | null> {
         const found = this.rows.filter((row) => row.ats === key.ats && row.jobId === key.jobId && row.step === "finish" && row.outcome === "found").map((row) => row.at);
-        return found.length === 0 ? null : found.sort().at(-1) ?? null;
+        return found.length === 0 ? null : (found.sort().at(-1) ?? null);
     }
 
     private company(companyKey: string): Row | undefined {

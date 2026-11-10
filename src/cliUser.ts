@@ -23,9 +23,9 @@ export function userOption(args: string[]): UserOption {
     return { email, rest: args.filter((_, index) => index !== at && (joined || index !== at + 1)) };
 }
 
-/** Gives the stores of the user a command acts for: the one `--user` names, else user 1; refusing an email that is malformed or has no account, without repeating it. */
+/** Gives the stores of the user a command acts for: the one `--user` names, else user 1; refusing an email that is malformed or has no account, without repeating it, and refusing when user 1 is gone. */
 export async function storesFor(stores: Stores, email: string | undefined): Promise<UserStores | Refused> {
-    if (email === undefined) return stores.forUser(OWNER_ID);
+    if (email === undefined) return (await stores.accounts.account(OWNER_ID)) === null ? { refused: "user 1 no longer exists; name an email with --user" } : stores.forUser(OWNER_ID);
     const checked = checkEmail(email);
     if (!checked.ok) return { refused: `${FLAG}: not a valid address` };
     const account = await stores.accounts.byEmailKey(checked.emailKey);

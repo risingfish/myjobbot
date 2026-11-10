@@ -1,4 +1,6 @@
 import { accountContract } from "./helpers/accountContract.js";
+import { accountRemovalContract } from "./helpers/accountRemovalContract.js";
+import { memoryRemovalHooks } from "./helpers/memoryAccountRemoval.js";
 import { authenticatorContract } from "./helpers/authenticatorContract.js";
 import { userDataContract } from "./helpers/userDataContract.js";
 import { userJobContract } from "./helpers/userJobContract.js";
@@ -59,6 +61,15 @@ alertStoreContract(async () => memoryStores());
 alertJobContract(async () => memoryStores());
 descriptionContract(async () => memoryStores());
 jobDetailContract(async () => memoryStores());
+let removalTables = newTables();
+accountRemovalContract(
+    async () => {
+        removalTables = newTables();
+        return memoryStores(removalTables);
+    },
+    memoryRemovalHooks(() => removalTables),
+    { strict: false },
+);
 let companyTables = newTables();
 companyContract(
     async () => {

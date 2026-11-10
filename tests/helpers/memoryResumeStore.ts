@@ -8,6 +8,11 @@ export class MemoryResumeStore implements ResumeStore {
 
     constructor(private readonly users: MemoryUser[] = []) {}
 
+    dropUser(userId: number): void {
+        this.rows.delete(userId);
+        this.profiles.delete(userId);
+    }
+
     async currentResume(userId: number): Promise<Resume | null> {
         return this.rows.get(userId) ?? null;
     }

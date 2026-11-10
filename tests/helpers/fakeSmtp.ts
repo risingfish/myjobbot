@@ -45,7 +45,9 @@ function startTls(session: Session, onLine: (line: string) => void): void {
 
 function authenticate(login: Login): Reply {
     return (session, argument) => {
-        const [, user, pass] = Buffer.from(argument.replace(/^PLAIN\s+/i, ""), "base64").toString("utf8").split("\0");
+        const [, user, pass] = Buffer.from(argument.replace(/^PLAIN\s+/i, ""), "base64")
+            .toString("utf8")
+            .split("\0");
         write(session, user === login.user && pass === login.pass ? "235 ok" : "535 authentication failed");
     };
 }

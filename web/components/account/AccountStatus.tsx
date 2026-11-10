@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { minutes } from "../../../src/time/minutes.js";
-import { deactivateAccount, reactivateAccount } from "../../lib/accountStatusActions.js";
+import { MESSAGES } from "../../../src/accounts/messages.js";
+import { cancelAccountDeletion, deactivateAccount, reactivateAccount } from "../../lib/accountStatusActions.js";
 import type { AccountStatusView } from "../../lib/accountState.js";
 import { Panel } from "../sections/Panel.js";
+import { DeleteAccountForm } from "./DeleteAccountForm.js";
 import { shownRefusal, useStepUp } from "./StepUp.js";
 
 type Change = (action: () => Promise<{ ok: boolean; message?: string; stepUp?: true }>) => Promise<void>;
@@ -19,22 +21,35 @@ function statusText(view: AccountStatusView): string {
     return `Will be deleted on ${minutes(view.deleteAfter ?? "")} UTC.`;
 }
 
-/** Renders the button that moves the account on from where it stands: Deactivate, asking first, or Reactivate. */
+/** Gives the label and action of the button that moves the account on from where it stands: Deactivate, asking first, Reactivate, or Cancel deletion. */
+function statusButton(status: AccountStatusView["status"], change: Change): { label: string; onClick: () => void } {
+    if (status === "active") return { label: "Deactivate account", onClick: () => window.confirm(CONFIRM_DEACTIVATE) && void change(deactivateAccount) };
+    if (status === "deactivated") return { label: "Reactivate", onClick: () => void change(reactivateAccount) };
+    return { label: "Cancel deletion", onClick: () => void change(cancelAccountDeletion) };
+}
+
+/** Renders the button that moves the account on from where it stands. */
 function StatusButton({ view, change }: { view: AccountStatusView; change: Change }) {
-    const deactivateNow = () => {
-        if (window.confirm(CONFIRM_DEACTIVATE)) void change(deactivateAccount);
-    };
-    if (view.status === "active")
-        return (
-            <button type="button" onClick={deactivateNow}>
-                Deactivate account
-            </button>
-        );
-    if (view.status !== "deactivated") return null;
+    const button = statusButton(view.status, change);
     return (
-        <button type="button" onClick={() => void change(reactivateAccount)}>
-            Reactivate
+        <button type="button" onClick={button.onClick}>
+            {button.label}
         </button>
+    );
+}
+
+/** Renders Delete account for an account not already due for deletion, greyed out with the reason for the only admin, opening the form that asks for the email. */
+function DeleteControls({ view, change }: { view: AccountStatusView; change: Change }) {
+    const [open, setOpen] = useState(false);
+    if (view.status === "pending_deletion" || view.status === "held") return null;
+    if (open) return <DeleteAccountForm change={change} />;
+    return (
+        <>
+            <button type="button" className="secondary" disabled={view.onlyAdmin} onClick={() => setOpen(true)}>
+                Delete account
+            </button>
+            {view.onlyAdmin && <small>{MESSAGES.last_admin_delete}</small>}
+        </>
     );
 }
 
@@ -47,6 +62,7 @@ export function AccountStatus({ status }: { status: AccountStatusView }) {
         <Panel title="Account status">
             <p>{statusText(status)}</p>
             <StatusButton view={status} change={change} />
+            <DeleteControls view={status} change={change} />
             {refusal !== null && <small role="alert">{refusal}</small>}
         </Panel>
     );
