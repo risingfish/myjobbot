@@ -71,7 +71,21 @@ function DeactivateDialog({ open, onDeactivate, onCancel }: { open: boolean; onD
     );
 }
 
-/** Renders the Account status section: where the account stands and the button that changes it, with why a change was refused, and the dialog that asks before deactivating. */
+/** Renders the Account status panel: where the account stands, the buttons that change it, and why a change was refused. */
+function StatusPanel({ status, change, ask, refusal }: { status: AccountStatusView; change: Change; ask: () => void; refusal: string | null }) {
+    return (
+        <Panel title="Account status">
+            <p>{statusText(status)}</p>
+            <div className="status-actions">
+                <StatusButton view={status} change={change} ask={ask} />
+                <DeleteControls key={status.status} view={status} change={change} />
+            </div>
+            {refusal !== null && <small role="alert">{refusal}</small>}
+        </Panel>
+    );
+}
+
+/** Renders the Account status section, with the dialog that asks before deactivating. */
 export function AccountStatus({ status }: { status: AccountStatusView }) {
     const run = useStepUp();
     const [refusal, setRefusal] = useState<string | null>(null);
@@ -83,14 +97,7 @@ export function AccountStatus({ status }: { status: AccountStatusView }) {
     };
     return (
         <>
-            <Panel title="Account status">
-                <p>{statusText(status)}</p>
-                <div className="status-actions">
-                    <StatusButton view={status} change={change} ask={() => setAsking(true)} />
-                    <DeleteControls key={status.status} view={status} change={change} />
-                </div>
-                {refusal !== null && <small role="alert">{refusal}</small>}
-            </Panel>
+            <StatusPanel status={status} change={change} ask={() => setAsking(true)} refusal={refusal} />
             <DeactivateDialog open={asking} onDeactivate={deactivateNow} onCancel={() => setAsking(false)} />
         </>
     );
