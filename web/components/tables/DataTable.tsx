@@ -10,7 +10,7 @@ interface DataTableProps {
 export function DataTable({ headers, children, more }: DataTableProps) {
     return (
         <div className="table">
-            <table>
+            <table className="striped">
                 <thead>
                     <tr>
                         {headers.map((header, index) => (

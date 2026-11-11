@@ -193,6 +193,14 @@ form.applied-form button {
     min-width: 16em;
     overflow-wrap: anywhere;
 }
+.why {
+    padding-top: calc(var(--pico-spacing) / 2);
+}
+.why > summary::after {
+    float: none;
+    display: inline-block;
+    vertical-align: middle;
+}
 td ul {
     margin: 0;
 }
