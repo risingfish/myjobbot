@@ -215,6 +215,12 @@ Secret. Then make the first admin once:
 kubectl exec -it deploy/myjobbot-web -- npm start -- account init you@example.com
 ```
 
+### Monitoring
+
+`monitoring.enabled=true` (with the Prometheus Operator, and `MYJOBBOT_METRICS_TOKEN` in the Secret)
+adds the metrics container, its own Service, a ServiceMonitor, the alert rules and a Grafana
+dashboard. [Monitoring](monitoring.md#in-kubernetes) has the details, the metrics and the alerts.
+
 ## Upgrading to per-user data
 
 The release that gives each account its own data (feature 027) moves every job's score, marks and

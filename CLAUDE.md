@@ -347,6 +347,29 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   out of `web/` and `src/app/`). Tests use `withOwner`/`memoryStores` (user 1 merged in) and
   `forUser(2)` for a second user.
 
+- Observability (feature 030): every run is recorded as it goes through `RunRecorder`
+  (`src/monitoring/recorder.ts`): `agent_runs` with a heartbeat every minute (`runStatus`: no sign
+  of life for 5 minutes is never finished), each user's part in `run_users` written as running before
+  its work (its id made by `runAll` and handed to `openRunLogs`) and ended with counts a
+  schema-checked `RunTally` reads from the part's trace and model log (`tallyEvents.ts`; a new
+  counted event goes in that table, and workers never learn about monitoring). Failures keep only
+  a fixed reason (`runFailureReason`); a failed write is a fixed log line and marks the run
+  `incomplete`, never failing it. The fetch phase records each fetch and planned skip through
+  `src/sources/fetchRecord.ts` (`source_fetches`), `recordedMailer` wraps the mailer `mailSlot`
+  builds (`mail_sends`, by `MailKind`, never address or text), and re-scores store model use on
+  `rescore_runs`. All of it is written only through `RunHistory`, `FetchHistory`, `MailLog` and
+  read only through `MonitoringReads` (raw rows; plain functions in `src/web/monitoring*.ts` and
+  `src/metrics/` aggregate), kept 90 days (`MONITORING_RETENTION_DAYS`) and removed with an
+  account. The Monitoring page (`/monitoring`, `web/lib/monitoringState.ts`) is admin-only (404
+  otherwise), reached through `myStores()`, and shows ids, module names, counts and fixed reasons
+  only (`tests/monitoringPrivacy.test.ts`); charts are Chart.js 4.6.1 (pinned) in
+  `MonitoringChart`. Each user's Settings shows their sources' last 10 fetches. `npm start --
+  metrics` serves the same history to Prometheus with prom-client 15.1.3 (pinned), a fresh
+  registry of gauges per scrape, on `MYJOBBOT_METRICS_PORT` and only with
+  `MYJOBBOT_METRICS_TOKEN`; the chart's `monitoring.enabled` adds its container, Service,
+  ServiceMonitor, PrometheusRule and dashboard. All of it is documented in `docs/monitoring.md`;
+  a new or changed metric is documented there in the same change.
+
 ## Commands
 
 - `npm run check`: typecheck, unit and UI tests, habit-hooks (run before claiming any task done)
@@ -362,5 +385,6 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
 - `npm start -- account init|reset <email>`: make user 1 the first admin, or give an admin a new
   password, typed at a hidden prompt
 - `npm start -- import-sqlite <path>`: one-time copy of an old SQLite database into the configured MariaDB database, as user 1's (refuses a non-empty target)
+- `npm start -- metrics`: serve the stored history to Prometheus on `MYJOBBOT_METRICS_PORT` (default 9464), only with `MYJOBBOT_METRICS_TOKEN` (32+ characters)
 - `npm run web`: the web UI (Next.js dev server in `web/`) on `MYJOBBOT_PORT`, default 8080
 - Traces: `data/runs/*.jsonl`

@@ -1,11 +1,12 @@
 import type { AgentResult } from "../agent/loop.js";
+import type { RunFailureReason } from "../monitoring/failureReason.js";
 
 export interface RunReport extends AgentResult {
     runId: string;
     summary: string | null;
 }
 
-export type UserRun = { userId: number; report: RunReport } | { userId: number; skipped: string } | { userId: number; failed: string } | { userId: number; deleted: true } | { userId: number; held: "last_admin" };
+export type UserRun = { userId: number; report: RunReport } | { userId: number; skipped: string } | { userId: number; failed: string; reason: RunFailureReason } | { userId: number; deleted: true } | { userId: number; held: "last_admin" };
 
 /** Gives the command line's line for one user's part of a run, built from its fields alone. */
 export function runLine(run: UserRun): string {

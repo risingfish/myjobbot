@@ -43,6 +43,11 @@ case "${1:-schedule}" in
     fi
     exec node_modules/.bin/next dev web --hostname 0.0.0.0 --port "${MYJOBBOT_PORT:-8080}"
     ;;
+  metrics)
+    check_prerequisites
+    cd /app
+    exec node_modules/.bin/tsx src/cli.ts metrics
+    ;;
   *)
     exec "$@"
     ;;

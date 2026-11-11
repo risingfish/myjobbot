@@ -1,4 +1,6 @@
+import type { RecentFetch } from "../db/fetchHistory.js";
 import type { SavedSource, SourceOutcome } from "../db/sourceStore.js";
+import { failingRepeatedly } from "../monitoring/failing.js";
 import { moduleFor } from "../sources/registry.js";
 import type { Met, Requirement } from "../sources/module.js";
 import { localTime } from "./localTime.js";
@@ -13,6 +15,14 @@ export interface SourceRowView {
     last: string | null;
     account: boolean;
     edit: SourceDraft | null;
+    history: FetchLineView[];
+    failing: boolean;
+}
+
+export interface FetchLineView {
+    when: string;
+    outcome: string;
+    jobs: number;
 }
 
 export interface SourcesView {
@@ -27,11 +37,17 @@ const UNAVAILABLE = "unavailable";
 
 const NEEDS_FIXING = "needs fixing";
 
-const OUTCOME_TEXT: Record<SourceOutcome["outcome"], string> = { ok: "ok", partial: "stopped at the limit (continues next run)", failing: "failing" };
+const OUTCOME_TEXT: Record<SourceOutcome["outcome"] | "skipped", string> = { ok: "ok", partial: "stopped at the limit (continues next run)", failing: "failing", skipped: "skipped" };
 
-/** Lists the owner's saved sources as the Settings page shows them: each one's module, whether it is on, its last fetch, and what stops it being fetched, with Gmail alerts only once Gmail is connected. */
-export function sourceRows(saved: SavedSource[], met: Met): SourceRowView[] {
-    return saved.filter((source) => met.gmail || !isAccount(source)).map((source) => sourceRow(source, met));
+/** Lists the owner's saved sources as the Settings page shows them: each one's module, whether it is on, its last fetch and recent ones, and what stops it being fetched, with Gmail alerts only once Gmail is connected. */
+export function sourceRows(saved: SavedSource[], met: Met, recent = new Map<number, RecentFetch[]>()): SourceRowView[] {
+    return saved.filter((source) => met.gmail || !isAccount(source)).map((source) => ({ ...sourceRow(source, met), ...historyOf(recent.get(source.id) ?? []) }));
+}
+
+/** Shows a source's recent fetches, newest first, and whether its latest 3 all failed. */
+function historyOf(fetches: RecentFetch[]): Pick<SourceRowView, "history" | "failing"> {
+    const history = fetches.map((fetch) => ({ when: localTime(fetch.at) ?? "", outcome: fetch.outcome === "failing" ? `failing: ${fetch.reason ?? "unexpected answer"}` : fetch.outcome === "skipped" ? `skipped: ${fetch.reason ?? ""}` : OUTCOME_TEXT[fetch.outcome], jobs: fetch.jobs }));
+    return { history, failing: failingRepeatedly(fetches.map((fetch) => fetch.outcome)) };
 }
 
 /** Says how many JSearch requests this month has used out of the cap, for the line above the list. */
@@ -39,8 +55,8 @@ export function searchUsage(used: number, cap: number): string {
     return `JSearch requests this month: ${used} of ${cap}`;
 }
 
-/** Shows one saved source as a row. */
-function sourceRow(source: SavedSource, met: Met): SourceRowView {
+/** Shows one saved source as a row, without its history. */
+function sourceRow(source: SavedSource, met: Met): Omit<SourceRowView, "history" | "failing"> {
     const module = moduleFor(source.module)?.name ?? source.module;
     return { id: source.id, name: source.name, module, on: source.enabled, note: rowNote(source, met), last: lastFetch(source.last), account: isAccount(source), edit: editDraft(source) };
 }

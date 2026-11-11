@@ -27,7 +27,7 @@ async function seeded(): Promise<TestStores> {
 
 function depsFor(stores: TestStores, parts: { chat: ChatFn; lookUp?: RescoreDeps["lookUp"] }) {
     const trace = memoryTrace();
-    const log = new RescoreLog({ store: stores.rescoreLog, runId: RUN_ID, startedAt: new Date(SEEN), trace, clock: () => new Date(SEEN) });
+    const log = new RescoreLog({ store: stores.rescoreLog, runId: RUN_ID, startedAt: new Date(SEEN), trace, clock: () => new Date(SEEN), modelUse: () => ({ modelCalls: 0, promptTokens: 0, completionTokens: 0 }) });
     const deps: RescoreDeps = { config: testAppConfig(SETTINGS), store: stores.jobStore, postings: stores.postings, views: stores.jobViews, chat: parts.chat, trace: stepsFromTrace(trace, log), runId: RUN_ID, now: () => new Date(SEEN), lookUp: parts.lookUp ?? (async () => undefined), markers: dataMarkers(RUN_ID), log, fallbacks: 0 };
     return { deps, trace };
 }

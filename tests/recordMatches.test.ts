@@ -3,6 +3,7 @@ import { greenhouseBoard } from "./helpers/boards.js";
 import { testContext } from "./helpers/context.js";
 import { fakeBoard } from "./helpers/http.js";
 import { memoryStores } from "./helpers/memoryStore.js";
+import { memoryTrace } from "./helpers/trace.js";
 import { nextPage, invokeTool } from "./helpers/tools.js";
 import { makeJob } from "../src/jobs/job.js";
 
@@ -61,4 +62,12 @@ test("an alert job scored without a description says so in its gaps, at any scor
     });
     const gaps = new Map((await stores.jobViews.allJobs({ offset: 0, limit: 10 })).map((job) => [job.job_id, job.gaps]));
     expect([gaps.get("li_9"), gaps.get("1000")]).toEqual([["scored from the alert only (no description)"], []]);
+});
+
+test("record_matches traces how many jobs it saved, leaving out unknown ones", async () => {
+    const trace = memoryTrace();
+    const context = testContext({ http: fakeBoard(greenhouseBoard(["Backend Engineer"])), trace });
+    await nextPage(context, "Stripe");
+    await invokeTool(context, "record_matches", { verdicts: [{ job_id: "1000", base: 30, bonus: 0 }, { job_id: "nope", base: 10, bonus: 0 }] });
+    expect(trace.events.filter((event) => event.type === "jobs_scored")).toEqual([{ type: "jobs_scored", count: 1 }]);
 });

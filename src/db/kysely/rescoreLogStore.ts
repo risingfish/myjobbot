@@ -1,13 +1,13 @@
 import type { Kysely, Selectable, Transaction } from "kysely";
 import { z } from "zod";
-import { openSince, type BeginResult, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../rescoreLogStore.js";
+import { openSince, type BeginResult, type ModelUse, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../rescoreLogStore.js";
 import type { Database } from "../schema.js";
 import type { JobKey } from "../store.js";
 
 type RunRow = Selectable<Database["rescore_runs"]>;
 
-const outcome = z.enum(["scored", "filtered", "failed"]).nullable();
-const filter = z.enum(["company", "title", "body"]).nullable();
+export const storedOutcome = z.enum(["scored", "filtered", "failed"]).nullable();
+export const storedFilter = z.enum(["company", "title", "body"]).nullable();
 
 export class KyselyRescoreLogStore implements RescoreLogStore {
     constructor(
@@ -28,8 +28,8 @@ export class KyselyRescoreLogStore implements RescoreLogStore {
     }
 
     /** Records how a re-score ended and when. */
-    async end(id: string, result: RescoreEnd, at: string): Promise<void> {
-        await this.db.updateTable("rescore_runs").set({ ended_at: at, outcome: result.outcome, filter: result.filter, score: result.score }).where("id", "=", id).execute();
+    async end(id: string, result: RescoreEnd, at: string, use: ModelUse): Promise<void> {
+        await this.db.updateTable("rescore_runs").set({ ended_at: at, outcome: result.outcome, filter: result.filter, score: result.score, model_calls: use.modelCalls, prompt_tokens: use.promptTokens, completion_tokens: use.completionTokens }).where("id", "=", id).execute();
     }
 
     /** Stores one step of a re-score, its fields as JSON. */
@@ -66,5 +66,5 @@ function openRun(trx: Transaction<Database>, key: JobKey & { userId: number }, a
 
 /** Turns a stored run row into the run the app reads. */
 function rescoreRun(row: RunRow): RescoreRun {
-    return { id: row.id, ats: row.ats, jobId: row.job_id, startedAt: row.started_at, endedAt: row.ended_at, outcome: outcome.parse(row.outcome), filter: filter.parse(row.filter), score: row.score };
+    return { id: row.id, ats: row.ats, jobId: row.job_id, startedAt: row.started_at, endedAt: row.ended_at, outcome: storedOutcome.parse(row.outcome), filter: storedFilter.parse(row.filter), score: row.score };
 }

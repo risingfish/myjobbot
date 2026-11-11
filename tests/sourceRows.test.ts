@@ -42,3 +42,12 @@ test("a source whose module is gone is unavailable, one whose fields fail needs 
 test("the JSearch line shows this month's requests out of the cap", () => {
     expect(searchUsage(37, 190)).toBe("JSearch requests this month: 37 of 190");
 });
+
+test("each row lists its recent fetches, newest first as given, and is marked when its latest 3 failed", () => {
+    const [board] = savedSources({ companies: [STRIPE_BOARD] }, false);
+    if (board === undefined) throw new Error("no board");
+    const failing = { at: AT, outcome: "failing" as const, reason: "not found", jobs: 0 };
+    const [row] = sourceRows([board], READY, new Map([[board.id, [failing, failing, failing, { at: AT, outcome: "ok", reason: null, jobs: 4 }]]]));
+    expect(row?.history.map((line) => [line.when.replace(/^\d{4}-\d\d-\d\d \d\d:\d\d$/, "<time>"), line.outcome, line.jobs])).toEqual([["<time>", "failing: not found", 0], ["<time>", "failing: not found", 0], ["<time>", "failing: not found", 0], ["<time>", "ok", 4]]);
+    expect([row?.failing, sourceRows([board], READY)[0]?.failing, sourceRows([board], READY)[0]?.history]).toEqual([true, false, []]);
+});

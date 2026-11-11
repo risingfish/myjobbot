@@ -17,7 +17,7 @@ const verdict = z.object({
 });
 const schema = z.object({ verdicts: z.array(verdict).min(1).max(MAX_VERDICTS) });
 
-type RecordContext = { store: Pick<JobStore, "findJob" | "recordVerdict"> } & Pick<ToolContext, "now" | "runId">;
+type RecordContext = { store: Pick<JobStore, "findJob" | "recordVerdict"> } & Pick<ToolContext, "now" | "runId" | "trace">;
 
 /** Builds the record_matches tool, letting the model save its base+bonus fit scores for scored jobs. */
 export function recordMatchesTool(context: RecordContext): Tool {
@@ -30,7 +30,7 @@ export function recordMatchesTool(context: RecordContext): Tool {
     });
 }
 
-/** Persists each verdict's total score, reporting how many were recorded and which job ids were unknown. */
+/** Persists each verdict's total score, tracing how many were saved, and reports how many were recorded and which job ids were unknown. */
 async function record(context: RecordContext, verdicts: Array<z.infer<typeof verdict>>) {
     const stamp = { scoredAt: context.now().toISOString(), runId: context.runId };
     const unknown: string[] = [];
@@ -39,7 +39,9 @@ async function record(context: RecordContext, verdicts: Array<z.infer<typeof ver
         const known = await context.store.recordVerdict({ ...entry, gaps, score: entry.base + entry.bonus }, stamp);
         if (!known) unknown.push(entry.job_id);
     }
-    return { recorded: verdicts.length - unknown.length, unknown_job_ids: unknown };
+    const recorded = verdicts.length - unknown.length;
+    context.trace.write({ type: "jobs_scored", count: recorded });
+    return { recorded, unknown_job_ids: unknown };
 }
 
 /** Adds a note to the gaps of a Gmail alert job scored without a description, so its reasoning says what it was scored on. */

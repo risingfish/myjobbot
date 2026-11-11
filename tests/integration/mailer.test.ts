@@ -14,12 +14,12 @@ test("the mailer sends one plain-text mail over STARTTLS with the sender's login
     close = server.close;
     const settings = { host: "localhost", port: server.port, user: LOGIN.user, password: LOGIN.pass, from: "myjobbot <bot@example.com>" };
     const mailer = smtpMailer(createTransport({ ...transportOptions(settings), tls: { ca: SMTP_CERT } }), settings.from);
-    await mailer.send({ to: "ada@example.com", subject: "myjobbot: your account was created", text: "Hello Ada" });
+    await mailer.send({ to: "ada@example.com", kind: "test", subject: "myjobbot: your account was created", text: "Hello Ada" });
     expect(server.received).toHaveLength(1);
     expect(server.received[0]).toMatchObject({ from: "<bot@example.com>", to: ["<ada@example.com>"] });
     expect(server.received[0]?.data).toContain("Subject: myjobbot: your account was created");
     const refused = smtpMailer(createTransport({ ...transportOptions({ ...settings, password: "wrong" }), tls: { ca: SMTP_CERT } }), settings.from);
     const lines: string[] = [];
-    queueMail(refused, { to: "ada@example.com", subject: "s", text: "t" }, (line) => void lines.push(line));
+    queueMail(refused, { to: "ada@example.com", kind: "test", subject: "s", text: "t" }, (line) => void lines.push(line));
     await expect.poll(() => lines).toEqual(["mail_failed auth"]);
 }, 20_000);

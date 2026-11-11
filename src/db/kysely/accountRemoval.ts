@@ -9,7 +9,7 @@ function everyUserTable<const Listed extends readonly UserTable[]>(tables: Liste
     return tables;
 }
 
-const USER_TABLES = everyUserTable(["user_jobs", "verdicts", "rescore_runs", "gmail_alert_state", "gmail_connection", "resume_profiles", "resumes", "user_sources", "user_settings", "sign_in_methods", "hardware_keys", "recovery_codes", "sessions", "email_tokens", "auth_challenges", "security_events"]);
+const USER_TABLES = everyUserTable(["run_users", "source_fetches", "user_jobs", "verdicts", "rescore_runs", "gmail_alert_state", "gmail_connection", "resume_profiles", "resumes", "user_sources", "user_settings", "sign_in_methods", "hardware_keys", "recovery_codes", "sessions", "email_tokens", "auth_challenges", "security_events"]);
 
 export class KyselyAccountRemoval implements AccountRemoval {
     constructor(private readonly db: Kysely<Database>) {}

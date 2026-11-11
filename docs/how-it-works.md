@@ -327,6 +327,14 @@ stack's container log does too.
 To learn how a run went, read its trace in `data/runs/*.jsonl` top to bottom: it shows exactly
 what the model saw and decided.
 
+## Monitoring
+
+Every run is also recorded in the database as it goes: the run with a heartbeat every minute (none
+for 5 minutes means it never finished), each user's part with its counts, each source fetch, each
+mail send and each re-score's model use, kept 90 days. Admins see it on the Monitoring page, and
+`npm start -- metrics` serves it to Prometheus. [Monitoring](monitoring.md) has all of it,
+including every metric.
+
 ## The web UI
 
 A Next.js app for browsing the database, with four tabs and a Settings page. Settings is where your

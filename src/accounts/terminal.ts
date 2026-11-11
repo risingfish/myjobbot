@@ -34,7 +34,7 @@ function terminalIo(): AccountIo {
 export async function runAccountCommand(environment: Environment, args: string[]): Promise<number> {
     const stores = await openStores(parseDbSettings(environment));
     const base = parseBaseUrl(environment);
-    const mail = mailSlot(environment, base.ok ? base.url.origin : null);
+    const mail = mailSlot(environment, base.ok ? base.url.origin : null, stores.mailLog);
     const key = secretKeyStatus(environment);
     try {
         return await accountCommand({ stores, now: () => new Date().toISOString(), random: randomBytes, mail, secretKey: key.status === "ok" ? key.key : null, relyingParty: base.ok ? { id: base.url.hostname, origin: base.url.origin } : null }, args, terminalIo());

@@ -1,5 +1,5 @@
 import type { Trace } from "../agent/trace.js";
-import type { RescoreEnd, RescoreLogStore } from "../db/rescoreLogStore.js";
+import type { ModelUse, RescoreEnd, RescoreLogStore } from "../db/rescoreLogStore.js";
 import { describeError } from "../errors.js";
 import { parseStep, stepLine, type Step } from "./steps.js";
 
@@ -9,6 +9,7 @@ interface RescoreLogDeps {
     startedAt: Date;
     trace: Trace;
     clock: () => Date;
+    modelUse: () => ModelUse;
     onLine?: (line: string, elapsedMs: number) => void;
 }
 
@@ -33,10 +34,10 @@ export class RescoreLog {
         this.written = this.written.then(() => this.deps.store.addStep(this.deps.runId, stored)).catch((error: unknown) => this.failed(error));
     }
 
-    /** Records how the run ended, once every step logged before it is stored. */
+    /** Records how the run ended and the model use it took, once every step logged before it is stored. */
     async end(result: RescoreEnd): Promise<void> {
         await this.written;
-        await this.deps.store.end(this.deps.runId, result, this.deps.clock().toISOString()).catch((error: unknown) => this.failed(error));
+        await this.deps.store.end(this.deps.runId, result, this.deps.clock().toISOString(), this.deps.modelUse()).catch((error: unknown) => this.failed(error));
     }
 
     /** Traces a write to the log that failed. */

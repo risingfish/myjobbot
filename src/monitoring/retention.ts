@@ -1,0 +1,1 @@
+export const MONITORING_RETENTION_DAYS = 90;

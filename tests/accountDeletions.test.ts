@@ -36,6 +36,6 @@ test("a due account is removed and then told, to the address read before; a held
 
 test("a deletion cancelled or already done is passed over quietly, and one that fails fails alone", async () => {
     const { deps, sent } = parts({ 2: "not_due", 3: new Error("lock wait timeout"), 4: "gone" });
-    expect(await carryOutDeletions(deps, NOW)).toEqual([{ userId: 3, failed: "lock wait timeout" }]);
+    expect(await carryOutDeletions(deps, NOW)).toEqual([{ userId: 3, failed: "lock wait timeout", reason: "other" }]);
     expect(sent).toEqual([]);
 });

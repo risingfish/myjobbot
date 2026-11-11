@@ -1,15 +1,16 @@
 import { randomBytes } from "node:crypto";
 import type { AuthContext, MailSlot } from "../../src/accounts/flows/context.js";
 import { secretKeyStatus } from "../../src/secrets/secretKey.js";
+import type { MailLog } from "../../src/db/mailLog.js";
 import { mailSlot } from "../../src/mail/fromEnv.js";
 import { openedStores } from "./database.js";
 import { webSettings } from "./webSettings.js";
 
 const cache = globalThis as typeof globalThis & { __myjobbotMail?: MailSlot | null };
 
-/** Returns the account mailer, built once per process from the mail settings and the public address. */
-function mail(): MailSlot | null {
-    if (cache.__myjobbotMail === undefined) cache.__myjobbotMail = mailSlot(process.env, webSettings()?.url.origin ?? null);
+/** Returns the account mailer, built once per process from the mail settings and the public address, recording each send in the mail log. */
+function mail(log: MailLog): MailSlot | null {
+    if (cache.__myjobbotMail === undefined) cache.__myjobbotMail = mailSlot(process.env, webSettings()?.url.origin ?? null, log);
     return cache.__myjobbotMail;
 }
 
@@ -19,5 +20,5 @@ export async function authContext(): Promise<AuthContext> {
     const key = secretKeyStatus(process.env);
     const url = webSettings()?.url;
     const relyingParty = url === undefined ? null : { id: url.hostname, origin: url.origin };
-    return { stores, now: () => new Date().toISOString(), random: randomBytes, mail: mail(), secretKey: key.status === "ok" ? key.key : null, relyingParty };
+    return { stores, now: () => new Date().toISOString(), random: randomBytes, mail: mail(stores.mailLog), secretKey: key.status === "ok" ? key.key : null, relyingParty };
 }

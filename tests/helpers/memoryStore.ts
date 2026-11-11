@@ -31,6 +31,8 @@ import { MemoryJobViews, newTables, type Tables } from "./memoryJobViews.js";
 import { MemoryJobStore } from "./memoryJobStore.js";
 import { MemoryPostingStore } from "./memoryPostingStore.js";
 import { MemorySourcePlans } from "./memorySourcePlans.js";
+import { MemoryFetchHistory, MemoryMailLog, MemoryMonitoringReads, MemoryRunHistory } from "./memoryMonitoring.js";
+import { userFetchHistory } from "../../src/db/fetchHistory.js";
 
 class MemoryApiCallLog implements ApiCallLog {
     constructor(private readonly tables: Tables) {}
@@ -54,12 +56,13 @@ export function withOwner(stores: Stores): TestStores {
     return { ...stores, ...stores.forUser(OWNER_ID), forUser: stores.forUser, close: stores.close };
 }
 
-function sharedMemoryStores(tables: Tables, { auth, sources, keys }: PerCallStores): SharedStores {
-    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys, apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources) };
+function sharedMemoryStores(tables: Tables, { auth, sources, keys, runHistory, fetchHistory, mailLog }: PerCallStores): SharedStores {
+    const careers = new MemoryCareersStore(tables);
+    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys, apiCalls: new MemoryApiCallLog(tables), careers, companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources), runHistory, fetchHistory, mailLog, monitoring: new MemoryMonitoringReads({ history: runHistory, fetchHistory, careers, mailLog, tables }) };
 }
 
 export function perCallStores(tables: Tables, auth: AuthTables = newAuthTables()): PerCallStores {
-    return { auth, sources: new MemorySourceStore(tables, auth.users), searchSettings: new MemorySearchSettingsStore(auth.users), resume: new MemoryResumeStore(auth.users), keys: new MemoryKeyStore(auth) };
+    return { auth, sources: new MemorySourceStore(tables, auth.users), searchSettings: new MemorySearchSettingsStore(auth.users), resume: new MemoryResumeStore(auth.users), keys: new MemoryKeyStore(auth), runHistory: new MemoryRunHistory(), fetchHistory: new MemoryFetchHistory(), mailLog: new MemoryMailLog() };
 }
 
 export function memoryStores(tables: Tables = newTables(), perCall: PerCallStores = perCallStores(tables)): TestStores {
@@ -70,8 +73,8 @@ export function memoryStores(tables: Tables = newTables(), perCall: PerCallStore
         mailboxes.set(userId, found);
         return found;
     };
-    const forUser = (userId: number): UserStores => ({ ...shared, userId, ...mailbox(userId), jobStore: new MemoryJobStore(tables, userId), jobViews: new MemoryJobViews(tables, userId), rescoreLog: new MemoryRescoreLog(tables, userId), sources: userSourceStore(perCall.sources, userId), searchSettings: userSearchSettingsStore(perCall.searchSettings, userId), resume: userResumeStore(perCall.resume, userId) });
-    const removal = new MemoryAccountRemoval(perCall.auth, tables, [(userId) => mailboxes.delete(userId), (userId) => perCall.sources.dropUser(userId), (userId) => perCall.searchSettings.dropUser(userId), (userId) => perCall.resume.dropUser(userId), (userId) => perCall.keys.dropUser(userId)]);
+    const forUser = (userId: number): UserStores => ({ ...shared, userId, ...mailbox(userId), jobStore: new MemoryJobStore(tables, userId), jobViews: new MemoryJobViews(tables, userId), rescoreLog: new MemoryRescoreLog(tables, userId), sources: userSourceStore(perCall.sources, userId), searchSettings: userSearchSettingsStore(perCall.searchSettings, userId), resume: userResumeStore(perCall.resume, userId), fetches: userFetchHistory(perCall.fetchHistory, userId) });
+    const removal = new MemoryAccountRemoval(perCall.auth, tables, [(userId) => mailboxes.delete(userId), (userId) => perCall.sources.dropUser(userId), (userId) => perCall.searchSettings.dropUser(userId), (userId) => perCall.resume.dropUser(userId), (userId) => perCall.keys.dropUser(userId), (userId) => perCall.runHistory.dropUser(userId), (userId) => perCall.fetchHistory.dropUser(userId)]);
     return { ...withOwner({ ...shared, removal, forUser, close: async () => {} }), memory: perCall };
 }
 
@@ -81,6 +84,9 @@ interface PerCallStores {
     searchSettings: MemorySearchSettingsStore;
     resume: MemoryResumeStore;
     keys: MemoryKeyStore;
+    runHistory: MemoryRunHistory;
+    fetchHistory: MemoryFetchHistory;
+    mailLog: MemoryMailLog;
 }
 
 export function storesWithSettings(config: SourceLists, tables: Tables = newTables()): TestStores {

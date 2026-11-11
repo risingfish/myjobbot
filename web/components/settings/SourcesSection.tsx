@@ -7,6 +7,7 @@ import { Panel } from "../sections/Panel.js";
 import { AddSource } from "./AddSource.js";
 import { DeleteSource, SourceSwitch } from "./SourceControls.js";
 import { SourceEditor } from "./SourceEditor.js";
+import { SourceHistory } from "./SourceHistory.js";
 
 const NO_SOURCES = "No saved sources yet.";
 
@@ -31,7 +32,7 @@ export function SourcesSection({ sources }: { sources: SourcesView }) {
     );
 }
 
-/** Renders one saved source: its module as a badge, its name, its switch, its last fetch and what stops it, and Edit and Delete unless it belongs to the account. */
+/** Renders one saved source: its module as a badge, its name, its switch, its last fetch and what stops it, Edit and Delete unless it belongs to the account, and its recent fetches. */
 function SourceRow({ row, onEdit }: { row: SourceRowView; onEdit: (draft: SourceDraft) => void }) {
     const { edit } = row;
     return (
@@ -47,6 +48,7 @@ function SourceRow({ row, onEdit }: { row: SourceRowView; onEdit: (draft: Source
                 </button>
             )}
             {row.account ? null : <DeleteSource row={row} />}
+            <SourceHistory history={row.history} failing={row.failing} />
         </li>
     );
 }

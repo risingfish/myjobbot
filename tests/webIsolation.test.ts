@@ -77,3 +77,10 @@ test("an admin who isn't the owner sees none of the owner's data either", async 
     const { myStores } = await import("../web/lib/myStores.js");
     expect([await ui.views.countAllJobs(), await (await myStores()).gmail.connection(), await ui.rescoreLog.run(RUN)]).toEqual([0, null, null]);
 });
+
+test("the Monitoring page's data is given to an admin only", async () => {
+    const { getMonitoringState } = await import("../web/lib/monitoringState.js");
+    expect(await getMonitoringState({})).toBeNull();
+    state.account = { ...state.account, isAdmin: true };
+    expect((await getMonitoringState({ period: "day" }))?.period).toBe("day");
+});

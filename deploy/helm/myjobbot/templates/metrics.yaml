@@ -1,0 +1,39 @@
+{{- if .Values.monitoring.enabled }}
+# The metrics port's own Service; the ingress routes only the web Service, never this one.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myjobbot.fullname" . }}-metrics
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "web") | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.monitoring.port }}
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "myjobbot.fullname" . }}
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "myjobbot.selectorLabels" (dict "ctx" . "component" "metrics") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      bearerTokenSecret:
+        name: {{ include "myjobbot.secretName" . }}
+        key: MYJOBBOT_METRICS_TOKEN
+{{- end }}

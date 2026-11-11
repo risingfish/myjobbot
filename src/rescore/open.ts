@@ -1,3 +1,4 @@
+import { RunTally } from "../monitoring/tally.js";
 import { createChat, type ChatFn } from "../agent/llm.js";
 import { dataMarkers, type DataMarkers } from "../agent/markers.js";
 import { openRunLogs, type RunLogs } from "../app/runLogs.js";
@@ -8,8 +9,8 @@ import { lookUpCareers } from "../careers/lookUpJobs.js";
 import type { PageRenderer } from "../careers/renderState.js";
 import { loadConfig, type AppConfig, type Environment } from "../config/load.js";
 import type { Settings } from "../config/schema.js";
-import type { Trace } from "../agent/trace.js";
-import type { BeginResult } from "../db/rescoreLogStore.js";
+import { teeTrace, type Trace } from "../agent/trace.js";
+import type { BeginResult, ModelUse } from "../db/rescoreLogStore.js";
 import type { JobKey } from "../db/store.js";
 import type { UserStores } from "../db/userStores.js";
 import type { SoughtJob } from "../careers/session.js";
@@ -43,9 +44,10 @@ export async function openRescore(environment: Environment, stores: UserStores, 
     const logs = openRunLogs(loaded);
     const fallbacks = fallbackCounter(logs.trace);
     const config = await settingsForRun(loaded, stores, fallbacks.trace);
-    const log = new RescoreLog({ store: stores.rescoreLog, runId: logs.runId, startedAt: new Date(), trace: logs.trace, clock: () => new Date(), onLine });
+    const tally = new RunTally();
+    const log = new RescoreLog({ store: stores.rescoreLog, runId: logs.runId, startedAt: new Date(), trace: logs.trace, clock: () => new Date(), modelUse: () => modelUse(tally), onLine });
     const trace = stepsFromTrace(logs.trace, log);
-    const chat = createChat(config.env, logs.llm);
+    const chat = createChat(config.env, teeTrace(logs.llm, tally));
     const renderer = pageRenderer(config, {}, { logs, stores });
     const markers = dataMarkers(logs.runId);
     const parts = careersParts(config, { logs, stores, chat, renderer, markers, log, trace });
@@ -53,6 +55,12 @@ export async function openRescore(environment: Environment, stores: UserStores, 
     const deps: RescoreDeps = { config, store: stores.jobStore, postings: stores.postings, views: stores.jobViews, chat, trace, runId: logs.runId, now: () => new Date(), markers, lookUp, log, fallbacks: fallbacks.count() };
     const begin = (key: JobKey) => stores.rescoreLog.begin(key, logs.runId, log.startedAt.toISOString());
     return { deps, begin, close: () => renderer.close() };
+}
+
+/** Gives the model calls and tokens a re-score's tally counted. */
+function modelUse(tally: RunTally): ModelUse {
+    const { modelCalls, promptTokens, completionTokens } = tally.totals();
+    return { modelCalls, promptTokens, completionTokens };
 }
 
 /** Wraps a trace to count the settings that fell back while they were resolved, leaving out other settings notices. */

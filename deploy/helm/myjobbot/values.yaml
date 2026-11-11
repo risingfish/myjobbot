@@ -125,3 +125,30 @@ searxng:
     resources: {}
 # Used when searxng.enabled is false.
 externalSearxngUrl: ""
+
+# Prometheus metrics (feature 030): a second container in the web pod serving the stored run, fetch,
+# lookup, re-score and mail history on its own port, never through the ingress, only to a scrape
+# sending MYJOBBOT_METRICS_TOKEN (set it in the Secret, at least 32 characters). Needs the
+# Prometheus Operator's CRDs (kube-prometheus-stack) for the ServiceMonitor and PrometheusRule.
+monitoring:
+    enabled: false
+    port: 9464
+    resources: {}
+    serviceMonitor:
+        interval: 1m
+        # Labels your Prometheus selects ServiceMonitors by, e.g. release: kube-prometheus-stack.
+        labels: {}
+    rules:
+        labels: {}
+    alerts:
+        # No run finished for this many hours (the schedule's interval plus 1 hour).
+        missedRunHours: 9
+        # A module whose sources' latest fetches failed this many times in a row, for any user.
+        moduleFailingFetches: 3
+        # Mail failures in a row since the last mail sent.
+        mailFailures: 3
+        # Share of this month's JSearch request cap used.
+        jsearchBudgetRatio: 0.9
+    dashboard:
+        # A ConfigMap labelled grafana_dashboard: "1", for the Grafana sidecar to load.
+        enabled: true

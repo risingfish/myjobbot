@@ -31,7 +31,7 @@ async function oneOpenRun({ rescoreLog }: TestStores) {
 async function listsRuns(make: MakeStores) {
     const stores = await seeded(make);
     await oneOpenRun(stores);
-    await stores.rescoreLog.end(run(4), { outcome: "scored", filter: null, score: 72 }, ENDED);
+    await stores.rescoreLog.end(run(4), { outcome: "scored", filter: null, score: 72 }, ENDED, { modelCalls: 2, promptTokens: 900, completionTokens: 60 });
     const runs = await stores.rescoreLog.runsFor(KEPT);
     expect(runs.map((each) => [each.id, each.outcome, each.score, each.endedAt])).toEqual([
         [run(4), "scored", 72, ENDED],

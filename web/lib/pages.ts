@@ -9,4 +9,5 @@ export const PAGES = [
     { path: "/reasoning", label: "Reasoning" },
     { path: "/settings", label: "Settings" },
     { path: "/account", label: "Account" },
+    { path: "/monitoring", label: "Monitoring", admin: true },
 ] as const;

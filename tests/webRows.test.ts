@@ -96,7 +96,7 @@ test("loadDetailsFor includes the job's score history and its re-scores, newest 
     const stores = await seededStores([{ id: "a", score: 70 }]);
     await stores.jobStore.recordVerdict({ job_id: "a", score: 80, reasons: [], gaps: [] }, { scoredAt: "2026-10-03T00:00:00.000Z", runId: "run-2" });
     await stores.rescoreLog.begin(JOB_A, "run-3", "2026-10-04T00:00:00.000Z");
-    await stores.rescoreLog.end("run-3", { outcome: "filtered", filter: "title", score: null }, "2026-10-04T00:00:01.000Z");
+    await stores.rescoreLog.end("run-3", { outcome: "filtered", filter: "title", score: null }, "2026-10-04T00:00:01.000Z", { modelCalls: 0, promptTokens: 0, completionTokens: 0 });
     expect((await loadDetailsFor(detailStores(stores), config, JOB_A, new Date()))?.history.map((entry) => [entry.total, entry.run, entry.rescore?.state ?? null])).toEqual([
         [null, "run-3", "filtered"],
         [80, "run-2", null],
