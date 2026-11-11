@@ -31,7 +31,7 @@ import { MemoryJobViews, newTables, type Tables } from "./memoryJobViews.js";
 import { MemoryJobStore } from "./memoryJobStore.js";
 import { MemoryPostingStore } from "./memoryPostingStore.js";
 import { MemorySourcePlans } from "./memorySourcePlans.js";
-import { MemoryFetchHistory, MemoryMailLog, MemoryRunHistory } from "./memoryMonitoring.js";
+import { MemoryFetchHistory, MemoryMailLog, MemoryMonitoringReads, MemoryRunHistory } from "./memoryMonitoring.js";
 import { userFetchHistory } from "../../src/db/fetchHistory.js";
 
 class MemoryApiCallLog implements ApiCallLog {
@@ -57,7 +57,8 @@ export function withOwner(stores: Stores): TestStores {
 }
 
 function sharedMemoryStores(tables: Tables, { auth, sources, keys, runHistory, fetchHistory, mailLog }: PerCallStores): SharedStores {
-    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys, apiCalls: new MemoryApiCallLog(tables), careers: new MemoryCareersStore(tables), companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources), runHistory, fetchHistory, mailLog };
+    const careers = new MemoryCareersStore(tables);
+    return { sessions: new MemorySessionStore(auth), attempts: new MemoryAttemptStore(auth), accounts: new MemoryAccountStore(auth), events: new MemorySecurityEventLog(auth), methods: new MemoryMethodStore(auth), authenticators: new MemoryAuthenticatorStore(auth), accountCodes: new MemoryAccountCodeStore(auth), emailLinks: new MemoryEmailLinkStore(auth), recoveryCodes: new MemoryRecoveryCodeStore(auth), keys, apiCalls: new MemoryApiCallLog(tables), careers, companies: new MemoryCompanyStore(tables), postings: new MemoryPostingStore(tables), sourcePlans: new MemorySourcePlans(sources), runHistory, fetchHistory, mailLog, monitoring: new MemoryMonitoringReads(runHistory, fetchHistory, careers) };
 }
 
 export function perCallStores(tables: Tables, auth: AuthTables = newAuthTables()): PerCallStores {

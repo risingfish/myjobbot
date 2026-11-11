@@ -169,7 +169,7 @@ test("a failing fetch is recorded with its fixed reason, and one whose record fa
     await fetchSources(context);
     expect(history?.fetches.map((fetch) => [fetch.module, fetch.outcome, fetch.reason])).toEqual([["greenhouse", "failing", "not found"], ["lever", "ok", null]]);
     const failing = phaseContext([source(1, { module: "greenhouse", name: "Gone", params: { slug: "gone" } }), source(2, { module: "lever", name: "Palantir", params: { slug: "palantir" } })], http);
-    await fetchSources({ ...failing.context, fetches: { record: () => Promise.reject(new Error("connection lost")) } });
+    await fetchSources({ ...failing.context, fetches: { record: () => Promise.reject(new Error("connection lost")), recent: async () => new Map() } });
     expect([failing.trace.events.filter((event) => event.type === "fetch_history_failed").length, failing.trace.events.filter((event) => event.type === "source_fetch").length]).toEqual([2, 2]);
     expect(JSON.stringify(failing.trace.events)).not.toContain("connection lost");
 });

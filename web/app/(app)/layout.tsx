@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return (
         <>
             <Header name={account.name} />
-            <Nav />
+            <Nav admin={account.isAdmin} />
             <AccountBanner account={account} />
             {children}
             <Footer database={dbLabel()} renderedAt={new Date().toISOString()} />

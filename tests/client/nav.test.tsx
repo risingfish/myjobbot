@@ -21,23 +21,25 @@ function linkClass(name: string): string {
 
 test("the navigation marks the page at the current address", () => {
     navigation.path = "/jobs";
-    render(<Nav />);
+    render(<Nav admin={false} />);
     expect(linkClass("All jobs")).toBe("current");
     expect(linkClass("Recommended")).toBe("");
 });
 
-test("every page in the menu list gets a link, in order", () => {
+test("every page in the menu list gets a link, in order, and Monitoring only for an admin", () => {
     navigation.path = "/recommended";
-    render(<Nav />);
-    const links = screen.getAllByRole("link").map((link) => [link.getAttribute("href"), link.textContent]);
-    expect(links).toEqual(PAGES.map((page) => [page.path, page.label]));
+    const view = render(<Nav admin />);
+    const links = () => screen.getAllByRole("link").map((link) => [link.getAttribute("href"), link.textContent]);
+    expect(links()).toEqual(PAGES.map((page) => [page.path, page.label]));
+    view.rerender(<Nav admin={false} />);
+    expect(links()).toEqual(PAGES.filter((page) => page.path !== "/monitoring").map((page) => [page.path, page.label]));
 });
 
 test("the marking follows the address when it changes", () => {
     navigation.path = "/jobs";
-    const view = render(<Nav />);
+    const view = render(<Nav admin={false} />);
     navigation.path = "/settings";
-    view.rerender(<Nav />);
+    view.rerender(<Nav admin={false} />);
     expect(linkClass("Settings")).toBe("current");
     expect(linkClass("All jobs")).toBe("");
 });

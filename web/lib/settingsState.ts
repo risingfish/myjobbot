@@ -18,6 +18,8 @@ import { requireSession } from "./session.js";
 import { metNeeds } from "./sourceNeeds.js";
 import { getStores } from "./uiState.js";
 
+const RECENT_FETCHES = 10;
+
 interface SettingsState {
     gmail: GmailPanelView;
     notices: SettingsNotice[];
@@ -40,10 +42,11 @@ export async function getSettingsState(): Promise<SettingsState> {
     return { gmail: await gmailView(opened, key), notices, view: settingsView(stored), sources: await sourcesView(opened), resume, profile, admin };
 }
 
-/** Builds the Sources section's view: the saved sources as rows, and this month's JSearch requests out of the cap. */
+/** Builds the Sources section's view: the saved sources as rows with their recent fetches, and this month's JSearch requests out of the cap. */
 async function sourcesView(opened: UserStores): Promise<SourcesView> {
     const [saved, met, used] = await Promise.all([opened.sources.list(), metNeeds(opened), requestsThisMonth({ apiCalls: opened.apiCalls, now: () => new Date() })]);
-    return { rows: sourceRows(saved, met), usage: searchUsage(used, sourceConfig().jsearch.monthly_request_cap), choices: sourceChoices(met) };
+    const recent = await opened.fetches.recent(saved.map((source) => source.id), RECENT_FETCHES);
+    return { rows: sourceRows(saved, met, recent), usage: searchUsage(used, sourceConfig().jsearch.monthly_request_cap), choices: sourceChoices(met) };
 }
 
 /** Builds the Gmail panel's view from the stored connection, the server key and the last alert run. */

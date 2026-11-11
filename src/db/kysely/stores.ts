@@ -32,11 +32,12 @@ import { KyselyRecoveryCodeStore } from "./recoveryCodeStore.js";
 import { KyselyRunHistory } from "./runHistory.js";
 import { KyselyFetchHistory } from "./fetchHistory.js";
 import { KyselyMailLog } from "./mailLog.js";
+import { KyselyMonitoringReads } from "./monitoringReads.js";
 import { userFetchHistory } from "../fetchHistory.js";
 
 /** Returns the stores everyone shares over a connected database. */
 function sharedStores(db: Kysely<Database>): SharedStores {
-    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sourcePlans: new KyselySourcePlans(db), sessions: new KyselySessionStore(db), attempts: new KyselyAttemptStore(db), accounts: new KyselyAccountStore(db), events: new KyselySecurityEventLog(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), accountCodes: new KyselyAccountCodeStore(db), emailLinks: new KyselyEmailLinkStore(db), recoveryCodes: new KyselyRecoveryCodeStore(db), keys: new KyselyKeyStore(db), runHistory: new KyselyRunHistory(db), fetchHistory: new KyselyFetchHistory(db), mailLog: new KyselyMailLog(db) };
+    return { apiCalls: new KyselyApiCallLog(db), careers: new KyselyCareersStore(db), companies: new KyselyCompanyStore(db), postings: new KyselyPostingStore(db), sourcePlans: new KyselySourcePlans(db), sessions: new KyselySessionStore(db), attempts: new KyselyAttemptStore(db), accounts: new KyselyAccountStore(db), events: new KyselySecurityEventLog(db), methods: new KyselyMethodStore(db), authenticators: new KyselyAuthenticatorStore(db), accountCodes: new KyselyAccountCodeStore(db), emailLinks: new KyselyEmailLinkStore(db), recoveryCodes: new KyselyRecoveryCodeStore(db), keys: new KyselyKeyStore(db), runHistory: new KyselyRunHistory(db), fetchHistory: new KyselyFetchHistory(db), mailLog: new KyselyMailLog(db), monitoring: new KyselyMonitoringReads(db) };
 }
 
 /** Returns one user's stores over a connected database, each bound to that user, with the shared stores alongside. */

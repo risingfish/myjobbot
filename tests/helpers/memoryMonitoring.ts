@@ -1,7 +1,10 @@
 import type { TallyTotals } from "../../src/monitoring/tallyEvents.js";
 import type { PartEnd, PartStart, RunEnding, RunHistory, RunTotals } from "../../src/db/runHistory.js";
-import type { FetchHistory, FetchRecord } from "../../src/db/fetchHistory.js";
+import { latestPerSource, type FetchHistory, type FetchRecord, type RecentFetch } from "../../src/db/fetchHistory.js";
 import type { MailLog, MailSend } from "../../src/db/mailLog.js";
+import type { FetchRow, MonitoringReads, PartRow, RunRow } from "../../src/db/monitoringReads.js";
+import { storedPartOutcome, storedRunOutcome } from "../../src/monitoring/runStatus.js";
+import type { MemoryCareersStore } from "./memoryCareersStore.js";
 
 export interface StoredRun {
     id: string;
@@ -46,6 +49,12 @@ export class MemoryFetchHistory implements FetchHistory {
 
     async record(userId: number, fetch: FetchRecord): Promise<void> {
         this.fetches.push({ userId, ...fetch });
+    }
+
+    async recent(userId: number, sourceIds: number[], perSource: number): Promise<Map<number, RecentFetch[]>> {
+        const mine = this.fetches.filter((fetch) => fetch.userId === userId && sourceIds.includes(fetch.sourceId)).reverse();
+        const newest = mine.sort((left, right) => right.at.localeCompare(left.at));
+        return latestPerSource(newest.map(({ sourceId, at, outcome, reason, jobs }) => ({ sourceId, at, outcome, reason, jobs })), perSource);
     }
 
     async pruneBefore(cutoff: string): Promise<void> {
@@ -102,4 +111,37 @@ export class MemoryRunHistory implements RunHistory {
         const run = this.runs.find((row) => row.id === runId);
         if (run !== undefined) Object.assign(run, change);
     }
+}
+
+export class MemoryMonitoringReads implements MonitoringReads {
+    constructor(
+        private readonly history: MemoryRunHistory,
+        private readonly fetchHistory: MemoryFetchHistory,
+        private readonly careers: MemoryCareersStore,
+    ) {}
+
+    async runs(since: string): Promise<RunRow[]> {
+        return this.history.runs.filter((run) => run.startedAt >= since).sort((left, right) => right.startedAt.localeCompare(left.startedAt)).map(runRow);
+    }
+
+    async run(runId: string): Promise<{ run: RunRow; parts: PartRow[] } | null> {
+        const run = this.history.runs.find((each) => each.id === runId);
+        if (run === undefined) return null;
+        const parts = this.history.parts.filter((part) => part.runId === runId).sort((left, right) => left.userId - right.userId);
+        return { run: runRow(run), parts: parts.map((part) => ({ userId: part.userId, partId: part.partId, startedAt: part.startedAt, endedAt: part.endedAt, outcome: storedPartOutcome(part.outcome), reason: part.reason, totals: part.totals ?? NONE, lookups: this.careers.rows.filter((row) => row.runId === part.partId && row.step === "finish").length })) };
+    }
+
+    async fetches(since: string): Promise<FetchRow[]> {
+        return this.fetchHistory.fetches
+            .filter((fetch) => fetch.at >= since)
+            .reverse()
+            .sort((left, right) => right.at.localeCompare(left.at))
+            .map(({ sourceId, module, at, outcome, reason, pages, jobs, cost }) => ({ sourceId, module, at, outcome, reason, pages, jobs, cost }));
+    }
+}
+
+const NONE: TallyTotals = { fetches: 0, fetchFailures: 0, jobsFound: 0, jobsScored: 0, searches: 0, searchFailures: 0, modelCalls: 0, promptTokens: 0, completionTokens: 0 };
+
+function runRow(run: StoredRun): RunRow {
+    return { id: run.id, startedAt: run.startedAt, aliveAt: run.aliveAt, endedAt: run.endedAt, outcome: storedRunOutcome(run.outcome), reason: run.reason, incomplete: run.incomplete, totals: run.totals ?? { ...NONE, users: 0, usersFailed: 0, usersSkipped: 0 } };
 }

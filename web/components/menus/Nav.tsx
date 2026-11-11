@@ -7,10 +7,10 @@ import { PAGES } from "../../lib/pages.js";
 // next/link is CommonJS: under nodenext its default import is the module, and the module's default is the component.
 const Link = NextLink.default;
 
-/** Renders the navigation bar of the signed-in pages, marking the one at the current address. */
-export function Nav() {
+/** Renders the navigation bar of the signed-in pages, marking the one at the current address, with the admin pages only for an admin. */
+export function Nav({ admin }: { admin: boolean }) {
     const path = usePathname();
-    const links = PAGES.map((page) => (
+    const links = PAGES.filter((page) => admin || !("admin" in page)).map((page) => (
         <Link key={page.path} href={page.path} className={page.path === path ? "current" : undefined}>
             {page.label}
         </Link>

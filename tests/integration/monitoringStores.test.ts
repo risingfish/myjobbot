@@ -6,7 +6,7 @@ import type { MailSend } from "../../src/db/mailLog.js";
 import type { Database } from "../../src/db/schema.js";
 import type { AgentRunsTable, RunUsersTable } from "../../src/db/schema/monitoring.js";
 import { withOwner } from "../helpers/memoryStore.js";
-import { monitoringStrictCases, type MonitoringHooks } from "../helpers/monitoringContract.js";
+import { monitoringReadCases, monitoringStrictCases, type MonitoringHooks } from "../helpers/monitoringContract.js";
 import { connectTestDb, emptyTables, emptyWithOwner } from "../helpers/testDb.js";
 
 let db: Kysely<Database>;
@@ -49,3 +49,4 @@ async function emptyStores() {
 }
 
 monitoringStrictCases(emptyStores, hooks);
+monitoringReadCases(emptyStores, hooks);
