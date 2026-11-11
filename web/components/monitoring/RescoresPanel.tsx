@@ -3,6 +3,8 @@ import { Panel } from "../sections/Panel.js";
 import { countCard } from "./CountTable.js";
 import { SectionGrid } from "./SectionGrid.js";
 
+const SUMMARY = "Jobs re-scored from the job panel or the command line. One still open after 10 minutes counts as failed.";
+
 const NOTHING = "Nothing in this period";
 
 interface RescoresProps {
@@ -17,6 +19,7 @@ export function RescoresPanel({ rescores }: { rescores: RescoresProps }) {
     const ended = countCard({ title: "How re-scores ended", label: "Re-scores", heading: "How it ended", rows: rescores.outcomes });
     return (
         <Panel title="Re-scores">
+            <p>{SUMMARY}</p>
             {ended === null ? null : (
                 <p className="note">
                     Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}

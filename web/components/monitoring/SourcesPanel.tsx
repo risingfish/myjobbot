@@ -6,6 +6,8 @@ import { DataTable } from "../sections/DataTable.js";
 import { MonitoringChart } from "./MonitoringChart.js";
 import { SectionGrid } from "./SectionGrid.js";
 
+const SUMMARY = "How each kind of source fetched in the period, never naming a saved source. A source failing repeatedly is one whose latest 3 fetches all failed.";
+
 const NOTHING = "Nothing in this period";
 const HEADINGS = ["Module", "Fetches", "OK", "At the limit", "Failing", "Skipped", "Pages", "Jobs", "Cost", "Top failure reasons", "Sources failing repeatedly"];
 
@@ -34,6 +36,7 @@ function sourceCards(rows: ModuleRowView[], chart: ChartSeries) {
 export function SourcesPanel({ rows, chart }: { rows: ModuleRowView[]; chart: ChartSeries }) {
     return (
         <Panel title="Sources">
+            <p>{SUMMARY}</p>
             <SectionGrid empty={NOTHING} items={sourceCards(rows, chart)} />
         </Panel>
     );

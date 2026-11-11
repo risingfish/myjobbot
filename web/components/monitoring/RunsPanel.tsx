@@ -8,6 +8,8 @@ import { MonitoringChart } from "./MonitoringChart.js";
 import { PeriodChoice } from "./PeriodChoice.js";
 import { SectionGrid } from "./SectionGrid.js";
 
+const SUMMARY = "Each run of the agent, scheduled or started by hand, with how it went and what it did. A run that shows no sign of life for 5 minutes counts as never finished; open one to see each user's part.";
+
 const NO_RUNS = "No runs yet";
 const HEADINGS = ["Started", "Took", "Status", "Users", "Fetches", "Jobs", "Model calls"];
 
@@ -42,6 +44,7 @@ function runCards(rows: RunRowView[], chart: ChartSeries, period: Period) {
 export function RunsPanel({ period, rows, chart }: { period: Period; rows: RunRowView[]; chart: ChartSeries }) {
     return (
         <Panel title="Runs">
+            <p>{SUMMARY}</p>
             <PeriodChoice period={period} />
             <SectionGrid empty={NO_RUNS} items={runCards(rows, chart, period)} />
         </Panel>
