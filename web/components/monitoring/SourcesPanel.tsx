@@ -1,6 +1,7 @@
 import type { ChartSeries } from "../../../src/web/chartSeries.js";
 import type { ModuleRowView } from "../../../src/web/monitoringSources.js";
 import { Panel } from "../sections/Panel.js";
+import { SettingCard } from "../settings/SettingParts.js";
 import { DataTable } from "../sections/DataTable.js";
 import { MonitoringChart } from "./MonitoringChart.js";
 import { SectionGrid } from "./SectionGrid.js";
@@ -13,11 +14,27 @@ function moduleCells(row: ModuleRowView) {
     return [row.module, row.fetches, row.ok, row.partial, row.failing, row.skipped, row.pages, row.jobs, row.cost, row.reasons, row.failingSources];
 }
 
-/** Renders the Sources panel: fetches per day beside each source module's fetches in the period, never naming a source. */
+/** Gives the Sources section's cards, fetches per day and the source modules, or none when nothing was fetched. */
+function sourceCards(rows: ModuleRowView[], chart: ChartSeries) {
+    if (rows.length === 0) return [];
+    const chartCard = (
+        <SettingCard key="chart" title="Fetches per day">
+            <MonitoringChart label="Fetches per day" series={chart} />
+        </SettingCard>
+    );
+    const tableCard = (
+        <SettingCard key="table" title="Source modules">
+            <DataTable label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />
+        </SettingCard>
+    );
+    return [chartCard, tableCard];
+}
+
+/** Renders the Sources panel: fetches per day beside each source module's fetches in the period, each in its card, never naming a source. */
 export function SourcesPanel({ rows, chart }: { rows: ModuleRowView[]; chart: ChartSeries }) {
     return (
         <Panel title="Sources">
-            <SectionGrid empty={NOTHING} items={rows.length === 0 ? [] : [<MonitoringChart key="chart" label="Fetches per day" series={chart} />, <DataTable key="table" label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />]} />
+            <SectionGrid empty={NOTHING} items={sourceCards(rows, chart)} />
         </Panel>
     );
 }
