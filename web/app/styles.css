@@ -223,6 +223,12 @@ form.hide {
 .row-actions form.hide button {
     display: inline-flex;
     padding: calc(var(--pico-form-element-spacing-vertical) / 2) calc(var(--pico-form-element-spacing-horizontal) / 2);
+    border-color: transparent;
+    color: var(--pico-muted-color);
+}
+.row-actions form.hide button:is(:hover, :focus-visible) {
+    border-color: transparent;
+    color: var(--pico-primary);
 }
 form.hide button,
 .details-head button,
