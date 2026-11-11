@@ -115,6 +115,9 @@ th {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+article th {
+    background-color: var(--pico-card-background-color);
+}
 small,
 .note,
 footer {
