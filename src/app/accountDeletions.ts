@@ -1,6 +1,7 @@
 import type { AccountRemoval } from "../db/accountRemoval.js";
 import type { AccountStore } from "../db/accountStore.js";
 import { describeError } from "../errors.js";
+import { runFailureReason } from "../monitoring/failureReason.js";
 import type { MailMessage } from "../mail/mailer.js";
 import { accountDeleted } from "../mail/messages.js";
 import type { UserRun } from "./runLines.js";
@@ -31,6 +32,6 @@ async function carryOutOne(parts: DeletionParts, userId: number, now: string): P
         if (account?.email) await parts.send({ to: account.email, ...accountDeleted(account.name) });
         return { userId, deleted: true };
     } catch (error) {
-        return { userId, failed: describeError(error) };
+        return { userId, failed: describeError(error), reason: runFailureReason(error) };
     }
 }

@@ -36,7 +36,7 @@ export async function scoreOne(deps: SessionDeps): Promise<number | null> {
         saved = score;
         deps.log.step({ kind: "saved", fields: { score } });
     });
-    const context = { store, postings: deps.postings, key: deps.key, config: deps.config.settings, now: deps.now, runId: deps.runId };
+    const context = { store, postings: deps.postings, key: deps.key, config: deps.config.settings, now: deps.now, runId: deps.runId, trace: deps.trace };
     await runAgent(agentDeps(deps, context), rescoreMessages(deps.config, deps.markers));
     return saved;
 }

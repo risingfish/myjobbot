@@ -1,3 +1,4 @@
+import type { Generated } from "kysely";
 import type { Count, Text } from "./columns.js";
 
 export interface RescoreRunsTable {
@@ -10,6 +11,9 @@ export interface RescoreRunsTable {
     outcome: Text;
     filter: Text;
     score: Count;
+    model_calls: Generated<number>;
+    prompt_tokens: Generated<number>;
+    completion_tokens: Generated<number>;
 }
 
 export interface RescoreStepsTable {

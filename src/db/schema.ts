@@ -2,6 +2,7 @@ import type { AccountCodesTable, AuthAttemptsTable, AuthChallengesTable, EmailTo
 import type { ApiCallsTable, CareersAuditTable } from "./schema/careers.js";
 import type { GmailAlertStateTable, GmailConnectionTable } from "./schema/gmail.js";
 import type { CompaniesTable, JobsTable, UserJobsTable, VerdictsTable } from "./schema/jobs.js";
+import type { AgentRunsTable, MailSendsTable, RunUsersTable, SourceFetchesTable } from "./schema/monitoring.js";
 import type { RescoreRunsTable, RescoreStepsTable } from "./schema/rescore.js";
 import type { ResumeProfilesTable, ResumesTable } from "./schema/resume.js";
 import type { UserSettingsTable, UserSourcesTable, UsersTable } from "./schema/users.js";
@@ -31,4 +32,8 @@ export interface Database {
     auth_challenges: AuthChallengesTable;
     auth_attempts: AuthAttemptsTable;
     security_events: SecurityEventsTable;
+    agent_runs: AgentRunsTable;
+    run_users: RunUsersTable;
+    source_fetches: SourceFetchesTable;
+    mail_sends: MailSendsTable;
 }

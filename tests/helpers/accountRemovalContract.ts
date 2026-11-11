@@ -60,6 +60,8 @@ async function seedData(stores: TestStores, userId: number): Promise<void> {
     await mine.jobStore.upsertAll([makeJob({ ats: "greenhouse", jobId: "shared-1", company: "Acme", title: "Engineer", url: "https://example.com/1" }, {})], NOW, "Acme");
     await mine.jobStore.recordVerdict({ job_id: "shared-1", score: 70, reasons: [], gaps: [] }, { scoredAt: NOW, runId: "run-1" });
     await mine.rescoreLog.begin({ ats: "greenhouse", jobId: "shared-1" }, `rescore-${userId}`, NOW);
+    await stores.runHistory.begin(`run-${userId}`, NOW);
+    await stores.runHistory.partStarted({ runId: `run-${userId}`, userId, partId: null, at: NOW });
 }
 
 async function seedAccount(stores: TestStores, userId: number): Promise<void> {

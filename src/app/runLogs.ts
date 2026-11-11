@@ -21,9 +21,8 @@ interface Output {
 // The model log is left out: it holds every model response with the job text, and would swamp the container's log.
 const ECHOED: Record<Stream, boolean> = { trace: true, jobs: true, llm: false };
 
-/** Opens the trace, LLM, and job JSONL log files used to record one run, echoing the trace and job log to stdout as well when MYJOBBOT_LOG_STDOUT is 1 and stdout isn't a terminal. */
-export function openRunLogs(config: LoadedConfig, out: Output = process.stdout): RunLogs {
-    const runId = randomUUID();
+/** Opens the trace, LLM, and job JSONL log files used to record one run, under the id given or a new one, echoing the trace and job log to stdout as well when MYJOBBOT_LOG_STDOUT is 1 and stdout isn't a terminal. */
+export function openRunLogs(config: LoadedConfig, out: Output = process.stdout, runId: string = randomUUID()): RunLogs {
     const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${runId}`;
     const logDir = config.env.MYJOBBOT_LOG_DIR;
     // A command typed at a terminal prints its own lines; only the services' processes, which have none, echo.
@@ -41,6 +40,11 @@ export function openRunLogs(config: LoadedConfig, out: Output = process.stdout):
         llm: echoed("llm", openJsonl(logDir, `${name}.llm.jsonl`, runId)),
         jobs: echoed("jobs", openJsonl(logDir, `${name}.jobs.jsonl`, runId)),
     };
+}
+
+/** Gives a run's logs with its trace and model log also written to an observer, such as the tally a run part is counted by. */
+export function observedLogs(logs: RunLogs, observer: Trace): RunLogs {
+    return { ...logs, trace: teeTrace(logs.trace, observer), llm: teeTrace(logs.llm, observer) };
 }
 
 /** Creates a file-backed Trace, creating its parent directory first if needed. */

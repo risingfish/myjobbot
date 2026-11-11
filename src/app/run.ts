@@ -20,7 +20,8 @@ import { gmailState, type GmailState } from "./gmailState.js";
 import { buildTools } from "../tools/registry.js";
 import { reportLookalike } from "./lookalikes.js";
 import { dataMarkers } from "../agent/markers.js";
-import { openRunLogs, type RunLogs } from "./runLogs.js";
+import { observedLogs, openRunLogs, type RunLogs } from "./runLogs.js";
+import type { Trace } from "../agent/trace.js";
 import { pageRenderer, runClients, type RunClients } from "./runParts.js";
 import { settingsForRun } from "./runSettings.js";
 import type { RunReport } from "./runLines.js";
@@ -38,9 +39,10 @@ export interface RunSeams {
 interface UserParts {
     stores: UserStores;
     key: SecretKeyStatus;
+    part: { id: string; observer: Trace };
 }
 
-interface RunParts extends UserParts {
+interface RunParts extends Pick<UserParts, "stores" | "key"> {
     logs: RunLogs;
 }
 
@@ -53,9 +55,9 @@ interface ContextParts extends RunParts {
 
 const PROMPT_TEXTS = { nudge: NUDGE, compactionNotice: COMPACTION_NOTICE };
 
-/** Runs one user's agent session with their own logs, settings and resume, against stores already bound to them. */
-export async function runForUser(loaded: LoadedConfig, seams: RunSeams, { stores, key }: UserParts): Promise<RunReport> {
-    const logs = openRunLogs(loaded);
+/** Runs one user's agent session with their own logs, under the part's id and seen by its observer, with their settings and resume, against stores already bound to them. */
+export async function runForUser(loaded: LoadedConfig, seams: RunSeams, { stores, key, part }: UserParts): Promise<RunReport> {
+    const logs = observedLogs(openRunLogs(loaded, process.stdout, part.id), part.observer);
     logs.trace.write({ type: "user", userId: stores.userId });
     const config = await settingsForRun(loaded, stores, logs.trace);
     return runWithStores(config, seams, { logs, stores, key });

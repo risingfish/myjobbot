@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { JobRow, JobStore, Verdict } from "../db/jobStore.js";
+import type { Trace } from "../agent/trace.js";
 import { recordMatchesTool } from "../tools/recordMatches.js";
 import { defineTool, type Tool } from "../tools/tool.js";
 import type { EvalCase } from "./format.js";
@@ -26,8 +27,8 @@ export function caseStore(evalCase: EvalCase): CaseStore {
     };
 }
 
-/** Gives the model the case's two tools: get_job returning the frozen job, and record_matches saving its score, counting calls that fail. */
-export function caseTools(evalCase: EvalCase, store: CaseStore, tally: Tally): Tool[] {
+/** Gives the model the case's two tools: get_job returning the frozen job, and record_matches saving its score into the session's trace, counting calls that fail. */
+export function caseTools(evalCase: EvalCase, store: CaseStore, tally: Tally, trace: Trace): Tool[] {
     const getJob = defineTool({
         name: "get_job",
         outsideText: true,
@@ -35,7 +36,7 @@ export function caseTools(evalCase: EvalCase, store: CaseStore, tally: Tally): T
         schema: z.object({}),
         run: () => evalCase.job,
     });
-    return [getJob, counted(recordMatchesTool({ store, now: () => new Date(evalCase.dates.capturedAt), runId: `eval-${evalCase.id}` }), tally)];
+    return [getJob, counted(recordMatchesTool({ store, now: () => new Date(evalCase.dates.capturedAt), runId: `eval-${evalCase.id}`, trace }), tally)];
 }
 
 /** Wraps a tool so each call, and each call its arguments made fail, is counted. */

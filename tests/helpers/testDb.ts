@@ -6,7 +6,7 @@ import { migrateToLatest } from "../../src/db/migrate.js";
 import type { Database } from "../../src/db/schema.js";
 import { describeConnectionError, parseDbSettings, type DbSettings } from "../../src/db/settings.js";
 
-export const TABLES = ["rescore_steps", "rescore_runs", "verdicts", "user_jobs", "jobs", "user_sources", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "security_events", "auth_attempts", "auth_challenges", "email_tokens", "account_codes", "sessions", "recovery_codes", "hardware_keys", "sign_in_methods", "resume_profiles", "resumes", "user_settings", "users"] as const;
+export const TABLES = ["run_users", "agent_runs", "source_fetches", "mail_sends", "rescore_steps", "rescore_runs", "verdicts", "user_jobs", "jobs", "user_sources", "companies", "api_calls", "gmail_connection", "gmail_alert_state", "careers_audit", "security_events", "auth_attempts", "auth_challenges", "email_tokens", "account_codes", "sessions", "recovery_codes", "hardware_keys", "sign_in_methods", "resume_profiles", "resumes", "user_settings", "users"] as const;
 
 const TEST_KEYS = ["HOST", "PORT", "USER", "PASSWORD"] as const;
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Settings } from "../config/schema.js";
 import type { PostingStore } from "../db/postingStore.js";
 import type { JobKey } from "../db/store.js";
+import type { Trace } from "../agent/trace.js";
 import { jobDetails } from "../tools/getJobDetails.js";
 import { recordMatchesTool } from "../tools/recordMatches.js";
 import { defineTool, type Tool } from "../tools/tool.js";
@@ -14,6 +15,7 @@ export interface RescoreToolContext {
     config: Settings;
     now: () => Date;
     runId: string;
+    trace: Trace;
 }
 
 /** Gives a re-score's model its two tools: get_job for the one job, and record_matches to save its score. */
