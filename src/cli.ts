@@ -15,11 +15,12 @@ import type { UserStores } from "./db/userStores.js";
 import { storesFor, userOption, type Refused } from "./cliUser.js";
 import { describeError } from "./errors.js";
 import { evalCommand } from "./evals/command.js";
+import { metricsCommand } from "./metrics/command.js";
 import { openRescore } from "./rescore/open.js";
 import { rescore } from "./rescore/rescore.js";
 import { alreadyRunningLine, commandLine, consoleLine } from "./rescore/steps.js";
 
-const USAGE = "usage: myjobbot run [--user <email>] | rescore <ats> <job_id> [--user <email>] | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email>";
+const USAGE = "usage: myjobbot run [--user <email>] | rescore <ats> <job_id> [--user <email>] | import-sqlite <path> | eval <check|capture|answer-key|run|report> | account <init|reset> <email> | metrics";
 
 type Command = (environment: Environment, args: string[]) => Promise<number>;
 
@@ -30,7 +31,7 @@ interface Chosen {
 
 type UserCommand = (environment: Environment, args: string[], email: string | undefined) => Promise<number>;
 
-const COMMANDS: Record<string, Command> = { run: forUser(runCommand), rescore: forUser(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand) };
+const COMMANDS: Record<string, Command> = { run: forUser(runCommand), rescore: forUser(rescoreCommand), "import-sqlite": positional(importCommand), eval: evalCommand, account: positional(runAccountCommand), metrics: positional((environment) => metricsCommand(environment)) };
 
 /** Dispatches to the command named first, handing it the rest of the arguments as given, and returns the process exit code. */
 async function main(argv: string[]): Promise<number> {

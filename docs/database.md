@@ -144,6 +144,9 @@ The other tables, each listed in `src/db/schema.ts` with its columns in `src/db/
 | `gmail_connection`, `gmail_alert_state` | each user's Gmail address and sealed app password, and where reading their alerts left off |
 | `rescore_runs`, `rescore_steps` | each re-score, with its user, and its steps, shown as its Log |
 | `resumes`, `resume_profiles` | each user's uploaded resume text and its extracted profile |
+| `agent_runs`, `run_users` | each run with its heartbeat, outcome and totals, and each user's part of it, kept 90 days ([Monitoring](how-it-works.md#monitoring)) |
+| `source_fetches` | each fetch or planned skip of a saved source: module, outcome, fixed reason, counts, duration; kept 90 days, removed with its source |
+| `mail_sends` | each mail send's kind, outcome and fixed reason, never its address or text; kept 90 days |
 | `users.deactivated_at`, `users.delete_after` | when an account was deactivated, and when its requested deletion is due ([Deactivating and deleting](how-it-works.md#deactivating-and-deleting)); deleting an account clears it from `account_codes` (`created_by`, `used_by` set null), which keep their codes |
 | `sign_in_methods`, `hardware_keys`, `recovery_codes`, `sessions`, `account_codes`, `email_tokens`, `auth_challenges`, `auth_attempts`, `security_events` | accounts and signing in (see [Accounts and signing in](how-it-works.md#accounts-and-signing-in)) |
 

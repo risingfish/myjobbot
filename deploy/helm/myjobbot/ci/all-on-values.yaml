@@ -3,6 +3,7 @@ image:
 secret:
     create: true
     values:
+        MYJOBBOT_METRICS_TOKEN: a-test-token-of-at-least-32-characters
         LLM_BASE_URL: https://llm.example/v1
         LLM_MODEL: example-model
         LLM_API_KEY: not-a-key
@@ -27,3 +28,8 @@ browser:
     enabled: true
 searxng:
     enabled: true
+monitoring:
+    enabled: true
+    serviceMonitor:
+        labels:
+            release: kube-prometheus-stack

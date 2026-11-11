@@ -88,9 +88,10 @@ All with Kysely and memory versions and a shared contract (`tests/helpers/monito
   `pruneBefore(cutoff)`, and (S3) `recent(sourceIds, perSource)` for the user's own view.
 - `MailLog` (on `SharedStores`): `record(send)`, `pruneBefore(cutoff)`.
 - `MonitoringReads` (on `SharedStores`, read by the web only for an admin, and by the metrics): `runs(since)`, `run(id)`,
-  `modules(since)`, `lookups(since)`, `searches(since)`, `rescores(since)`, `mail(since)`,
-  `alertFacts(now)`. Every row it gives holds ids, module names, counts, durations and fixed
-  reasons only.
+  `fetches(since)`, `lookups(since)`, `rescores(since)`, `mails(since)`, each giving raw rows
+  that plain functions aggregate (`src/web/monitoring*.ts` for the page, `src/metrics/` for the
+  metrics); company searches come from the runs' totals. Every row holds ids, module names,
+  counts, times and fixed reasons only.
 
 ## Rules (plain functions, `src/monitoring/`)
 

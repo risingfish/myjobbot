@@ -29,6 +29,7 @@ export interface PartRow {
 export type FetchRow = Omit<FetchRecord, "partId" | "ms" | "outcome"> & { outcome: string };
 
 export interface LookupRow {
+    at: string;
     step: string;
     outcome: string;
     reason: string | null;

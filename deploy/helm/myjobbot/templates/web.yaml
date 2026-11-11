@@ -75,6 +75,35 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+        {{- if .Values.monitoring.enabled }}
+        - name: metrics
+          image: {{ include "myjobbot.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["metrics"]
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            {{- include "myjobbot.env" . | nindent 12 }}
+            - name: MYJOBBOT_METRICS_PORT
+              value: {{ .Values.monitoring.port | quote }}
+          envFrom:
+            {{- include "myjobbot.envFrom" . | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.monitoring.port }}
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          {{- with .Values.monitoring.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+        {{- end }}
       volumes:
         {{- include "myjobbot.volumes" . | nindent 8 }}
       {{- with .Values.web.nodeSelector }}

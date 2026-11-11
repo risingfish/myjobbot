@@ -59,7 +59,7 @@ test("the charts count runs by status and fetches by outcome for each day, oldes
 });
 
 test("lookups are counted by how they ended and how their pages were read, and searches from the runs' totals", () => {
-    const lookups = [{ step: "finish", outcome: "found", reason: null, pageSource: null }, { step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { step: "open_job", outcome: "ok", reason: null, pageSource: "board" }, { step: "open_careers", outcome: "ok", reason: null, pageSource: "rendered" }];
+    const lookups = [{ at: "2026-11-10T09:00:00.000Z", step: "finish", outcome: "found", reason: null, pageSource: null }, { at: "2026-11-10T09:00:00.000Z", step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { at: "2026-11-10T09:00:00.000Z", step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { at: "2026-11-10T09:00:00.000Z", step: "open_job", outcome: "ok", reason: null, pageSource: "board" }, { at: "2026-11-10T09:00:00.000Z", step: "open_careers", outcome: "ok", reason: null, pageSource: "rendered" }];
     expect(lookupRows(lookups)).toEqual({ outcomes: [{ label: "not found: job_not_found", count: 2 }, { label: "found", count: 1 }], pages: [{ label: "board data", count: 1 }, { label: "browser", count: 1 }] });
     expect(searchRow([run("a", { totals: { ...TOTALS, searches: 4, searchFailures: 1 } }), run("b", { totals: { ...TOTALS, searches: 2 } })])).toEqual({ searched: 6, failed: 1 });
 });

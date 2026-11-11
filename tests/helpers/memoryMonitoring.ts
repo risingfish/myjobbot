@@ -126,7 +126,7 @@ export class MemoryMonitoringReads implements MonitoringReads {
     constructor(private readonly sources: ReadSources) {}
 
     async lookups(since: string): Promise<LookupRow[]> {
-        return this.sources.careers.rows.filter((row) => row.at >= since && ["finish", "open_careers", "open_job"].includes(row.step)).map((row) => ({ step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.pageSource ?? null }));
+        return this.sources.careers.rows.filter((row) => row.at >= since && ["finish", "open_careers", "open_job"].includes(row.step)).map((row) => ({ at: row.at, step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.pageSource ?? null }));
     }
 
     async rescores(since: string): Promise<RescoreRow[]> {

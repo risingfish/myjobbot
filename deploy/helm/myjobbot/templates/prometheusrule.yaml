@@ -1,0 +1,53 @@
+{{- if .Values.monitoring.enabled }}
+{{- $alerts := .Values.monitoring.alerts }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "myjobbot.fullname" . }}
+  labels:
+    {{- include "myjobbot.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.rules.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: myjobbot
+      rules:
+        - alert: MyjobbotRunFailed
+          expr: myjobbot_last_run_ok == 0
+          labels:
+            severity: warning
+          annotations:
+            summary: The latest myjobbot run did not finish cleanly; see the Monitoring page.
+        - alert: MyjobbotRunNeverFinished
+          expr: myjobbot_runs{status="never_finished",window="24h"} > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: A myjobbot run stopped showing signs of life before it ended.
+        - alert: MyjobbotRunMissed
+          expr: time() - myjobbot_last_run_finished_timestamp_seconds > {{ $alerts.missedRunHours }} * 3600
+          labels:
+            severity: warning
+          annotations:
+            summary: No myjobbot run has finished for {{ $alerts.missedRunHours }} hours.
+        - alert: MyjobbotSourceModuleFailing
+          expr: myjobbot_source_failing_streak_max >= {{ $alerts.moduleFailingFetches }}
+          labels:
+            severity: warning
+          annotations:
+            summary: A myjobbot source module keeps failing ({{ "{{" }} $labels.module {{ "}}" }}).
+        - alert: MyjobbotMailFailing
+          expr: myjobbot_mail_failure_streak >= {{ $alerts.mailFailures }}
+          labels:
+            severity: critical
+          annotations:
+            summary: myjobbot mail keeps failing; sign-in links and codes may not arrive.
+        - alert: MyjobbotJsearchBudget
+          expr: myjobbot_jsearch_budget_used_ratio >= {{ $alerts.jsearchBudgetRatio }}
+          for: 1h
+          labels:
+            severity: info
+          annotations:
+            summary: myjobbot has used most of this month's JSearch requests.
+{{- end }}

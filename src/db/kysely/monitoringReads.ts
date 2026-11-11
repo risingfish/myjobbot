@@ -43,8 +43,8 @@ export class KyselyMonitoringReads implements MonitoringReads {
 
     /** Lists the careers lookups' finishes and page reads since a time, by step, outcome, fixed reason and how the page was read only. */
     async lookups(since: string): Promise<LookupRow[]> {
-        const rows = await this.db.selectFrom("careers_audit").select(["step", "outcome", "reason", "page_source"]).where("at", ">=", since).where("step", "in", ["finish", "open_careers", "open_job"]).orderBy("id").execute();
-        return rows.map((row) => ({ step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.page_source }));
+        const rows = await this.db.selectFrom("careers_audit").select(["at", "step", "outcome", "reason", "page_source"]).where("at", ">=", since).where("step", "in", ["finish", "open_careers", "open_job"]).orderBy("id").execute();
+        return rows.map((row) => ({ at: row.at, step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.page_source }));
     }
 
     /** Lists every user's re-scores started since a time, with how they ended and their model use, never which job. */

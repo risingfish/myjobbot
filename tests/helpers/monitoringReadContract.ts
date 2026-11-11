@@ -63,8 +63,8 @@ async function lookupsRescoresAndMails(stores: TestStores): Promise<void> {
     await stores.careers.audit({ ...audit, step: "search", outcome: "ok" });
     await stores.careers.audit({ ...audit, at: PAST, step: "finish", outcome: "found" });
     expect(await stores.monitoring.lookups(LATER)).toEqual([
-        { step: "open_job", outcome: "ok", reason: null, pageSource: "board" },
-        { step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null },
+        { at: LATER, step: "open_job", outcome: "ok", reason: null, pageSource: "board" },
+        { at: LATER, step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null },
     ]);
     await stores.jobStore.upsertAll([makeJob({ ats: "greenhouse", jobId: "1", company: "Acme", title: "Engineer", url: "https://example.com/1" }, {})], START, "Acme");
     expect(await stores.rescoreLog.begin({ ats: "greenhouse", jobId: "1" }, "11111111-1111-4111-8111-111111111111", LATER)).toEqual({ started: "11111111-1111-4111-8111-111111111111" });

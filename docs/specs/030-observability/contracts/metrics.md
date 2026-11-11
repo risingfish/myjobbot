@@ -35,8 +35,9 @@ user name, source name, search term, address or job field.
 | `myjobbot_source_fetch_failures` | gauge | `module`, `reason`, `window` | failing fetches by fixed reason |
 | `myjobbot_source_jobs` | gauge | `module`, `window` | jobs found |
 | `myjobbot_source_failing_streak_max` | gauge | `module` | longest current run of failing fetches over the module's sources |
-| `myjobbot_careers_lookups` | gauge | `outcome`, `page_source`, `window` | lookups from the careers audit |
-| `myjobbot_company_searches` | gauge | `outcome`, `window` | searched, failed |
+| `myjobbot_careers_lookups` | gauge | `outcome`, `window` | lookups by how they ended (`found`, `not_found`) |
+| `myjobbot_careers_page_reads` | gauge | `read_by`, `window` | careers pages read, by `board`, `download` or `browser` |
+| `myjobbot_company_searches` | gauge | `outcome`, `window` | `searched`, and `failed` search steps, from the runs' totals |
 | `myjobbot_rescores` | gauge | `outcome`, `window` | re-scores by outcome |
 | `myjobbot_rescore_duration_seconds_max` | gauge | `window` | longest re-score |
 | `myjobbot_model_calls` | gauge | `worker`, `window` | `run` or `rescore` |
