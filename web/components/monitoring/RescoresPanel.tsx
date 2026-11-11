@@ -1,6 +1,9 @@
 import type { CountRow } from "../../../src/web/counts.js";
 import { Panel } from "../sections/Panel.js";
-import { CountTable } from "./CountTable.js";
+import { countCard } from "./CountTable.js";
+import { SectionGrid } from "./SectionGrid.js";
+
+const SUMMARY = "Jobs re-scored from the job panel or the command line. One still open after 10 minutes counts as failed.";
 
 const NOTHING = "Nothing in this period";
 
@@ -11,20 +14,18 @@ interface RescoresProps {
     model: string;
 }
 
-/** Renders the re-scores by how they ended, with their typical and longest durations and their model use. */
+/** Renders the re-scores' typical and longest durations and model use, then how they ended in its card in the left column. */
 export function RescoresPanel({ rescores }: { rescores: RescoresProps }) {
-    if (rescores.outcomes.length === 0)
-        return (
-            <Panel title="Re-scores">
-                <p className="note">{NOTHING}</p>
-            </Panel>
-        );
+    const ended = countCard({ title: "How re-scores ended", label: "Re-scores", heading: "How it ended", rows: rescores.outcomes });
     return (
         <Panel title="Re-scores">
-            <p className="note">
-                Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}
-            </p>
-            <CountTable label="Re-scores" heading="How it ended" rows={rescores.outcomes} />
+            <p>{SUMMARY}</p>
+            {ended === null ? null : (
+                <p className="note">
+                    Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}
+                </p>
+            )}
+            <SectionGrid empty={NOTHING} items={[ended]} />
         </Panel>
     );
 }
