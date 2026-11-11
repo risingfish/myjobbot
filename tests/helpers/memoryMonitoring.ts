@@ -2,7 +2,8 @@ import type { TallyTotals } from "../../src/monitoring/tallyEvents.js";
 import type { PartEnd, PartStart, RunEnding, RunHistory, RunTotals } from "../../src/db/runHistory.js";
 import { latestPerSource, type FetchHistory, type FetchRecord, type RecentFetch } from "../../src/db/fetchHistory.js";
 import type { MailLog, MailSend } from "../../src/db/mailLog.js";
-import type { FetchRow, MonitoringReads, PartRow, RunRow } from "../../src/db/monitoringReads.js";
+import type { FetchRow, LookupRow, MailRow, MonitoringReads, PartRow, RescoreRow, RunRow } from "../../src/db/monitoringReads.js";
+import type { Tables } from "./memoryJobViews.js";
 import { storedPartOutcome, storedRunOutcome } from "../../src/monitoring/runStatus.js";
 import type { MemoryCareersStore } from "./memoryCareersStore.js";
 
@@ -113,26 +114,43 @@ export class MemoryRunHistory implements RunHistory {
     }
 }
 
+interface ReadSources {
+    history: MemoryRunHistory;
+    fetchHistory: MemoryFetchHistory;
+    careers: MemoryCareersStore;
+    mailLog: MemoryMailLog;
+    tables: Tables;
+}
+
 export class MemoryMonitoringReads implements MonitoringReads {
-    constructor(
-        private readonly history: MemoryRunHistory,
-        private readonly fetchHistory: MemoryFetchHistory,
-        private readonly careers: MemoryCareersStore,
-    ) {}
+    constructor(private readonly sources: ReadSources) {}
+
+    async lookups(since: string): Promise<LookupRow[]> {
+        return this.sources.careers.rows.filter((row) => row.at >= since && ["finish", "open_careers", "open_job"].includes(row.step)).map((row) => ({ step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.pageSource ?? null }));
+    }
+
+    async rescores(since: string): Promise<RescoreRow[]> {
+        const none = { modelCalls: 0, promptTokens: 0, completionTokens: 0 };
+        return this.sources.tables.rescoreRuns.filter((run) => run.startedAt >= since).map((run) => ({ startedAt: run.startedAt, endedAt: run.endedAt, outcome: run.outcome, filter: run.filter, score: run.score, ...(this.sources.tables.rescoreUse.get(run.id) ?? none) }));
+    }
+
+    async mails(since: string): Promise<MailRow[]> {
+        return this.sources.mailLog.sends.filter((send) => send.at >= since);
+    }
 
     async runs(since: string): Promise<RunRow[]> {
-        return this.history.runs.filter((run) => run.startedAt >= since).sort((left, right) => right.startedAt.localeCompare(left.startedAt)).map(runRow);
+        return this.sources.history.runs.filter((run) => run.startedAt >= since).sort((left, right) => right.startedAt.localeCompare(left.startedAt)).map(runRow);
     }
 
     async run(runId: string): Promise<{ run: RunRow; parts: PartRow[] } | null> {
-        const run = this.history.runs.find((each) => each.id === runId);
+        const run = this.sources.history.runs.find((each) => each.id === runId);
         if (run === undefined) return null;
-        const parts = this.history.parts.filter((part) => part.runId === runId).sort((left, right) => left.userId - right.userId);
-        return { run: runRow(run), parts: parts.map((part) => ({ userId: part.userId, partId: part.partId, startedAt: part.startedAt, endedAt: part.endedAt, outcome: storedPartOutcome(part.outcome), reason: part.reason, totals: part.totals ?? NONE, lookups: this.careers.rows.filter((row) => row.runId === part.partId && row.step === "finish").length })) };
+        const parts = this.sources.history.parts.filter((part) => part.runId === runId).sort((left, right) => left.userId - right.userId);
+        return { run: runRow(run), parts: parts.map((part) => ({ userId: part.userId, partId: part.partId, startedAt: part.startedAt, endedAt: part.endedAt, outcome: storedPartOutcome(part.outcome), reason: part.reason, totals: part.totals ?? NONE, lookups: this.sources.careers.rows.filter((row) => row.runId === part.partId && row.step === "finish").length })) };
     }
 
     async fetches(since: string): Promise<FetchRow[]> {
-        return this.fetchHistory.fetches
+        return this.sources.fetchHistory.fetches
             .filter((fetch) => fetch.at >= since)
             .reverse()
             .sort((left, right) => right.at.localeCompare(left.at))

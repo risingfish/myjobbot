@@ -1,7 +1,8 @@
 import type { Kysely, Selectable } from "kysely";
 import { storedPartOutcome, storedRunOutcome } from "../../monitoring/runStatus.js";
 import type { TallyTotals } from "../../monitoring/tallyEvents.js";
-import type { FetchRow, MonitoringReads, PartRow, RunRow } from "../monitoringReads.js";
+import type { FetchRow, LookupRow, MailRow, MonitoringReads, PartRow, RescoreRow, RunRow } from "../monitoringReads.js";
+import { storedFilter, storedOutcome } from "./rescoreLogStore.js";
 import type { Database } from "../schema.js";
 import type { AgentRunsTable, RunUsersTable } from "../schema/monitoring.js";
 
@@ -30,7 +31,7 @@ export class KyselyMonitoringReads implements MonitoringReads {
         const row = await this.db.selectFrom("agent_runs").selectAll().where("id", "=", runId).executeTakeFirst();
         if (row === undefined) return null;
         const parts = await this.db.selectFrom("run_users").selectAll().where("run_id", "=", runId).orderBy("user_id").execute();
-        const lookups = await this.lookups(parts.flatMap((part) => (part.part_id === null ? [] : [part.part_id])));
+        const lookups = await this.lookupCounts(parts.flatMap((part) => (part.part_id === null ? [] : [part.part_id])));
         return { run: runOf(row), parts: parts.map((part) => ({ userId: part.user_id, partId: part.part_id, startedAt: part.started_at, endedAt: part.ended_at, outcome: storedPartOutcome(part.outcome), reason: part.reason, totals: tallyOf(part), lookups: lookups.get(part.part_id ?? "") ?? 0 })) };
     }
 
@@ -40,8 +41,25 @@ export class KyselyMonitoringReads implements MonitoringReads {
         return rows.map((row) => ({ sourceId: row.source_id, module: row.module, at: row.at, outcome: row.outcome, reason: row.reason, pages: row.pages, jobs: row.jobs, cost: row.cost }));
     }
 
+    /** Lists the careers lookups' finishes and page reads since a time, by step, outcome, fixed reason and how the page was read only. */
+    async lookups(since: string): Promise<LookupRow[]> {
+        const rows = await this.db.selectFrom("careers_audit").select(["step", "outcome", "reason", "page_source"]).where("at", ">=", since).where("step", "in", ["finish", "open_careers", "open_job"]).orderBy("id").execute();
+        return rows.map((row) => ({ step: row.step, outcome: row.outcome, reason: row.reason, pageSource: row.page_source }));
+    }
+
+    /** Lists every user's re-scores started since a time, with how they ended and their model use, never which job. */
+    async rescores(since: string): Promise<RescoreRow[]> {
+        const rows = await this.db.selectFrom("rescore_runs").select(["started_at", "ended_at", "outcome", "filter", "score", "model_calls", "prompt_tokens", "completion_tokens"]).where("started_at", ">=", since).execute();
+        return rows.map((row) => ({ startedAt: row.started_at, endedAt: row.ended_at, outcome: storedOutcome.parse(row.outcome), filter: storedFilter.parse(row.filter), score: row.score, modelCalls: row.model_calls, promptTokens: row.prompt_tokens, completionTokens: row.completion_tokens }));
+    }
+
+    /** Lists the mail sends since a time, by kind, outcome and fixed reason. */
+    async mails(since: string): Promise<MailRow[]> {
+        return this.db.selectFrom("mail_sends").select(["at", "kind", "outcome", "reason"]).where("at", ">=", since).orderBy("at").orderBy("id").execute();
+    }
+
     /** Counts the careers lookups each run part finished, from the careers audit. */
-    private async lookups(partIds: string[]): Promise<Map<string, number>> {
+    private async lookupCounts(partIds: string[]): Promise<Map<string, number>> {
         if (partIds.length === 0) return new Map();
         const rows = await this.db
             .selectFrom("careers_audit")

@@ -1,5 +1,6 @@
 import { memoryStores, type TestStores } from "./helpers/memoryStore.js";
-import { fetchHistoryCases, mailLogCases, monitoringReadCases, monitoringStrictCases, runHistoryCases, type MonitoringHooks } from "./helpers/monitoringContract.js";
+import { monitoringReadCases } from "./helpers/monitoringReadContract.js";
+import { fetchHistoryCases, mailLogCases, monitoringStrictCases, runHistoryCases, type MonitoringHooks } from "./helpers/monitoringContract.js";
 
 function memoryHooks(stores: TestStores): MonitoringHooks {
     const history = stores.memory?.runHistory;

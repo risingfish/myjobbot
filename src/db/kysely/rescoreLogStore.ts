@@ -6,8 +6,8 @@ import type { JobKey } from "../store.js";
 
 type RunRow = Selectable<Database["rescore_runs"]>;
 
-const outcome = z.enum(["scored", "filtered", "failed"]).nullable();
-const filter = z.enum(["company", "title", "body"]).nullable();
+export const storedOutcome = z.enum(["scored", "filtered", "failed"]).nullable();
+export const storedFilter = z.enum(["company", "title", "body"]).nullable();
 
 export class KyselyRescoreLogStore implements RescoreLogStore {
     constructor(
@@ -66,5 +66,5 @@ function openRun(trx: Transaction<Database>, key: JobKey & { userId: number }, a
 
 /** Turns a stored run row into the run the app reads. */
 function rescoreRun(row: RunRow): RescoreRun {
-    return { id: row.id, ats: row.ats, jobId: row.job_id, startedAt: row.started_at, endedAt: row.ended_at, outcome: outcome.parse(row.outcome), filter: filter.parse(row.filter), score: row.score };
+    return { id: row.id, ats: row.ats, jobId: row.job_id, startedAt: row.started_at, endedAt: row.ended_at, outcome: storedOutcome.parse(row.outcome), filter: storedFilter.parse(row.filter), score: row.score };
 }

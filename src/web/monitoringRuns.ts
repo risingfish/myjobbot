@@ -1,6 +1,7 @@
 import type { PartRow, RunRow } from "../db/monitoringReads.js";
 import { runStatus, type PartOutcome, type RunStatus } from "../monitoring/runStatus.js";
 import { perDay, type ChartSeries } from "./chartSeries.js";
+import { durationText } from "./counts.js";
 import { localTime } from "./localTime.js";
 
 export interface RunRowView {
@@ -28,16 +29,9 @@ export interface PartRowView {
 
 const STATUS_TEXT: Record<RunStatus, string> = { running: "running", never_finished: "never finished", finished: "finished", finished_with_errors: "finished with errors", failed: "failed" };
 const PART_TEXT: Record<PartOutcome, string> = { running: "running", finished: "finished", stopped: "stopped early", failed: "failed", skipped: "skipped", deleted: "deleted", held: "deletion held" };
-const NO_DURATION = "—";
-const MS_PER_SECOND = 1000;
-const SECONDS_PER_MINUTE = 60;
-
-/** Shows how long something took, as minutes and seconds, or a dash while it hasn't ended. */
+/** Shows how long something took, or a dash while it hasn't ended. */
 function duration(startedAt: string, endedAt: string | null): string {
-    if (endedAt === null) return NO_DURATION;
-    const seconds = Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / MS_PER_SECOND);
-    const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
-    return minutes === 0 ? `${seconds}s` : `${minutes}m ${seconds % SECONDS_PER_MINUTE}s`;
+    return durationText(endedAt === null ? null : Date.parse(endedAt) - Date.parse(startedAt));
 }
 
 /** Shows a count with how many of it failed, when any did. */

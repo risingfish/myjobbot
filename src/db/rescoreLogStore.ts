@@ -49,7 +49,7 @@ export function openSince(at: string): string {
 }
 
 /** Gives how a run ended, a failure when it has been open too long to still be running, or null while it runs. */
-export function runEnd(run: RescoreRun, now: Date): RescoreEnd | null {
+export function runEnd(run: Pick<RescoreRun, "startedAt" | "endedAt" | "outcome" | "filter" | "score">, now: Date): RescoreEnd | null {
     if (run.endedAt !== null && run.outcome !== null) return { outcome: run.outcome, filter: run.filter, score: run.score };
     return run.startedAt <= openSince(now.toISOString()) ? { outcome: "failed", filter: null, score: null } : null;
 }

@@ -2,6 +2,8 @@ import { expect, test } from "vitest";
 import type { FetchRow, PartRow, RunRow } from "../src/db/monitoringReads.js";
 import { runDetailRows, runRows, runsPerDay } from "../src/web/monitoringRuns.js";
 import { fetchesPerDay, moduleRows } from "../src/web/monitoringSources.js";
+import { lookupRows, searchRow } from "../src/web/monitoringLookups.js";
+import { mailRows, rescoreRows } from "../src/web/monitoringWork.js";
 
 const NOW = new Date("2026-11-10T12:00:00.000Z");
 const NONE = { fetches: 0, fetchFailures: 0, jobsFound: 0, jobsScored: 0, searches: 0, searchFailures: 0, modelCalls: 0, promptTokens: 0, completionTokens: 0 };
@@ -54,4 +56,22 @@ test("the charts count runs by status and fetches by outcome for each day, oldes
     const fetchSeries = fetchesPerDay([{ ...fetched(1, "greenhouse", "failing", "2026-11-10T10:00:00.000Z"), reason: "x" }, fetched(1, "greenhouse", "ok", "2026-11-10T09:00:00.000Z")]);
     expect(fetchSeries.sets).toEqual([{ name: "ok", values: [1] }, { name: "failing", values: [1] }]);
     expect([runsPerDay([], NOW).labels, fetchesPerDay([]).sets]).toEqual([[], []]);
+});
+
+test("lookups are counted by how they ended and how their pages were read, and searches from the runs' totals", () => {
+    const lookups = [{ step: "finish", outcome: "found", reason: null, pageSource: null }, { step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { step: "finish", outcome: "failed", reason: "job_not_found", pageSource: null }, { step: "open_job", outcome: "ok", reason: null, pageSource: "board" }, { step: "open_careers", outcome: "ok", reason: null, pageSource: "rendered" }];
+    expect(lookupRows(lookups)).toEqual({ outcomes: [{ label: "not found: job_not_found", count: 2 }, { label: "found", count: 1 }], pages: [{ label: "board data", count: 1 }, { label: "browser", count: 1 }] });
+    expect(searchRow([run("a", { totals: { ...TOTALS, searches: 4, searchFailures: 1 } }), run("b", { totals: { ...TOTALS, searches: 2 } })])).toEqual({ searched: 6, failed: 1 });
+});
+
+test("re-scores are counted by how they ended, one open too long as failed, with their typical and longest durations and model use", () => {
+    const rescore = (startedAt: string, endedAt: string | null, outcome: "scored" | "failed" | null) => ({ startedAt, endedAt, outcome, filter: null, score: null, modelCalls: 2, promptTokens: 1000, completionTokens: 100 });
+    const rows = rescoreRows([rescore("2026-11-10T09:00:00.000Z", "2026-11-10T09:00:40.000Z", "scored"), rescore("2026-11-10T09:00:00.000Z", "2026-11-10T09:02:00.000Z", "scored"), rescore("2026-11-10T09:00:00.000Z", "2026-11-10T09:00:20.000Z", "failed"), rescore("2026-11-10T09:00:00.000Z", null, null), rescore("2026-11-10T11:58:00.000Z", null, null)], NOW);
+    expect(rows).toEqual({ outcomes: [{ label: "failed", count: 2 }, { label: "scored", count: 2 }, { label: "running", count: 1 }], typical: "40s", longest: "2m 0s", model: "10 calls, 5500 tokens" });
+    expect(rescoreRows([], NOW)).toEqual({ outcomes: [], typical: "—", longest: "—", model: "0 calls, 0 tokens" });
+});
+
+test("mail is counted by kind and outcome, and failures by their fixed reason", () => {
+    const mails = [{ at: "2026-11-10T09:00:00.000Z", kind: "sign_in_link", outcome: "sent", reason: null }, { at: "2026-11-10T09:01:00.000Z", kind: "sign_in_link", outcome: "failed", reason: "auth" }, { at: "2026-11-10T09:02:00.000Z", kind: "test", outcome: "failed", reason: "auth" }];
+    expect(mailRows(mails)).toEqual({ sends: [{ label: "sign_in_link failed", count: 1 }, { label: "sign_in_link sent", count: 1 }, { label: "test failed", count: 1 }], failures: [{ label: "auth", count: 2 }] });
 });

@@ -128,14 +128,16 @@ S3 notes (2026-11-11): `MonitoringReads` gives raw rows (runs, a run's parts wit
 
 ### Sitting S4: The other panels (UI work: the stack may run)
 
-- [ ] T045 Create `.specify/sitting-in-progress` containing `030 S4`.
-- [ ] T046 [P] [US3] Contract cases first (`monitoringReadCases`, unit on memory): `lookups(since)` (careers audit finishes by outcome and `page_source`), `searches(since)` (searched and failed, from `run_users`), `rescores(since)` (by outcome, median and longest duration, model calls and tokens), `mail(since)` (by kind and outcome, failures by reason).
-- [ ] T047 [US3] Add those four to `MonitoringReads` (Kysely and memory).
-- [ ] T048 [P] [US3] Unit tests first: in `tests/monitoringViews.test.ts`, `lookupRows`, `rescoreRows` and `mailRows` and their "Nothing in this period" texts; `tests/monitoringPrivacy.test.ts` seeds memory stores with distinctive source names, search terms, addresses, emails and job titles, runs every `MonitoringReads` method and every view function, and asserts none of the seeded strings appears in any result (SC-005).
-- [ ] T049 [US3] Add the three view functions to `src/web/monitoringViews.ts`; `web/components/monitoring/LookupsPanel.tsx` (searches inside), `RescoresPanel.tsx`, `MailPanel.tsx`, added to the page and `monitoringState.ts`.
-- [ ] T050 Run `npm run check` and `npm run check:db`; when green, delete the marker. End of S4.
+- [X] T045 Create `.specify/sitting-in-progress` containing `030 S4`.
+- [X] T046 [P] [US3] Contract cases first (`monitoringReadCases`, unit on memory): `lookups(since)` (careers audit finishes by outcome and `page_source`), `searches(since)` (searched and failed, from `run_users`), `rescores(since)` (by outcome, median and longest duration, model calls and tokens), `mail(since)` (by kind and outcome, failures by reason).
+- [X] T047 [US3] Add those four to `MonitoringReads` (Kysely and memory).
+- [X] T048 [P] [US3] Unit tests first: in `tests/monitoringViews.test.ts`, `lookupRows`, `rescoreRows` and `mailRows` and their "Nothing in this period" texts; `tests/monitoringPrivacy.test.ts` seeds memory stores with distinctive source names, search terms, addresses, emails and job titles, runs every `MonitoringReads` method and every view function, and asserts none of the seeded strings appears in any result (SC-005).
+- [X] T049 [US3] Add the three view functions to `src/web/monitoringViews.ts`; `web/components/monitoring/LookupsPanel.tsx` (searches inside), `RescoresPanel.tsx`, `MailPanel.tsx`, added to the page and `monitoringState.ts`.
+- [X] T050 Run `npm run check` and `npm run check:db`; when green, delete the marker. End of S4.
 
 **Checkpoint**: The whole Monitoring page.
+
+S4 notes (2026-11-11): company searches come from the runs' totals (no read of their own). The reads give `LookupRow`, `RescoreRow` and `MailRow` rows of fixed values; `runEnd` takes only the five re-score fields it reads, so the re-scores view counts one open too long as failed by the same rule. The views (`monitoringLookups.ts`, `monitoringWork.ts`) share `countBy` and `durationText` (`src/web/counts.ts`), and the panels one `CountTable`. The reads' contract was split into `tests/helpers/monitoringReadContract.ts`; its one case runs on memory and MariaDB.
 
 ---
 
