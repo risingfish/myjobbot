@@ -39,8 +39,9 @@ function phaseContext(list: SavedSource[], http: SourceHttp = boardsAndSearch(),
     const sources = new MemorySourceStore(tables);
     sources.seed(OWNER_ID, list);
     const trace = memoryTrace();
-    const context = { ...(base ?? testContext({}, memoryStores(tables))), trace, saved: { store: userSourceStore(sources, OWNER_ID), list }, sources: sourceHttp({ http, lookup: publicDns() }) };
-    return { context, sources, trace };
+    const stores = memoryStores(tables);
+    const context = { ...(base ?? testContext({}, stores)), trace, saved: { store: userSourceStore(sources, OWNER_ID), list }, sources: sourceHttp({ http, lookup: publicDns() }) };
+    return { context, sources, trace, history: stores.memory?.fetchHistory };
 }
 
 function steps(trace: ReturnType<typeof memoryTrace>) {
@@ -145,4 +146,30 @@ test("a source whose fetch can't even be recorded is traced by a fixed reason, a
     await fetchSources(context);
     expect(trace.events.filter((event) => event.type === "source_fetch_failed")).toEqual([{ type: "source_fetch_failed", source: "Stripe", reason: "unexpected answer" }]);
     expect([(await recorded(sources))[1]?.outcome, JSON.stringify(trace.events).includes("secret detail")]).toEqual(["ok", false]);
+});
+
+test("each fetch and planned skip is recorded under the run part with its module, outcome, fixed reason and counts, and a source that is off is not", async () => {
+    const list = [source(1, { module: "jsearch", name: "Backend remote", params: SEARCH }), source(2, { module: "gmail_alerts", name: "Gmail alerts", params: {} }), source(3, { module: "greenhouse", name: "Stripe", params: { slug: "stripe" } }), source(4, { module: "lever", name: "Off", params: { slug: "off" }, enabled: false })];
+    const { context, history } = phaseContext(list);
+    await fetchSources(context);
+    expect(history?.fetches.map(({ sourceId, module, outcome, reason, partId, pages, jobs }) => [sourceId, module, outcome, reason, partId, pages, jobs])).toEqual([
+        [3, "greenhouse", "ok", null, "test-run", 1, 1],
+        [2, "gmail_alerts", "skipped", "not set up", "test-run", 0, 0],
+        [1, "jsearch", "ok", null, "test-run", 1, expect.any(Number)],
+    ]);
+    expect(history?.fetches.every((fetch) => fetch.userId === OWNER_ID && fetch.ms >= 0 && fetch.at === TEST_NOW.toISOString())).toBe(true);
+});
+
+test("a failing fetch is recorded with its fixed reason, and one whose record fails is traced and the next source still fetched", async () => {
+    const http: SourceHttp = {
+        getJson: async (url) => (url.includes("greenhouse") ? Promise.reject(new HttpStatusError(`GET ${url} failed with HTTP 404`, 404)) : loadFixture("lever.json")),
+        postJson: () => Promise.reject(new Error("no POST here")),
+    };
+    const { context, history } = phaseContext([source(1, { module: "greenhouse", name: "Gone", params: { slug: "gone" } }), source(2, { module: "lever", name: "Palantir", params: { slug: "palantir" } })], http);
+    await fetchSources(context);
+    expect(history?.fetches.map((fetch) => [fetch.module, fetch.outcome, fetch.reason])).toEqual([["greenhouse", "failing", "not found"], ["lever", "ok", null]]);
+    const failing = phaseContext([source(1, { module: "greenhouse", name: "Gone", params: { slug: "gone" } }), source(2, { module: "lever", name: "Palantir", params: { slug: "palantir" } })], http);
+    await fetchSources({ ...failing.context, fetches: { record: () => Promise.reject(new Error("connection lost")) } });
+    expect([failing.trace.events.filter((event) => event.type === "fetch_history_failed").length, failing.trace.events.filter((event) => event.type === "source_fetch").length]).toEqual([2, 2]);
+    expect(JSON.stringify(failing.trace.events)).not.toContain("connection lost");
 });

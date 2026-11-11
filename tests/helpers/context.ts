@@ -46,7 +46,7 @@ function seededSources(stores: TestStores) {
 }
 
 function storeFields(stores: TestStores) {
-    return { store: stores.jobStore, postings: stores.postings, sourcePlans: stores.sourcePlans, apiCalls: stores.apiCalls, companies: stores.companies };
+    return { store: stores.jobStore, postings: stores.postings, sourcePlans: stores.sourcePlans, apiCalls: stores.apiCalls, companies: stores.companies, fetches: stores.fetches };
 }
 
 function testSources(http: JsonGetter) {

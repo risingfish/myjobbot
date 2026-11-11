@@ -109,9 +109,9 @@ function buildContext(config: AppConfig, seams: RunSeams, { logs, stores, key, g
     };
 }
 
-/** Gives the stores the tools read and write jobs, API calls and company records through. */
-function storeParts(stores: UserStores): Pick<ToolContext, "store" | "postings" | "sourcePlans" | "apiCalls" | "companies"> {
-    return { store: stores.jobStore, postings: stores.postings, sourcePlans: stores.sourcePlans, apiCalls: stores.apiCalls, companies: stores.companies };
+/** Gives the stores the tools read and write jobs, API calls, company records and the fetch history through. */
+function storeParts(stores: UserStores): Pick<ToolContext, "store" | "postings" | "sourcePlans" | "apiCalls" | "companies" | "fetches"> {
+    return { store: stores.jobStore, postings: stores.postings, sourcePlans: stores.sourcePlans, apiCalls: stores.apiCalls, companies: stores.companies, fetches: stores.fetches };
 }
 
 /** Assembles the dependencies the agent loop needs from the run's config, tools, and context. */

@@ -52,7 +52,7 @@ export async function runAll(environment: Environment, seams: RunSeams, only?: n
 /** Carries out the due deletions, then runs each planned user, recording each part. */
 async function runEveryone(parts: RunAllParts, environment: Environment, only: number | undefined): Promise<UserRun[]> {
     const { stores, recorder } = parts;
-    const runs: UserRun[] = await carryOutDeletions({ removal: stores.removal, accounts: stores.accounts, send: deletionMail(environment) }, new Date().toISOString());
+    const runs: UserRun[] = await carryOutDeletions({ removal: stores.removal, accounts: stores.accounts, send: deletionMail(environment, stores) }, new Date().toISOString());
     for (const run of runs) await recorder.partEnded(null, run, NO_TALLY);
     const deleted = new Set(runs.map((run) => run.userId));
     const facts = (await userFacts(stores, parts.loaded, only)).filter((user) => !deleted.has(user.userId));
@@ -60,10 +60,10 @@ async function runEveryone(parts: RunAllParts, environment: Environment, only: n
     return runs;
 }
 
-/** Gives how a run tells a deleted account it is gone: through account mail, waited for, or not at all when mail is off. */
-function deletionMail(environment: Environment): (message: MailMessage) => Promise<void> {
+/** Gives how a run tells a deleted account it is gone: through account mail, recorded in the mail log and waited for, or not at all when mail is off. */
+function deletionMail(environment: Environment, stores: Pick<Stores, "mailLog">): (message: MailMessage) => Promise<void> {
     const base = parseBaseUrl(environment);
-    const slot = mailSlot(environment, base.ok ? base.url.origin : null);
+    const slot = mailSlot(environment, base.ok ? base.url.origin : null, stores.mailLog);
     return slot === null ? async () => {} : (message) => sendMail(slot.mailer, message);
 }
 
@@ -102,11 +102,14 @@ async function runOne({ loaded, seams, stores, key }: RunAllParts, userId: numbe
     }
 }
 
-/** Deletes postings, API call records and careers audit rows older than the deployment's retention window, and the run history older than its own. */
+/** Deletes postings, API call records and careers audit rows older than the deployment's retention window, and the run, fetch and mail history older than its own. */
 async function pruneOldJobs(stores: Stores, loaded: LoadedConfig): Promise<void> {
     const cutoff = new Date(Date.now() - runtimeSettings(loaded.fileRaw).job_retention_days * MS_PER_DAY).toISOString();
     await stores.postings.prune(cutoff);
     await stores.apiCalls.pruneBefore(cutoff);
     await stores.careers.pruneAuditBefore(cutoff);
-    await stores.runHistory.pruneBefore(new Date(Date.now() - MONITORING_RETENTION_DAYS * MS_PER_DAY).toISOString());
+    const historyCutoff = new Date(Date.now() - MONITORING_RETENTION_DAYS * MS_PER_DAY).toISOString();
+    await stores.runHistory.pruneBefore(historyCutoff);
+    await stores.fetchHistory.pruneBefore(historyCutoff);
+    await stores.mailLog.pruneBefore(historyCutoff);
 }

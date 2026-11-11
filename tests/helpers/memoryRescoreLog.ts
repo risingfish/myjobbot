@@ -1,4 +1,4 @@
-import { openSince, type BeginResult, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../../src/db/rescoreLogStore.js";
+import { openSince, type BeginResult, type ModelUse, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../../src/db/rescoreLogStore.js";
 import type { JobKey } from "../../src/db/store.js";
 import { viewOf, type Tables } from "./memoryJobViews.js";
 
@@ -16,9 +16,11 @@ export class MemoryRescoreLog implements RescoreLogStore {
         return { started: id };
     }
 
-    async end(id: string, result: RescoreEnd, at: string): Promise<void> {
+    async end(id: string, result: RescoreEnd, at: string, use: ModelUse): Promise<void> {
         const run = this.tables.rescoreRuns.find((each) => each.id === id);
-        if (run !== undefined) Object.assign(run, { ...result, endedAt: at });
+        if (run === undefined) return;
+        Object.assign(run, { ...result, endedAt: at });
+        this.tables.rescoreUse.set(id, use);
     }
 
     async addStep(id: string, step: StoredStep): Promise<void> {

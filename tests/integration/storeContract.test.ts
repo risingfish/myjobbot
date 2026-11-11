@@ -142,7 +142,7 @@ function companyHooks(): CompanyHooks {
     };
 }
 
-const USER_TABLES = ["run_users", "user_jobs", "verdicts", "rescore_runs", "gmail_alert_state", "gmail_connection", "resume_profiles", "resumes", "user_sources", "user_settings", "sign_in_methods", "hardware_keys", "recovery_codes", "sessions", "email_tokens", "auth_challenges", "security_events"] as const;
+const USER_TABLES = ["run_users", "source_fetches", "user_jobs", "verdicts", "rescore_runs", "gmail_alert_state", "gmail_connection", "resume_profiles", "resumes", "user_sources", "user_settings", "sign_in_methods", "hardware_keys", "recovery_codes", "sessions", "email_tokens", "auth_challenges", "security_events"] as const;
 const SHARED_TABLES = ["jobs", "companies", "careers_audit", "api_calls", "auth_attempts", "account_codes"] as const;
 
 async function rowCount(table: (typeof USER_TABLES)[number] | (typeof SHARED_TABLES)[number], userId?: number): Promise<number> {

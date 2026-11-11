@@ -17,6 +17,8 @@ import type { CareersStore } from "./careersStore.js";
 import type { DescriptionFormat } from "../jobs/job.js";
 import type { ApiCallLog } from "./apiCallLog.js";
 import type { RunHistory } from "./runHistory.js";
+import type { FetchHistory } from "./fetchHistory.js";
+import type { MailLog } from "./mailLog.js";
 
 export interface FoundDescription {
     description: string;
@@ -53,6 +55,8 @@ export interface SharedStores {
     recoveryCodes: RecoveryCodeStore;
     keys: KeyStore;
     runHistory: RunHistory;
+    fetchHistory: FetchHistory;
+    mailLog: MailLog;
 }
 
 export interface Stores extends SharedStores {

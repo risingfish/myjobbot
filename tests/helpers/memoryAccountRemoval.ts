@@ -63,7 +63,7 @@ async function dataRows(stores: TestStores, tables: Tables, userId: number): Pro
     const mine = stores.forUser(userId);
     const present = (value: unknown) => (value === null || value === undefined ? 0 : 1);
     const stored = { sources: (await mine.sources.list()).length, settings: present(await mine.searchSettings.load()), resume: present(await mine.resume.currentResume()), profile: present(await mine.resume.profile()), gmail: present((await mine.gmail.connection())?.email), alerts: present(await mine.alerts.state()) };
-    return { userJobs: own(tables.userJobs, (row) => row.user_id === userId), verdicts: own(tables.verdicts, (row) => row.user_id === userId), rescoreRuns: own(tables.rescoreRuns, (run) => run.userId === userId), runParts: own(stores.memory?.runHistory.parts, (part) => part.userId === userId), ...stored };
+    return { userJobs: own(tables.userJobs, (row) => row.user_id === userId), verdicts: own(tables.verdicts, (row) => row.user_id === userId), rescoreRuns: own(tables.rescoreRuns, (run) => run.userId === userId), runParts: own(stores.memory?.runHistory.parts, (part) => part.userId === userId), fetches: own(stores.memory?.fetchHistory.fetches, (fetch) => fetch.userId === userId), ...stored };
 }
 
 export function memoryRemovalHooks(currentTables: () => Tables): (stores: TestStores) => RemovalHooks {

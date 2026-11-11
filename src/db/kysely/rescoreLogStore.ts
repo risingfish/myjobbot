@@ -1,6 +1,6 @@
 import type { Kysely, Selectable, Transaction } from "kysely";
 import { z } from "zod";
-import { openSince, type BeginResult, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../rescoreLogStore.js";
+import { openSince, type BeginResult, type ModelUse, type RescoreEnd, type RescoreLogStore, type RescoreRun, type StoredStep } from "../rescoreLogStore.js";
 import type { Database } from "../schema.js";
 import type { JobKey } from "../store.js";
 
@@ -28,8 +28,8 @@ export class KyselyRescoreLogStore implements RescoreLogStore {
     }
 
     /** Records how a re-score ended and when. */
-    async end(id: string, result: RescoreEnd, at: string): Promise<void> {
-        await this.db.updateTable("rescore_runs").set({ ended_at: at, outcome: result.outcome, filter: result.filter, score: result.score }).where("id", "=", id).execute();
+    async end(id: string, result: RescoreEnd, at: string, use: ModelUse): Promise<void> {
+        await this.db.updateTable("rescore_runs").set({ ended_at: at, outcome: result.outcome, filter: result.filter, score: result.score, model_calls: use.modelCalls, prompt_tokens: use.promptTokens, completion_tokens: use.completionTokens }).where("id", "=", id).execute();
     }
 
     /** Stores one step of a re-score, its fields as JSON. */

@@ -17,6 +17,7 @@ interface Counted<T> {
     count(event: T, totals: TallyTotals): void;
 }
 
+const OFF = "off";
 const count = z.number().int().min(0);
 const usage = z.object({ prompt_tokens: count.optional(), completion_tokens: count.optional() });
 
@@ -27,7 +28,7 @@ function counted<T>(schema: z.ZodType<T>, add: (event: T, totals: TallyTotals) =
 
 export const TALLY_EVENTS = new Map<string, Counted<unknown>>([
     ["source_fetch", counted(z.object({ outcome: z.string(), jobs: count }), (event, totals) => Object.assign(totals, { fetches: totals.fetches + 1, fetchFailures: totals.fetchFailures + (event.outcome === "failing" ? 1 : 0), jobsFound: totals.jobsFound + event.jobs }))],
-    ["source_skipped", counted(z.object({}), (_event, totals) => Object.assign(totals, { fetches: totals.fetches + 1 }))],
+    ["source_skipped", counted(z.object({ reason: z.string() }), (event, totals) => Object.assign(totals, { fetches: totals.fetches + (event.reason === OFF ? 0 : 1) }))],
     ["source_fetch_failed", counted(z.object({}), (_event, totals) => Object.assign(totals, { fetches: totals.fetches + 1, fetchFailures: totals.fetchFailures + 1 }))],
     ["company_search", counted(z.object({}), (_event, totals) => Object.assign(totals, { searches: totals.searches + 1 }))],
     ["company_search_failed", counted(z.object({}), (_event, totals) => Object.assign(totals, { searchFailures: totals.searchFailures + 1 }))],

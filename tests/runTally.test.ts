@@ -8,6 +8,7 @@ test("a tally counts fetches, failures and jobs found from the fetch events", ()
     tally.write({ type: "source_fetch", source: "Acme", module: "greenhouse", pages: 1, jobs: 4, cost: 0, outcome: "ok" });
     tally.write({ type: "source_fetch", source: "Beta", module: "lever", pages: 0, jobs: 0, cost: 0, outcome: "failing", reason: "http_404" });
     tally.write({ type: "source_skipped", source: "JSearch", reason: "budget_used" });
+    tally.write({ type: "source_skipped", source: "Old board", reason: "off" });
     tally.write({ type: "source_fetch_failed", source: "Gamma", reason: "other" });
     expect(tally.totals()).toEqual({ ...NONE, fetches: 4, fetchFailures: 2, jobsFound: 4 });
 });

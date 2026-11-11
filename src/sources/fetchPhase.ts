@@ -9,8 +9,9 @@ import { ingest } from "./ingest.js";
 import type { Cursor, SourceModule } from "./module.js";
 import { hookFor, type HookContext, type RunHook } from "./runHooks.js";
 import { recordCost } from "./cost.js";
+import { recordFetch, type RecordContext } from "./fetchRecord.js";
 
-type FinishContext = Pick<ToolContext, "saved" | "trace" | "jobLog">;
+type FinishContext = Pick<ToolContext, "saved" | "jobLog"> & RecordContext;
 type FactsContext = Pick<ToolContext, "config" | "now" | "jsearchApiKey" | "gmail" | "apiCalls">;
 type PagesContext = HookContext & Pick<ToolContext, "store" | "config" | "sources" | "apiCalls">;
 export type FetchContext = FinishContext & FactsContext & PagesContext & Pick<ToolContext, "run">;
@@ -110,10 +111,12 @@ async function readPages(context: PagesContext, saved: SavedSource, planned: Pla
     return read;
 }
 
-/** Traces a source the run doesn't fetch and why, giving that reason as its outcome, or null for a source that is off. */
-function skipped(context: Pick<ToolContext, "trace">, saved: SavedSource, reason: SkipReason): SourceRun | null {
+/** Traces a source the run doesn't fetch and why, recording the planned skip, giving that reason as its outcome, or null for a source that is off. */
+async function skipped(context: RecordContext, saved: SavedSource, reason: SkipReason): Promise<SourceRun | null> {
     context.trace.write({ type: "source_skipped", source: saved.name, reason });
-    return reason === "off" ? null : { outcome: "skipped", reason, seen: null };
+    if (reason === "off") return null;
+    await recordFetch(context, saved, { at: context.now().toISOString(), outcome: "skipped", reason, pages: 0, jobs: 0, cost: 0 });
+    return { outcome: "skipped", reason, seen: null };
 }
 
 /** Records a source whose fetch failed by a fixed reason, keeping where it stopped so the next run tries again from there. */
@@ -123,10 +126,11 @@ async function failed(context: FinishContext, saved: SavedSource, failure: { at:
     return { outcome: "failing", reason, seen: null };
 }
 
-/** Stores how a source's fetch went and where its next one starts, and traces and logs it. */
+/** Stores how a source's fetch went and where its next one starts, adds it to the fetch history, and traces and logs it. */
 async function finishFetch(context: FinishContext, saved: SavedSource, done: Finished): Promise<void> {
     const { read } = done;
     await context.saved.store.recordFetch(saved.id, { at: done.at, outcome: done.outcome, jobs: read.jobs, cost: read.cost, reason: done.reason }, done.cursor);
+    await recordFetch(context, saved, { at: done.at, outcome: done.outcome, reason: done.reason, pages: read.pages, jobs: read.jobs, cost: read.cost });
     context.trace.write({ type: "source_fetch", source: saved.name, module: saved.module, pages: read.pages, jobs: read.jobs, cost: read.cost, outcome: done.outcome, ...(done.reason === null ? {} : { reason: done.reason }) });
     const skipped = { skipped_duplicates: read.skipped.duplicates, skipped_publishers: read.skipped.publishers };
     context.jobLog.write({ type: "source_fetch", source: saved.name, module: saved.module, job_count: read.stored.length, ...skipped, jobs: read.stored.map(withoutDescription) });

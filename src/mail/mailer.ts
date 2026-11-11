@@ -1,8 +1,10 @@
 import type { Transporter } from "nodemailer";
+import type { MailKind } from "./messages.js";
 import type { MailSettings } from "./settings.js";
 
 export interface MailMessage {
     to: string;
+    kind: MailKind;
     subject: string;
     text: string;
 }

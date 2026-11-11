@@ -1,3 +1,4 @@
+import type { UserFetchHistory } from "./fetchHistory.js";
 import type { RescoreLogStore } from "./rescoreLogStore.js";
 import type { UserResumeStore } from "./resumeStore.js";
 import type { UserSearchSettingsStore } from "./searchSettingsStore.js";
@@ -17,4 +18,5 @@ export interface UserStores extends SharedStores {
     sources: UserSourceStore;
     searchSettings: UserSearchSettingsStore;
     resume: UserResumeStore;
+    fetches: UserFetchHistory;
 }

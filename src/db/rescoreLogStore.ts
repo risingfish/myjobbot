@@ -28,9 +28,15 @@ export interface StoredStep {
 
 export type BeginResult = { started: string } | { running: string } | { missing: true };
 
+export interface ModelUse {
+    modelCalls: number;
+    promptTokens: number;
+    completionTokens: number;
+}
+
 export interface RescoreLogStore {
     begin(key: JobKey, id: string, at: string): Promise<BeginResult>;
-    end(id: string, result: RescoreEnd, at: string): Promise<void>;
+    end(id: string, result: RescoreEnd, at: string, use: ModelUse): Promise<void>;
     addStep(id: string, step: StoredStep): Promise<void>;
     stepsAfter(id: string, seq: number): Promise<StoredStep[]>;
     run(id: string): Promise<RescoreRun | null>;

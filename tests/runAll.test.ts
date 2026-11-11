@@ -146,10 +146,32 @@ test("a user's part is stored as running while they run, and a failure keeps onl
     expect(stores.memory?.runHistory.runs[0]?.outcome).toBe("finished_with_errors");
 });
 
-test("a run prunes the run history older than 90 days", async () => {
+test("a run prunes the run, fetch and mail history older than 90 days", async () => {
     const stores = await twoUsers();
-    await stores.runHistory.begin("old", new Date(Date.now() - 91 * 86_400_000).toISOString());
+    const old = new Date(Date.now() - 91 * 86_400_000).toISOString();
+    await stores.runHistory.begin("old", old);
+    await stores.mailLog.record({ at: old, kind: "test", outcome: "sent", reason: null });
+    const acme = (await stores.forUser(2).sources.list())[0]?.id ?? 0;
+    await stores.forUser(2).fetches.record({ sourceId: acme, partId: "old", module: "greenhouse", at: old, ms: 1, outcome: "ok", reason: null, pages: 1, jobs: 1, cost: 0 });
     const { chat } = scriptedChat([...scoring("Stripe", 10), ...scoring("Acme", 40)]);
     await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
     expect(stores.memory?.runHistory.runs.map((run) => run.id)).not.toContain("old");
+    expect(stores.memory?.fetchHistory.fetches.map((fetch) => fetch.partId)).not.toContain("old");
+    expect(stores.memory?.mailLog.sends).toEqual([]);
+});
+
+test("recording costs a run at most 2 rows of its own, 2 writes per user's part and 1 row per source fetched or skipped", async () => {
+    const stores = await twoUsers();
+    const history = stores.memory?.runHistory;
+    const writes: string[] = [];
+    for (const name of ["begin", "alive", "partStarted", "partEnded", "markIncomplete", "end"] as const) {
+        const write = history?.[name].bind(history) as (...args: unknown[]) => Promise<void>;
+        if (history) Object.assign(history, { [name]: (...args: unknown[]) => (writes.push(name), write(...args)) });
+    }
+    const { chat } = scriptedChat([...scoring("Stripe", 10), ...scoring("Acme", 40)]);
+    await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
+    const sources = (await stores.forUser(1).sources.list()).length + (await stores.forUser(2).sources.list()).length;
+    expect(writes.length).toBeLessThanOrEqual(2 + 2 * 2);
+    expect(writes.filter((name) => name === "alive")).toEqual([]);
+    expect(stores.memory?.fetchHistory.fetches.length).toBeLessThanOrEqual(sources);
 });

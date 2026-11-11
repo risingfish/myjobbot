@@ -1,5 +1,7 @@
 import type { TallyTotals } from "../../src/monitoring/tallyEvents.js";
 import type { PartEnd, PartStart, RunEnding, RunHistory, RunTotals } from "../../src/db/runHistory.js";
+import type { FetchHistory, FetchRecord } from "../../src/db/fetchHistory.js";
+import type { MailLog, MailSend } from "../../src/db/mailLog.js";
 
 export interface StoredRun {
     id: string;
@@ -21,6 +23,38 @@ export interface StoredPart {
     outcome: string;
     reason: string | null;
     totals: TallyTotals | null;
+}
+
+export interface StoredFetch extends FetchRecord {
+    userId: number;
+}
+
+export class MemoryMailLog implements MailLog {
+    sends: MailSend[] = [];
+
+    async record(send: MailSend): Promise<void> {
+        this.sends.push(send);
+    }
+
+    async pruneBefore(cutoff: string): Promise<void> {
+        this.sends = this.sends.filter((send) => send.at >= cutoff);
+    }
+}
+
+export class MemoryFetchHistory implements FetchHistory {
+    fetches: StoredFetch[] = [];
+
+    async record(userId: number, fetch: FetchRecord): Promise<void> {
+        this.fetches.push({ userId, ...fetch });
+    }
+
+    async pruneBefore(cutoff: string): Promise<void> {
+        this.fetches = this.fetches.filter((fetch) => fetch.at >= cutoff);
+    }
+
+    dropUser(userId: number): void {
+        this.fetches = this.fetches.filter((fetch) => fetch.userId !== userId);
+    }
 }
 
 export class MemoryRunHistory implements RunHistory {

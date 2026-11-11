@@ -51,7 +51,8 @@ async function seedSignIn(stores: TestStores, userId: number): Promise<void> {
 
 async function seedData(stores: TestStores, userId: number): Promise<void> {
     const mine = stores.forUser(userId);
-    await mine.sources.save({ module: "greenhouse", name: "Acme", params: { slug: "acme" }, target: "greenhouse:acme", enabled: true }, NOW);
+    const source = await mine.sources.save({ module: "greenhouse", name: "Acme", params: { slug: "acme" }, target: "greenhouse:acme", enabled: true }, NOW);
+    await mine.fetches.record({ sourceId: source.id, partId: `part-${userId}`, module: "greenhouse", at: NOW, ms: 10, outcome: "ok", reason: null, pages: 1, jobs: 1, cost: 0 });
     await mine.searchSettings.save({ preferences: "remote" }, NOW);
     const resume = await mine.resume.saveResume({ text: "# Ada", fileName: "resume.md", fileType: "md", uploadedAt: NOW });
     await mine.resume.saveProfile({ summary: "s", skills: [], resumeId: resume.contentId, extractedAt: NOW, editedAt: null });

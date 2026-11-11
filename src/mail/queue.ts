@@ -1,14 +1,6 @@
+import { mailFailureReason as failureReason } from "./failureReason.js";
 import type { Mailer, MailMessage } from "./mailer.js";
 
-type FailureReason = "auth" | "connect" | "tls" | "refused" | "other";
-
-const REASONS: Record<string, FailureReason> = { EAUTH: "auth", ECONNECTION: "connect", ETIMEDOUT: "connect", EDNS: "connect", ESOCKET: "connect", ETLS: "tls", EENVELOPE: "refused", EMESSAGE: "refused" };
-
-/** Returns the fixed reason a mail failed, from the error's code alone, never its text. */
-function failureReason(error: unknown): FailureReason {
-    const code = (error as { code?: unknown } | null)?.code;
-    return typeof code === "string" ? (REASONS[code] ?? "other") : "other";
-}
 
 /** Sends a mail and waits for it, for a process about to end; a failure is logged by its fixed reason and never thrown. */
 export async function sendMail(mailer: Mailer, message: MailMessage, log: (line: string) => void = console.error): Promise<void> {

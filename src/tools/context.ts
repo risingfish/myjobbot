@@ -1,3 +1,4 @@
+import type { UserFetchHistory } from "../db/fetchHistory.js";
 import type { ChatFn } from "../agent/llm.js";
 import type { CompanyStore } from "../db/companyStore.js";
 import type { Trace } from "../agent/trace.js";
@@ -38,6 +39,7 @@ interface RunStores {
     apiCalls: ApiCallLog;
     companies: CompanyStore;
     saved: SavedSources;
+    fetches: UserFetchHistory;
 }
 
 interface RunPorts {
