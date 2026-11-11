@@ -23,7 +23,7 @@ function Headings({ headings }: { headings: string[] }) {
 export function DataTable({ label, headings, rows }: DataTableProps) {
     return (
         <div className="overflow-auto">
-            <table aria-label={label}>
+            <table className="striped" aria-label={label}>
                 <Headings headings={headings} />
                 <tbody>
                     {rows.map((row) => (
