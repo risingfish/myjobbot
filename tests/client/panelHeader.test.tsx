@@ -102,7 +102,7 @@ async function hidesAndCloses(page: "recommended" | "jobs") {
     await vi.waitFor(() => expect(panel()?.open).toBe(false));
     const row = screen.queryByRole("link", { name: "Software Engineer a" })?.closest("tr") ?? null;
     if (page === "recommended") expect(row).toBeNull();
-    else expect(within(row as HTMLElement).getByRole("button", { name: "Unhide" })).toBeTruthy();
+    else expect(row?.getAttribute("data-hidden")).toBe("1");
     cleanup();
 }
 

@@ -220,6 +220,10 @@ td ul {
 form.hide {
     margin: 0;
 }
+.row-actions form.hide button {
+    display: inline-flex;
+    padding: calc(var(--pico-form-element-spacing-vertical) / 2) calc(var(--pico-form-element-spacing-horizontal) / 2);
+}
 form.hide button,
 .details-head button,
 .details-history button {

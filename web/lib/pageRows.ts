@@ -19,6 +19,13 @@ const LISTS: Record<PageName, (row: JobRowView) => boolean> = {
     reasoning: () => true,
 };
 
+const OFFERS_HIDE: Record<PageName, boolean> = { recommended: true, applied: true, jobs: false, reasoning: false };
+
+/** Says whether a page's rows offer Hide; All jobs lists every job, hidden ones too, so it doesn't. */
+export function offersHide(page: PageName): boolean {
+    return OFFERS_HIDE[page];
+}
+
 /** Returns the key that identifies a job row across pages and reloads. */
 export function jobKey(job: JobRowView): string {
     return `${job.ats}:${job.jobId}`;
