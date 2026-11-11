@@ -329,23 +329,11 @@ what the model saw and decided.
 
 ## Monitoring
 
-Every run is also recorded in the database as it goes (feature 030): the run when it starts, a
-heartbeat every minute, each user's part (written as running before its work, then with how it
-ended and what it did), and how the run ended with its totals. A run with no heartbeat for 5
-minutes counts as never finished, so a crash shows within minutes. A part's counts (fetches and
-failures, jobs found and scored, company searches, model calls and tokens) come from the events it
-already traces, read by a schema-checked tally; failures keep only a fixed reason, never error
-text. Each source fetch and planned skip, each mail send (by kind and outcome, never its address)
-and each re-score's model use are stored too. The history is kept 90 days, and an account's
-deletion removes its parts and fetches; runs keep their totals.
-
-Admins see it on the Monitoring page: the runs in the last day, week or 30 days with a run's parts
-by user id, each source module's fetches with its top failure reasons and how many of its sources
-keep failing, careers lookups, company searches, re-scores and mail, with runs and fetches per day
-as charts. It shows ids, module names, counts and fixed reasons only, never a source's name, a
-search term, an address or a job. Each user sees their own sources' last 10 fetches on Settings,
-marked when the latest 3 failed. The same history is served to Prometheus by `npm start --
-metrics` ([cli.md](cli.md#metrics), [Kubernetes](deploying.md#monitoring)).
+Every run is also recorded in the database as it goes: the run with a heartbeat every minute (none
+for 5 minutes means it never finished), each user's part with its counts, each source fetch, each
+mail send and each re-score's model use, kept 90 days. Admins see it on the Monitoring page, and
+`npm start -- metrics` serves it to Prometheus. [Monitoring](monitoring.md) has all of it,
+including every metric.
 
 ## The web UI
 

@@ -82,8 +82,7 @@ Serves the stored run, fetch, lookup, re-score and mail history to Prometheus on
 (`MYJOBBOT_METRICS_PORT`, default 9464), at `GET /metrics` only and only with
 `Authorization: Bearer <MYJOBBOT_METRICS_TOKEN>` (at least 32 characters; it won't start without
 one). Anything else gets an empty 401 or 404. Every value is a gauge read from the database at
-scrape time, over the last day and 7 days (`docs/specs/030-observability/contracts/metrics.md`
-lists them).
+scrape time, over the last day and 7 days; [Monitoring](monitoring.md#metrics) lists them all.
 
 ```bash
 MYJOBBOT_METRICS_TOKEN=$(openssl rand -hex 32) npm start -- metrics

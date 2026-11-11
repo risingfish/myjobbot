@@ -127,6 +127,8 @@ verdict. The rubric table and the details are in
 - [Database structure](docs/database.md): setting up MariaDB, the tables, and useful queries.
 - [Deploying](docs/deploying.md): the full stack, Docker Compose, sign-in settings, proxies, the
   browser and search services, and Kubernetes.
+- [Monitoring](docs/monitoring.md): what each run records, the Monitoring page, every metric
+  served to Prometheus, and the alerts.
 - [Developing](docs/developing.md): checks, tests, copying production, and where the code is.
 - [The React walkthrough](docs/react-walkthrough.md): learning React and Next.js from this code.
 - The design: `docs/superpowers/specs/2026-10-03-myjobbot-design.md`; each feature's spec is in

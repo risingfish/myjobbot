@@ -217,16 +217,9 @@ kubectl exec -it deploy/myjobbot-web -- npm start -- account init you@example.co
 
 ### Monitoring
 
-With the Prometheus Operator (kube-prometheus-stack), `monitoring.enabled=true` adds a `metrics`
-container to the web pod, its own `-metrics` Service (the ingress never routes it), a
-ServiceMonitor, a PrometheusRule and a Grafana dashboard ConfigMap (`grafana_dashboard: "1"`). Put
-`MYJOBBOT_METRICS_TOKEN` (at least 32 characters) in the Secret: the metrics answer only scrapes
-sending it, and the ServiceMonitor reads it from there. Set `monitoring.serviceMonitor.labels` and
-`monitoring.rules.labels` to what your Prometheus selects (often `release: <its release>`). The
-alerts: the latest run failed or never finished, no run finished for
-`monitoring.alerts.missedRunHours` (9), a module's sources failing `moduleFailingFetches` (3) times
-in a row, `mailFailures` (3) mail failures in a row, and `jsearchBudgetRatio` (0.9) of the month's
-JSearch requests used.
+`monitoring.enabled=true` (with the Prometheus Operator, and `MYJOBBOT_METRICS_TOKEN` in the Secret)
+adds the metrics container, its own Service, a ServiceMonitor, the alert rules and a Grafana
+dashboard. [Monitoring](monitoring.md#in-kubernetes) has the details, the metrics and the alerts.
 
 ## Upgrading to per-user data
 

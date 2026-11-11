@@ -367,7 +367,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   metrics` serves the same history to Prometheus with prom-client 15.1.3 (pinned), a fresh
   registry of gauges per scrape, on `MYJOBBOT_METRICS_PORT` and only with
   `MYJOBBOT_METRICS_TOKEN`; the chart's `monitoring.enabled` adds its container, Service,
-  ServiceMonitor, PrometheusRule and dashboard.
+  ServiceMonitor, PrometheusRule and dashboard. All of it is documented in `docs/monitoring.md`,
+  whose metrics table `tests/monitoringDocs.test.ts` keeps in step with `METRICS`: a new or changed
+  metric is documented there in the same change.
 
 ## Commands
 
