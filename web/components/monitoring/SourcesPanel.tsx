@@ -12,12 +12,18 @@ function moduleCells(row: ModuleRowView) {
     return [row.module, row.fetches, row.ok, row.partial, row.failing, row.skipped, row.pages, row.jobs, row.cost, row.reasons, row.failingSources];
 }
 
-/** Renders the Sources panel: fetches per day, and each source module's fetches in the period, never naming a source. */
+/** Renders the Sources panel: fetches per day beside each source module's fetches in the period, never naming a source. */
 export function SourcesPanel({ rows, chart }: { rows: ModuleRowView[]; chart: ChartSeries }) {
     return (
         <Panel title="Sources">
-            {rows.length === 0 ? <p className="note">{NOTHING}</p> : <MonitoringChart label="Fetches per day" series={chart} />}
-            {rows.length === 0 ? null : <DataTable label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />}
+            {rows.length === 0 ? (
+                <p className="note">{NOTHING}</p>
+            ) : (
+                <div className="grid">
+                    <MonitoringChart label="Fetches per day" series={chart} />
+                    <DataTable label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />
+                </div>
+            )}
         </Panel>
     );
 }

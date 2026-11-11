@@ -9,7 +9,7 @@ interface LookupsProps {
     searches: { searched: number; failed: number };
 }
 
-/** Renders the careers lookups by how they ended and how their pages were read, and the company searches the runs made. */
+/** Renders the company searches the runs made, then the careers lookups by how they ended beside how their pages were read. */
 export function LookupsPanel({ lookups, searches }: LookupsProps) {
     return (
         <Panel title="Careers lookups and company searches">
@@ -17,8 +17,10 @@ export function LookupsPanel({ lookups, searches }: LookupsProps) {
                 Company searches: {searches.searched}
                 {searches.failed === 0 ? "" : ` (${searches.failed} search steps failed)`}
             </p>
-            {lookups.outcomes.length === 0 ? <p className="note">{NOTHING}</p> : <CountTable label="Lookups" heading="How it ended" rows={lookups.outcomes} />}
-            {lookups.pages.length === 0 ? null : <CountTable label="Page reads" heading="Read by" rows={lookups.pages} />}
+            <div className="grid">
+                {lookups.outcomes.length === 0 ? <p className="note">{NOTHING}</p> : <CountTable label="Lookups" heading="How it ended" rows={lookups.outcomes} />}
+                {lookups.pages.length === 0 ? <div /> : <CountTable label="Page reads" heading="Read by" rows={lookups.pages} />}
+            </div>
         </Panel>
     );
 }

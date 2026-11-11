@@ -11,7 +11,7 @@ interface RescoresProps {
     model: string;
 }
 
-/** Renders the re-scores by how they ended, with their typical and longest durations and their model use. */
+/** Renders the re-scores' typical and longest durations and model use beside how they ended. */
 export function RescoresPanel({ rescores }: { rescores: RescoresProps }) {
     if (rescores.outcomes.length === 0)
         return (
@@ -21,10 +21,12 @@ export function RescoresPanel({ rescores }: { rescores: RescoresProps }) {
         );
     return (
         <Panel title="Re-scores">
-            <p className="note">
-                Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}
-            </p>
-            <CountTable label="Re-scores" heading="How it ended" rows={rescores.outcomes} />
+            <div className="grid">
+                <p className="note">
+                    Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}
+                </p>
+                <CountTable label="Re-scores" heading="How it ended" rows={rescores.outcomes} />
+            </div>
         </Panel>
     );
 }
