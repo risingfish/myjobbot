@@ -1,6 +1,7 @@
 import type { CountRow } from "../../../src/web/counts.js";
 import { Panel } from "../sections/Panel.js";
 import { CountTable } from "./CountTable.js";
+import { SectionGrid } from "./SectionGrid.js";
 
 const NOTHING = "Nothing in this period";
 
@@ -11,22 +12,17 @@ interface RescoresProps {
     model: string;
 }
 
-/** Renders the re-scores' typical and longest durations and model use beside how they ended. */
+/** Renders the re-scores' typical and longest durations and model use, then how they ended in the left column. */
 export function RescoresPanel({ rescores }: { rescores: RescoresProps }) {
-    if (rescores.outcomes.length === 0)
-        return (
-            <Panel title="Re-scores">
-                <p className="note">{NOTHING}</p>
-            </Panel>
-        );
+    const ended = rescores.outcomes.length === 0 ? null : <CountTable key="outcomes" label="Re-scores" heading="How it ended" rows={rescores.outcomes} />;
     return (
         <Panel title="Re-scores">
-            <div className="grid">
+            {ended === null ? null : (
                 <p className="note">
                     Typical {rescores.typical}, longest {rescores.longest}; model use {rescores.model}
                 </p>
-                <CountTable label="Re-scores" heading="How it ended" rows={rescores.outcomes} />
-            </div>
+            )}
+            <SectionGrid empty={NOTHING} items={[ended]} />
         </Panel>
     );
 }

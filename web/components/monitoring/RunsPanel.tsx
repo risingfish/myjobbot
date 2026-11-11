@@ -5,6 +5,7 @@ import { Panel } from "../sections/Panel.js";
 import { DataTable } from "../sections/DataTable.js";
 import { MonitoringChart } from "./MonitoringChart.js";
 import { PeriodChoice } from "./PeriodChoice.js";
+import { SectionGrid } from "./SectionGrid.js";
 
 const NO_RUNS = "No runs yet";
 const HEADINGS = ["Started", "Took", "Status", "Users", "Fetches", "Jobs", "Model calls"];
@@ -25,14 +26,7 @@ export function RunsPanel({ period, rows, chart }: { period: Period; rows: RunRo
     return (
         <Panel title="Runs">
             <PeriodChoice period={period} />
-            {rows.length === 0 ? (
-                <p className="note">{NO_RUNS}</p>
-            ) : (
-                <div className="grid">
-                    <MonitoringChart label="Runs per day" series={chart} />
-                    <DataTable label="Runs" headings={HEADINGS} rows={rows.map((row) => ({ key: row.id, cells: runCells(row, period) }))} />
-                </div>
-            )}
+            <SectionGrid empty={NO_RUNS} items={rows.length === 0 ? [] : [<MonitoringChart key="chart" label="Runs per day" series={chart} />, <DataTable key="table" label="Runs" headings={HEADINGS} rows={rows.map((row) => ({ key: row.id, cells: runCells(row, period) }))} />]} />
         </Panel>
     );
 }

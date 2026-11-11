@@ -3,6 +3,7 @@ import type { ModuleRowView } from "../../../src/web/monitoringSources.js";
 import { Panel } from "../sections/Panel.js";
 import { DataTable } from "../sections/DataTable.js";
 import { MonitoringChart } from "./MonitoringChart.js";
+import { SectionGrid } from "./SectionGrid.js";
 
 const NOTHING = "Nothing in this period";
 const HEADINGS = ["Module", "Fetches", "OK", "At the limit", "Failing", "Skipped", "Pages", "Jobs", "Cost", "Top failure reasons", "Sources failing repeatedly"];
@@ -16,14 +17,7 @@ function moduleCells(row: ModuleRowView) {
 export function SourcesPanel({ rows, chart }: { rows: ModuleRowView[]; chart: ChartSeries }) {
     return (
         <Panel title="Sources">
-            {rows.length === 0 ? (
-                <p className="note">{NOTHING}</p>
-            ) : (
-                <div className="grid">
-                    <MonitoringChart label="Fetches per day" series={chart} />
-                    <DataTable label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />
-                </div>
-            )}
+            <SectionGrid empty={NOTHING} items={rows.length === 0 ? [] : [<MonitoringChart key="chart" label="Fetches per day" series={chart} />, <DataTable key="table" label="Source modules" headings={HEADINGS} rows={rows.map((row) => ({ key: row.module, cells: moduleCells(row) }))} />]} />
         </Panel>
     );
 }
