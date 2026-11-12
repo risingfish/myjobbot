@@ -143,6 +143,7 @@ footer {
     font-variant-numeric: tabular-nums;
 }
 .applied-cell {
+    width: 1%;
     text-align: center;
     font-weight: 700;
 }
