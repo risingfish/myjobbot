@@ -143,7 +143,7 @@ footer {
     font-variant-numeric: tabular-nums;
 }
 .applied-cell {
-    width: 1%;
+    width: 85px;
     text-align: center;
     font-weight: 700;
 }
@@ -168,7 +168,7 @@ form.applied-form button {
     font: inherit;
 }
 .score-col {
-    width: 1%;
+    width: 75px;
     white-space: nowrap;
 }
 .posted-col {
