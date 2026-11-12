@@ -1,3 +1,4 @@
+import { dayIn } from "../time/format.js";
 import { minutes } from "../time/minutes.js";
 import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
@@ -69,7 +70,7 @@ export function shortRun(runId: string | null): string | null {
 
 /** Returns the date-only portion of an ISO timestamp, or an empty string when null. */
 function dateOnly(iso: string | null): string {
-    return iso ? iso.slice(0, 10) : "";
+    return iso ? dayIn(iso, "utc") : "";
 }
 
 /** Returns the URL only when it is http(s), so unsafe link schemes never become links. */

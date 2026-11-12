@@ -69,6 +69,9 @@ no `var`, `const` where possible, no inferrable type annotations, no unused code
   stating its purpose: what it is for, not how it works, as a full sentence. Write it with
   the function and update it when the purpose changes. Tests stay uncommented.
 - No other comments, except one explaining *why* something non-obvious was chosen.
+- Dates and times shown to people are formatted only through `src/time/format.ts` (`dayIn`,
+  `minuteIn`; luxon 3.7.2, pinned), from the stored UTC ISO string into a named zone, the
+  browser's (`useLocalTimeZone`) or the server's own. Stored times stay `toISOString()` strings.
 - Tests live in `tests/` (habit-hooks' knip config treats `tests/**` as entry points).
 - Test mix target, by count: 95% unit (in-memory only), 4% integration (database, files, network,
   child processes; the database is the checkout's own test database on the MariaDB server), 1% UI (component
