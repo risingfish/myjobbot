@@ -152,6 +152,14 @@ footer {
 .applied-cell span.unapplied {
     color: var(--pico-primary);
 }
+.applied-cell button.unhide {
+    display: inline-flex;
+    vertical-align: middle;
+    color: var(--pico-muted-color);
+}
+.applied-cell button.unhide:is(:hover, :focus-visible) {
+    color: var(--pico-primary);
+}
 form.applied-form button {
     border: 0;
     background: none;

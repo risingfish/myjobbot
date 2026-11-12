@@ -15,3 +15,11 @@ export function useSave<R extends { ok: boolean }>(send: () => Promise<R>, onSav
     };
     return { status, submit };
 }
+
+/** Wraps a form's submit so the change goes ahead only when there is no question to ask or the owner confirms it. */
+export function confirmedSubmit(question: string | null, submit: (event: FormEvent) => Promise<void>) {
+    return async (event: FormEvent) => {
+        if (question === null || confirm(question)) return submit(event);
+        event.preventDefault();
+    };
+}

@@ -26,6 +26,30 @@ test("Recommended and Applied offer Hide on every row, and All jobs offers none,
     expect([screen.queryByRole("button", { name: "Hide" }), screen.queryByRole("button", { name: "Unhide" }), container.querySelector('a[aria-label="Open the posting"]') === null]).toEqual([null, null, false]);
 });
 
+function showHiddenOnAllJobs() {
+    return render(<RowsList name="jobs" initial={jobPage([jobRowView({ hidden: true }), jobRowView({ jobId: "b", title: "Software Engineer b" })])} />);
+}
+
+test("All jobs shows a closed eye in place of a hidden job's question mark, and keeps its hidden note", () => {
+    const { container } = showHiddenOnAllJobs();
+    const rows = [...container.querySelectorAll("tr.job")];
+    const [hidden, shown] = rows.map((row) => row.querySelector(".applied-cell"));
+    expect([hidden?.querySelector("button.unhide svg") === null, hidden?.textContent, shown?.textContent]).toEqual([false, "", "?"]);
+    expect([rows[0]?.getAttribute("data-hidden"), rows[0]?.querySelector(".hidden-note")?.textContent]).toEqual(["1", "hidden by you"]);
+});
+
+test("clicking the closed eye unhides the job once the owner confirms, and does nothing if they don't", async () => {
+    const ask = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    vi.stubGlobal("confirm", ask);
+    const { container } = showHiddenOnAllJobs();
+    await userEvent.click(screen.getByRole("button", { name: "Unhide" }));
+    expect([ask.mock.calls[0]?.[0], actions.setJobHidden.mock.calls.length]).toEqual(["Are you sure you want to unhide this job?", 0]);
+    await userEvent.click(screen.getByRole("button", { name: "Unhide" }));
+    expect(actions.setJobHidden).toHaveBeenLastCalledWith("greenhouse", "a", false);
+    expect(container.querySelector("tr.job")?.getAttribute("data-hidden")).toBe("0");
+    vi.unstubAllGlobals();
+});
+
 test("hiding on Recommended saves the change and removes the row", async () => {
     const { container } = showPage("recommended");
     await userEvent.click(screen.getByRole("button", { name: "Hide" }));
