@@ -1,4 +1,5 @@
 import type { ScoreDetail } from "../../../src/web/api.js";
+import { NoteList } from "./NoteList.js";
 import { Fact, FactLines, PanelSection } from "./PanelSection.js";
 
 /** Explains the job's score in the details panel: the total, how it was boosted, its two parts and the notes behind it. */
@@ -35,22 +36,4 @@ function ScoreFacts({ score }: { score: ScoreDetail }) {
 /** Shows one part of the score out of its 50 points, or nothing when the part wasn't recorded. */
 function partText(part: number | null): string {
     return part === null ? "" : `${part} of 50`;
-}
-
-/** Lists the score's reasons or gaps under a small heading, saying "none" when there are none. */
-function NoteList({ label, notes }: { label: string; notes: string[] }) {
-    return (
-        <>
-            <h4>{label}</h4>
-            {notes.length === 0 ? (
-                <p>none</p>
-            ) : (
-                <ul className="details-notes">
-                    {notes.map((note, index) => (
-                        <li key={`${index}:${note}`}>{note}</li>
-                    ))}
-                </ul>
-            )}
-        </>
-    );
 }

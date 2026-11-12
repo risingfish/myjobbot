@@ -82,7 +82,7 @@ test("a closed panel keeps the last job's details so it can slide out", async ()
 });
 
 test("clicking another title or a row's Hide doesn't close the panel", async () => {
-    showPage();
+    showPage("recommended");
     await openTitle("Software Engineer a");
     fireEvent.pointerDown(screen.getByRole("link", { name: "Backend Engineer b" }));
     fireEvent.pointerDown(screen.getAllByRole("button", { name: "Hide" })[1] as HTMLElement);

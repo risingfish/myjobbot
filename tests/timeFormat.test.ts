@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { dayIn, minuteIn } from "../src/time/format.js";
+import { dayIn, minuteIn, readableDayIn } from "../src/time/format.js";
 import { minutes, utcMinutes } from "../src/time/minutes.js";
 
 const LATE_EVENING_IN_LOS_ANGELES = "2026-10-23T23:30:00.000Z";
@@ -18,4 +18,8 @@ test("a zone's clock change is followed: the same UTC hour is an hour apart in L
 
 test("minutes shows a stored time in UTC, and utcMinutes says so", () => {
     expect([minutes("2026-11-12T03:04:59.999Z"), utcMinutes("2026-11-12T03:04:59.999Z")]).toEqual(["2026-11-12 03:04", "2026-11-12 03:04 UTC"]);
+});
+
+test("a readable date names the month and drops a leading zero from the day, in the zone asked for", () => {
+    expect([readableDayIn("2026-06-01T12:00:00.000Z", "utc"), readableDayIn(LATE_EVENING_IN_LOS_ANGELES, "Asia/Tokyo")]).toEqual(["Jun 1, 2026", "Oct 24, 2026"]);
 });

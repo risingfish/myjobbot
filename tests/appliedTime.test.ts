@@ -10,11 +10,11 @@ test("a job not applied to is labelled as one to mark", () => {
 });
 
 test("an applied job is labelled with the date it was marked, in the browser's zone", () => {
-    expect(rowLabel(applied, "America/Los_Angeles")).toBe("Applied on 2026-10-23");
+    expect(rowLabel(applied, "America/Los_Angeles")).toBe("Applied on Oct 23, 2026");
 });
 
 test("the same moment falls on a later date further east", () => {
-    expect(rowLabel(applied, "Asia/Tokyo")).toBe("Applied on 2026-10-24");
+    expect(rowLabel(applied, "Asia/Tokyo")).toBe("Applied on Oct 24, 2026");
 });
 
 test("before the browser's zone is known, an applied job's label leaves out the date", () => {

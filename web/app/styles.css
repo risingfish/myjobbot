@@ -2,12 +2,32 @@
     --pico-font-size: 93.75%;
     --warn: #a3561a;
     --applied: #1e7a3c;
+    --tone-good: #2e8b4a;
+    --tone-fair: #8a6d00;
+    --tone-warn: #b85a00;
+    --tone-bad: #b42318;
 }
 @media (prefers-color-scheme: dark) {
     :root {
         --warn: #e6a467;
         --applied: #6fd08f;
+        --tone-good: #7ad99a;
+        --tone-fair: #e8cf4a;
+        --tone-warn: #f29d4b;
+        --tone-bad: #f07467;
     }
+}
+.tone-good {
+    color: var(--tone-good);
+}
+.tone-fair {
+    color: var(--tone-fair);
+}
+.tone-warn {
+    color: var(--tone-warn);
+}
+.tone-bad {
+    color: var(--tone-bad);
 }
 nav.pages {
     justify-content: flex-start;
@@ -143,6 +163,7 @@ footer {
     font-variant-numeric: tabular-nums;
 }
 .applied-cell {
+    width: 85px;
     text-align: center;
     font-weight: 700;
 }
@@ -152,6 +173,14 @@ footer {
 .applied-cell span.unapplied {
     color: var(--pico-primary);
 }
+.applied-cell button.unhide {
+    display: inline-flex;
+    vertical-align: middle;
+    color: var(--pico-muted-color);
+}
+.applied-cell button.unhide:is(:hover, :focus-visible) {
+    color: var(--pico-primary);
+}
 form.applied-form button {
     border: 0;
     background: none;
@@ -159,14 +188,43 @@ form.applied-form button {
     font: inherit;
 }
 .score-col {
-    width: 1%;
+    width: 75px;
     white-space: nowrap;
 }
-.posted-col {
+.posted-col,
+.scored-col {
     white-space: nowrap;
 }
 .score-col .score {
     position: relative;
+}
+.score-line {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--pico-spacing) / 4);
+}
+button.score-details {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pico-muted-color);
+}
+button.score-details:is(:hover, :focus-visible) {
+    color: var(--pico-primary);
+}
+.score-modal {
+    white-space: normal;
+}
+.score-modal article {
+    max-width: 720px;
+}
+.score-modal h3 {
+    margin: 0;
+}
+.score-modal .score-when {
+    color: var(--pico-muted-color);
 }
 .tip {
     display: none;
@@ -193,8 +251,19 @@ form.applied-form button {
     min-width: 16em;
     overflow-wrap: anywhere;
 }
+.why {
+    padding-top: calc(var(--pico-spacing) / 2);
+}
+.why > summary::after {
+    float: none;
+    display: inline-block;
+    vertical-align: middle;
+}
 td ul {
     margin: 0;
+}
+.actions-col {
+    text-align: center;
 }
 .row-actions {
     display: inline-flex;
@@ -211,6 +280,16 @@ td ul {
 }
 form.hide {
     margin: 0;
+}
+.row-actions form.hide button {
+    display: inline-flex;
+    padding: calc(var(--pico-form-element-spacing-vertical) / 2) calc(var(--pico-form-element-spacing-horizontal) / 2);
+    border-color: transparent;
+    color: var(--pico-muted-color);
+}
+.row-actions form.hide button:is(:hover, :focus-visible) {
+    border-color: transparent;
+    color: var(--pico-primary);
 }
 form.hide button,
 .details-head button,

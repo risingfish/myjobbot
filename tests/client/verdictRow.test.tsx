@@ -29,3 +29,9 @@ test("verdicts from before history was kept are labelled, and pruned jobs are pl
     expect(screen.getByText("(pruned)")).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
 });
+
+test("the company sits under the job's link, in the same cell", () => {
+    const { container } = renderRow();
+    const cell = screen.getByRole("link", { name: "Software Engineer a" }).closest("td");
+    expect([cell?.querySelector("small")?.textContent, container.querySelectorAll("td").length]).toEqual(["Acme", 6]);
+});

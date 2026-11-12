@@ -11,7 +11,7 @@ function renderRow(overrides: Partial<JobRowView> = {}) {
     return render(
         <table>
             <tbody>
-                <JobRow job={jobRowView(overrides)} onApplied={() => {}} />
+                <JobRow job={jobRowView(overrides)} onApplied={() => {}} onHidden={() => {}} />
             </tbody>
         </table>,
     );

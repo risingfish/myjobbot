@@ -144,7 +144,7 @@ test("only http and https postings carry a link", async () => {
 
 test("long-open postings are flagged as possible ghosts", async () => {
     const rows = jobRows(await pagesOf([{ id: "g", score: 90, postedAt: "2026-06-01T00:00:00.000Z" }])("recommended"));
-    expect(rows[0]?.posted).toMatchObject({ date: "2026-06-01", ghost: true });
+    expect(rows[0]?.posted).toMatchObject({ date: "Jun 1, 2026", ghost: true });
     expect(rows[0]?.posted.daysOpen).toBeGreaterThan(60);
 });
 

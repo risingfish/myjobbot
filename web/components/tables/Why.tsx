@@ -4,7 +4,7 @@ import { BulletList } from "../common/BulletList.js";
 export function Why({ reasons, gaps }: { reasons: string[]; gaps: string[] }) {
     if (reasons.length + gaps.length === 0) return null;
     return (
-        <details>
+        <details className="why">
             <summary>Why</summary>
             <Labelled label="Reasons" items={reasons} />
             <Labelled label="Gaps" items={gaps} />
