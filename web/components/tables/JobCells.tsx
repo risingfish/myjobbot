@@ -1,3 +1,5 @@
+import { daysOpenTone } from "../../../src/web/daysOpenTone.js";
+import { toneClass } from "../../../src/web/tones.js";
 import type { JobRowView } from "../../../src/web/api.js";
 
 /** Renders the cells saying where a job is: its company, location and whether it is remote. */
@@ -34,7 +36,7 @@ export function WhenCell({ job }: { job: JobRowView }) {
             {date}
             <br />
             <small>
-                <strong>{daysOpen} days open</strong>
+                <strong className={toneClass(daysOpenTone(daysOpen))}>{daysOpen} days open</strong>
             </small>
             {ghost && (
                 <>

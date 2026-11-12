@@ -2,12 +2,32 @@
     --pico-font-size: 93.75%;
     --warn: #a3561a;
     --applied: #1e7a3c;
+    --tone-good: #2e8b4a;
+    --tone-fair: #8a6d00;
+    --tone-warn: #b85a00;
+    --tone-bad: #b42318;
 }
 @media (prefers-color-scheme: dark) {
     :root {
         --warn: #e6a467;
         --applied: #6fd08f;
+        --tone-good: #7ad99a;
+        --tone-fair: #e8cf4a;
+        --tone-warn: #f29d4b;
+        --tone-bad: #f07467;
     }
+}
+.tone-good {
+    color: var(--tone-good);
+}
+.tone-fair {
+    color: var(--tone-fair);
+}
+.tone-warn {
+    color: var(--tone-warn);
+}
+.tone-bad {
+    color: var(--tone-bad);
 }
 nav.pages {
     justify-content: flex-start;
