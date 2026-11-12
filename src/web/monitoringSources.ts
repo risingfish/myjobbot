@@ -1,7 +1,7 @@
 import type { FetchRow } from "../db/monitoringReads.js";
 import { failingRepeatedly } from "../monitoring/failing.js";
 import { moduleFor } from "../sources/registry.js";
-import { localTime } from "./localTime.js";
+import { dayIn } from "../time/format.js";
 import { perDay, type ChartSeries } from "./chartSeries.js";
 
 export interface ModuleRowView {
@@ -48,10 +48,19 @@ function moduleRow(module: string, fetches: FetchRow[]): ModuleRowView {
 /** Lists each source module's fetches in the period, by module name, never naming a source. */
 export function moduleRows(fetches: FetchRow[]): ModuleRowView[] {
     const modules = [...new Set(fetches.map((fetch) => fetch.module))].sort();
-    return modules.map((module) => moduleRow(module, fetches.filter((fetch) => fetch.module === module)));
+    return modules.map((module) =>
+        moduleRow(
+            module,
+            fetches.filter((fetch) => fetch.module === module),
+        ),
+    );
 }
 
 /** Counts the fetches made each day by how they went. */
 export function fetchesPerDay(fetches: FetchRow[]): ChartSeries {
-    return perDay([...fetches].reverse(), (fetch) => (localTime(fetch.at) ?? "").slice(0, 10), (fetch) => fetch.outcome);
+    return perDay(
+        [...fetches].reverse(),
+        (fetch) => dayIn(fetch.at),
+        (fetch) => fetch.outcome,
+    );
 }
