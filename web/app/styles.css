@@ -198,6 +198,34 @@ form.applied-form button {
 .score-col .score {
     position: relative;
 }
+.score-line {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--pico-spacing) / 4);
+}
+button.score-details {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pico-muted-color);
+}
+button.score-details:is(:hover, :focus-visible) {
+    color: var(--pico-primary);
+}
+.score-modal {
+    white-space: normal;
+}
+.score-modal article {
+    max-width: 720px;
+}
+.score-modal h3 {
+    margin: 0;
+}
+.score-modal .score-when {
+    color: var(--pico-muted-color);
+}
 .tip {
     display: none;
     position: absolute;
