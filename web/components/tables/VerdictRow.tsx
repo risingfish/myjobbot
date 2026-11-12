@@ -3,7 +3,7 @@ import { BulletList } from "../common/BulletList.js";
 import { ExternalLink } from "../common/ExternalLink.js";
 import { ScoreCell } from "./ScoreCell.js";
 
-/** Renders one scoring decision as a row of the reasoning history. */
+/** Renders one scoring decision as a row of the reasoning history, the company under the job it scored. */
 export function VerdictRow({ verdict }: { verdict: VerdictRowView }) {
     return (
         <tr className="verdict">
@@ -11,8 +11,9 @@ export function VerdictRow({ verdict }: { verdict: VerdictRowView }) {
             <td>{verdict.run ?? <small>before history</small>}</td>
             <td>
                 <ExternalLink url={verdict.url}>{verdict.title}</ExternalLink>
+                <br />
+                <small>{verdict.company}</small>
             </td>
-            <td>{verdict.company}</td>
             <ScoreCell score={verdict.score} />
             <ReasonCells verdict={verdict} />
         </tr>

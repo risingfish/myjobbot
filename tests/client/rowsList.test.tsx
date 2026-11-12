@@ -8,7 +8,7 @@ import { jobPage, jobRowView, verdictPage, verdictRowView } from "../helpers/row
 vi.mock("../../web/lib/actions.js", () => ({ loadMoreRows: vi.fn(), setJobHidden: vi.fn() }));
 
 const JOB_HEADERS = ["Applied", "Score", "Title", "Company", "Location", "Remote", "Source", "Posted", ""];
-const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Company", "Score", "Reasons", "Gaps"];
+const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Score", "Reasons", "Gaps"];
 
 function headers(container: HTMLElement): string[] {
     return [...container.querySelectorAll("th")].map((cell) => cell.textContent ?? "");

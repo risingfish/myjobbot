@@ -6,7 +6,7 @@ import { jobKey } from "../../lib/pageRows.js";
 import { VerdictRow } from "./VerdictRow.js";
 
 const JOB_HEADERS = ["Applied", "Score", "Title", "Company", "Location", "Remote", "Source", "Posted", ""];
-const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Company", "Score", "Reasons", "Gaps"];
+const VERDICT_HEADERS = ["Scored at", "Run", "Job", "Score", "Reasons", "Gaps"];
 
 type MoreRow = (columns: number) => ReactNode;
 
