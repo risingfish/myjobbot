@@ -1,6 +1,8 @@
+import { minuteIn } from "./format.js";
+
 /** Shows a stored UTC time to the minute, as YYYY-MM-DD HH:mm. */
 export function minutes(iso: string): string {
-    return iso.slice(0, 16).replace("T", " ");
+    return minuteIn(iso, "utc");
 }
 
 /** Shows a stored UTC time to the minute, saying it is UTC. */

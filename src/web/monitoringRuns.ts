@@ -1,6 +1,7 @@
 import type { PartRow, RunRow } from "../db/monitoringReads.js";
 import { runStatus, type PartOutcome, type RunStatus } from "../monitoring/runStatus.js";
 import { perDay, type ChartSeries } from "./chartSeries.js";
+import { dayIn } from "../time/format.js";
 import { durationText } from "./counts.js";
 import { localTime } from "./localTime.js";
 
@@ -65,5 +66,9 @@ export function runDetailRows(detail: { run: RunRow; parts: PartRow[] }, now: Da
 
 /** Counts the runs started each day by how they stand. */
 export function runsPerDay(runs: RunRow[], now: Date): ChartSeries {
-    return perDay([...runs].reverse(), (run) => (localTime(run.startedAt) ?? "").slice(0, 10), (run) => STATUS_TEXT[runStatus(run, now)]);
+    return perDay(
+        [...runs].reverse(),
+        (run) => dayIn(run.startedAt),
+        (run) => STATUS_TEXT[runStatus(run, now)],
+    );
 }

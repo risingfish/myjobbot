@@ -1,25 +1,19 @@
 import { useSyncExternalStore } from "react";
+import { dayIn, minuteIn } from "../../src/time/format.js";
 import type { JobRowView } from "../../src/web/api.js";
 
 type Mark = Pick<JobRowView, "applied" | "appliedOn">;
 
-const STYLES = { date: { dateStyle: "short" }, dateTime: { dateStyle: "short", timeStyle: "short" } } as const;
-
-/** Formats when a job was marked applied as a date, or a date and time, in the given time zone. */
-function appliedLabel(iso: string, timeZone: string, style: keyof typeof STYLES): string {
-    return new Intl.DateTimeFormat("sv-SE", { ...STYLES[style], timeZone }).format(new Date(iso));
-}
-
 /** Names a row's applied mark for screen readers and hover: one to mark, or the date it was marked once the browser's time zone is known. */
 export function rowLabel(job: Mark, timeZone: string | null): string {
     if (!job.applied) return "Mark as applied";
-    return job.appliedOn === null || timeZone === null ? "Applied" : `Applied on ${appliedLabel(job.appliedOn, timeZone, "date")}`;
+    return job.appliedOn === null || timeZone === null ? "Applied" : `Applied on ${dayIn(job.appliedOn, timeZone)}`;
 }
 
 /** Gives the panel's Applied fact: the date and time a job was marked, or just that it is applied until the browser's time zone is known. */
 export function appliedFact(job: Mark, timeZone: string | null): string {
     if (!job.applied) return "Not applied";
-    return job.appliedOn === null || timeZone === null ? "Yes" : appliedLabel(job.appliedOn, timeZone, "dateTime");
+    return job.appliedOn === null || timeZone === null ? "Yes" : minuteIn(job.appliedOn, timeZone);
 }
 
 /** Subscribes to time-zone changes, which a page never sees, so there is nothing to undo. */
