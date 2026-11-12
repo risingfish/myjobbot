@@ -33,7 +33,9 @@ export function WhenCell({ job }: { job: JobRowView }) {
         <td className="posted-col">
             {date}
             <br />
-            <small>{daysOpen} days open</small>
+            <small>
+                <strong>{daysOpen} days open</strong>
+            </small>
             {ghost && (
                 <>
                     {" "}
