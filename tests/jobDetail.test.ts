@@ -24,7 +24,7 @@ async function storedDetail(details: Parameters<typeof makeJob>[1], verdict?: Ve
 test("a job's details carry its row view plus its pay and workplace terms", async () => {
     const view = toJobDetailView(await storedDetail({ compensation: "$150k", workplaceType: "hybrid", location: "Denver" }), NONE, context);
     expect(view.job).toMatchObject({ ats: "greenhouse", jobId: "a", title: "Backend Engineer", company: "Acme", location: "Denver", source: "Stripe", pay: "$150k", workplace: "hybrid" });
-    expect(view.job.posted).toEqual({ date: "2026-09-30", daysOpen: 3, ghost: false });
+    expect(view.job.posted).toEqual({ date: "Sep 30, 2026", daysOpen: 3, ghost: false });
 });
 
 test("missing pay and workplace terms are null", async () => {

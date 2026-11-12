@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 
 const DAY = "yyyy-MM-dd";
 const MINUTE = "yyyy-MM-dd HH:mm";
+const READABLE_DAY = "MMM d, yyyy";
 
 /** Reads a stored UTC time as it falls in the given time zone, or in the process's own zone when none is given. */
 function inZone(iso: string, zone = "local"): DateTime {
@@ -16,4 +17,9 @@ export function dayIn(iso: string, zone?: string): string {
 /** Shows a stored UTC time to the minute, as YYYY-MM-DD HH:mm, in the given time zone, or the process's own. */
 export function minuteIn(iso: string, zone?: string): string {
     return inZone(iso, zone).toFormat(MINUTE);
+}
+
+/** Shows a stored UTC time as the date it falls on in the given time zone, for reading, as in Nov 12, 2026. */
+export function readableDayIn(iso: string, zone: string): string {
+    return inZone(iso, zone).toFormat(READABLE_DAY, { locale: "en-US" });
 }

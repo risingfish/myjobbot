@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { dayIn, minuteIn } from "../../src/time/format.js";
+import { minuteIn, readableDayIn } from "../../src/time/format.js";
 import type { JobRowView } from "../../src/web/api.js";
 
 type Mark = Pick<JobRowView, "applied" | "appliedOn">;
@@ -7,7 +7,7 @@ type Mark = Pick<JobRowView, "applied" | "appliedOn">;
 /** Names a row's applied mark for screen readers and hover: one to mark, or the date it was marked once the browser's time zone is known. */
 export function rowLabel(job: Mark, timeZone: string | null): string {
     if (!job.applied) return "Mark as applied";
-    return job.appliedOn === null || timeZone === null ? "Applied" : `Applied on ${dayIn(job.appliedOn, timeZone)}`;
+    return job.appliedOn === null || timeZone === null ? "Applied" : `Applied on ${readableDayIn(job.appliedOn, timeZone)}`;
 }
 
 /** Gives the panel's Applied fact: the date and time a job was marked, or just that it is applied until the browser's time zone is known. */

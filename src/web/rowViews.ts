@@ -1,4 +1,4 @@
-import { dayIn } from "../time/format.js";
+import { readableDayIn } from "../time/format.js";
 import { minutes } from "../time/minutes.js";
 import type { JobView, VerdictView } from "../db/jobViews.js";
 import { daysBetween } from "../jobs/age.js";
@@ -68,9 +68,9 @@ export function shortRun(runId: string | null): string | null {
     return runId ? runId.slice(0, 8) : null;
 }
 
-/** Returns the date-only portion of an ISO timestamp, or an empty string when null. */
+/** Shows the date of a UTC timestamp for reading, as in Nov 12, 2026, or an empty string when null. */
 function dateOnly(iso: string | null): string {
-    return iso ? dayIn(iso, "utc") : "";
+    return iso ? readableDayIn(iso, "utc") : "";
 }
 
 /** Returns the URL only when it is http(s), so unsafe link schemes never become links. */
