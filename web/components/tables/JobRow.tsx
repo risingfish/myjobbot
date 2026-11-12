@@ -25,7 +25,7 @@ export function JobRow({ job, onApplied, onHidden, children }: JobRowProps) {
             <WhereCells job={job} />
             <SourceCell job={job} />
             <WhenCell job={job} />
-            <td>{children}</td>
+            <td className="actions-col">{children}</td>
         </tr>
     );
 }

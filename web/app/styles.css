@@ -213,6 +213,9 @@ form.applied-form button {
 td ul {
     margin: 0;
 }
+.actions-col {
+    text-align: center;
+}
 .row-actions {
     display: inline-flex;
     align-items: center;
