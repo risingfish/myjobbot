@@ -7,7 +7,7 @@ import { ScoreCell } from "./ScoreCell.js";
 export function VerdictRow({ verdict }: { verdict: VerdictRowView }) {
     return (
         <tr className="verdict">
-            <td>{verdict.scoredAt}</td>
+            <td className="scored-col">{verdict.scoredAt}</td>
             <td>{verdict.run ?? <small>before history</small>}</td>
             <td>
                 <ExternalLink url={verdict.url}>{verdict.title}</ExternalLink>

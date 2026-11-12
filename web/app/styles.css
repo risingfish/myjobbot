@@ -191,7 +191,8 @@ form.applied-form button {
     width: 75px;
     white-space: nowrap;
 }
-.posted-col {
+.posted-col,
+.scored-col {
     white-space: nowrap;
 }
 .score-col .score {
