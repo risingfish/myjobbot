@@ -12,7 +12,8 @@ interface ScoreModalProps {
 export function ScoreModal({ job, onClose }: ScoreModalProps) {
     const dialog = useRef<HTMLDialogElement>(null);
     const titleId = useId();
-    useModal(dialog, onClose);
+    useShowModal(dialog);
+    useEscape(onClose);
     return (
         <dialog ref={dialog} className="score-modal" aria-labelledby={titleId} onClose={onClose} data-keeps-panel>
             <ScoreCard job={job} titleId={titleId} onClose={onClose} />
@@ -39,11 +40,15 @@ function ScoreCard({ job, titleId, onClose }: ScoreModalProps & { titleId: strin
     );
 }
 
-/** Opens the dialog as a modal when it mounts and closes it on Escape wherever focus is, catching the key first so it doesn't also close the details panel behind. */
-function useModal(dialog: RefObject<HTMLDialogElement | null>, onClose: () => void): void {
+/** Opens the dialog as a modal, over the page, when it mounts. */
+function useShowModal(dialog: RefObject<HTMLDialogElement | null>): void {
     useEffect(() => {
         if (dialog.current?.open === false) dialog.current.showModal();
     }, [dialog]);
+}
+
+/** Closes the modal on Escape wherever focus is, catching the key first so it doesn't also close the details panel behind. */
+function useEscape(onClose: () => void): void {
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
             if (event.key !== "Escape") return;
