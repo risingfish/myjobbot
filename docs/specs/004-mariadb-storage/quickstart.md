@@ -5,7 +5,7 @@
 Add to `.env` (never commit it):
 
 ```bash
-MYJOBBOT_DB_HOST=192.168.3.10
+MYJOBBOT_DB_HOST=192.168.0.10
 MYJOBBOT_DB_USER=myjobbot
 MYJOBBOT_DB_PASSWORD=…
 ```

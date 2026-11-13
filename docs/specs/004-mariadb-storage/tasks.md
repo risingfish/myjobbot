@@ -74,7 +74,7 @@ column.
   2026-10-14 (research R1). Don't install anything yet: a dependency that nothing
   imports fails knip, so `kysely` and `mysql2` are installed in T019, the task that first imports
   them.
-- [X] T003 Write `.env` with `MYJOBBOT_DB_HOST=192.168.3.10`,
+- [X] T003 Write `.env` with `MYJOBBOT_DB_HOST=192.168.0.10`,
   `MYJOBBOT_DB_USER=myjobbot`, `MYJOBBOT_DB_PASSWORD` (from the owner) and
   **`MYJOBBOT_DB_NAME=myjobbot_test`**. That way nothing run during the feature (an agent run, `npm
   run web`) can touch the production `myjobbot` database before the switch-over. Only T039's import
@@ -226,7 +226,7 @@ the seeded rows.
     and no tool is called
   - **pool lifecycle**: `close` is called on success and on failure
 - [X] T018 [P] [US1] **UI** `tests/client/footer.test.tsx`: renders the `database` prop, for
-  example `myjobbot T0 192.168.3.10`.
+  example `myjobbot T0 192.168.0.10`.
 
 #### Implementation
 
@@ -531,7 +531,7 @@ run is refused, and an over-long row is reported with nothing written.
     passes `.env` as environment variables. Fix: `web/lib/uiState.ts` loads the root `.env` (when
     present, without overriding) before reading the settings, as `src/cli.ts` does.
   - **Manual check (T030)**, `npm run web` on the imported copy: Recommended 36 (threshold 60),
-    All jobs 772, Reasoning 735, and the footer shows `myjobbot_test @ 192.168.3.10`. In headless
+    All jobs 772, Reasoning 735, and the footer shows `myjobbot_test @ 192.168.0.10`. In headless
     Chromium, Hide took 288 ms and stayed hidden after a reload (36 → 35), scrolling loaded all
     772 rows, and there were no page errors. Test tables emptied afterwards.
 - **S5 (T031–T035)**: `npm run check` passes, with 267 tests and habit-hooks clean.

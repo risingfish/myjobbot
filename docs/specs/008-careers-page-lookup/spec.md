@@ -177,7 +177,7 @@ search for that company and the audit log says the remembered page was used.
   search text is "<company name> careers") and returns the first page of results, each as a
   title, address and short snippet.
 - **FR-002**: The search server's address MUST be configurable, so it can be a SearXNG service in
-  this stack or one elsewhere on the network (for example `https://search.forthebrew.com`). With no
+  this stack or one elsewhere on the network (for example `https://search.example.com`). With no
   address configured, the lookup is off and runs behave as they do today.
 - **FR-003**: The stack MUST offer an optional SearXNG service the owner can switch on, for those
   without one elsewhere.

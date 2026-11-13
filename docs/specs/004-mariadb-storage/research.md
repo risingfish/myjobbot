@@ -2,7 +2,7 @@
 
 **Method.** Each unknown was settled with a spike on 2026-10-14, using throwaway projects in the
 scratchpad. Nothing in the repository changed. The spikes ran against the real `myjobbot_test`
-database on the owner's MariaDB 10.11.14 server at 192.168.3.10. Results are quoted below.
+database on the owner's MariaDB 10.11.14 server at 192.168.0.10. Results are quoted below.
 
 ## R1. Library and driver
 
@@ -170,7 +170,7 @@ Measured on the real data (2026-10-14):
 
 - **Agent isolation is unchanged**: `src/` still never imports `web/` or `next`.
 - **Docker**: no new service and no compose changes beyond the environment. Both containers
-  already reach 192.168.3.10:3306 (checked 2026-10-14), and read `MYJOBBOT_DB_*` from `.env`
+  already reach 192.168.0.10:3306 (checked 2026-10-14), and read `MYJOBBOT_DB_*` from `.env`
   through `env_file`.
 - **`data/` stays mounted** for `config.json`, `resume.md`, `runs/` and the SQLite backup.
 

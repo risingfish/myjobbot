@@ -66,7 +66,7 @@ test("a write that fails is logged by a fixed line, never thrown, and the next w
     const { lines, recorder: run } = recorder(history);
     await run.begin();
     const partStarted = history.partStarted.bind(history);
-    history.partStarted = () => Promise.reject(new Error("connection lost to 192.168.3.10"));
+    history.partStarted = () => Promise.reject(new Error("connection lost to 192.168.0.10"));
     await run.partStarted(1, "part-1");
     history.partStarted = partStarted;
     expect([lines, history.runs[0]?.incomplete]).toEqual([["run_history_failed"], false]);

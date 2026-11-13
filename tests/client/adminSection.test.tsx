@@ -14,7 +14,7 @@ const actions = vi.hoisted(() => ({
 vi.mock("../../web/lib/adminActions.js", () => actions);
 
 const ACCOUNTS = [
-    { id: 1, name: "Zac", email: "zac@forthebrew.com", isAdmin: true, deactivatedAt: null, deleteAfter: null },
+    { id: 1, name: "Zac", email: "owner@example.com", isAdmin: true, deactivatedAt: null, deleteAfter: null },
     { id: 2, name: "Ada", email: "ada@example.com", isAdmin: false, deactivatedAt: null, deleteAfter: null },
 ];
 

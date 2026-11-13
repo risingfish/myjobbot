@@ -1,7 +1,7 @@
 # Research: Job details from company careers pages
 
 All measurements below were taken on 2026-10-16 against the owner's SearXNG
-(`https://search.forthebrew.com`) and live careers sites.
+(`https://search.example.com`) and live careers sites.
 
 ## R1. SearXNG search API
 

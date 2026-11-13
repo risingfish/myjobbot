@@ -12,7 +12,7 @@
 | `MYJOBBOT_TEST_DB_NAME` | no | `myjobbot_test` | integration tests only; the test helper refuses any name not ending in `_test` |
 
 Errors name the variable (`MYJOBBOT_DB_HOST is not set`) or the problem (`MariaDB at
-192.168.3.10:3306 rejected user myjobbot`). They never contain the password.
+192.168.0.10:3306 rejected user myjobbot`). They never contain the password.
 
 ## Commands
 

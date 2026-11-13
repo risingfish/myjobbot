@@ -43,10 +43,10 @@ test("a foreign host is refused with 421", async () => {
 });
 
 test("MYJOBBOT_HOSTS lists the allowed hosts, ignoring case", async () => {
-    vi.stubEnv("MYJOBBOT_HOSTS", "myserver.lan:8080,192.168.1.20:8080");
+    vi.stubEnv("MYJOBBOT_HOSTS", "myserver.lan:8080,192.168.0.20:8080");
     vi.stubEnv("MYJOBBOT_BASE_URL", "https://myserver.lan:8080");
     expect(await statusFor("myserver.lan:8080")).not.toBe(421);
-    expect(await statusFor("192.168.1.20:8080")).not.toBe(421);
+    expect(await statusFor("192.168.0.20:8080")).not.toBe(421);
     expect(await statusFor("MyServer.LAN:8080")).not.toBe(421);
     expect(await statusFor("localhost:8080")).toBe(421);
 });

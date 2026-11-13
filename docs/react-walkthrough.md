@@ -215,7 +215,7 @@ and finds things the way a user would: by role and visible text.
   saved change shows on the next reload with no rebuild.
 - **Which hosts may connect**: `web/proxy.ts` runs before every request and answers 421 unless the
   `Host` is one you use. Set them in `MYJOBBOT_HOSTS`, for example
-  `myserver.lan:8080,192.168.1.20:8080`. Without it, only `localhost` on `MYJOBBOT_PORT` gets in.
+  `myserver.lan:8080,192.168.0.20:8080`. Without it, only `localhost` on `MYJOBBOT_PORT` gets in.
 - **Settings**: `web/next.config.ts` points Next.js at the repository root so it can compile the
   shared code in `src/`.
 

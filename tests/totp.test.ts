@@ -4,10 +4,10 @@ import { checkCode, newAuthenticator } from "../src/accounts/totp.js";
 const RFC_SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
 test("a new authenticator has a 20-byte secret and a setup address naming myjobbot and the account's email", () => {
-    const app = newAuthenticator((size) => Buffer.alloc(size, 1), "zac@forthebrew.com");
+    const app = newAuthenticator((size) => Buffer.alloc(size, 1), "owner@example.com");
     expect(app.secret).toMatch(/^[A-Z2-7]{32}$/);
     expect(app.secret).toBe("AEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIB");
-    expect(app.uri).toBe("otpauth://totp/myjobbot:zac%40forthebrew.com?issuer=myjobbot&secret=AEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIB&algorithm=SHA1&digits=6&period=30");
+    expect(app.uri).toBe("otpauth://totp/myjobbot:owner%40example.com?issuer=myjobbot&secret=AEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIB&algorithm=SHA1&digits=6&period=30");
 });
 
 test("a code is accepted for the current 30-second step and one either side, giving its step, and refused beyond", () => {

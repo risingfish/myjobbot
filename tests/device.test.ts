@@ -32,7 +32,7 @@ test("the browser's position is kept only as a valid one rounded to about 10 km"
 test("the location is the browser's rounded position when shared, else Local network for a LAN address, else the IP's city, region and country", () => {
     const lookup = (ip: string) => (ip === "8.8.8.8" ? { city: "Seattle", region: "WA", country: "US" } : null);
     expect(locationLabel({ position: { lat: 47.6, lng: -122.3 }, ip: "8.8.8.8" }, lookup)).toBe("47.6, -122.3 (from your browser)");
-    expect([locationLabel({ position: null, ip: "192.168.1.20" }, lookup), locationLabel({ position: null, ip: "10.0.0.2" }, lookup), locationLabel({ position: null, ip: "::1" }, lookup)]).toEqual(["Local network", "Local network", "Local network"]);
+    expect([locationLabel({ position: null, ip: "192.168.0.20" }, lookup), locationLabel({ position: null, ip: "10.0.0.2" }, lookup), locationLabel({ position: null, ip: "::1" }, lookup)]).toEqual(["Local network", "Local network", "Local network"]);
     expect(locationLabel({ position: null, ip: "8.8.8.8" }, lookup)).toBe("Seattle, WA, US");
     expect([locationLabel({ position: null, ip: "203.0.113.9" }, lookup), locationLabel({ position: null, ip: null }, lookup)]).toEqual(["Unknown", null]);
 });

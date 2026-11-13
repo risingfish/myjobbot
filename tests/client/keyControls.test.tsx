@@ -36,12 +36,12 @@ test("keys are listed by name with Delete, a key needs a name, and a repeated na
 
 test("the sign-in page's Hardware key choice asks the browser for a key and signs in with its answer", async () => {
     render(<SignInForm next="/jobs" />);
-    await userEvent.type(screen.getByLabelText("Email"), "zac@forthebrew.com");
+    await userEvent.type(screen.getByLabelText("Email"), "owner@example.com");
     await userEvent.click(screen.getByRole("radio", { name: "Hardware key" }));
     expect(screen.getByText("Touch your key when your browser asks.")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     await vi.waitFor(() => expect(keyActions.finishKeySignIn).toHaveBeenCalled());
     const form = keyActions.finishKeySignIn.mock.calls[0]?.[0];
     if (form === undefined) throw new Error("no sign-in");
-    expect([form.get("email"), form.get("response"), form.get("next")]).toEqual(["zac@forthebrew.com", JSON.stringify({ id: "cred-1" }), "/jobs"]);
+    expect([form.get("email"), form.get("response"), form.get("next")]).toEqual(["owner@example.com", JSON.stringify({ id: "cred-1" }), "/jobs"]);
 });
