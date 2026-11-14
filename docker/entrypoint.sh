@@ -28,7 +28,7 @@ case "${1:-schedule}" in
   serve)
     check_prerequisites
     if [ -z "${MYJOBBOT_HOSTS:-}" ]; then
-      echo "myjobbot: set MYJOBBOT_HOSTS to the host:port names you open the UI with (for example myserver.lan:8080,192.168.1.20:8080)" >&2
+      echo "myjobbot: set MYJOBBOT_HOSTS to the host:port names you open the UI with (for example myserver.lan:8080,192.168.0.20:8080)" >&2
       exit 1
     fi
     if [ -z "${MYJOBBOT_BASE_URL:-}" ]; then

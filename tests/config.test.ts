@@ -102,7 +102,7 @@ test("the SearXNG address is optional and must be a URL", () => {
 
 test("page rendering has a bounded time limit and an optional LAN probe address", () => {
     for (const render_seconds of [4, 61]) expect(() => testAppSettings({ careers_lookup: { render_seconds } })).toThrow();
-    expect(testAppSettings({ careers_lookup: { lan_probe_url: "http://192.168.3.1/" } }).careers_lookup.lan_probe_url).toBe("http://192.168.3.1/");
+    expect(testAppSettings({ careers_lookup: { lan_probe_url: "http://192.168.0.1/" } }).careers_lookup.lan_probe_url).toBe("http://192.168.0.1/");
     expect(() => testAppSettings({ careers_lookup: { lan_probe_url: "router" } })).toThrow();
 });
 

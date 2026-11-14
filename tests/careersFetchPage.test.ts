@@ -3,7 +3,7 @@ import { assertPublic, fetchPublicPage, FetchRefused, FetchTimedOut } from "../s
 import type { TextGetter, TextResult } from "../src/http/client.js";
 import { fakeDns } from "./helpers/fakeDns.js";
 
-const DNS = fakeDns({ "acme.example": ["93.184.216.34"], "intranet.example": ["192.168.3.10"], "mixed.example": ["93.184.216.34", "10.0.0.5"] });
+const DNS = fakeDns({ "acme.example": ["93.184.216.34"], "intranet.example": ["192.168.0.10"], "mixed.example": ["93.184.216.34", "10.0.0.5"] });
 
 function pages(results: Record<string, TextResult | Error>): TextGetter & { fetched: string[] } {
     const fetched: string[] = [];

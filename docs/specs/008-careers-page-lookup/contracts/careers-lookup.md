@@ -154,7 +154,7 @@ Both fit a 16 K-token context.
 `.env`:
 
 ```text
-MYJOBBOT_SEARXNG_URL=https://search.forthebrew.com   # or http://searxng:8080 with the bundled service; unset = off
+MYJOBBOT_SEARXNG_URL=https://search.example.com   # or http://searxng:8080 with the bundled service; unset = off
 ```
 
 `config.json` (all optional; defaults shown):

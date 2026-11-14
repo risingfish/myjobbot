@@ -13,7 +13,7 @@ test("the LAN check says it wasn't configured when there is no probe address, an
         return { careers, run: checkBrowserLan({ settings, careers, trace: memoryTrace(), runId: "run-1", now: () => TEST_NOW }) };
     };
     const unconfigured = check();
-    const configured = check("http://192.168.3.1/");
+    const configured = check("http://192.168.0.1/");
     expect([await unconfigured.run(fakeBrowser().port), await configured.run(fakeBrowser({ reachable: false }).port)]).toEqual(["LAN check not configured", null]);
     expect([unconfigured.careers.rows, configured.careers.rows.map((row) => [row.step, row.outcome])]).toEqual([[], [["render_check", "ok"]]]);
 });

@@ -132,7 +132,7 @@ with `next start` and `next dev`, and probed. Results are quoted below.
   - **Dev helper endpoints don't leak either**: `__nextjs_source-map` (204),
     `__nextjs_launch-editor` (204) and `__nextjs_original-stack-frames`, given a POST naming
     `data/config.json` and `.env`, returned no file content.
-  - **LAN access is allowed**: dev scripts requested same-origin as `192.168.1.20` or
+  - **LAN access is allowed**: dev scripts requested same-origin as `192.168.0.20` or
     `myserver.lan` returned 200.
   - **Cross-site use is blocked by default**: a cross-site dev script request returned **403**,
     with "Blocked cross-origin request to Next.js dev resource".

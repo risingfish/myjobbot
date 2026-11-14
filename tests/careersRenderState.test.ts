@@ -35,16 +35,16 @@ test("a browser that can't be reached turns rendering off for the rest of the ru
 
 test("the first rendering checks once whether the browser can reach the LAN, warning without blocking when it can", async () => {
     const browser = fakeBrowser({ reachable: true });
-    const { renderer: checked, careers, trace } = renderer(async () => browser.port, "http://192.168.3.1/");
+    const { renderer: checked, careers, trace } = renderer(async () => browser.port, "http://192.168.0.1/");
     expect(await checked.render(PAGE)).toMatchObject({ page: { url: PAGE } });
     await checked.render(PAGE);
-    expect(browser.calls.filter((call) => call.startsWith("probe"))).toEqual(["probe http://192.168.3.1/"]);
-    expect(careers.rows).toEqual([expect.objectContaining({ step: "render_check", url: "http://192.168.3.1/", outcome: "failed", warning: true, jobId: "" })]);
-    expect(trace.events).toContainEqual({ type: "render_check", url: "http://192.168.3.1/", warning: true });
+    expect(browser.calls.filter((call) => call.startsWith("probe"))).toEqual(["probe http://192.168.0.1/"]);
+    expect(careers.rows).toEqual([expect.objectContaining({ step: "render_check", url: "http://192.168.0.1/", outcome: "failed", warning: true, jobId: "" })]);
+    expect(trace.events).toContainEqual({ type: "render_check", url: "http://192.168.0.1/", warning: true });
 });
 
 test("a browser kept off the LAN passes the check, and with no probe address the note says the LAN wasn't checked", async () => {
-    const { renderer: kept, careers } = renderer(async () => fakeBrowser({ reachable: false }).port, "http://192.168.3.1/");
+    const { renderer: kept, careers } = renderer(async () => fakeBrowser({ reachable: false }).port, "http://192.168.0.1/");
     await kept.render(PAGE);
     expect(careers.rows).toEqual([expect.objectContaining({ step: "render_check", outcome: "ok", warning: false })]);
     const { renderer: unchecked } = renderer(async () => fakeBrowser().port);

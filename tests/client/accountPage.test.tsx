@@ -22,7 +22,7 @@ vi.mock("../../web/lib/accountStatusActions.js", () => ({ deactivateAccount: vi.
 const STATE = {
     status: { status: "active" as const, deactivatedAt: null, deleteAfter: null, onlyAdmin: true },
     name: "Zac",
-    email: "zac@forthebrew.com",
+    email: "owner@example.com",
     ways: [
         { kind: "password" as const, enabled: true, ready: true, usable: true },
         { kind: "email_link" as const, enabled: false, ready: false, usable: false },
@@ -30,7 +30,7 @@ const STATE = {
         { kind: "authenticator" as const, enabled: false, ready: false, usable: false },
     ],
     signIns: [
-        { ref: "aaaaaaaaaaaaaaaa", current: true, os: "Linux", ip: "192.168.2.101", location: "Local network", lastUsedAt: "2026-11-06T10:00:00.000Z" },
+        { ref: "aaaaaaaaaaaaaaaa", current: true, os: "Linux", ip: "192.168.0.101", location: "Local network", lastUsedAt: "2026-11-06T10:00:00.000Z" },
         { ref: "bbbbbbbbbbbbbbbb", current: false, os: "iOS", ip: "203.0.113.9", location: "Seattle, WA, US", lastUsedAt: "2026-11-05T09:00:00.000Z" },
     ],
     events: [{ at: "2026-11-06T10:00:00.000Z", label: "Signed in", method: "password" }],
@@ -55,7 +55,7 @@ async function waysShownOnlyWhileOn() {
 
 async function signInsListed() {
     const rows = within(screen.getByRole("table", { name: "Sign-ins" })).getAllByRole("row").slice(1);
-    expect(rows.map((row) => row.textContent)).toEqual(["Linux192.168.2.101Local network2026-11-06 10:00 UTCThis device", "iOS203.0.113.9Seattle, WA, US2026-11-05 09:00 UTCSign out"]);
+    expect(rows.map((row) => row.textContent)).toEqual(["Linux192.168.0.101Local network2026-11-06 10:00 UTCThis device", "iOS203.0.113.9Seattle, WA, US2026-11-05 09:00 UTCSign out"]);
     await userEvent.click(within(rows[1] as HTMLElement).getByRole("button", { name: "Sign out" }));
     expect(actions.signOutDevice).toHaveBeenCalledWith("bbbbbbbbbbbbbbbb");
 }
@@ -64,7 +64,7 @@ test("the Account tab shows User Profile, the four ways with each one's controls
     render(<AccountView state={STATE} />);
     expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual(["User Profile", "Ways of signing in", "Recovery codes", "Sign-ins", "Recent activity", "Account status"]);
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Zac");
-    expect(screen.getByText("zac@forthebrew.com")).toBeTruthy();
+    expect(screen.getByText("owner@example.com")).toBeTruthy();
     expect(screen.getByText(/7 of 10 recovery codes left/)).toBeTruthy();
     await waysShownOnlyWhileOn();
     await signInsListed();

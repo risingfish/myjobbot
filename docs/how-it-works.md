@@ -436,7 +436,7 @@ settings as a run (and `MYJOBBOT_SEARXNG_URL` for its careers lookup).
 Every request must name the UI in its `Host`, or it gets 421; that
 stops other websites reaching it through DNS tricks. By default that's `localhost` and
 `127.0.0.1` on `MYJOBBOT_PORT`. To open it from another machine, list every `host:port` you use
-in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.1.20:8080`.
+in `MYJOBBOT_HOSTS`, for example `MYJOBBOT_HOSTS=myserver.lan:8080,192.168.0.20:8080`.
 
 ## Accounts and signing in
 

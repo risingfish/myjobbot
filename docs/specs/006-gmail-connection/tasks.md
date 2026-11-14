@@ -78,7 +78,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - valid gives `{ status: "ok", key }` with a 32-byte `Buffer`
 - [X] T005 [P] **Unit**: write `tests/connectRequest.test.ts` with `isLoopbackHost` from
   `src/gmail/connectRequest.ts` (1 test): `localhost:8080` and `127.0.0.1:8080` are true;
-  `192.168.1.20:8080`, `localhost.evil.com` and `localhost:8080.evil.com` are false. S2 adds the
+  `192.168.0.20:8080`, `localhost.evil.com` and `localhost:8080.evil.com` are false. S2 adds the
   rest of this file's tests.
 - [X] T006 [P] **Unit and integration (contract)**: write `tests/helpers/gmailStoreContract.ts`
   (`gmailStoreContract(make)`, with a `CASES` list like `storeContract.ts`). S1 adds only case 1:
@@ -96,7 +96,7 @@ Create `.specify/sitting-in-progress` naming S1 before T003.
   - the key is missing or invalid: `offers` is empty, and `message` names `MYJOBBOT_SECRET_KEY`
     and says to restart (the contract's text); a row with no credentials offers only `save`
   - credentials are saved and not connected: from `localhost:8080`, `canConnect` is true with no
-    hint; from `192.168.1.20:8080`, `canConnect` is false with the hint "Open Settings at
+    hint; from `192.168.0.20:8080`, `canConnect` is false with the hint "Open Settings at
     http://localhost:8080 to connect"
   - `keyChanged: true`: the state is `key_changed`, `message` is "Server key changed; enter the
     client secret again", `offers` is `["save"]`, and `canConnect` is false

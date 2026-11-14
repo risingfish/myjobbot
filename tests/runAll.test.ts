@@ -138,7 +138,7 @@ test("a user's part is stored as running while they run, and a failure keeps onl
     const stores = await twoUsers();
     const seen: string[] = [];
     const list = stores.memory?.sources.list.bind(stores.memory.sources);
-    if (stores.memory && list) stores.memory.sources.list = (userId) => (seen.push(...(stores.memory?.runHistory.parts.map((part) => part.outcome) ?? [])), userId === 1 ? Promise.reject(new Error("sources down at 192.168.3.10")) : list(userId));
+    if (stores.memory && list) stores.memory.sources.list = (userId) => (seen.push(...(stores.memory?.runHistory.parts.map((part) => part.outcome) ?? [])), userId === 1 ? Promise.reject(new Error("sources down at 192.168.0.10")) : list(userId));
     const { chat } = scriptedChat(scoring("Acme", 40));
     await runAll({ ...TEST_ENV, MYJOBBOT_DATA_DIR: makeDataDir(ONE_COMPANY) }, { chat, http: fakeBoard(greenhouseBoard(["Backend Engineer"])), lookup: publicDns(), openStores: async () => stores });
     expect(seen[0]).toBe("running");

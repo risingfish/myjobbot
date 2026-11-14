@@ -140,7 +140,7 @@ unit T004–T012.
     `127.0.0.1:8080` pass through and `localhost:3000` gets 421. With `MYJOBBOT_PORT=9000`,
     `localhost:9000` passes.
   - **Foreign host**: `evil.example:8080` gets 421.
-  - **Custom list**: `MYJOBBOT_HOSTS="myserver.lan:8080,192.168.1.20:8080"` (stubbed with
+  - **Custom list**: `MYJOBBOT_HOSTS="myserver.lan:8080,192.168.0.20:8080"` (stubbed with
     `vi.stubEnv`) lets those two through, `MyServer.LAN:8080` too because matching ignores
     case, and refuses everything else.
   - **No `Host`**: refused.
@@ -482,7 +482,7 @@ from the worktree first, then switched in the main checkout (T045).
   - **`Dockerfile`**: `COPY web ./web` after `COPY src ./src`.
   - **`docker/entrypoint.sh`**: the `serve` case:
     - **Refuses to start** with `myjobbot: set MYJOBBOT_HOSTS to the host:port names you open
-      the UI with (for example myserver.lan:8080,192.168.1.20:8080)` when `MYJOBBOT_HOSTS` is
+      the UI with (for example myserver.lan:8080,192.168.0.20:8080)` when `MYJOBBOT_HOSTS` is
       unset. Otherwise the Host allowlist would refuse every LAN request.
     - **Then runs** `exec node_modules/.bin/next dev web --hostname 0.0.0.0 --port "${MYJOBBOT_PORT:-8080}"`
       with `NEXT_TELEMETRY_DISABLED=1` exported.
@@ -656,8 +656,8 @@ from the worktree first, then switched in the main checkout (T045).
   - production (`web:start`): pages 9–36 ms, Hide 10–22 ms
 
   Targets are 1 s and 0.5 s. Scratch image, data copy and `.env` removed.
-- **T045 step 1** (2026-10-14): the user opens the UI at `192.168.1.20:8080`;
-  `MYJOBBOT_HOSTS=192.168.1.20:8080` was appended to the main checkout's `.env` (no other lines
+- **T045 step 1** (2026-10-14): the user opens the UI at `192.168.0.20:8080`;
+  `MYJOBBOT_HOSTS=192.168.0.20:8080` was appended to the main checkout's `.env` (no other lines
   read or printed). The running stack ignores it until the switch-over.
 - **Before staging**: `next dev` writes `web/AGENTS.md` (Next.js's notes for AI coding agents)
   whenever it detects one, and restores it if deleted. `agentRules: false` in
@@ -667,8 +667,8 @@ from the worktree first, then switched in the main checkout (T045).
 - **T045** (2026-10-14): implementation committed as `64036cc`; the worktree was removed and the
   main checkout switched to `nextjs-web-ui`. The `docker compose watch` process was stopped, then
   `docker compose up -d --build` ran with no agent run in progress. `web` serves Next.js; a
-  request naming `192.168.1.20:8080` gets 200 with rows. This machine's own LAN address
-  (`192.168.2.50`) gets 421; the user confirmed `192.168.1.20:8080` is the address they use.
+  request naming `192.168.0.20:8080` gets 200 with rows. This machine's own LAN address
+  (`192.168.0.50`) gets 421; the user confirmed `192.168.0.20:8080` is the address they use.
 
 ## Dependencies & Execution Order
 

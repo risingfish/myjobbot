@@ -27,7 +27,7 @@ upsert, `LEAST`, racing migrators, and Next.js with mysql2. See [research.md](re
   - **New**: `kysely` 0.29.6 and `mysql2` 3.24.6, exact-pinned, both approved by the owner
     (research R1).
   - **Retired from normal use**: `node:sqlite`, which remains only in the import command.
-- **Storage**: MariaDB 10.11.14 at 192.168.3.10. `myjobbot` holds the real data and
+- **Storage**: MariaDB 10.11.14 at 192.168.0.10. `myjobbot` holds the real data and
   `myjobbot_test` serves the integration tests; both are `utf8mb4` / `utf8mb4_general_ci`, with
   tables set to `utf8mb4_bin`.
 - **Testing**: vitest 5 with three projects:

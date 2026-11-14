@@ -7,7 +7,7 @@
 **Status**: Draft
 
 **Input**: User description: "Move myjobbot's storage from SQLite (node:sqlite, data/myjobbot.db) to
-the owner's existing MariaDB 10.11 server at 192.168.3.10 (database `myjobbot`, integration tests in
+the owner's existing MariaDB 10.11 server at 192.168.0.10 (database `myjobbot`, integration tests in
 `myjobbot_test`), using Kysely with typed queries for all database access and its migrator for
 schema changes, over the mysql2 driver. Copy the existing data across once. Restructure so decisions
 live in plain functions and move the test suite toward 95% unit, 4% integration, 1% UI."
@@ -219,7 +219,7 @@ the biggest part of today's gap.
 
 ## Assumptions
 
-- **The server is reachable whenever myjobbot runs.** The owner's MariaDB server at 192.168.3.10 is
+- **The server is reachable whenever myjobbot runs.** The owner's MariaDB server at 192.168.0.10 is
   on the home network, as the web UI already is. Away from that network, runs fail clearly and the
   next scheduled run tries again.
 - **The owner backs up the MariaDB server.** myjobbot doesn't add its own backups.

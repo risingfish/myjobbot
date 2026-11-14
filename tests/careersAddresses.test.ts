@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { allowedUrl, isPublicAddress } from "../src/careers/addresses.js";
 
-const PRIVATE = ["0.0.0.0", "0.1.2.3", "127.0.0.1", "10.1.2.3", "172.16.5.4", "192.168.3.10", "169.254.1.1", "100.64.0.1", "224.0.0.1", "::", "::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1"];
+const PRIVATE = ["0.0.0.0", "0.1.2.3", "127.0.0.1", "10.1.2.3", "172.16.5.4", "192.168.0.10", "169.254.1.1", "100.64.0.1", "224.0.0.1", "::", "::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1"];
 
 test("isPublicAddress refuses local, private, link-local, CGNAT, multicast and mapped addresses, and accepts public ones", () => {
     for (const ip of PRIVATE) expect(isPublicAddress(ip), ip).toBe(false);
